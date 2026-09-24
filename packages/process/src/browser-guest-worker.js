@@ -1,5 +1,6 @@
 import { ErrorCodes, assertOc, ocError } from '../../protocol/src/index.js';
 import { WorkerRpcAuthority } from './worker-authority.js';
+import { settleSyncRpcMailbox } from './sync-rpc.js';
 
 export class BrowserGuestWorkerAuthority {
   #publication;
@@ -11,6 +12,8 @@ export class BrowserGuestWorkerAuthority {
   #rpc = null;
   #hostListener = null;
   #closed = false;
+  #syncRequestHandler;
+  #maxSyncResponseBytes;
 
   constructor({
     publication,
@@ -18,7 +21,9 @@ export class BrowserGuestWorkerAuthority {
     workerURL = '/opencontainer-guest-worker.mjs',
     diagnostics,
     maxPending = 64,
-    requestTimeoutMs = 5000
+    requestTimeoutMs = 5000,
+    syncRequestHandler = null,
+    maxSyncResponseBytes = 1024 * 1024
   } = {}) {
     assertOc(publication && typeof publication.resolveDynamic === 'function', ErrorCodes.INVALID_ARGUMENT, 'Native ESM publication authority is required');
     assertOc(typeof WorkerImpl === 'function', ErrorCodes.ESM_EDGE_UNAVAILABLE, 'Dedicated Worker API is unavailable');
@@ -28,6 +33,8 @@ export class BrowserGuestWorkerAuthority {
     this.#diagnostics = diagnostics;
     this.#maxPending = maxPending;
     this.requestTimeoutMs = Math.max(1, Number(requestTimeoutMs) || 5000);
+    this.#syncRequestHandler = syncRequestHandler;
+    this.#maxSyncResponseBytes = Math.max(1024, Number(maxSyncResponseBytes) || 1024 * 1024);
   }
 
   get identity() { return this.#rpc?.identity ?? null; }
@@ -43,8 +50,14 @@ export class BrowserGuestWorkerAuthority {
 
     this.#hostListener = (event) => {
       const message = event.data;
-      if (!message || message.type !== 'opencontainer:host-request') return;
-      void this.#handleHostRequest(message);
+      if (!message) return;
+      if (message.type === 'opencontainer:host-request') {
+        void this.#handleHostRequest(message);
+        return;
+      }
+      if (message.type === 'opencontainer:host-sync-request') {
+        void this.#handleHostSyncRequest(message);
+      }
     };
     this.#worker.addEventListener('message', this.#hostListener);
     this.#worker.addEventListener('error', (event) => {
@@ -91,6 +104,35 @@ export class BrowserGuestWorkerAuthority {
     this.#closed = true;
     this.#destroyWorker();
     return true;
+  }
+
+  async #handleHostSyncRequest(message) {
+    const shared = message.shared;
+    try {
+      if (!(shared instanceof SharedArrayBuffer)) {
+        throw ocError(ErrorCodes.INVALID_ARGUMENT, 'Guest sync request is missing SharedArrayBuffer mailbox');
+      }
+      if (typeof this.#syncRequestHandler !== 'function') {
+        throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'No synchronous guest host handler is installed', {
+          method: message.method
+        });
+      }
+      const value = await this.#syncRequestHandler(message.method, message.payload);
+      settleSyncRpcMailbox(shared, { ok: true, value }, { maxPayloadBytes: this.#maxSyncResponseBytes });
+      this.#diagnostics?.record('browser-worker.sync-response', {
+        method: message.method,
+        ok: true
+      });
+    } catch (error) {
+      try {
+        settleSyncRpcMailbox(shared, { ok: false, error }, { maxPayloadBytes: this.#maxSyncResponseBytes });
+      } catch {}
+      this.#diagnostics?.record('browser-worker.sync-response', {
+        method: message.method,
+        ok: false,
+        error: error?.message
+      });
+    }
   }
 
   async #handleHostRequest(message) {

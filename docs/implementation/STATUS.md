@@ -402,3 +402,20 @@ resolved path   /workspace/node_modules/lightningcss-wasm/wasm-node.mjs
 The redirect-capability bypass present in the earlier fetch implementation is closed: automatic redirect following has been replaced by fail-closed manual hop authorization.
 
 This does not yet prove broad npm corpus compatibility, lifecycle scripts, peer/optional policy or persistent PackageContent in OPFS.
+
+
+## SharedArrayBuffer synchronous guest RPC
+
+The browser guest path now includes a bounded synchronous Worker -> host RPC primitive intended for Node-style synchronous compatibility APIs:
+
+- Dedicated Worker allocates a bounded SharedArrayBuffer mailbox;
+- guest posts the mailbox plus method/payload to the page-side BrowserGuestWorkerAuthority;
+- page authority executes an explicit sync host handler, serializes a bounded JSON response and commits it with Atomics.store/notify;
+- guest blocks with Atomics.wait and a hard timeout, then decodes success/error;
+- oversized responses fail with `OC_OUTPUT_LIMIT`;
+- missing/unsupported host handlers fail closed;
+- async WorkerRpcAuthority remains separately bounded and timeout-protected.
+
+The Chrome product-path court reads `/workspace/src/sync.txt` synchronously from native guest ESM through this SAB path, edits the VFS, restarts publication/Worker and proves the second generation returns the new value.
+
+This primitive does not by itself claim complete Node synchronous builtin coverage. It is the transport needed to implement those APIs without embedding a second JS engine.

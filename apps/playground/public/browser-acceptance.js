@@ -28,14 +28,18 @@ async function run() {
     'package.json': JSON.stringify({ name: 'browser-acceptance', type: 'module' }),
     'src/dep.js': 'export let value=40; export function bump(){ value += 1 }',
     'src/dynamic.js': 'export default 1',
+    'src/sync.txt': 'sync-one',
+    'src/sync.js': "export const syncValue = globalThis.__opencontainer_sync_host_call__('fs.readFile',{path:'/workspace/src/sync.txt'});",
     'src/late.js': 'export default 2',
     'src/main.js': [
       "import { value, bump } from './dep.js';",
+      "import { syncValue } from './sync.js';",
       'bump();',
       "const literal = await import('./dynamic.js');",
       "const latePath = './late.js';",
       'const late = await import(latePath);',
       'export const result = value + literal.default + late.default;',
+      'export { syncValue };',
       'export const moduleUrl = import.meta.url;'
     ].join('\n')
   });
@@ -55,14 +59,19 @@ async function run() {
   const entryA = publicationA.moduleURL('./main.js', '/workspace/src/entry.mjs').href;
   const workerA = new BrowserGuestWorkerAuthority({
     publication: publicationA,
-    diagnostics: runtime.diagnostics
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: async (method, payload) => {
+      if (method === 'fs.readFile') return runtime.fs.readFile(payload?.path);
+      throw new Error('Unsupported sync host method: ' + method);
+    }
   });
   workerA.start();
   stage('worker-a-started', { entryA });
 
-  const first = await workerA.execute(entryA, { exportNames: ['result', 'moduleUrl'] });
+  const first = await workerA.execute(entryA, { exportNames: ['result', 'moduleUrl', 'syncValue'] });
   stage('worker-a-executed', { result: first.exports.result });
   assert(first.exports.result === 44, 'first native ESM execution result mismatch');
+  assert(first.exports.syncValue === 'sync-one', 'first synchronous host read mismatch');
   assert(first.workerCrossOriginIsolated === true, 'guest worker is not cross-origin isolated');
   assert(first.exports.moduleUrl.includes('browser-acceptance-a'), 'module URL lost publication session');
 
@@ -73,7 +82,10 @@ async function run() {
   assert(edgeResponse.headers.get('x-opencontainer-edge') === 'service-worker', 'module was not served by disposable service-worker edge');
   assert(edgeResponse.headers.get('x-opencontainer-session') === 'browser-acceptance-a', 'publication session header mismatch');
 
-  runtime.fs.beginTransaction().writeFile('src/dep.js', 'export let value=90; export function bump(){ value += 1 }').commit();
+  runtime.fs.beginTransaction()
+    .writeFile('src/dep.js', 'export let value=90; export function bump(){ value += 1 }')
+    .writeFile('src/sync.txt', 'sync-two')
+    .commit();
 
   const publicationB = runtime.packages.createNativeEsmPublication({
     baseURL,
@@ -87,14 +99,19 @@ async function run() {
   const entryB = publicationB.moduleURL('./main.js', '/workspace/src/entry.mjs').href;
   const workerB = new BrowserGuestWorkerAuthority({
     publication: publicationB,
-    diagnostics: runtime.diagnostics
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: async (method, payload) => {
+      if (method === 'fs.readFile') return runtime.fs.readFile(payload?.path);
+      throw new Error('Unsupported sync host method: ' + method);
+    }
   });
   workerB.start();
   stage('worker-b-started', { entryB });
 
-  const second = await workerB.execute(entryB, { exportNames: ['result', 'moduleUrl'] });
+  const second = await workerB.execute(entryB, { exportNames: ['result', 'moduleUrl', 'syncValue'] });
   stage('worker-b-executed', { result: second.exports.result });
   assert(second.exports.result === 94, 'edited generation was not visible in restarted guest worker');
+  assert(second.exports.syncValue === 'sync-two', 'restarted Worker did not observe synchronous host read from new generation');
   assert(second.exports.moduleUrl.includes('browser-acceptance-b'), 'new publication session was not used');
 
   workerA.close();
@@ -213,6 +230,8 @@ async function run() {
     pageCrossOriginIsolated: globalThis.crossOriginIsolated,
     firstResult: first.exports.result,
     secondResult: second.exports.result,
+    syncRpcFirst: first.exports.syncValue,
+    syncRpcSecond: second.exports.syncValue,
     staleStatus: stale.status,
     serviceWorkerEdge: edgeResponse.headers.get('x-opencontainer-edge'),
     opfsRealBrowser: true,

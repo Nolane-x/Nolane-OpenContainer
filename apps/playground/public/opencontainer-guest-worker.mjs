@@ -1,3 +1,5 @@
+import { createSyncRpcMailbox, waitSyncRpcMailbox } from '/packages/process/src/sync-rpc.js';
+
 const pendingHost = new Map();
 let nextHostId = 0;
 
@@ -8,6 +10,17 @@ function hostRequest(method, payload) {
     self.postMessage({ type: 'opencontainer:host-request', id, method, payload });
   });
 }
+
+globalThis.__opencontainer_sync_host_call__ = (method, payload) => {
+  const shared = createSyncRpcMailbox();
+  self.postMessage({
+    type: 'opencontainer:host-sync-request',
+    method: String(method),
+    payload,
+    shared
+  });
+  return waitSyncRpcMailbox(shared, { timeoutMs: 5000 });
+};
 
 globalThis.__opencontainer_dynamic_import__ = async (referrer, specifier) => {
   const target = await hostRequest('resolve-dynamic', { referrer, specifier: String(specifier) });
