@@ -1,0 +1,55 @@
+name: Bootstrap native ESM lexer lock
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - toolchain/bootstrap/PIN_ESM_LEXER_3_0_2
+
+permissions:
+  contents: write
+
+jobs:
+  pin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+          registry-url: https://registry.npmjs.org
+      - name: Pin lexer in package-env workspace
+        run: |
+          set -euo pipefail
+          npm install --save-exact --ignore-scripts -w @nolane/opencontainer-package-env es-module-lexer@3.0.2
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from 'node:fs/promises'
+          import { createHash } from 'node:crypto'
+          const lockBytes=await readFile('package-lock.json')
+          const lock=JSON.parse(lockBytes)
+          const meta=lock.packages['node_modules/es-module-lexer']
+          const receipt={
+            schemaVersion:1,
+            status:'LOCKED',
+            observedAt:new Date().toISOString(),
+            package:'es-module-lexer',
+            version:meta.version,
+            integrity:meta.integrity,
+            resolved:meta.resolved,
+            dependencyCount:Object.keys(meta.dependencies??{}).length,
+            packageLockSha256:createHash('sha256').update(lockBytes).digest('hex')
+          }
+          await writeFile('toolchain/artifacts/esm-lexer-3.0.2.json',JSON.stringify(receipt,null,2)+'\n')
+          NODE
+      - name: Commit lock
+        run: |
+          set -euo pipefail
+          git config user.name "opencontainer-artifact-bot"
+          git config user.email "opencontainer-artifact-bot@users.noreply.github.com"
+          git add packages/package-env/package.json package-lock.json toolchain/artifacts/esm-lexer-3.0.2.json
+          git diff --cached --exit-code && exit 0
+          git commit -m "build: pin native ESM lexer 3.0.2"
+          git push origin HEAD:main

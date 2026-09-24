@@ -1,0 +1,2 @@
+Pin es-module-lexer@3.0.2 as the syntax-discovery dependency for browser-native ESM publication.
+Resolution authority remains OpenContainer NodeResolver; the lexer must never become a second resolver.
