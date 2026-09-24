@@ -37,13 +37,27 @@ export const RolldownWasi129Profile = Object.freeze({
   })
 });
 
+export const LightningCssWasm133Profile = Object.freeze({
+  id: 'lightningcss-wasm-1.33.0',
+  package: 'lightningcss-wasm',
+  version: '1.33.0',
+  tarballByteLength: 3826518,
+  tarballSha256: '266866c1b0efd7ca5307fe312411e4f1895b997086fb76f392ec5b60aadf31c8',
+  fileName: 'lightningcss_node.wasm',
+  byteLength: 15844785,
+  sha256: '479c64bb651164b6fd9a834055e65ab507d3e39f8d8a8b683b7e83787a69e7b1',
+  imports: 48,
+  exports: 13,
+  importNamespaces: Object.freeze({ env: 48 })
+});
+
 export class WasmArtifactManager {
   #profiles = new Map();
   #cache = new Map();
   #inflight = new Map();
   #compiler;
 
-  constructor({ profiles = [RolldownWasi129Profile], compiler = WebAssembly.compile } = {}) {
+  constructor({ profiles = [RolldownWasi129Profile, LightningCssWasm133Profile], compiler = WebAssembly.compile } = {}) {
     assertOc(typeof compiler === 'function', ErrorCodes.INVALID_ARGUMENT, 'WASM compiler function is required');
     this.#compiler = compiler;
     for (const profile of profiles) this.register(profile);

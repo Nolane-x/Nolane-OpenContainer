@@ -76,7 +76,7 @@ Evidence boundary:
 
 - archive/security semantics are contract-tested;
 - broad npm compatibility, PAX/GNU long-name profiles and registry corpus acceptance remain open;
-- exact `lightningcss-wasm@1.33.0` local bytes remain open because this execution environment could not resolve the npm registry.
+- exact `lightningcss-wasm@1.33.0` npm tarball is now retained under `toolchain/vendor/`, with tarball identity and inner WASM compile/shape re-verified on every CI run; browser execution remains open.
 
 
 ## ResolverIndex / VirtualNodeModulesFS advancement
@@ -223,3 +223,20 @@ Implementation now includes a WasmArtifactManager that verifies byte length + SH
 The exact binary is not committed into the source tree in this wave. The machine-readable provenance receipt is committed under `toolchain/artifacts/`.
 
 Evidence boundary remains strict: exact-byte local compile is now reverified, but browser execution, WASI/N-API instantiation, Rolldown JS-binding integration and VITE-C1 remain OPEN.
+
+
+## Lightning CSS retained-artifact promotion
+
+P6-02 has materially advanced from external identity only to retained local executable artifact evidence:
+
+- exact npm package `lightningcss-wasm@1.33.0` retained as `toolchain/vendor/lightningcss-wasm-1.33.0.tgz`;
+- tarball bytes `3,826,518`;
+- tarball SHA-256 `266866c1b0efd7ca5307fe312411e4f1895b997086fb76f392ec5b60aadf31c8`;
+- inner `lightningcss_node.wasm` bytes `15,844,785`;
+- inner WASM SHA-256 `479c64bb651164b6fd9a834055e65ab507d3e39f8d8a8b683b7e83787a69e7b1`;
+- WebAssembly compile PASS;
+- 48 imports / 13 exports / `env=48`.
+
+CI now reopens the retained tarball, validates its exact digest, extracts the WASM through OpenContainer's hardened tar reader, revalidates the inner digest and compiles it through WasmArtifactManager.
+
+This closes the local-byte/compile portion only. Lightning CSS JS glue execution, browser execution and VITE-C1 remain OPEN.

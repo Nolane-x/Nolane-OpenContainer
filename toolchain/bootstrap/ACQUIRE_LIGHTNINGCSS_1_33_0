@@ -1,5 +1,0 @@
-Acquire exactly lightningcss-wasm@1.33.0 from the npm registry.
-Expected npm tarball SHA-256:
-266866c1b0efd7ca5307fe312411e4f1895b997086fb76f392ec5b60aadf31c8
-
-This bootstrap trigger must be removed after the verified artifact is retained.
