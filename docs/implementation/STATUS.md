@@ -295,3 +295,31 @@ The court requires:
 - explicit WASI binding disposal.
 
 This is strong local integration evidence for Rolldown JS glue + WASI/N-API/thread runtime. It is not yet a clean unmanaged-browser PC-B receipt and does not by itself close VITE-C1.
+
+
+## VITE-C1 exact native-oracle court
+
+The exact C1 root composition is now lock-pinned:
+
+- `vite@8.3.0`;
+- `rolldown@1.2.9`;
+- `lightningcss -> npm:lightningcss-wasm@1.33.0`.
+
+The C1 oracle intentionally uses no native Rolldown fallback. Before importing Vite it sets the generated N-API loader to strict `wasm32-wasi`, re-hashes the installed Rolldown WASI loader/payload against the retained official artifact, and re-hashes the installed Lightning CSS WASM against the retained exact package.
+
+The production-build court then requires:
+
+- a TypeScript `vite.config.ts` loaded through Vite's default config-loader path;
+- a local transform plugin that materially changes output;
+- default client `build.cssMinify === 'lightningcss'`;
+- TypeScript application transform;
+- emitted asset;
+- emitted JS source map;
+- minified CSS;
+- manifest generation;
+- rebuild after source edit;
+- config reload after config edit;
+- byte-deterministic normalized dist output across two identical final builds;
+- observed Rolldown binding target `wasm32-wasi`.
+
+Passing this court closes the exact-Node/native-oracle composition of VITE-C1. A separate OpenContainer guest/browser execution court remains required before VITE-C1 is promoted at product level.

@@ -1,6 +1,0 @@
-Pin the exact C1 root toolchain:
-vite@8.3.0
-rolldown@1.2.9
-lightningcss -> npm:lightningcss-wasm@1.33.0
-
-The resulting npm lockfile is the source of truth for the exact native-oracle C1 composition.
