@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "status": "LOCKED",
+  "observedAt": "2026-09-24T14:45:41.923Z",
+  "roots": {
+    "@emnapi/core": "2.0.0-alpha.5",
+    "@emnapi/runtime": "2.0.0-alpha.5",
+    "@napi-rs/wasm-runtime": "1.2.4"
+  },
+  "selected": {
+    "node_modules/@emnapi/core": {
+      "version": "2.0.0-alpha.5",
+      "integrity": "sha512-DbeLFquQJyYGwM3LzPdjvb4IRmAAQuTzEmqUGtIAYxlAO4ArfUZ7WMytLWDSsCAYm6MZJNeojaawQQiFrFVehg==",
+      "dependencies": {
+        "@emnapi/wasi-threads": "2.1.0",
+        "tslib": "^2.4.0"
+      },
+      "peerDependencies": {}
+    },
+    "node_modules/@emnapi/runtime": {
+      "version": "2.0.0-alpha.5",
+      "integrity": "sha512-SS4jUXRklsrPKTEtW92WHdneh9QBrZGmRyeYEac2ktLN3ie1wd/BrkBbk4DqPWKhjSFfrR8NClXwMlfZ73m60A==",
+      "dependencies": {
+        "tslib": "^2.4.0"
+      },
+      "peerDependencies": {}
+    },
+    "node_modules/@emnapi/wasi-threads": {
+      "version": "2.1.0",
+      "integrity": "sha512-DM18NXgQ5coifswrwhFgrqeW/UiFRaLj0aLKU0cp0FoYjEfP/hj/yUeF+Hz754ViG+jQmG2HIeDCUeQsPnRwOA==",
+      "dependencies": {
+        "tslib": "^2.4.0"
+      },
+      "peerDependencies": {}
+    },
+    "node_modules/@napi-rs/wasm-runtime": {
+      "version": "1.2.4",
+      "integrity": "sha512-AJxoUD2/15ESHbvpcyjU274nsAPLuOtPHCk0vKJM5pj//Fg/B1FXNWjPnXTT9PymCYYiHo4zPj0ZomXBKhoy7g==",
+      "dependencies": {
+        "@tybys/wasm-util": "^0.10.3"
+      },
+      "peerDependencies": {
+        "@emnapi/core": "^1.7.1 || ^2.0.0-alpha.4",
+        "@emnapi/runtime": "^1.7.1 || ^2.0.0-alpha.4"
+      }
+    },
+    "node_modules/@tybys/wasm-util": {
+      "version": "0.10.4",
+      "integrity": "sha512-W3c4gRigFS0T/Ma4qIYF3GDAc5AQdHb1yL5znJT1Zv1YaD9Kitx656wBjvr19qbiosmZT8lWDM5BEMynUqX65A==",
+      "dependencies": {
+        "tslib": "^2.4.0"
+      },
+      "peerDependencies": {}
+    },
+    "node_modules/tslib": {
+      "version": "2.8.1",
+      "integrity": "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==",
+      "dependencies": {},
+      "peerDependencies": {}
+    }
+  },
+  "packageLockSha256": "36f17f51e0f123fe65e1a7757b74ba751a4066513aa71823f4f5e9d7cc600d0f"
+}
