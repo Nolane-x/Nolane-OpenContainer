@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "status": "LOCKED",
+  "observedAt": "2026-09-24T14:56:42.837Z",
+  "roots": {
+    "vite": "8.3.0",
+    "rolldown": "1.2.9",
+    "lightningcss": "npm:lightningcss-wasm@1.33.0"
+  },
+  "selected": {
+    "vite": {
+      "version": "8.3.0",
+      "resolved": "https://registry.npmjs.org/vite/-/vite-8.3.0.tgz",
+      "integrity": "sha512-lhZBVvEHefgE+HQZC9O7EBJgCU/nVzFNl7vkS4RE0APtWLP02/8QVIkQtzBxPquh7lq5/78NHipTj7ODQ6XuyQ==",
+      "dependencies": {
+        "lightningcss": "^1.33.0",
+        "picomatch": "^4.0.7",
+        "postcss": "^8.5.28",
+        "rolldown": "~1.2.6",
+        "tinyglobby": "^0.2.17"
+      },
+      "optionalDependencies": {
+        "fsevents": "~2.3.3"
+      }
+    },
+    "rolldown": {
+      "version": "1.2.9",
+      "resolved": "https://registry.npmjs.org/rolldown/-/rolldown-1.2.9.tgz",
+      "integrity": "sha512-hx/Pv0N1haXRb11qkfnK5MXB/iqr7i0yjWQqmO9uHqZpBgQSqzc8UsSnEpalsh+j1I8qQ2CkXAkJC8Br3dKSlg==",
+      "dependencies": {
+        "@oxc-project/types": "=0.150.0",
+        "@rolldown/pluginutils": "^1.0.0"
+      },
+      "optionalDependencies": {
+        "@rolldown/binding-android-arm-eabi": "1.2.9",
+        "@rolldown/binding-android-arm64": "1.2.9",
+        "@rolldown/binding-darwin-arm64": "1.2.9",
+        "@rolldown/binding-darwin-x64": "1.2.9",
+        "@rolldown/binding-freebsd-x64": "1.2.9",
+        "@rolldown/binding-linux-arm-gnueabihf": "1.2.9",
+        "@rolldown/binding-linux-arm64-gnu": "1.2.9",
+        "@rolldown/binding-linux-arm64-musl": "1.2.9",
+        "@rolldown/binding-linux-ppc64-gnu": "1.2.9",
+        "@rolldown/binding-linux-s390x-gnu": "1.2.9",
+        "@rolldown/binding-linux-x64-gnu": "1.2.9",
+        "@rolldown/binding-linux-x64-musl": "1.2.9",
+        "@rolldown/binding-openharmony-arm64": "1.2.9",
+        "@rolldown/binding-win32-arm64-msvc": "1.2.9",
+        "@rolldown/binding-win32-x64-msvc": "1.2.9"
+      }
+    },
+    "lightningcss": {
+      "version": "1.33.0",
+      "resolved": "https://registry.npmjs.org/lightningcss-wasm/-/lightningcss-wasm-1.33.0.tgz",
+      "integrity": "sha512-OLAtqEyInBSVWjPrTjpLzcZUMUHO0q+2PFBXKr86nxZOu0P38givj/ZMtRaZ0d38pMTb9wQx+LtaLtHclv+sEA==",
+      "dependencies": {
+        "napi-wasm": "^1.0.1"
+      },
+      "optionalDependencies": {}
+    },
+    "@rolldown/pluginutils": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/@rolldown/pluginutils/-/pluginutils-1.0.1.tgz",
+      "integrity": "sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==",
+      "dependencies": {},
+      "optionalDependencies": {}
+    },
+    "@oxc-project/types": {
+      "version": "0.150.0",
+      "resolved": "https://registry.npmjs.org/@oxc-project/types/-/types-0.150.0.tgz",
+      "integrity": "sha512-rDS5/31E9HfPl/CIzGrn0DOlvBbXFseQ5URJ9sYMfstbKLD/c6Gm9vmRzRGDdAXyOIL4zmO37lc9RIwYqVruZw==",
+      "dependencies": {},
+      "optionalDependencies": {}
+    },
+    "picocolors": {
+      "version": "1.1.1",
+      "resolved": "https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz",
+      "integrity": "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==",
+      "dependencies": {},
+      "optionalDependencies": {}
+    },
+    "postcss": {
+      "version": "8.5.28",
+      "resolved": "https://registry.npmjs.org/postcss/-/postcss-8.5.28.tgz",
+      "integrity": "sha512-RRuzqDtt5Y9h3quz5hWhK+TPnsmVs6WwSU6LkJMeY4HstUEDuYTG8UJSdawMRzmzAtV+KEoG8N3Qg2qLy5vM/A==",
+      "dependencies": {
+        "nanoid": "^3.3.18",
+        "picocolors": "^1.1.1",
+        "source-map-js": "^1.2.1"
+      },
+      "optionalDependencies": {}
+    },
+    "tinyglobby": {
+      "version": "0.2.17",
+      "resolved": "https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.17.tgz",
+      "integrity": "sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==",
+      "dependencies": {
+        "fdir": "^6.5.0",
+        "picomatch": "^4.0.4"
+      },
+      "optionalDependencies": {}
+    }
+  },
+  "packageLockSha256": "9b43faa78fc88dd6d2cc018463933d00ccb82a68df597236b64bc7176b284e97"
+}
