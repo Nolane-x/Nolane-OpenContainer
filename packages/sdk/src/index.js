@@ -14,7 +14,7 @@ export class OpenContainer {
     const resources=new ResourceGovernor(options.resources);
     const fs=new MemoryVFS();
     const process=new ProcessSupervisor({resources,diagnostics,outputLimitBytes:options.processOutputLimitBytes});
-    const packages=new PackageGraphAuthority();
+    const packages=new PackageGraphAuthority({fs});
     const net=new NetworkAuthority(options.network);
     const preview=new PreviewAuthority();
     const snapshots=new MemoryPersistenceAuthority({fs});

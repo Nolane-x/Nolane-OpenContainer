@@ -1,4 +1,6 @@
 import { ErrorCodes, assertOc } from '../../protocol/src/index.js';
+import { VirtualNodeModulesFS } from './virtual-node-modules.js';
+import { NodeResolver } from './resolver.js';
 
 function stableId(prefix,value){
   let h1=0x811c9dc5,h2=0x9e3779b9;
@@ -8,9 +10,14 @@ function stableId(prefix,value){
 function packageNameFromPath(path){const marker='node_modules/';const index=path.lastIndexOf(marker);return index>=0?path.slice(index+marker.length):path;}
 
 export class PackageGraphAuthority {
-  #generation=0;#graph=null;
+  #generation=0;#graph=null;#baseFs=null;#nodeModules=null;#resolver=null;
+
+  constructor({fs=null}={}){this.#baseFs=fs;}
   get generation(){return this.#generation;}
   get graph(){return this.#graph;}
+  get nodeModules(){return this.#nodeModules;}
+  get resolver(){return this.#resolver;}
+
   compile(lockfile){
     const doc=typeof lockfile==='string'?JSON.parse(lockfile):structuredClone(lockfile);
     assertOc(doc&&[2,3].includes(doc.lockfileVersion),ErrorCodes.INVALID_ARGUMENT,'Only package-lock v2/v3 is supported in Wave 1');
@@ -30,6 +37,20 @@ export class PackageGraphAuthority {
     this.#graph=Object.freeze({version:1,lockfileVersion:doc.lockfileVersion,nodes:Object.freeze(nodes),bins:Object.freeze(bins),rootName:doc.name,rootVersion:doc.version});
     this.#generation++;return this.#graph;
   }
+
+  mountCatalog({packages=[],symlinks=[]}={}){
+    assertOc(this.#baseFs,ErrorCodes.INVALID_STATE,'Package catalog requires a bound workspace VFS');
+    this.#nodeModules=new VirtualNodeModulesFS({baseFs:this.#baseFs,packages,symlinks});
+    this.#resolver=new NodeResolver({fs:this.#nodeModules});
+    return Object.freeze({fs:this.#nodeModules,resolver:this.#resolver});
+  }
+
+  resolve(specifier,issuer,options){
+    assertOc(this.#resolver,ErrorCodes.INVALID_STATE,'Package catalog is not mounted');
+    return this.#resolver.resolve(specifier,issuer,options);
+  }
 }
 
 export { PackageArtifactAuthority, verifySri, inspectTarArchive } from './artifact-authority.js';
+export { VirtualNodeModulesFS } from './virtual-node-modules.js';
+export { NodeResolver, NODE_BUILTINS } from './resolver.js';

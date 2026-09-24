@@ -77,3 +77,30 @@ Evidence boundary:
 - archive/security semantics are contract-tested;
 - broad npm compatibility, PAX/GNU long-name profiles and registry corpus acceptance remain open;
 - exact `lightningcss-wasm@1.33.0` local bytes remain open because this execution environment could not resolve the npm registry.
+
+
+## ResolverIndex / VirtualNodeModulesFS advancement
+
+Implemented behind S4/S2:
+
+- memory-backed VirtualNodeModulesFS composed over WorkspaceFS;
+- readFile/readdir/stat/lstat/readlink/realpath projection;
+- package and .bin/workspace-style symlink projection;
+- Node-style nearest nested node_modules lookup;
+- package self-reference and package imports;
+- package exports exact/pattern/conditional targets;
+- separate CommonJS and ESM relative-resolution behavior;
+- CommonJS .js/.json extension and folder/index fallback;
+- ESM mandatory exact relative filenames and directory-import rejection;
+- no-addons profile rejects native .node targets;
+- default no-addons condition sets: node+import for ESM, node+require+module-sync for CJS;
+- CommonJS cache identity by canonical filename;
+- ESM cache identity by canonical file URL including query/fragment;
+- resolver cache is generation-keyed so workspace mutation cannot silently reuse an older result.
+
+Evidence boundary:
+
+- the selected semantic court is contract-tested in OpenContainer and follows the frozen Node 24 profile;
+- this does not yet claim the full Node 24 resolver court;
+- syntax detection, JSON import attributes, Wasm modules, custom conditions fuzzing, Windows/path edge cases, preserve-symlinks-main and full Node error parity remain open;
+- module resolution is now implemented, but full CJS/ESM module execution/loading remains a separate gate.

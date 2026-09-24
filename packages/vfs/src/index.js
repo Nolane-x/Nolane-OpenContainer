@@ -46,10 +46,26 @@ export class MemoryVFS {
     for(const [path,value] of Object.entries(files))tx.writeFile(path,value);
     return tx.commit();
   }
-  stat(path){
+  lstat(path){
     const resolved=normalize(path);const entry=this.#entries.get(resolved);
     if(!entry)throw ocError(ErrorCodes.NOT_FOUND,'Path not found',{path:resolved});
     return Object.freeze({path:resolved,type:entry.type,size:entry.type==='file'?entry.data.byteLength:0,target:entry.target});
+  }
+  stat(path){
+    const resolved=this.#resolve(path);const entry=this.#entries.get(resolved);
+    if(!entry)throw ocError(ErrorCodes.NOT_FOUND,'Path not found',{path:resolved});
+    return Object.freeze({path:resolved,type:entry.type,size:entry.type==='file'?entry.data.byteLength:0,target:entry.target});
+  }
+  readlink(path){
+    const resolved=normalize(path);const entry=this.#entries.get(resolved);
+    if(!entry)throw ocError(ErrorCodes.NOT_FOUND,'Path not found',{path:resolved});
+    if(entry.type!=='symlink')throw ocError(ErrorCodes.INVALID_ARGUMENT,'Path is not a symlink',{path:resolved});
+    return entry.target;
+  }
+  realpath(path){
+    const resolved=this.#resolve(path);
+    if(!this.#entries.has(resolved))throw ocError(ErrorCodes.NOT_FOUND,'Path not found',{path:resolved});
+    return resolved;
   }
   readFile(path,{encoding='utf8'}={}){
     const resolved=this.#resolve(path);const entry=this.#entries.get(resolved);
@@ -59,7 +75,7 @@ export class MemoryVFS {
     return encoding===null?data:decoder.decode(data);
   }
   readdir(path=WORKSPACE){
-    const resolved=normalize(path);const entry=this.#entries.get(resolved);
+    const resolved=this.#resolve(path);const entry=this.#entries.get(resolved);
     if(!entry)throw ocError(ErrorCodes.NOT_FOUND,'Directory not found',{path:resolved});
     if(entry.type!=='dir')throw ocError(ErrorCodes.NOT_DIRECTORY,'Path is not a directory',{path:resolved});
     const prefix=resolved==='/'?'/':resolved+'/';
@@ -71,7 +87,7 @@ export class MemoryVFS {
     }
     return [...children].sort();
   }
-  exists(path){try{return this.#entries.has(normalize(path));}catch{return false;}}
+  exists(path){try{this.stat(path);return true;}catch{return false;}}
   snapshot(){
     const entries=[];
     for(const [path,entry] of this.#entries){
@@ -94,10 +110,19 @@ export class MemoryVFS {
     this.#entries=next;this.#generation++;return this.#generation;
   }
   #resolve(path,depth=0){
-    if(depth>16)throw ocError(ErrorCodes.INVALID_ARGUMENT,'Symlink resolution depth exceeded');
-    const resolved=normalize(path);const entry=this.#entries.get(resolved);
-    if(!entry||entry.type!=='symlink')return resolved;
-    return this.#resolve(entry.target,depth+1);
+    if(depth>32)throw ocError(ErrorCodes.INVALID_ARGUMENT,'Symlink resolution depth exceeded');
+    const resolved=normalize(path);
+    const parts=resolved.split('/').filter(Boolean);
+    let prefix='';
+    for(let index=0;index<parts.length;index++){
+      prefix+='/'+parts[index];
+      const entry=this.#entries.get(prefix);
+      if(entry?.type!=='symlink')continue;
+      const rest=parts.slice(index+1).join('/');
+      const next=rest?entry.target+'/'+rest:entry.target;
+      return this.#resolve(next,depth+1);
+    }
+    return resolved;
   }
   _commit(baseGeneration,operations){
     if(baseGeneration!==this.#generation)throw ocError(ErrorCodes.STALE_GENERATION,'VFS transaction is stale',{baseGeneration,currentGeneration:this.#generation});
