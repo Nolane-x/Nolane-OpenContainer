@@ -14,6 +14,8 @@ import {
 } from 'node:fs/promises';
 import { dirname, join, relative } from 'node:path';
 import { createRequire } from 'node:module';
+import { inspectTarArchive } from '../packages/package-env/src/index.js';
+import { verifyRetainedRolldownBrowserPackage } from '../packages/toolchain/src/index.js';
 
 const require = createRequire(import.meta.url);
 
@@ -90,18 +92,53 @@ export { typed, plugin, config }
 `;
 }
 
+async function materializeRetainedRolldownBinding(root) {
+  const tarball = new Uint8Array(
+    await readFile(new URL('../toolchain/vendor/rolldown-browser-1.2.9.tgz', import.meta.url))
+  );
+  await verifyRetainedRolldownBrowserPackage(tarball);
+  const archive = await inspectTarArchive(tarball, {
+    requiredPrefix: 'package/',
+    maxFiles: 5000,
+    maxUnpackedBytes: 96 * 1024 * 1024
+  });
+  const bindingRoot = join(root, '.rolldown-wasi-binding');
+  await mkdir(bindingRoot, { recursive: true });
+  for (const entry of archive.entries) {
+    if (entry.type !== 'file' || !entry.path.startsWith('package/dist/')) continue;
+    const relativePath = entry.path.slice('package/dist/'.length);
+    const target = join(bindingRoot, relativePath);
+    await mkdir(dirname(target), { recursive: true });
+    await writeFile(target, entry.data);
+  }
+  const loaderPath = join(bindingRoot, 'rolldown-binding.wasi.cjs');
+  const wasmPath = join(bindingRoot, 'rolldown-binding.wasm32-wasi.wasm');
+  assert.equal(
+    await hashFile(loaderPath),
+    '5f4ad0a90dd97b1e5d96517c31068575a6e7b6163a54172a8d39b9753d2b2457'
+  );
+  assert.equal(
+    await hashFile(wasmPath),
+    '629aa10c37a9920cd5729a35af148983c881f4ff9edd6368a7d63b5acbf89dc2'
+  );
+  return { bindingRoot, loaderPath, wasmPath };
+}
+
 test('VITE-C1 exact native oracle closes production-build composition', { timeout: 120000 }, async () => {
   const previous = {
+    nativeLibraryPath: process.env.NAPI_RS_NATIVE_LIBRARY_PATH,
     forceWasi: process.env.NAPI_RS_FORCE_WASI,
     wasiFlavor: process.env.NAPI_RS_WASI_FLAVOR,
     versionCheck: process.env.NAPI_RS_ENFORCE_VERSION_CHECK
   };
-  process.env.NAPI_RS_FORCE_WASI = 'error';
-  process.env.NAPI_RS_WASI_FLAVOR = 'wasm32-wasi';
-  process.env.NAPI_RS_ENFORCE_VERSION_CHECK = '1';
 
   const root = mkdtempSync(join(process.cwd(), '.tmp-vite-c1-'));
   try {
+    const retainedBinding = await materializeRetainedRolldownBinding(root);
+    process.env.NAPI_RS_NATIVE_LIBRARY_PATH = retainedBinding.loaderPath;
+    delete process.env.NAPI_RS_FORCE_WASI;
+    delete process.env.NAPI_RS_WASI_FLAVOR;
+    process.env.NAPI_RS_ENFORCE_VERSION_CHECK = '1';
     // Prove the installed build inputs still match the frozen executable artifacts.
     const vitePackage = JSON.parse(await readFile(require.resolve('vite/package.json'), 'utf8'));
     assert.equal(vitePackage.version, '8.3.0');
@@ -111,12 +148,9 @@ test('VITE-C1 exact native oracle closes production-build composition', { timeou
     const rolldownPackage = JSON.parse(await readFile(rolldownPackagePath, 'utf8'));
     assert.equal(rolldownPackage.version, '1.2.9');
     assert.equal(
-      await hashFile(join(rolldownRoot, 'dist/rolldown-binding.wasm32-wasi.wasm')),
-      '629aa10c37a9920cd5729a35af148983c881f4ff9edd6368a7d63b5acbf89dc2'
-    );
-    assert.equal(
-      await hashFile(join(rolldownRoot, 'dist/rolldown-binding.wasi.cjs')),
-      '5f4ad0a90dd97b1e5d96517c31068575a6e7b6163a54172a8d39b9753d2b2457'
+      process.env.NAPI_RS_NATIVE_LIBRARY_PATH,
+      retainedBinding.loaderPath,
+      'Vite/Rolldown must use the retained exact WASI loader override'
     );
 
     const lightningPackagePath = require.resolve('lightningcss/package.json');
@@ -188,11 +222,13 @@ test('VITE-C1 exact native oracle closes production-build composition', { timeou
     assert.deepEqual(fourthSnapshot, thirdSnapshot);
 
     // The forced binding is the exact WASI target, never a native optional binding.
-    const binding = require(join(rolldownRoot, 'dist/rolldown-binding.wasi.cjs'));
+    const binding = require(retainedBinding.loaderPath);
     assert.equal(binding.__napiBindingTarget, 'wasm32-wasi');
     const dispose = binding[Symbol.for('napi.rs.wasi.dispose')];
     if (typeof dispose === 'function') await dispose.call(binding);
   } finally {
+    if (previous.nativeLibraryPath === undefined) delete process.env.NAPI_RS_NATIVE_LIBRARY_PATH;
+    else process.env.NAPI_RS_NATIVE_LIBRARY_PATH = previous.nativeLibraryPath;
     if (previous.forceWasi === undefined) delete process.env.NAPI_RS_FORCE_WASI;
     else process.env.NAPI_RS_FORCE_WASI = previous.forceWasi;
     if (previous.wasiFlavor === undefined) delete process.env.NAPI_RS_WASI_FLAVOR;
