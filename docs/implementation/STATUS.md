@@ -203,3 +203,23 @@ The package command path is no longer metadata-only:
 - ESM bins remain fail-closed until the ESM execution gate is implemented.
 
 This connects S4 package metadata to S3 process execution without creating a new product surface. Native host process execution is still not used.
+
+
+## Exact Rolldown artifact / WasmArtifactManager advancement
+
+The exact Rolldown v1.2.9 official GitHub Actions WASI artifact was re-downloaded during implementation and independently re-verified:
+
+- GitHub Actions artifact ID `10446514923`;
+- ZIP SHA-256 `277fb9d391a2a48763b70d5ec297a1c9a10e9ee4eb9619e797e68cd4cfc852c7`;
+- release payload `rolldown-binding.wasm32-wasi.wasm`;
+- payload size `10,845,151` bytes;
+- payload SHA-256 `629aa10c37a9920cd5729a35af148983c881f4ff9edd6368a7d63b5acbf89dc2`;
+- WebAssembly compile PASS;
+- 118 imports / 130 exports;
+- import namespace counts `env=93, emnapi=1, napi=2, wasi_snapshot_preview1=21, wasi=1`.
+
+Implementation now includes a WasmArtifactManager that verifies byte length + SHA-256 before compilation, validates compiled module shape, deduplicates concurrent compile work and caches only verified compiled modules.
+
+The exact binary is not committed into the source tree in this wave. The machine-readable provenance receipt is committed under `toolchain/artifacts/`.
+
+Evidence boundary remains strict: exact-byte local compile is now reverified, but browser execution, WASI/N-API instantiation, Rolldown JS-binding integration and VITE-C1 remain OPEN.

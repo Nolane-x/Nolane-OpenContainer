@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS-LOCAL-REVERIFIED",
+  "observedAt": "2026-09-24",
+  "source": {
+    "repository": "rolldown/rolldown",
+    "releaseVersion": "1.2.9",
+    "githubActionsArtifact": {
+      "id": 10446514923,
+      "name": "bindings-wasm32-wasip1-threads",
+      "downloadedFile": "rolldown-wasi-binding-v1.2.9.zip",
+      "sha256": "277fb9d391a2a48763b70d5ec297a1c9a10e9ee4eb9619e797e68cd4cfc852c7"
+    }
+  },
+  "payload": {
+    "file": "rolldown-binding.wasm32-wasi.wasm",
+    "bytes": 10845151,
+    "sha256": "629aa10c37a9920cd5729a35af148983c881f4ff9edd6368a7d63b5acbf89dc2",
+    "webAssemblyCompile": "PASS",
+    "imports": 118,
+    "exports": 130,
+    "importNamespaces": {
+      "env": 93,
+      "emnapi": 1,
+      "napi": 2,
+      "wasi_snapshot_preview1": 21,
+      "wasi": 1
+    }
+  },
+  "boundary": {
+    "browserExecution": "OPEN",
+    "wasiInstantiation": "OPEN",
+    "rolldownJsBindingIntegration": "OPEN",
+    "viteC1": "OPEN"
+  }
+}

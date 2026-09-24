@@ -19,3 +19,5 @@ export function certifyToolchain(candidate,profile=FrozenToolchains.vite830){
   }
   return Object.freeze({status:'EXACT_PROFILE',profile:Object.freeze({...candidate})});
 }
+
+export { WasmArtifactManager, RolldownWasi129Profile } from './wasm-artifact-manager.js';
