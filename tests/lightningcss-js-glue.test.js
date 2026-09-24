@@ -96,7 +96,7 @@ test('exact Lightning CSS JS glue executes and browser/default path matches node
     const nodeGlue = await import(pathToFileURL(join(root, 'wasm-node.mjs')).href + '?node=1');
     const browserGlue = await import(pathToFileURL(join(root, 'index.mjs')).href + '?browser=1');
     const wasmBytes = verified.getFile('package/lightningcss_node.wasm');
-    await browserGlue.default(wasmBytes);
+    await browserGlue.default(Promise.resolve(wasmBytes));
 
     const fixtures = [
       '.foo { color: #ff0000; margin: 0px 0px 0px 0px; }',
