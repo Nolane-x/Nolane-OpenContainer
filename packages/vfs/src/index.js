@@ -139,3 +139,5 @@ class VFSTransaction {
 }
 
 export { WORKSPACE };
+
+export { OpfsCheckpointAuthority } from './opfs-authority.js';

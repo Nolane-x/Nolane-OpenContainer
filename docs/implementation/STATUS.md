@@ -46,4 +46,13 @@ Evidence boundary:
 
 - this is protocol/authority implementation evidence;
 - it is **not** a clean-browser execution PASS;
-- arbitrary guest-JS Worker isolation, SharedArrayBuffer sync-RPC, OPFS and PC-A/PC-B remain open.
+- arbitrary guest-JS Worker isolation, SharedArrayBuffer sync-RPC and PC-A/PC-B remain open.
+
+OPFS advancement in this wave:
+
+- dual-slot OPFS checkpoint authority implemented behind S7/S2;
+- payload-first publication with SHA-256 identity;
+- alternating manifest A/B commit points;
+- recovery falls back from a corrupt/torn newest payload or manifest;
+- stale-generation publication is rejected;
+- current tests use a deterministic OPFS-handle model, so real-browser OPFS durability remains an open promotion gate.
