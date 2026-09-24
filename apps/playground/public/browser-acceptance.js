@@ -273,6 +273,24 @@ async function run() {
     progress: c1Progress
   });
 
+  stage('vite-publication-graph-start');
+  const viteNodeCompat = runtime.packages.createBrowserNodeCompat({
+    cwd: '/workspace',
+    env: { NODE_ENV: 'production' }
+  });
+  const vitePublication = runtime.packages.createNativeEsmPublication({
+    baseURL,
+    session: 'vite-c1-graph',
+    builtinSource: viteNodeCompat.builtinSource
+  });
+  const viteEntryUrl = vitePublication.moduleURL('vite', '/workspace/src/vite-probe.mjs');
+  const viteGraph = await vitePublication.graph(viteEntryUrl);
+  assert(viteGraph.modules.length > 10, 'Vite publication graph unexpectedly small');
+  stage('vite-publication-graph-pass', {
+    modules: viteGraph.modules.length,
+    entry: viteGraph.entryURL
+  });
+
   await runtime.terminate();
 
   return {
@@ -286,6 +304,7 @@ async function run() {
     opfsRealBrowser: true,
     browserPackageInstall: true,
     viteClosureInstall: true,
+    vitePublicationGraph: true,
     stages
   };
 }
