@@ -44,7 +44,8 @@ const required=[
   'tests/rolldown-browser-artifact.test.js',
   'tests/rolldown-browser-execution.test.js',
   'tests/vite-c1-oracle.test.js',
-  'tests/native-esm-publication.test.js','apps/playground/server.mjs'
+  'tests/native-esm-publication.test.js',
+  'packages/process/src/browser-guest-worker.js','apps/playground/server.mjs'
 ];
 for(const path of required)await access(resolve(path));
 const root=JSON.parse(await readFile('package.json','utf8'));

@@ -341,3 +341,19 @@ The first product-path ESM layer is implemented behind S4/S3 without embedding a
 - `response()` emits Service-Worker-ready JavaScript responses, but the edge never owns VFS truth.
 
 The exact-Node oracle materializes the same published graph to `file:` URLs and lets the native ESM engine prove cycles, live bindings, top-level await, dynamic import and query-separated module identities. Product browser execution still requires wiring this authority to the Dedicated Worker + disposable Service Worker edge.
+
+
+## Browser product-path execution harness
+
+Implementation now includes the product-path composition needed to promote the native ESM authority into a real browser realm:
+
+- a disposable Service Worker module edge that retains no VFS/package truth;
+- authority requests are broadcast back to live Window clients and only the matching publication session may answer;
+- a page-side bridge converts NativeEsmPublicationAuthority responses into same-origin JavaScript responses;
+- a Dedicated Worker guest executor imports the published native ESM graph;
+- nonliteral dynamic imports round-trip to the authoritative page resolver before native import();
+- WorkerRpcAuthority supplies bounded host -> guest request semantics while a separate guest -> host resolve channel preserves resolver authority;
+- stale/unowned publication sessions fail closed at the Service Worker edge;
+- the playground server exposes only required source/dependency routes with COOP/COEP/CORP and no-store semantics.
+
+A dedicated Chromium CI job has been added to exercise this path. Product-level browser promotion remains pending until that job produces a clean PASS receipt.

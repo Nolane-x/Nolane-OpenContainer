@@ -128,3 +128,5 @@ export { PackageCommandBridge } from './command-bridge.js';
 export { createModuleBuiltin, BUILTIN_MODULES } from './builtins/module.js';
 
 export { NativeEsmPublicationAuthority } from './native-esm-publication.js';
+
+export { BrowserEsmServiceWorkerBridge } from './browser-esm-edge.js';
