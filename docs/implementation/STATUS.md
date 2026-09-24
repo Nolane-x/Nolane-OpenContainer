@@ -30,3 +30,20 @@ Still required before production closure:
 9. Weak-device/browser matrix, long-run reliability, security review, legal/FTO, release closure.
 
 `production_closed = false` until those gates produce evidence.
+
+
+## Wave 2 — browser execution authority
+
+Started and contract-tested:
+
+- internal Worker RPC authority with explicit session + epoch identity;
+- bounded in-flight request queue;
+- stale-response rejection across worker restart;
+- deterministic rejection of in-flight work during restart/close;
+- browser-Worker-compatible `postMessage` / message-event adapter shape.
+
+Evidence boundary:
+
+- this is protocol/authority implementation evidence;
+- it is **not** a clean-browser execution PASS;
+- arbitrary guest-JS Worker isolation, SharedArrayBuffer sync-RPC, OPFS and PC-A/PC-B remain open.

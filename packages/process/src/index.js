@@ -53,3 +53,5 @@ export class ProcessSupervisor {
     return process;
   }
 }
+
+export { WorkerRpcAuthority } from './worker-authority.js';
