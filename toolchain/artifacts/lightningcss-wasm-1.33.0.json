@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS-LOCAL-RETAINED",
+  "observedAt": "2026-09-24T14:04:09.270Z",
+  "package": "lightningcss-wasm",
+  "version": "1.33.0",
+  "tarball": {
+    "file": "toolchain/vendor/lightningcss-wasm-1.33.0.tgz",
+    "bytes": 3826518,
+    "sha256": "266866c1b0efd7ca5307fe312411e4f1895b997086fb76f392ec5b60aadf31c8"
+  },
+  "wasm": {
+    "pathInTarball": "package/lightningcss_node.wasm",
+    "bytes": 15844785,
+    "sha256": "479c64bb651164b6fd9a834055e65ab507d3e39f8d8a8b683b7e83787a69e7b1",
+    "imports": 48,
+    "exports": 13,
+    "importNamespaces": {
+      "env": 48
+    },
+    "compile": "PASS"
+  },
+  "boundary": {
+    "browserExecution": "OPEN",
+    "viteC1": "OPEN"
+  }
+}
