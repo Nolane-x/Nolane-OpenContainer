@@ -31,3 +31,5 @@ export class PackageGraphAuthority {
     this.#generation++;return this.#graph;
   }
 }
+
+export { PackageArtifactAuthority, verifySri, inspectTarArchive } from './artifact-authority.js';

@@ -56,3 +56,24 @@ OPFS advancement in this wave:
 - recovery falls back from a corrupt/torn newest payload or manifest;
 - stale-generation publication is rejected;
 - current tests use a deterministic OPFS-handle model, so real-browser OPFS durability remains an open promotion gate.
+
+
+## Package artifact authority advancement
+
+Implemented behind S4/S2:
+
+- network-authorized artifact fetch;
+- hard maximum compressed artifact size;
+- SHA-512/SHA-256 SRI verification before publication;
+- tar header checksum validation;
+- required npm-style `package/` prefix;
+- path traversal / absolute path / backslash rejection;
+- symlink, hardlink and special-device entries rejected in the initial profile;
+- file-count and expanded-byte ceilings;
+- one VFS transaction publishes a validated archive.
+
+Evidence boundary:
+
+- archive/security semantics are contract-tested;
+- broad npm compatibility, PAX/GNU long-name profiles and registry corpus acceptance remain open;
+- exact `lightningcss-wasm@1.33.0` local bytes remain open because this execution environment could not resolve the npm registry.
