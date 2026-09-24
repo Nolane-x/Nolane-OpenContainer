@@ -1,5 +1,6 @@
 import { OpenContainer } from '/packages/sdk/src/index.js';
 import { BrowserEsmServiceWorkerBridge } from '/packages/package-env/src/browser-esm-edge.js';
+import { PackageArtifactAuthority } from '/packages/package-env/src/index.js';
 import { BrowserGuestWorkerAuthority } from '/packages/process/src/browser-guest-worker.js';
 import { MemoryVFS, OpfsCheckpointAuthority } from '/packages/vfs/src/index.js';
 
@@ -21,7 +22,7 @@ async function run() {
   assert(globalThis.isSecureContext, 'browser acceptance requires a secure context');
   assert(globalThis.crossOriginIsolated, 'COOP/COEP isolation is required');
 
-  const runtime = await OpenContainer.boot();
+  const runtime = await OpenContainer.boot({ network: { allowLocal: true } });
   stage('runtime-ready', { crossOriginIsolated: globalThis.crossOriginIsolated });
   runtime.mount({
     'package.json': JSON.stringify({ name: 'browser-acceptance', type: 'module' }),
@@ -150,6 +151,62 @@ async function run() {
     await opfsRoot.removeEntry(opfsDirectory, { recursive: true });
   }
 
+  stage('browser-package-install-start');
+  const lightningIntegrity = 'sha512-OLAtqEyInBSVWjPrTjpLzcZUMUHO0q+2PFBXKr86nxZOu0P38givj/ZMtRaZ0d38pMTb9wQx+LtaLtHclv+sEA==';
+  const lightningUrl = location.origin + '/toolchain/vendor/lightningcss-wasm-1.33.0.tgz';
+  runtime.net.allow({
+    origin: location.origin,
+    methods: ['GET'],
+    paths: ['/toolchain/vendor/']
+  });
+  runtime.packages.compile({
+    name: 'browser-package-acceptance',
+    version: '1.0.0',
+    lockfileVersion: 3,
+    packages: {
+      '': { name: 'browser-package-acceptance', version: '1.0.0' },
+      'node_modules/lightningcss-wasm': {
+        name: 'lightningcss-wasm',
+        version: '1.33.0',
+        resolved: lightningUrl,
+        integrity: lightningIntegrity
+      }
+    }
+  });
+
+  const artifactAuthority = new PackageArtifactAuthority({
+    fs: runtime.fs,
+    network: runtime.net,
+    maxArtifactBytes: 8 * 1024 * 1024,
+    maxUnpackedBytes: 64 * 1024 * 1024
+  });
+  const lightningArtifact = await artifactAuthority.fetchArtifact({
+    url: lightningUrl,
+    integrity: lightningIntegrity
+  });
+  assert(lightningArtifact.redirects === 0, 'same-origin retained package unexpectedly redirected');
+
+  const frozenInstaller = runtime.packages.createFrozenInstaller();
+  const ingest = await frozenInstaller.ingestLocation('node_modules/lightningcss-wasm', lightningArtifact.bytes);
+  const mountedPackages = frozenInstaller.mountFrozenGraph();
+  const resolvedLightning = runtime.packages.resolve(
+    'lightningcss-wasm',
+    '/workspace/src/package-consumer.mjs',
+    { mode: 'esm' }
+  );
+  const lightningPackageJson = JSON.parse(
+    runtime.packages.nodeModules.readFile('/workspace/node_modules/lightningcss-wasm/package.json')
+  );
+  assert(lightningPackageJson.name === 'lightningcss-wasm', 'browser-installed package name mismatch');
+  assert(lightningPackageJson.version === '1.33.0', 'browser-installed package version mismatch');
+  assert(resolvedLightning.path.includes('/workspace/node_modules/lightningcss-wasm/'), 'browser resolver did not target installed immutable package');
+  stage('browser-package-install-pass', {
+    bytes: lightningArtifact.bytes.byteLength,
+    files: ingest.fileCount,
+    contentCount: mountedPackages.contentCount,
+    resolved: resolvedLightning.path
+  });
+
   await runtime.terminate();
 
   return {
@@ -159,6 +216,7 @@ async function run() {
     staleStatus: stale.status,
     serviceWorkerEdge: edgeResponse.headers.get('x-opencontainer-edge'),
     opfsRealBrowser: true,
+    browserPackageInstall: true,
     stages
   };
 }

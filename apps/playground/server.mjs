@@ -16,7 +16,8 @@ const publicAliases = new Map([
   ['/browser-acceptance.js', join(publicRoot, 'browser-acceptance.js')],
   ['/opencontainer-sw.js', join(publicRoot, 'opencontainer-sw.js')],
   ['/opencontainer-guest-worker.mjs', join(publicRoot, 'opencontainer-guest-worker.mjs')],
-  ['/__deps__/es-module-lexer-minimal.js', lexerPath]
+  ['/__deps__/es-module-lexer-minimal.js', lexerPath],
+  ['/toolchain/vendor/lightningcss-wasm-1.33.0.tgz', join(repoRoot, 'toolchain/vendor/lightningcss-wasm-1.33.0.tgz')]
 ]);
 
 function contentType(path) {

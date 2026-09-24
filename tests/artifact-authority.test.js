@@ -117,9 +117,10 @@ test('artifact fetch is network-authorized, size-bounded and integrity-checked',
     fs,
     network: net,
     maxArtifactBytes: 1024,
-    fetchImpl: async (url) => {
+    fetchImpl: async (url, options) => {
       fetched++;
       assert.equal(url, 'https://registry.example/pkg/a.tgz');
+      assert.equal(options.redirect, 'manual');
       return new Response(bytes, { status: 200, headers: { 'content-length': String(bytes.byteLength) } });
     }
   });
@@ -131,4 +132,62 @@ test('artifact fetch is network-authorized, size-bounded and integrity-checked',
 
   assert.equal(fetched, 1);
   assert.deepEqual(artifact.bytes, bytes);
+});
+
+
+test('artifact redirects are authorized hop by hop', async () => {
+  const bytes = encoder.encode('redirected package');
+  const fs = new MemoryVFS();
+  const net = new NetworkAuthority()
+    .allow({ origin: 'https://registry.example', methods: ['GET'], paths: ['/pkg/'] })
+    .allow({ origin: 'https://cdn.example', methods: ['GET'], paths: ['/artifacts/'] });
+  const fetched = [];
+  const authority = new PackageArtifactAuthority({
+    fs,
+    network: net,
+    fetchImpl: async (url, options) => {
+      fetched.push([url, options.redirect]);
+      if (url === 'https://registry.example/pkg/a.tgz') {
+        return new Response(null, { status: 302, headers: { location: 'https://cdn.example/artifacts/a.tgz' } });
+      }
+      return new Response(bytes, { status: 200 });
+    }
+  });
+
+  const artifact = await authority.fetchArtifact({
+    url: 'https://registry.example/pkg/a.tgz',
+    integrity: sri(bytes)
+  });
+
+  assert.equal(artifact.url, 'https://cdn.example/artifacts/a.tgz');
+  assert.equal(artifact.redirects, 1);
+  assert.deepEqual(fetched, [
+    ['https://registry.example/pkg/a.tgz', 'manual'],
+    ['https://cdn.example/artifacts/a.tgz', 'manual']
+  ]);
+});
+
+test('artifact redirect cannot escape network capability', async () => {
+  const bytes = encoder.encode('package');
+  const fs = new MemoryVFS();
+  const net = new NetworkAuthority()
+    .allow({ origin: 'https://registry.example', methods: ['GET'], paths: ['/pkg/'] });
+  let fetched = 0;
+  const authority = new PackageArtifactAuthority({
+    fs,
+    network: net,
+    fetchImpl: async () => {
+      fetched++;
+      return new Response(null, { status: 302, headers: { location: 'https://evil.example/a.tgz' } });
+    }
+  });
+
+  await assert.rejects(
+    () => authority.fetchArtifact({
+      url: 'https://registry.example/pkg/a.tgz',
+      integrity: sri(bytes)
+    }),
+    (error) => error.code === ErrorCodes.NETWORK_DENIED
+  );
+  assert.equal(fetched, 1, 'redirect target must be authorized before it is fetched');
 });

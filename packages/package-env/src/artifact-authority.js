@@ -146,6 +146,7 @@ export class PackageArtifactAuthority {
   #network;
   #fetch;
   #maxArtifactBytes;
+  #maxRedirects;
   #archiveLimits;
 
   constructor({
@@ -153,6 +154,7 @@ export class PackageArtifactAuthority {
     network,
     fetchImpl = globalThis.fetch,
     maxArtifactBytes = 64 * 1024 * 1024,
+    maxRedirects = 5,
     maxFiles = 20_000,
     maxUnpackedBytes = 256 * 1024 * 1024
   } = {}) {
@@ -163,12 +165,52 @@ export class PackageArtifactAuthority {
     this.#network = network;
     this.#fetch = fetchImpl;
     this.#maxArtifactBytes = maxArtifactBytes;
+    this.#maxRedirects = Math.max(0, Number(maxRedirects) || 0);
     this.#archiveLimits = { maxFiles, maxUnpackedBytes };
   }
 
   async fetchArtifact({ url, integrity }) {
-    const authorized = this.#network.authorize(url, { method: 'GET' });
-    const response = await this.#fetch(authorized.url, { method: 'GET', credentials: 'omit', redirect: 'follow' });
+    let current = String(url);
+    let redirects = 0;
+    let authorized;
+    let response;
+
+    while (true) {
+      authorized = this.#network.authorize(current, { method: 'GET' });
+      response = await this.#fetch(authorized.url, {
+        method: 'GET',
+        credentials: 'omit',
+        redirect: 'manual'
+      });
+
+      if (response?.type === 'opaqueredirect') {
+        throw ocError(ErrorCodes.NETWORK_DENIED, 'Opaque artifact redirect cannot be capability-authorized', {
+          url: authorized.url
+        });
+      }
+
+      if ([301, 302, 303, 307, 308].includes(response.status)) {
+        if (redirects >= this.#maxRedirects) {
+          throw ocError(ErrorCodes.NETWORK_DENIED, 'Artifact redirect limit exceeded', {
+            url: authorized.url,
+            redirects,
+            limit: this.#maxRedirects
+          });
+        }
+        const location = response.headers?.get?.('location');
+        if (!location) {
+          throw ocError(ErrorCodes.NETWORK_DENIED, 'Artifact redirect is missing Location header', {
+            url: authorized.url,
+            status: response.status
+          });
+        }
+        current = new URL(location, authorized.url).href;
+        redirects++;
+        continue;
+      }
+      break;
+    }
+
     if (!response.ok) throw ocError(ErrorCodes.NOT_FOUND, 'Artifact fetch failed', { url: authorized.url, status: response.status });
 
     const declared = Number(response.headers?.get?.('content-length'));
@@ -182,7 +224,7 @@ export class PackageArtifactAuthority {
     }
 
     const verified = await verifySri(bytes, integrity);
-    return Object.freeze({ url: authorized.url, bytes, verified });
+    return Object.freeze({ url: authorized.url, bytes, verified, redirects });
   }
 
   async installTarball({ bytes, destination, stripPrefix = 'package/' }) {
