@@ -9,12 +9,8 @@ import { Worker as NodeWorker } from 'node:worker_threads';
 import { inspectTarArchive } from '../packages/package-env/src/index.js';
 import { verifyRetainedRolldownBrowserPackage } from '../packages/toolchain/src/index.js';
 
-class BrowserWorkerAdapter {
-  #worker;
-  #listeners = new Map();
-  onmessage = null;
-  onerror = null;
-  onmessageerror = null;
+class BrowserWorkerAdapter extends NodeWorker {
+  #eventWrappers = new Map();
 
   constructor(target, options = {}) {
     const targetUrl = target instanceof URL ? target.href : String(target);
@@ -44,42 +40,35 @@ class BrowserWorkerAdapter {
       await import(${JSON.stringify(targetUrl)});
     `;
     const url = new URL('data:text/javascript;base64,' + Buffer.from(bootstrap).toString('base64'));
-    this.#worker = new NodeWorker(url, { type: options.type ?? 'module' });
-    // In an exact-Node oracle @emnapi/wasi-threads installs its own
-    // EventEmitter -> onmessage/onerror bridge. These listeners therefore
-    // service only browser EventTarget listeners added by Rolldown's loader;
-    // invoking this.onmessage here would deliver every protocol frame twice.
-    this.#worker.on('message', (data) => this.#dispatchListeners('message', { data }));
-    this.#worker.on('messageerror', (error) => this.#dispatchListeners('messageerror', { data: error }));
-    this.#worker.on('error', (error) => this.#dispatchListeners('error', error));
+    super(url, { type: options.type ?? 'module' });
   }
 
-  postMessage(value, transfer) { return this.#worker.postMessage(value, transfer); }
-  terminate() { return this.#worker.terminate(); }
-  ref() { this.#worker.ref(); return this; }
-  unref() { this.#worker.unref(); return this; }
-
-  // emnapi selects its Node worker-manager path in this exact-Node oracle,
-  // while Rolldown's browser loader itself uses EventTarget methods. Expose
-  // both contracts over the same underlying worker.
-  on(type, listener) { this.#worker.on(type, listener); return this; }
-  once(type, listener) { this.#worker.once(type, listener); return this; }
-  off(type, listener) { this.#worker.off(type, listener); return this; }
-  removeListener(type, listener) { this.#worker.removeListener(type, listener); return this; }
-  removeAllListeners(type) { this.#worker.removeAllListeners(type); return this; }
-
   addEventListener(type, listener) {
-    const set = this.#listeners.get(type) ?? new Set();
-    set.add(listener);
-    this.#listeners.set(type, set);
+    if (typeof listener !== 'function') return;
+    let byListener = this.#eventWrappers.get(type);
+    if (!byListener) {
+      byListener = new Map();
+      this.#eventWrappers.set(type, byListener);
+    }
+    if (byListener.has(listener)) return;
+
+    const wrapper =
+      type === 'message'
+        ? (data) => listener({ data })
+        : type === 'messageerror'
+          ? (data) => listener({ data })
+          : (event) => listener(event);
+    byListener.set(listener, wrapper);
+    this.on(type, wrapper);
   }
 
   removeEventListener(type, listener) {
-    this.#listeners.get(type)?.delete(listener);
-  }
-
-  #dispatchListeners(type, event) {
-    for (const listener of this.#listeners.get(type) ?? []) listener(event);
+    const byListener = this.#eventWrappers.get(type);
+    const wrapper = byListener?.get(listener);
+    if (!wrapper) return;
+    this.off(type, wrapper);
+    byListener.delete(listener);
+    if (byListener.size === 0) this.#eventWrappers.delete(type);
   }
 }
 
