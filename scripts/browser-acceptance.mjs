@@ -132,6 +132,25 @@ function connectCdp(webSocketUrl) {
   });
 }
 
+async function terminateChild(child, timeoutMs = 3000) {
+  if (!child || child.exitCode !== null) return;
+  await new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = setTimeout(() => {
+      try { child.kill('SIGKILL'); } catch {}
+      finish();
+    }, timeoutMs);
+    child.once('exit', finish);
+    try { child.kill('SIGTERM'); } catch { finish(); }
+  });
+}
+
 async function readAcceptanceState(cdp) {
   const evaluated = await cdp.command('Runtime.evaluate', {
     expression: `(() => ({
@@ -210,7 +229,7 @@ try {
   console.log('browser acceptance PASS', state.result ?? '');
 } finally {
   try { cdp?.close(); } catch {}
-  if (chrome && chrome.exitCode === null) chrome.kill('SIGTERM');
-  if (server.exitCode === null) server.kill('SIGTERM');
-  await rm(profile, { recursive: true, force: true });
+  await terminateChild(chrome);
+  await terminateChild(server);
+  await rm(profile, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 });
 }
