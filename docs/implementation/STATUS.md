@@ -116,3 +116,24 @@ CI now builds the same selected package graph twice:
 The court compares selected CommonJS and ESM results for relative extension fallback, conditional exports, root/nested dependency lookup, package imports, package self-reference, default symlink realpath behavior and ESM query URL identity.
 
 This is a selected differential receipt, not full Node compatibility closure.
+
+
+## CommonJS execution advancement
+
+Implemented behind S4/S3:
+
+- CommonJS wrapper execution with `exports`, `require`, `module`, `__filename`, and `__dirname`;
+- JSON loading;
+- canonical-filename module cache;
+- cycle behavior through cache-before-execute;
+- failed-module cache eviction;
+- injected Node-builtin compatibility table;
+- `require.resolve()` over the OpenContainer ResolverIndex;
+- explicit rejection of unimplemented synchronous `require(ESM)`.
+
+Security boundary:
+
+- dynamic CommonJS source execution is **disabled by default**;
+- the built-in evaluator must be explicitly enabled and is intended only for a hardened guest worker;
+- trusted UI/main-thread code must not enable guest dynamic execution;
+- browser guest-worker isolation and CSP evidence remain open.

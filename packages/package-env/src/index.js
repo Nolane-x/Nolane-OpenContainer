@@ -1,6 +1,7 @@
 import { ErrorCodes, assertOc } from '../../protocol/src/index.js';
 import { VirtualNodeModulesFS } from './virtual-node-modules.js';
 import { NodeResolver } from './resolver.js';
+import { CommonJsLoader } from './commonjs-loader.js';
 
 function stableId(prefix,value){
   let h1=0x811c9dc5,h2=0x9e3779b9;
@@ -49,8 +50,14 @@ export class PackageGraphAuthority {
     assertOc(this.#resolver,ErrorCodes.INVALID_STATE,'Package catalog is not mounted');
     return this.#resolver.resolve(specifier,issuer,options);
   }
+
+  createCommonJsLoader(options={}){
+    assertOc(this.#nodeModules&&this.#resolver,ErrorCodes.INVALID_STATE,'Package catalog is not mounted');
+    return new CommonJsLoader({fs:this.#nodeModules,resolver:this.#resolver,...options});
+  }
 }
 
 export { PackageArtifactAuthority, verifySri, inspectTarArchive } from './artifact-authority.js';
 export { VirtualNodeModulesFS } from './virtual-node-modules.js';
 export { NodeResolver, NODE_BUILTINS } from './resolver.js';
+export { CommonJsLoader } from './commonjs-loader.js';
