@@ -133,7 +133,9 @@ export class BrowserEsmServiceWorkerBridge {
     if (!data || data.type !== 'opencontainer:esm-fetch' || !port) return;
 
     if (data.session !== this.session) {
-      port.postMessage({ ok: false, notOwner: true, code: 'OC_ESM_SESSION_NOT_OWNED' });
+      // Multiple publication bridges may coexist on one Window while a new
+      // generation/session is promoted. A non-owner must stay silent so it
+      // cannot win the shared MessagePort race ahead of the actual owner.
       return;
     }
 

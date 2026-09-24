@@ -24,24 +24,35 @@ class FakeContainer extends EventTarget {
     this.controller=worker;
     this.dispatchEvent(new Event('controllerchange'));
   }
+  sendMessage(data, port) {
+    const event = new Event('message');
+    Object.defineProperty(event, 'data', { value: data });
+    Object.defineProperty(event, 'ports', { value: [port] });
+    this.dispatchEvent(event);
+  }
 }
 
-const publication={
-  session:'test-session',
-  async response(){ return new Response('export default 1'); }
-};
+function publication(session, body='export default 1') {
+  return {
+    session,
+    async response(){ return new Response(body, { headers: { 'x-session': session } }); }
+  };
+}
+
+async function activate(registration, container, worker) {
+  queueMicrotask(()=>{
+    registration.activate();
+    container.claim(worker);
+  });
+}
 
 test('browser ESM bridge does not depend on navigator.serviceWorker.ready',async()=>{
   const worker=new FakeWorker();
   const registration=new FakeRegistration(worker);
   const container=new FakeContainer(registration);
-  const bridge=new BrowserEsmServiceWorkerBridge({publication,serviceWorkerContainer:container,timeoutMs:100});
+  const bridge=new BrowserEsmServiceWorkerBridge({publication:publication('test-session'),serviceWorkerContainer:container,timeoutMs:100});
 
-  queueMicrotask(()=>{
-    registration.activate();
-    container.claim(worker);
-  });
-
+  await activate(registration,container,worker);
   const receipt=await bridge.start();
   assert.equal(receipt.session,'test-session');
   assert.equal(receipt.controllerURL,worker.scriptURL);
@@ -52,11 +63,75 @@ test('browser ESM bridge fails closed when registration never activates',async()
   const worker=new FakeWorker();
   const registration=new FakeRegistration(worker);
   const container=new FakeContainer(registration);
-  const bridge=new BrowserEsmServiceWorkerBridge({publication,serviceWorkerContainer:container,timeoutMs:10});
+  const bridge=new BrowserEsmServiceWorkerBridge({publication:publication('test-session'),serviceWorkerContainer:container,timeoutMs:10});
 
   await assert.rejects(
     ()=>bridge.start(),
     error=>error.code===ErrorCodes.ESM_EDGE_UNAVAILABLE && /activate/.test(error.message)
   );
+  bridge.close();
+});
+
+test('non-owner bridge stays silent so current publication owner wins shared port',async()=>{
+  const worker=new FakeWorker('activated');
+  const registration=new FakeRegistration(worker);
+  registration.installing=null;
+  registration.active=worker;
+  const container=new FakeContainer(registration);
+  container.controller=worker;
+
+  const oldBridge=new BrowserEsmServiceWorkerBridge({
+    publication:publication('old-session','export default "old"'),
+    serviceWorkerContainer:container,
+    timeoutMs:100
+  });
+  const currentBridge=new BrowserEsmServiceWorkerBridge({
+    publication:publication('current-session','export default "current"'),
+    serviceWorkerContainer:container,
+    timeoutMs:100
+  });
+  await oldBridge.start();
+  await currentBridge.start();
+
+  const messages=[];
+  const port={ postMessage(value){ messages.push(value); } };
+  container.sendMessage({
+    type:'opencontainer:esm-fetch',
+    session:'current-session',
+    url:'https://example.test/__opencontainer__/esm/current-session/fs/workspace/main.js'
+  },port);
+
+  await new Promise((resolve)=>setTimeout(resolve,0));
+  assert.equal(messages.length,1);
+  assert.equal(messages[0].ok,true);
+  assert.match(messages[0].body,/current/);
+
+  oldBridge.close();
+  currentBridge.close();
+});
+
+test('unowned session produces no page-side response',async()=>{
+  const worker=new FakeWorker('activated');
+  const registration=new FakeRegistration(worker);
+  registration.installing=null;
+  registration.active=worker;
+  const container=new FakeContainer(registration);
+  container.controller=worker;
+  const bridge=new BrowserEsmServiceWorkerBridge({
+    publication:publication('owned-session'),
+    serviceWorkerContainer:container,
+    timeoutMs:100
+  });
+  await bridge.start();
+
+  const messages=[];
+  container.sendMessage({
+    type:'opencontainer:esm-fetch',
+    session:'stale-session',
+    url:'https://example.test/__opencontainer__/esm/stale-session/fs/workspace/main.js'
+  },{ postMessage(value){ messages.push(value); } });
+
+  await new Promise((resolve)=>setTimeout(resolve,0));
+  assert.deepEqual(messages,[]);
   bridge.close();
 });
