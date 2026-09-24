@@ -45,6 +45,7 @@ const required=[
   'tests/rolldown-browser-execution.test.js',
   'tests/vite-c1-oracle.test.js',
   'tests/native-esm-publication.test.js',
+  'tests/browser-esm-edge.test.js',
   'packages/process/src/browser-guest-worker.js','apps/playground/server.mjs'
 ];
 for(const path of required)await access(resolve(path));

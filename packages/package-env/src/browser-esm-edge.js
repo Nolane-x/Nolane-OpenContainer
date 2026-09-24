@@ -21,6 +21,57 @@ function waitForController(container, timeoutMs) {
   });
 }
 
+function waitForRegistrationActive(registration, timeoutMs) {
+  if (registration.active?.state === 'activated') return Promise.resolve(registration.active);
+
+  return new Promise((resolve, reject) => {
+    let timer = null;
+    let worker = registration.installing ?? registration.waiting ?? registration.active ?? null;
+
+    const cleanup = () => {
+      clearTimeout(timer);
+      registration.removeEventListener?.('updatefound', onUpdateFound);
+      worker?.removeEventListener?.('statechange', onStateChange);
+    };
+
+    const attach = (candidate) => {
+      if (!candidate || candidate === worker) return;
+      worker?.removeEventListener?.('statechange', onStateChange);
+      worker = candidate;
+      worker.addEventListener?.('statechange', onStateChange);
+      onStateChange();
+    };
+
+    const onStateChange = () => {
+      const active = registration.active;
+      if (active?.state === 'activated' || worker?.state === 'activated') {
+        cleanup();
+        resolve(active ?? worker);
+        return;
+      }
+      if (worker?.state === 'redundant') {
+        cleanup();
+        reject(ocError(ErrorCodes.ESM_EDGE_UNAVAILABLE, 'Service Worker became redundant before activation'));
+      }
+    };
+
+    const onUpdateFound = () => {
+      attach(registration.installing ?? registration.waiting ?? registration.active);
+    };
+
+    registration.addEventListener?.('updatefound', onUpdateFound);
+    worker?.addEventListener?.('statechange', onStateChange);
+    timer = setTimeout(() => {
+      cleanup();
+      reject(ocError(ErrorCodes.ESM_EDGE_UNAVAILABLE, 'Service Worker did not activate in time', {
+        timeoutMs,
+        state: worker?.state ?? null
+      }));
+    }, timeoutMs);
+    onStateChange();
+  });
+}
+
 export class BrowserEsmServiceWorkerBridge {
   #publication;
   #container;
@@ -58,7 +109,7 @@ export class BrowserEsmServiceWorkerBridge {
     }
 
     this.#registration = await this.#container.register(this.#scriptURL, { scope: this.#scope, updateViaCache: 'none' });
-    await this.#container.ready;
+    await waitForRegistrationActive(this.#registration, this.#timeoutMs);
     const controller = await waitForController(this.#container, this.#timeoutMs);
 
     return Object.freeze({
