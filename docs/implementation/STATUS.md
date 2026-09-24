@@ -465,3 +465,18 @@ The browser profile defaults to required dependencies only:
 - the current Vite 8.3.0 closure court includes Vite/Rolldown/Lightning CSS/PostCSS/Tinyglobby dependencies while excluding Rolldown's platform-native optional bindings and fsevents.
 
 This is the package-selection substrate for the upcoming VITE-C1 browser guest court.
+
+
+## Vite browser dependency installation court
+
+The clean Chrome acceptance now advances beyond a single retained package and attempts the exact frozen Vite 8.3.0 required-dependency closure:
+
+- browser reads the repository's frozen package-lock;
+- PackageGraphAuthority selects the `vite` required closure with optional native packages excluded;
+- NetworkAuthority explicitly grants GET only to the npm registry origin for this court;
+- PackageArtifactAuthority fetches every selected external tarball with manual redirect authorization and exact lockfile SRI;
+- FrozenInstallAuthority performs bounded concurrent content installation;
+- `inBundle` content is not fetched twice;
+- the selected graph is mounted into VirtualNodeModulesFS and Vite must resolve as exact 8.3.0.
+
+This court is intentionally before Vite execution: it separates package acquisition/corpus compatibility failures from Node-builtin/module-execution failures in the subsequent VITE-C1 guest court.

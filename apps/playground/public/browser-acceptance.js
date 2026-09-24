@@ -224,6 +224,55 @@ async function run() {
     resolved: resolvedLightning.path
   });
 
+  stage('vite-closure-install-start');
+  const lockResponse = await fetch('/package-lock.json', { cache: 'no-store' });
+  assert(lockResponse.ok, 'failed to load frozen Vite C1 package-lock');
+  const c1Lock = await lockResponse.json();
+  runtime.packages.compile(c1Lock);
+  const viteClosure = runtime.packages.selectDependencyClosure({ roots: ['vite'] });
+  assert(viteClosure.locations.includes('node_modules/vite'), 'Vite missing from selected closure');
+  assert(viteClosure.locations.includes('node_modules/rolldown'), 'Rolldown missing from selected closure');
+  assert(viteClosure.locations.includes('node_modules/lightningcss'), 'Lightning CSS missing from selected closure');
+  assert(!viteClosure.locations.some((location) => location.includes('@rolldown/binding-')), 'optional native Rolldown binding leaked into browser closure');
+
+  runtime.net.allow({
+    origin: 'https://registry.npmjs.org',
+    methods: ['GET'],
+    paths: ['/']
+  });
+  const c1ArtifactAuthority = new PackageArtifactAuthority({
+    fs: runtime.fs,
+    network: runtime.net,
+    maxArtifactBytes: 16 * 1024 * 1024,
+    maxUnpackedBytes: 96 * 1024 * 1024
+  });
+  const c1Installer = runtime.packages.createFrozenInstaller();
+  const c1Progress = [];
+  const c1Install = await c1Installer.installAll({
+    artifactAuthority: c1ArtifactAuthority,
+    locations: viteClosure.locations,
+    concurrency: 4,
+    onProgress: (receipt) => c1Progress.push({
+      location: receipt.location,
+      bytes: receipt.bytes
+    })
+  });
+  const c1Mounted = c1Installer.mountFrozenGraph({ locations: viteClosure.locations });
+  const viteResolved = runtime.packages.resolve('vite', '/workspace/src/vite-probe.mjs', { mode: 'esm' });
+  const vitePackage = JSON.parse(runtime.packages.nodeModules.readFile('/workspace/node_modules/vite/package.json'));
+  assert(vitePackage.version === '8.3.0', 'browser-installed Vite version mismatch');
+  assert(viteResolved.path.startsWith('/workspace/node_modules/vite/'), 'Vite resolver did not target frozen browser graph');
+  assert(c1Install.fetchedContents >= 10, 'Vite browser closure unexpectedly small');
+  stage('vite-closure-install-pass', {
+    locations: viteClosure.locations.length,
+    fetchedContents: c1Install.fetchedContents,
+    embeddedInstances: c1Install.embeddedInstances,
+    bytes: c1Install.bytes,
+    mountedPackages: c1Mounted.packageCount,
+    vite: viteResolved.path,
+    progress: c1Progress
+  });
+
   await runtime.terminate();
 
   return {
@@ -236,6 +285,7 @@ async function run() {
     serviceWorkerEdge: edgeResponse.headers.get('x-opencontainer-edge'),
     opfsRealBrowser: true,
     browserPackageInstall: true,
+    viteClosureInstall: true,
     stages
   };
 }
