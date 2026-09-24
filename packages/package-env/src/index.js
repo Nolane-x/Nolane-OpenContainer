@@ -56,11 +56,25 @@ export class PackageGraphAuthority {
 
   createCommonJsLoader(options={}){
     assertOc(this.#nodeModules&&this.#resolver,ErrorCodes.INVALID_STATE,'Package catalog is not mounted');
-    const {builtins={},...rest}=options;
+    const {builtins={},globals={},cwd='/workspace',env={},argv=['opencontainer'],platform='linux',...rest}=options;
+    const core=createCoreBuiltinRegistry({
+      fs:this.#nodeModules,
+      writableFs:this.#baseFs,
+      cwd,
+      env,
+      argv,
+      platform
+    });
+    const merged={...core,...builtins};
     return new CommonJsLoader({
       fs:this.#nodeModules,
       resolver:this.#resolver,
-      builtins:{...createCoreBuiltinRegistry(),...builtins},
+      builtins:merged,
+      globals:{
+        Buffer:merged.buffer?.Buffer,
+        process:merged.process,
+        ...globals
+      },
       ...rest
     });
   }
@@ -80,3 +94,8 @@ export { FrozenInstallAuthority, PackageContentStore } from './frozen-install.js
 export { createCoreBuiltinRegistry } from './builtins/registry.js';
 export { createPosixPath } from './builtins/path.js';
 export { EventEmitter, createEventsBuiltin } from './builtins/events.js';
+
+export { BufferCompat, createBufferBuiltin } from './builtins/buffer.js';
+export { createUrlBuiltin } from './builtins/url.js';
+export { createProcessBuiltin } from './builtins/process.js';
+export { createFsBuiltins } from './builtins/fs.js';

@@ -10,6 +10,10 @@ const required=[
   'packages/package-env/src/builtins/path.js',
   'packages/package-env/src/builtins/events.js',
   'packages/package-env/src/builtins/registry.js',
+  'packages/package-env/src/builtins/fs.js',
+  'packages/package-env/src/builtins/process.js',
+  'packages/package-env/src/builtins/url.js',
+  'packages/package-env/src/builtins/buffer.js',
   'packages/package-env/src/virtual-node-modules.js','packages/network/src/index.js','packages/preview/src/index.js','packages/persistence/src/index.js',
   'packages/resources/src/index.js','packages/diagnostics/src/index.js','packages/protocol/src/index.js','packages/toolchain/src/index.js',
   'tests/runtime.test.js',
@@ -17,7 +21,8 @@ const required=[
   'tests/node24-resolver-differential.test.js',
   'tests/commonjs-loader.test.js',
   'tests/frozen-install.test.js',
-  'tests/node-core-builtins.test.js','apps/playground/server.mjs'
+  'tests/node-core-builtins.test.js',
+  'tests/runtime-builtins.test.js','apps/playground/server.mjs'
 ];
 for(const path of required)await access(resolve(path));
 const root=JSON.parse(await readFile('package.json','utf8'));

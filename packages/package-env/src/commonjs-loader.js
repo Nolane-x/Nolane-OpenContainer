@@ -5,10 +5,10 @@ function dirname(path) {
   return index <= 0 ? '/' : path.slice(0, index);
 }
 
-function defaultEvaluator(source, { exports, require, module, filename, dirname: moduleDir }) {
+function defaultEvaluator(source, { exports, require, module, filename, dirname: moduleDir, globals = {} }) {
   const sourceURL = '\n//# sourceURL=opencontainer://' + encodeURI(filename);
-  const wrapper = new Function('exports', 'require', 'module', '__filename', '__dirname', source + sourceURL);
-  return wrapper(exports, require, module, filename, moduleDir);
+  const wrapper = new Function('exports', 'require', 'module', '__filename', '__dirname', 'Buffer', 'process', 'global', source + sourceURL);
+  return wrapper(exports, require, module, filename, moduleDir, globals.Buffer, globals.process, globals.global ?? Object.create(null));
 }
 
 export class CommonJsLoader {
@@ -18,13 +18,15 @@ export class CommonJsLoader {
   #cache = new Map();
   #evaluator;
   #allowDynamicCode;
+  #globals;
 
-  constructor({ fs, resolver, builtins = {}, evaluator = null, allowDynamicCode = false } = {}) {
+  constructor({ fs, resolver, builtins = {}, globals = {}, evaluator = null, allowDynamicCode = false } = {}) {
     assertOc(fs && typeof fs.readFile === 'function', ErrorCodes.INVALID_ARGUMENT, 'CommonJS loader filesystem is required');
     assertOc(resolver && typeof resolver.resolve === 'function', ErrorCodes.INVALID_ARGUMENT, 'CommonJS resolver is required');
     this.#fs = fs;
     this.#resolver = resolver;
     this.#builtins = new Map(Object.entries(builtins));
+    this.#globals = { ...globals };
     this.#evaluator = evaluator;
     this.#allowDynamicCode = !!allowDynamicCode;
   }
@@ -96,7 +98,8 @@ export class CommonJsLoader {
         require: localRequire,
         module,
         filename: resolved.path,
-        dirname: dirname(resolved.path)
+        dirname: dirname(resolved.path),
+        globals: this.#globals
       });
       module.loaded = true;
       return module.exports;

@@ -166,3 +166,25 @@ The first builtins are now implemented rather than merely resolvable:
 - CommonJS loaders receive these builtins automatically, while callers can explicitly override entries.
 
 A selected POSIX path differential runs against the exact Node CI oracle. This is not a claim of full `path` or `events` API closure; win32 path, advanced EventEmitter helpers/captureRejections and broader error parity remain open.
+
+
+## Toolchain-facing runtime builtins
+
+The compatibility layer now exposes additional browser-native Node surfaces needed by real tooling:
+
+- a bounded `Buffer` subset for UTF-8/hex/base64, allocation, concatenation and byte identity;
+- `node:url` file URL conversion and WHATWG URL classes;
+- a logical `process` context with isolated explicit env, cwd/chdir, argv, nextTick, hrtime and a POSIX compatibility platform;
+- VFS-backed `node:fs` synchronous read/stat/readdir/realpath/readlink plus controlled workspace mutations;
+- `node:fs/promises` over the same authority;
+- CommonJS wrapper globals now receive the compatibility `Buffer` and `process` objects instead of depending on accidental host globals.
+
+Authority/security rules:
+
+- fs reads use the composite WorkspaceFS + VirtualNodeModulesFS view;
+- fs writes are sent only to mutable WorkspaceFS, never immutable PackageContent;
+- process.env begins empty unless variables are explicitly supplied by the runtime;
+- the logical `linux` platform identifies the V1 POSIX compatibility profile, not the browser host OS;
+- these are selected compatibility subsets, not full Node API claims.
+
+Selected `node:url` and `node:fs` behavior is differentially checked against the exact Node CI oracle.
