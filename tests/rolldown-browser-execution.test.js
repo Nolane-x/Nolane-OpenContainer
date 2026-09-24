@@ -45,9 +45,13 @@ class BrowserWorkerAdapter {
     `;
     const url = new URL('data:text/javascript;base64,' + Buffer.from(bootstrap).toString('base64'));
     this.#worker = new NodeWorker(url, { type: options.type ?? 'module' });
-    this.#worker.on('message', (data) => this.#dispatch('message', { data }));
-    this.#worker.on('messageerror', (error) => this.#dispatch('messageerror', { data: error }));
-    this.#worker.on('error', (error) => this.#dispatch('error', error));
+    // In an exact-Node oracle @emnapi/wasi-threads installs its own
+    // EventEmitter -> onmessage/onerror bridge. These listeners therefore
+    // service only browser EventTarget listeners added by Rolldown's loader;
+    // invoking this.onmessage here would deliver every protocol frame twice.
+    this.#worker.on('message', (data) => this.#dispatchListeners('message', { data }));
+    this.#worker.on('messageerror', (error) => this.#dispatchListeners('messageerror', { data: error }));
+    this.#worker.on('error', (error) => this.#dispatchListeners('error', error));
   }
 
   postMessage(value, transfer) { return this.#worker.postMessage(value, transfer); }
@@ -74,9 +78,7 @@ class BrowserWorkerAdapter {
     this.#listeners.get(type)?.delete(listener);
   }
 
-  #dispatch(type, event) {
-    const property = type === 'message' ? this.onmessage : type === 'error' ? this.onerror : this.onmessageerror;
-    property?.(event);
+  #dispatchListeners(type, event) {
     for (const listener of this.#listeners.get(type) ?? []) listener(event);
   }
 }
