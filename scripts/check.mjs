@@ -7,9 +7,11 @@ const required=[
   'packages/package-env/src/resolver.js',
   'packages/package-env/src/commonjs-loader.js',
   'packages/package-env/src/frozen-install.js',
+  'packages/package-env/src/command-bridge.js',
   'packages/package-env/src/builtins/path.js',
   'packages/package-env/src/builtins/events.js',
   'packages/package-env/src/builtins/registry.js',
+  'packages/package-env/src/builtins/module.js',
   'packages/package-env/src/builtins/fs.js',
   'packages/package-env/src/builtins/process.js',
   'packages/package-env/src/builtins/url.js',
@@ -22,7 +24,8 @@ const required=[
   'tests/commonjs-loader.test.js',
   'tests/frozen-install.test.js',
   'tests/node-core-builtins.test.js',
-  'tests/runtime-builtins.test.js','apps/playground/server.mjs'
+  'tests/runtime-builtins.test.js',
+  'tests/package-command-bridge.test.js','apps/playground/server.mjs'
 ];
 for(const path of required)await access(resolve(path));
 const root=JSON.parse(await readFile('package.json','utf8'));

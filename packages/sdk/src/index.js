@@ -30,6 +30,7 @@ export class OpenContainer {
   registerCommand(name,handler){this._kernel.assertReady();return this.process.register(name,handler);}
   spawn(command,args=[],options={}){this._kernel.assertReady();return this.process.spawn(command,args,options);}
   listen(port,handler,{owner='runtime'}={}){this._kernel.assertReady();return this.preview.publish({port,owner,handler});}
+  installPackageCommands(options={}){this._kernel.assertReady();return this.packages.bindCommands(this.process,options);}
   async terminate(){await this._kernel.terminate();}
 }
 

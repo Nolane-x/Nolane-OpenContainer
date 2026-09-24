@@ -23,7 +23,9 @@ export function createProcessBuiltin({
   argv = ['opencontainer'],
   platform = 'linux',
   arch = 'wasm32',
-  version = 'v24.21.0'
+  version = 'v24.21.0',
+  stdout = () => {},
+  stderr = () => {}
 } = {}) {
   let currentCwd = normalizeAbsolute(cwd);
   const started = performance.now();
@@ -43,6 +45,15 @@ export function createProcessBuiltin({
     pid: 1,
     ppid: 0,
     exitCode: undefined,
+    stdout: Object.freeze({
+      isTTY: false,
+      write(chunk) { stdout(String(chunk)); return true; }
+    }),
+    stderr: Object.freeze({
+      isTTY: false,
+      write(chunk) { stderr(String(chunk)); return true; }
+    }),
+    stdin: Object.freeze({ isTTY: false }),
 
     cwd() { return currentCwd; },
     chdir(directory) {
@@ -80,6 +91,13 @@ export function createProcessBuiltin({
     emitWarning(warning) {
       const value = warning instanceof Error ? warning : new Error(String(warning));
       proc.emit('warning', value);
+    },
+
+    exit(code = proc.exitCode ?? 0) {
+      const error = new Error('OpenContainer logical process exit');
+      error.code = 'OC_PROCESS_EXIT';
+      error.exitCode = Number(code) || 0;
+      throw error;
     }
   });
 

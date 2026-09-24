@@ -4,6 +4,7 @@ import { NodeResolver } from './resolver.js';
 import { CommonJsLoader } from './commonjs-loader.js';
 import { FrozenInstallAuthority } from './frozen-install.js';
 import { createCoreBuiltinRegistry } from './builtins/registry.js';
+import { PackageCommandBridge } from './command-bridge.js';
 
 function stableId(prefix,value){
   let h1=0x811c9dc5,h2=0x9e3779b9;
@@ -56,31 +57,48 @@ export class PackageGraphAuthority {
 
   createCommonJsLoader(options={}){
     assertOc(this.#nodeModules&&this.#resolver,ErrorCodes.INVALID_STATE,'Package catalog is not mounted');
-    const {builtins={},globals={},cwd='/workspace',env={},argv=['opencontainer'],platform='linux',...rest}=options;
+    const {builtins={},globals={},cwd='/workspace',env={},argv=['opencontainer'],platform='linux',stdout=()=>{},stderr=()=>{},...rest}=options;
+    let loader;
     const core=createCoreBuiltinRegistry({
       fs:this.#nodeModules,
       writableFs:this.#baseFs,
       cwd,
       env,
       argv,
-      platform
+      platform,
+      stdout,
+      stderr,
+      createRequire:(issuer)=>loader.createRequire(issuer)
     });
     const merged={...core,...builtins};
-    return new CommonJsLoader({
+    const compatConsole=Object.freeze({
+      log:(...values)=>stdout(values.map(String).join(' ')+'\n'),
+      info:(...values)=>stdout(values.map(String).join(' ')+'\n'),
+      warn:(...values)=>stderr(values.map(String).join(' ')+'\n'),
+      error:(...values)=>stderr(values.map(String).join(' ')+'\n')
+    });
+    loader=new CommonJsLoader({
       fs:this.#nodeModules,
       resolver:this.#resolver,
       builtins:merged,
       globals:{
         Buffer:merged.buffer?.Buffer,
         process:merged.process,
+        console:compatConsole,
         ...globals
       },
       ...rest
     });
+    return loader;
   }
 
   createFrozenInstaller(options={}){
     return new FrozenInstallAuthority({packages:this,...options});
+  }
+
+  bindCommands(processSupervisor,options={}){
+    const bridge=new PackageCommandBridge({packages:this,process:processSupervisor,options});
+    return Object.freeze({bridge,commands:bridge.registerAll()});
   }
 }
 
@@ -99,3 +117,6 @@ export { BufferCompat, createBufferBuiltin } from './builtins/buffer.js';
 export { createUrlBuiltin } from './builtins/url.js';
 export { createProcessBuiltin } from './builtins/process.js';
 export { createFsBuiltins } from './builtins/fs.js';
+
+export { PackageCommandBridge } from './command-bridge.js';
+export { createModuleBuiltin, BUILTIN_MODULES } from './builtins/module.js';

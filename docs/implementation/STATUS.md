@@ -188,3 +188,18 @@ Authority/security rules:
 - these are selected compatibility subsets, not full Node API claims.
 
 Selected `node:url` and `node:fs` behavior is differentially checked against the exact Node CI oracle.
+
+
+## CommandIndex execution advancement
+
+The package command path is no longer metadata-only:
+
+- `node:module` / `module` now provides a loader-bound `createRequire()`, `isBuiltin()` and builtin-module inventory;
+- CommonJS shebangs are stripped before wrapper execution;
+- logical process stdout/stderr and `process.exit()` semantics are bridged into ProcessSupervisor;
+- package CommandIndex entries can be registered as virtual runtime commands;
+- command execution receives isolated argv/env/cwd plus captured console/stdout/stderr;
+- command disposal unregisters the virtual bins;
+- ESM bins remain fail-closed until the ESM execution gate is implemented.
+
+This connects S4 package metadata to S3 process execution without creating a new product surface. Native host process execution is still not used.

@@ -7,8 +7,8 @@ function dirname(path) {
 
 function defaultEvaluator(source, { exports, require, module, filename, dirname: moduleDir, globals = {} }) {
   const sourceURL = '\n//# sourceURL=opencontainer://' + encodeURI(filename);
-  const wrapper = new Function('exports', 'require', 'module', '__filename', '__dirname', 'Buffer', 'process', 'global', source + sourceURL);
-  return wrapper(exports, require, module, filename, moduleDir, globals.Buffer, globals.process, globals.global ?? Object.create(null));
+  const wrapper = new Function('exports', 'require', 'module', '__filename', '__dirname', 'Buffer', 'process', 'global', 'console', source + sourceURL);
+  return wrapper(exports, require, module, filename, moduleDir, globals.Buffer, globals.process, globals.global ?? Object.create(null), globals.console);
 }
 
 export class CommonJsLoader {
@@ -39,6 +39,23 @@ export class CommonJsLoader {
   resolve(specifier, issuer = '/workspace/index.cjs') {
     const resolved = this.#resolver.resolve(specifier, issuer, { mode: 'cjs' });
     return resolved.kind === 'builtin' ? resolved.specifier : resolved.path;
+  }
+
+  createRequire(issuer = '/workspace/index.cjs') {
+    const require = (specifier) => {
+      const resolved = this.#resolver.resolve(specifier, issuer, { mode: 'cjs' });
+      return this.#loadResolved(resolved, issuer);
+    };
+    require.resolve = (specifier) => this.resolve(specifier, issuer);
+    require.resolve.paths = () => null;
+    require.main = null;
+    return require;
+  }
+
+  getBuiltin(specifier) {
+    const bare = specifier.startsWith('node:') ? specifier.slice(5) : specifier;
+    if (this.#builtins.has(specifier)) return this.#builtins.get(specifier);
+    return this.#builtins.get(bare);
   }
 
   hasCached(filename) {
@@ -77,7 +94,7 @@ export class CommonJsLoader {
         return module.exports;
       }
 
-      const source = this.#fs.readFile(resolved.path);
+      const source = this.#fs.readFile(resolved.path).replace(/^#![^\r\n]*(?:\r?\n|$)/, '');
       const localRequire = (specifier) => {
         const child = this.#resolver.resolve(specifier, resolved.path, { mode: 'cjs' });
         if (child.kind === 'file' && !module.children.includes(child.path)) module.children.push(child.path);
