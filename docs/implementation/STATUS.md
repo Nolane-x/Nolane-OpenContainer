@@ -104,3 +104,15 @@ Evidence boundary:
 - this does not yet claim the full Node 24 resolver court;
 - syntax detection, JSON import attributes, Wasm modules, custom conditions fuzzing, Windows/path edge cases, preserve-symlinks-main and full Node error parity remain open;
 - module resolution is now implemented, but full CJS/ESM module execution/loading remains a separate gate.
+
+
+### Exact Node 24.21.0 differential receipt
+
+CI now builds the same selected package graph twice:
+
+- a physical Node/npm-style tree consumed by the exact Node `v24.21.0` oracle;
+- an OpenContainer RuntimePackageGraph/VirtualNodeModulesFS projection.
+
+The court compares selected CommonJS and ESM results for relative extension fallback, conditional exports, root/nested dependency lookup, package imports, package self-reference, default symlink realpath behavior and ESM query URL identity.
+
+This is a selected differential receipt, not full Node compatibility closure.
