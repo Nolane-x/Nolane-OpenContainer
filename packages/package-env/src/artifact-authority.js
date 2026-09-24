@@ -163,7 +163,7 @@ export class PackageArtifactAuthority {
     assertOc(typeof fetchImpl === 'function', ErrorCodes.INVALID_ARGUMENT, 'fetch implementation is required');
     this.#fs = fs;
     this.#network = network;
-    this.#fetch = fetchImpl;
+    this.#fetch = (...args) => Reflect.apply(fetchImpl, globalThis, args);
     this.#maxArtifactBytes = maxArtifactBytes;
     this.#maxRedirects = Math.max(0, Number(maxRedirects) || 0);
     this.#archiveLimits = { maxFiles, maxUnpackedBytes };

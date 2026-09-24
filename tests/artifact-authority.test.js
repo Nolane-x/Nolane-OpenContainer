@@ -191,3 +191,25 @@ test('artifact redirect cannot escape network capability', async () => {
   );
   assert.equal(fetched, 1, 'redirect target must be authorized before it is fetched');
 });
+
+
+test('artifact fetch preserves browser-compatible fetch receiver', async () => {
+  const bytes = encoder.encode('realm-bound');
+  const fs = new MemoryVFS();
+  const net = new NetworkAuthority().allow({ origin: 'https://registry.example', methods: ['GET'] });
+  let receiver = null;
+  const authority = new PackageArtifactAuthority({
+    fs,
+    network: net,
+    fetchImpl: function () {
+      receiver = this;
+      return Promise.resolve(new Response(bytes, { status: 200 }));
+    }
+  });
+
+  await authority.fetchArtifact({
+    url: 'https://registry.example/a.tgz',
+    integrity: sri(bytes)
+  });
+  assert.equal(receiver, globalThis);
+});
