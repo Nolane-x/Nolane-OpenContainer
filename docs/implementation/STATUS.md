@@ -137,3 +137,21 @@ Security boundary:
 - the built-in evaluator must be explicitly enabled and is intended only for a hardened guest worker;
 - trusted UI/main-thread code must not enable guest dynamic execution;
 - browser guest-worker isolation and CSP evidence remain open.
+
+
+## Frozen install / immutable PackageContent advancement
+
+Implemented behind S4:
+
+- verified package artifacts can now be ingested against compiled lockfile locations;
+- SRI/archive validation completes before immutable PackageContent publication;
+- artifact package name/version is checked against the lockfile before content enters the store;
+- identical immutable content is stored once and reused by multiple logical PackageInstances;
+- RuntimePackageGraph publication fails closed if any non-link package content is missing;
+- workspace lockfile links are projected as virtual symlinks;
+- a complete frozen graph mounts directly into VirtualNodeModulesFS without a physical node_modules tree;
+- recompiling the lockfile invalidates the prior mounted package projection/resolver.
+
+This materially connects the previously separate LockfileCompiler, package artifact hardening, PackageContent identity, VirtualNodeModulesFS and ResolverIndex paths.
+
+Still open: real npm corpus breadth, peer/optional/script policy, content persistence in OPFS PAFS, concurrent immutable-cache dedupe and streaming browser installation.

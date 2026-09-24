@@ -2,6 +2,7 @@ import { ErrorCodes, assertOc } from '../../protocol/src/index.js';
 import { VirtualNodeModulesFS } from './virtual-node-modules.js';
 import { NodeResolver } from './resolver.js';
 import { CommonJsLoader } from './commonjs-loader.js';
+import { FrozenInstallAuthority } from './frozen-install.js';
 
 function stableId(prefix,value){
   let h1=0x811c9dc5,h2=0x9e3779b9;
@@ -36,6 +37,7 @@ export class PackageGraphAuthority {
     }
     nodes.sort((a,b)=>a.location.localeCompare(b.location));
     this.#graph=Object.freeze({version:1,lockfileVersion:doc.lockfileVersion,nodes:Object.freeze(nodes),bins:Object.freeze(bins),rootName:doc.name,rootVersion:doc.version});
+    this.#nodeModules=null;this.#resolver=null;
     this.#generation++;return this.#graph;
   }
 
@@ -55,9 +57,15 @@ export class PackageGraphAuthority {
     assertOc(this.#nodeModules&&this.#resolver,ErrorCodes.INVALID_STATE,'Package catalog is not mounted');
     return new CommonJsLoader({fs:this.#nodeModules,resolver:this.#resolver,...options});
   }
+
+  createFrozenInstaller(options={}){
+    return new FrozenInstallAuthority({packages:this,...options});
+  }
 }
 
 export { PackageArtifactAuthority, verifySri, inspectTarArchive } from './artifact-authority.js';
 export { VirtualNodeModulesFS } from './virtual-node-modules.js';
 export { NodeResolver, NODE_BUILTINS } from './resolver.js';
 export { CommonJsLoader } from './commonjs-loader.js';
+
+export { FrozenInstallAuthority, PackageContentStore } from './frozen-install.js';
