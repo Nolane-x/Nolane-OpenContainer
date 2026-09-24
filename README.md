@@ -47,11 +47,13 @@ Internal protocol/toolchain packages do not create extra product surfaces.
 
 - monotonic runtime lifecycle and one-boot-per-runtime semantics;
 - generation-checked VFS transactions, stale-writer rejection and workspace containment;
-- restart-safe Worker RPC authority with session/epoch stale-response rejection;
-- recoverable dual-slot OPFS checkpoint publication with SHA-256 payload identity;
+- restart-safe Worker RPC authority with session/epoch stale-response rejection and bounded RPC timeouts;
+- real Chrome Dedicated Worker + disposable Service Worker native-ESM execution with generation restart and stale-session rejection;
+- recoverable dual-slot OPFS checkpoint publication with SHA-256 payload identity, now exercised against real browser OPFS recovery;
 - bounded virtual processes, captured stdout/stderr and package CommandIndex execution;
 - frozen package-lock compilation into content, instance and logical-location identities;
-- verified package tarball ingestion with SRI, traversal/link rejection and expansion ceilings;
+- verified package tarball ingestion with SRI, traversal/link rejection, expansion ceilings and capability-checked redirect hops;
+- real-browser retained-package fetch → immutable PackageContent → VNFS → resolver acceptance;
 - immutable PackageContent deduplication plus VirtualNodeModulesFS projection;
 - Node-style CJS/ESM resolution with selected exact Node 24.21.0 differential receipts;
 - guarded CommonJS execution with cache/cycle/JSON semantics and logical Node builtins;
@@ -90,7 +92,7 @@ Open `http://localhost:4173`. The local server emits COOP/COEP headers so future
 
 The local exact-byte blocker for Lightning CSS has been removed: `lightningcss-wasm@1.33.0` is retained under `toolchain/vendor/`, and CI revalidates the npm tarball digest, extracts the inner WASM, verifies its digest/shape and compiles it through the runtime artifact manager.
 
-The major remaining gates are full guest Worker isolation/sync-RPC, real-browser OPFS durability, broader Node compatibility and ESM execution, Rolldown WASI/N-API instantiation, Lightning CSS JS-glue execution, Vite C1 production build, Vite C2 dev/HMR, clean-browser PC-A/PC-B, weak-device/reliability/security/release testing and FTO/legal closure.
+The major remaining gates are SharedArrayBuffer/synchronous guest RPC for Node-style sync APIs, broader Node compatibility/native-ESM builtins, deeper OPFS persistence/quota/multi-tab integration, broad npm package-policy compatibility, Rolldown + Lightning CSS execution inside the OpenContainer guest browser toolchain, Vite C1 inside that guest path, Vite C2 dev/HMR, PC-A/PC-B target-device campaigns, weak-device/reliability/security/release testing and FTO/legal closure.
 
 See:
 

@@ -19,15 +19,15 @@ Implemented:
 
 Still required before production closure:
 
-1. Browser Worker execution authority for untrusted guest JS and sync-RPC profile.
-2. OPFS-backed WorkspaceFS/PackageFS authority using the proven transaction/recovery model.
-3. Artifact fetch/cache/install path with integrity and archive hardening.
-4. Node 24 core compatibility, CJS/ESM resolver, VirtualNodeModulesFS.
-5. Exact Lightning CSS 1.33.0 local artifact retention + differential.
-6. Rolldown 1.2.9 exact runtime integration.
-7. Vite 8.3 C1 production-build profile, then C2 dev/HMR profile.
-8. Clean unmanaged Chromium PC-A/PC-B execution.
-9. Weak-device/browser matrix, long-run reliability, security review, legal/FTO, release closure.
+1. SharedArrayBuffer/synchronous guest RPC for Node-style sync APIs plus broader guest-isolation hardening.
+2. OPFS-backed WorkspaceFS/PackageFS product integration, persistence policy/GC and extended durability campaigns; real-browser checkpoint/recovery now passes.
+3. Broader browser package-install corpus, peer/optional/script policy and persistent immutable PackageContent; exact retained-package browser install now passes.
+4. Broader Node 24 compatibility and native ESM builtin execution beyond the promoted resolver/CJS/browser-ESM courts.
+5. Lightning CSS browser product execution inside the OpenContainer guest toolchain; exact bytes + local JS-glue/WASM differential are already promoted.
+6. Rolldown browser WASI/N-API/thread execution inside the clean product browser path; exact retained artifact + local execution court are already promoted.
+7. Vite 8.3 C1 inside the OpenContainer guest/browser runtime, then C2 dev/HMR; exact native-oracle C1 already passes.
+8. PC-A/PC-B target-device/browser matrix beyond CI Chrome.
+9. Weak-device/long-run/fault/security testing, release packaging, licensing and FTO/legal closure.
 
 `production_closed = false` until those gates produce evidence.
 
@@ -44,9 +44,10 @@ Started and contract-tested:
 
 Evidence boundary:
 
-- this is protocol/authority implementation evidence;
-- it is **not** a clean-browser execution PASS;
-- arbitrary guest-JS Worker isolation, SharedArrayBuffer sync-RPC and PC-A/PC-B remain open.
+- protocol/authority implementation remains contract-tested;
+- Dedicated Worker + disposable Service Worker native-ESM execution now has a clean Chrome CI PASS;
+- generation restart and stale-session rejection are exercised in-browser;
+- SharedArrayBuffer synchronous RPC, broader Node builtin execution and PC-A/PC-B target-device campaigns remain open.
 
 OPFS advancement in this wave:
 
@@ -55,7 +56,9 @@ OPFS advancement in this wave:
 - alternating manifest A/B commit points;
 - recovery falls back from a corrupt/torn newest payload or manifest;
 - stale-generation publication is rejected;
-- current tests use a deterministic OPFS-handle model, so real-browser OPFS durability remains an open promotion gate.
+- deterministic OPFS-handle model tests remain;
+- Chrome CI now also executes real OPFS dual-slot checkpoint/reopen recovery, corrupts the newest payload and verifies fallback to the older valid generation;
+- long-run persistence, quota/eviction and multi-tab/Web Locks campaigns remain open.
 
 
 ## Package artifact authority advancement
@@ -356,4 +359,46 @@ Implementation now includes the product-path composition needed to promote the n
 - stale/unowned publication sessions fail closed at the Service Worker edge;
 - the playground server exposes only required source/dependency routes with COOP/COEP/CORP and no-store semantics.
 
-A dedicated Chromium CI job has been added to exercise this path. Product-level browser promotion remains pending until that job produces a clean PASS receipt.
+The dedicated browser CI now has a clean Chrome 153 PASS using a fresh browser profile and real-time DevTools Protocol harness. The promoted receipt proves:
+
+- page and Dedicated Worker are cross-origin isolated;
+- first native ESM guest execution returns the expected result;
+- Service Worker edge serves the publication with session proof;
+- a VFS edit followed by a new publication/Worker observes the new generation;
+- the older closed session returns 504 rather than stale code;
+- real OPFS checkpoint/recovery falls back after deliberate newest-payload corruption;
+- exact retained Lightning CSS tarball is fetched through network capability checks, SRI-verified, ingested into immutable PackageContent, mounted into VirtualNodeModulesFS and resolved in-browser.
+
+The browser harness itself was corrected to use real-time Chrome DevTools Protocol rather than virtual-time DOM dumping, because Service Worker lifecycle did not reliably progress under the old harness.
+
+This is product-path Chrome CI evidence. It does not silently close PC-A/PC-B target-device campaigns, SharedArrayBuffer sync-RPC, VITE-C1 guest/browser execution or C2/HMR.
+
+
+## Browser package installer promotion
+
+The retained-package installation path now has a real-browser receipt rather than Node-only evidence.
+
+Chrome CI performs the following through OpenContainer authorities:
+
+- enables loopback only for the explicit acceptance runtime;
+- grants a GET capability only to the retained toolchain vendor path;
+- fetches the exact retained `lightningcss-wasm@1.33.0` tarball through PackageArtifactAuthority;
+- uses manual redirect handling so every redirect hop must independently pass NetworkAuthority before it is fetched;
+- verifies exact npm SRI;
+- compiles the frozen lockfile graph;
+- ingests the tarball into immutable PackageContent;
+- mounts the graph into VirtualNodeModulesFS;
+- resolves the installed package through ResolverIndex.
+
+Observed browser receipt:
+
+```text
+tarball bytes   3,826,518
+package files   19
+contentCount    1
+resolved path   /workspace/node_modules/lightningcss-wasm/wasm-node.mjs
+```
+
+The redirect-capability bypass present in the earlier fetch implementation is closed: automatic redirect following has been replaced by fail-closed manual hop authorization.
+
+This does not yet prove broad npm corpus compatibility, lifecycle scripts, peer/optional policy or persistent PackageContent in OPFS.
