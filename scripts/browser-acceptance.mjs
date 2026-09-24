@@ -16,6 +16,10 @@ function findBrowser() {
   throw new Error('No supported Chromium/Chrome binary found for browser acceptance');
 }
 
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function waitForServer(child) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Playground server did not start')), 5000);
@@ -36,6 +40,123 @@ function waitForServer(child) {
   });
 }
 
+function waitForDevTools(child, timeoutMs = 10000) {
+  return new Promise((resolve, reject) => {
+    let stderr = '';
+    let settled = false;
+    const timer = setTimeout(() => finish(reject, new Error('Chrome DevTools endpoint did not appear\n' + stderr)), timeoutMs);
+
+    const onData = (chunk) => {
+      const text = String(chunk);
+      stderr += text;
+      const match = stderr.match(/DevTools listening on (ws:\/\/[^\s]+)/);
+      if (match) finish(resolve, { browserWebSocket: match[1], stderr: () => stderr });
+    };
+
+    const onExit = (code) => finish(reject, new Error('Chrome exited before DevTools was ready: ' + code + '\n' + stderr));
+
+    function finish(fn, value) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      child.stderr.off('data', onData);
+      child.off('exit', onExit);
+      fn(value);
+    }
+
+    child.stderr.on('data', onData);
+    child.once('exit', onExit);
+  });
+}
+
+async function waitForPageTarget(debugPort, expectedUrl, timeoutMs = 10000) {
+  const deadline = Date.now() + timeoutMs;
+  let last = null;
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch('http://127.0.0.1:' + debugPort + '/json/list', { cache: 'no-store' });
+      if (response.ok) {
+        const targets = await response.json();
+        last = targets;
+        const target = targets.find((entry) => entry.type === 'page' && entry.url === expectedUrl)
+          ?? targets.find((entry) => entry.type === 'page' && entry.url.includes('/browser-acceptance.html'));
+        if (target?.webSocketDebuggerUrl) return target;
+      }
+    } catch {}
+    await delay(50);
+  }
+  throw new Error('Browser page target did not appear: ' + JSON.stringify(last));
+}
+
+function connectCdp(webSocketUrl) {
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket(webSocketUrl);
+    const pending = new Map();
+    const events = [];
+    let nextId = 0;
+
+    socket.addEventListener('open', () => {
+      resolve({
+        events,
+        async command(method, params = {}) {
+          const id = ++nextId;
+          const response = new Promise((res, rej) => pending.set(id, { res, rej, method }));
+          socket.send(JSON.stringify({ id, method, params }));
+          return response;
+        },
+        close() { socket.close(); }
+      });
+    });
+
+    socket.addEventListener('message', (event) => {
+      const message = JSON.parse(String(event.data));
+      if (message.id) {
+        const waiter = pending.get(message.id);
+        if (!waiter) return;
+        pending.delete(message.id);
+        if (message.error) waiter.rej(new Error(waiter.method + ': ' + message.error.message));
+        else waiter.res(message.result);
+        return;
+      }
+      if (message.method === 'Runtime.exceptionThrown' || message.method === 'Runtime.consoleAPICalled') {
+        events.push(message);
+        if (events.length > 100) events.shift();
+      }
+    });
+
+    socket.addEventListener('error', () => reject(new Error('Chrome DevTools WebSocket failed')));
+    socket.addEventListener('close', () => {
+      for (const waiter of pending.values()) waiter.rej(new Error('Chrome DevTools WebSocket closed'));
+      pending.clear();
+    });
+  });
+}
+
+async function readAcceptanceState(cdp) {
+  const evaluated = await cdp.command('Runtime.evaluate', {
+    expression: `(() => ({
+      status: document.body?.dataset?.status ?? null,
+      stage: document.body?.dataset?.stage ?? null,
+      result: document.getElementById('result')?.textContent ?? null,
+      html: document.documentElement?.outerHTML ?? null
+    }))()`,
+    returnByValue: true,
+    awaitPromise: true
+  });
+  return evaluated.result?.value ?? {};
+}
+
+async function waitForAcceptance(cdp, timeoutMs = 30000) {
+  const deadline = Date.now() + timeoutMs;
+  let state = {};
+  while (Date.now() < deadline) {
+    state = await readAcceptanceState(cdp);
+    if (state.status === 'pass' || state.status === 'fail') return state;
+    await delay(100);
+  }
+  return { ...state, status: 'timeout' };
+}
+
 const browser = findBrowser();
 console.log('browser acceptance:', browser.version);
 
@@ -45,10 +166,14 @@ const server = spawn(process.execPath, ['apps/playground/server.mjs'], {
   stdio: ['ignore', 'pipe', 'pipe']
 });
 
+let chrome = null;
+let cdp = null;
+
 try {
   await waitForServer(server);
   const url = 'http://127.0.0.1:' + port + '/browser-acceptance.html';
-  const result = spawnSync(browser.command, [
+
+  chrome = spawn(browser.command, [
     '--headless=new',
     '--no-sandbox',
     '--disable-gpu',
@@ -56,29 +181,36 @@ try {
     '--no-first-run',
     '--no-default-browser-check',
     '--user-data-dir=' + profile,
-    '--virtual-time-budget=15000',
-    '--dump-dom',
+    '--remote-debugging-port=0',
     url
   ], {
-    encoding: 'utf8',
-    timeout: 45000,
-    maxBuffer: 8 * 1024 * 1024
+    stdio: ['ignore', 'ignore', 'pipe']
   });
 
-  if (result.error) throw result.error;
-  const output = result.stdout ?? '';
-  if (result.status !== 0 || !/data-status=["']pass["']/.test(output)) {
+  const devtools = await waitForDevTools(chrome);
+  const debugPort = new URL(devtools.browserWebSocket).port;
+  const page = await waitForPageTarget(debugPort, url);
+  cdp = await connectCdp(page.webSocketDebuggerUrl);
+  await cdp.command('Runtime.enable');
+  await cdp.command('Page.enable');
+
+  const state = await waitForAcceptance(cdp);
+  if (state.status !== 'pass') {
     throw new Error([
       'Browser acceptance failed',
-      'exit=' + result.status,
-      'stderr=' + (result.stderr ?? ''),
-      'dom=' + output
+      'status=' + state.status,
+      'stage=' + (state.stage ?? 'unknown'),
+      'result=' + (state.result ?? ''),
+      'events=' + JSON.stringify(cdp.events.slice(-20)),
+      'dom=' + (state.html ?? ''),
+      'chrome-stderr=' + devtools.stderr()
     ].join('\n'));
   }
 
-  const match = output.match(/<pre id="result">([^<]+)<\/pre>/);
-  console.log('browser acceptance PASS', match?.[1] ?? '');
+  console.log('browser acceptance PASS', state.result ?? '');
 } finally {
-  server.kill('SIGTERM');
+  try { cdp?.close(); } catch {}
+  if (chrome && chrome.exitCode === null) chrome.kill('SIGTERM');
+  if (server.exitCode === null) server.kill('SIGTERM');
   await rm(profile, { recursive: true, force: true });
 }
