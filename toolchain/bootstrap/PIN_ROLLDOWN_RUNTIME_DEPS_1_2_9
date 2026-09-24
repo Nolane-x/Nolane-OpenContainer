@@ -1,6 +1,0 @@
-Pin the exact JavaScript/WASI runtime roots used by the frozen Rolldown 1.2.9 browser profile:
-@emnapi/core@2.0.0-alpha.5
-@emnapi/runtime@2.0.0-alpha.5
-@napi-rs/wasm-runtime@1.2.4
-
-The resulting package-lock is the source of truth for transitive runtime dependencies.

@@ -26,6 +26,7 @@ const required=[
   'toolchain/vendor/lightningcss-wasm-1.33.0.tgz',
   'toolchain/vendor/rolldown-browser-1.2.9.tgz',
   'toolchain/artifacts/rolldown-browser-1.2.9.json',
+  'toolchain/artifacts/rolldown-runtime-deps-1.2.9.json',
   'tests/runtime.test.js',
   'tests/resolver.test.js',
   'tests/node24-resolver-differential.test.js',
@@ -37,7 +38,8 @@ const required=[
   'tests/wasm-artifact-manager.test.js',
   'tests/lightningcss-artifact.test.js',
   'tests/lightningcss-js-glue.test.js',
-  'tests/rolldown-browser-artifact.test.js','apps/playground/server.mjs'
+  'tests/rolldown-browser-artifact.test.js',
+  'tests/rolldown-browser-execution.test.js','apps/playground/server.mjs'
 ];
 for(const path of required)await access(resolve(path));
 const root=JSON.parse(await readFile('package.json','utf8'));

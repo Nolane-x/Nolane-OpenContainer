@@ -270,3 +270,28 @@ The exact `@rolldown/browser@1.2.9` npm package is now retained and permanently 
 Permanent CI now verifies package identity, exact dependency declarations, complete dist-tree concordance, key-file hashes and WASM compile/shape through WasmArtifactManager.
 
 Still open: retaining/proving the exact emnapi/@napi-rs runtime dependency closure, executing the browser binding, browser Worker/thread integration and VITE-C1.
+
+
+## Rolldown WASI/browser execution court
+
+The exact retained Rolldown browser artifact is now exercised rather than only hashed/compiled.
+
+Dependency closure is pinned in `package-lock.json` and recorded in `toolchain/artifacts/rolldown-runtime-deps-1.2.9.json`:
+
+- `@emnapi/core@2.0.0-alpha.5`;
+- `@emnapi/runtime@2.0.0-alpha.5`;
+- `@napi-rs/wasm-runtime@1.2.4`;
+- transitive `@emnapi/wasi-threads@2.1.0`, `@tybys/wasm-util@0.10.4`, and `tslib@2.8.1` are integrity-pinned by npm lock.
+
+The execution court materializes only the retained `@rolldown/browser@1.2.9` bytes, imports `dist/index.browser.mjs`, forces the WASI browser binding, supplies a browser-Worker compatibility adapter backed by Node worker_threads only for the exact-Node oracle, and bundles an in-memory multi-module fixture with dynamic import and source maps.
+
+The court requires:
+
+- binding target `wasm32-wasi`;
+- successful programmatic Rolldown bundle;
+- dynamic code splitting;
+- source map emission;
+- deterministic normalized output across two identical builds;
+- explicit WASI binding disposal.
+
+This is strong local integration evidence for Rolldown JS glue + WASI/N-API/thread runtime. It is not yet a clean unmanaged-browser PC-B receipt and does not by itself close VITE-C1.
