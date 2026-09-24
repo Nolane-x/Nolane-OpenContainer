@@ -19,6 +19,7 @@ const required=[
   'packages/package-env/src/virtual-node-modules.js','packages/network/src/index.js','packages/preview/src/index.js','packages/persistence/src/index.js',
   'packages/resources/src/index.js','packages/diagnostics/src/index.js','packages/protocol/src/index.js','packages/toolchain/src/index.js',
   'packages/toolchain/src/wasm-artifact-manager.js',
+  'packages/toolchain/src/lightningcss-profile.js',
   'toolchain/artifacts/rolldown-wasi-1.2.9.json',
   'toolchain/artifacts/lightningcss-wasm-1.33.0.json',
   'toolchain/vendor/lightningcss-wasm-1.33.0.tgz',
@@ -31,7 +32,8 @@ const required=[
   'tests/runtime-builtins.test.js',
   'tests/package-command-bridge.test.js',
   'tests/wasm-artifact-manager.test.js',
-  'tests/lightningcss-artifact.test.js','apps/playground/server.mjs'
+  'tests/lightningcss-artifact.test.js',
+  'tests/lightningcss-js-glue.test.js','apps/playground/server.mjs'
 ];
 for(const path of required)await access(resolve(path));
 const root=JSON.parse(await readFile('package.json','utf8'));

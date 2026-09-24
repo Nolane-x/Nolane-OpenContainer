@@ -240,3 +240,17 @@ P6-02 has materially advanced from external identity only to retained local exec
 CI now reopens the retained tarball, validates its exact digest, extracts the WASM through OpenContainer's hardened tar reader, revalidates the inner digest and compiles it through WasmArtifactManager.
 
 This closes the local-byte/compile portion only. Lightning CSS JS glue execution, browser execution and VITE-C1 remain OPEN.
+
+
+## Lightning CSS JS-glue differential
+
+The retained exact `lightningcss-wasm@1.33.0` package is now promoted beyond raw WASM compilation:
+
+- a production verifier opens the retained npm tarball, rechecks tarball identity, validates package name/version and required runtime files, and recompiles the inner WASM through WasmArtifactManager;
+- CI materializes only files from those verified retained bytes;
+- the package's bundled exact `napi-wasm` dependency is used rather than a repository-installed substitute;
+- exact `wasm-node.mjs` and browser/default `index.mjs` are both executed;
+- multiple CSS transform fixtures compare minified code, source maps and warnings between the Node and browser/default glue paths;
+- `transformStyleAttribute` is also compared.
+
+This establishes local JS-glue + WASM execution/differential evidence for Lightning CSS 1.33.0. It is still not an unmanaged-browser receipt, and VITE-C1 remains open.
