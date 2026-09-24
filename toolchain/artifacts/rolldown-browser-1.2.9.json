@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS-OFFICIAL-DIST-CONCORDANCE",
+  "observedAt": "2026-09-24T14:42:48.982Z",
+  "package": "@rolldown/browser",
+  "version": "1.2.9",
+  "npmTarball": {
+    "file": "toolchain/vendor/rolldown-browser-1.2.9.tgz",
+    "bytes": 3809446,
+    "sha256": "9accf3cdfe3d2287ad7d5f49cd2cfcddbc9c112abfcbc295863e401ef44b8576"
+  },
+  "officialGithubArtifact": {
+    "artifactId": 10447416443,
+    "artifactZipSha256": "44ab2d4a313065c8fb448433877a4a50628aca0a4a972a6f11660ca8f5002ac7",
+    "fileCount": 63,
+    "normalizedDistManifestSha256": "75492b477ad45162d0f92543ddb3fb0ae9b3a727ff652ef251b8532cb53f1308"
+  },
+  "keyFiles": {
+    "dist/index.browser.mjs": "3738a5cb942733b5fb9bbacdc5502e060a3e48f5edc86378531dc502ed53f9ed",
+    "dist/rolldown-binding.wasi-browser.js": "4970cc8275950b4a6a7bc16803a48f0462c5ccad02e65f568d2300662e40fd84",
+    "dist/rolldown-binding.wasi.cjs": "5f4ad0a90dd97b1e5d96517c31068575a6e7b6163a54172a8d39b9753d2b2457",
+    "dist/rolldown-binding.wasm32-wasi.wasm": "629aa10c37a9920cd5729a35af148983c881f4ff9edd6368a7d63b5acbf89dc2",
+    "dist/wasi-worker-browser.mjs": "c75b826181d93cfa9df7a5e5212a353ad965be363149db634478c618196fe30c"
+  },
+  "dependencies": {
+    "@emnapi/core": "2.0.0-alpha.5",
+    "@emnapi/runtime": "2.0.0-alpha.5",
+    "@napi-rs/wasm-runtime": "~1.2.2"
+  },
+  "boundary": {
+    "dependencyRetention": "OPEN",
+    "browserExecution": "OPEN",
+    "viteC1": "OPEN"
+  }
+}
