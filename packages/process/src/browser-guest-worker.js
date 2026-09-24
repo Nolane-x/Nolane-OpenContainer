@@ -17,7 +17,8 @@ export class BrowserGuestWorkerAuthority {
     WorkerImpl = globalThis.Worker,
     workerURL = '/opencontainer-guest-worker.mjs',
     diagnostics,
-    maxPending = 64
+    maxPending = 64,
+    requestTimeoutMs = 5000
   } = {}) {
     assertOc(publication && typeof publication.resolveDynamic === 'function', ErrorCodes.INVALID_ARGUMENT, 'Native ESM publication authority is required');
     assertOc(typeof WorkerImpl === 'function', ErrorCodes.ESM_EDGE_UNAVAILABLE, 'Dedicated Worker API is unavailable');
@@ -26,6 +27,7 @@ export class BrowserGuestWorkerAuthority {
     this.#workerURL = workerURL;
     this.#diagnostics = diagnostics;
     this.#maxPending = maxPending;
+    this.requestTimeoutMs = Math.max(1, Number(requestTimeoutMs) || 5000);
   }
 
   get identity() { return this.#rpc?.identity ?? null; }
@@ -53,11 +55,17 @@ export class BrowserGuestWorkerAuthority {
         colno: event.colno
       });
     });
+    this.#worker.addEventListener('messageerror', (event) => {
+      this.#diagnostics?.record('browser-worker.messageerror', {
+        dataType: typeof event.data
+      });
+    });
 
     this.#rpc = new WorkerRpcAuthority({
       transport: this.#worker,
       maxPending: this.#maxPending,
-      diagnostics: this.#diagnostics
+      diagnostics: this.#diagnostics,
+      requestTimeoutMs: this.requestTimeoutMs
     });
     return this.identity;
   }

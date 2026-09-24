@@ -130,3 +130,31 @@ test('worker close is idempotent and refuses new work', () => {
     (error) => error.code === ErrorCodes.WORKER_CLOSED
   );
 });
+
+
+test('worker RPC timeout fails closed and clears pending request', async () => {
+  const transport = new MockWorkerTransport();
+  const authority = new WorkerRpcAuthority({ transport, requestTimeoutMs: 10 });
+  const pending = authority.request('never-answers', {});
+  await expectCode(pending, ErrorCodes.WORKER_TIMEOUT);
+  assert.equal(authority.pendingCount, 0);
+});
+
+test('worker response before timeout cancels the deadline', async () => {
+  const transport = new MockWorkerTransport();
+  const authority = new WorkerRpcAuthority({ transport, requestTimeoutMs: 100 });
+  const pending = authority.request('fast', {});
+  const request = transport.sent.at(-1);
+  transport.emit({
+    v: 1,
+    type: 'response',
+    session: request.session,
+    epoch: request.epoch,
+    id: request.id,
+    ok: true,
+    value: 'ok'
+  });
+  assert.equal(await pending, 'ok');
+  await new Promise((resolve) => setTimeout(resolve, 120));
+  assert.equal(authority.pendingCount, 0);
+});

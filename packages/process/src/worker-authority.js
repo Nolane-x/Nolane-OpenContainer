@@ -15,10 +15,12 @@ export class WorkerRpcAuthority {
   #session = null;
   #nextId = 0;
   #closed = false;
+  #requestTimeoutMs;
 
-  constructor({ transport = null, maxPending = 64, diagnostics } = {}) {
+  constructor({ transport = null, maxPending = 64, requestTimeoutMs = 0, diagnostics } = {}) {
     this.#diagnostics = diagnostics;
     this.#maxPending = Math.max(1, Number(maxPending) || 1);
+    this.#requestTimeoutMs = Math.max(0, Number(requestTimeoutMs) || 0);
     if (transport) this.restart(transport);
   }
 
@@ -86,12 +88,31 @@ export class WorkerRpcAuthority {
       reject = rej;
     });
 
-    this.#pending.set(id, { resolve, reject, method });
+    let timer = null;
+    if (this.#requestTimeoutMs > 0) {
+      timer = setTimeout(() => {
+        const pending = this.#pending.get(id);
+        if (!pending) return;
+        this.#pending.delete(id);
+        const error = ocError(ErrorCodes.WORKER_TIMEOUT, 'Worker RPC request timed out', {
+          session: this.#session,
+          epoch: this.#epoch,
+          id,
+          method,
+          timeoutMs: this.#requestTimeoutMs
+        });
+        this.#diagnostics?.record('worker.timeout', error.details);
+        pending.reject(error);
+      }, this.#requestTimeoutMs);
+    }
+
+    this.#pending.set(id, { resolve, reject, method, timer });
     try {
       if (transfer !== undefined) this.#transport.postMessage(envelope, transfer);
       else this.#transport.postMessage(envelope);
     } catch (error) {
       this.#pending.delete(id);
+      if (timer) clearTimeout(timer);
       reject(error);
     }
 
@@ -122,6 +143,7 @@ export class WorkerRpcAuthority {
     const pending = this.#pending.get(message.id);
     if (!pending) return false;
     this.#pending.delete(message.id);
+    if (pending.timer) clearTimeout(pending.timer);
 
     if (message.ok === false) pending.reject(workerErrorFromEnvelope(message.error));
     else pending.resolve(message.value);
@@ -148,7 +170,10 @@ export class WorkerRpcAuthority {
   }
 
   #rejectPending(error) {
-    for (const pending of this.#pending.values()) pending.reject(error);
+    for (const pending of this.#pending.values()) {
+      if (pending.timer) clearTimeout(pending.timer);
+      pending.reject(error);
+    }
     this.#pending.clear();
   }
 
