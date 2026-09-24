@@ -5,6 +5,7 @@ import { CommonJsLoader } from './commonjs-loader.js';
 import { FrozenInstallAuthority } from './frozen-install.js';
 import { createCoreBuiltinRegistry } from './builtins/registry.js';
 import { PackageCommandBridge } from './command-bridge.js';
+import { NativeEsmPublicationAuthority } from './native-esm-publication.js';
 
 function stableId(prefix,value){
   let h1=0x811c9dc5,h2=0x9e3779b9;
@@ -100,6 +101,11 @@ export class PackageGraphAuthority {
     const bridge=new PackageCommandBridge({packages:this,process:processSupervisor,options});
     return Object.freeze({bridge,commands:bridge.registerAll()});
   }
+
+  createNativeEsmPublication(options={}){
+    assertOc(this.#nodeModules&&this.#resolver,ErrorCodes.INVALID_STATE,'Package catalog is not mounted');
+    return new NativeEsmPublicationAuthority({fs:this.#nodeModules,resolver:this.#resolver,...options});
+  }
 }
 
 export { PackageArtifactAuthority, verifySri, inspectTarArchive } from './artifact-authority.js';
@@ -120,3 +126,5 @@ export { createFsBuiltins } from './builtins/fs.js';
 
 export { PackageCommandBridge } from './command-bridge.js';
 export { createModuleBuiltin, BUILTIN_MODULES } from './builtins/module.js';
+
+export { NativeEsmPublicationAuthority } from './native-esm-publication.js';

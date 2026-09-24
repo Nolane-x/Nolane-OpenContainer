@@ -311,7 +311,7 @@ The production-build court then requires:
 
 - a TypeScript `vite.config.ts` loaded through Vite's default config-loader path;
 - a local transform plugin that materially changes output;
-- default client `build.cssMinify === 'lightningcss'`;
+- default client CSS minification remains enabled, does not select literal `'esbuild'`, and the exact `lightningcss-wasm@1.33.0` alias is the installed Lightning CSS implementation;
 - TypeScript application transform;
 - emitted asset;
 - emitted JS source map;
@@ -323,3 +323,21 @@ The production-build court then requires:
 - observed Rolldown binding target `wasm32-wasi`.
 
 Passing this court closes the exact-Node/native-oracle composition of VITE-C1. A separate OpenContainer guest/browser execution court remains required before VITE-C1 is promoted at product level.
+
+
+## Browser-native ESM publication authority
+
+The first product-path ESM layer is implemented behind S4/S3 without embedding another JavaScript engine:
+
+- `es-module-lexer@3.0.2` is exact-lock-pinned only for import-syntax discovery;
+- OpenContainer ResolverIndex remains the single authority for relative, bare-package, package-import, self-reference and builtin resolution;
+- canonical VFS paths are mapped to stable per-session publication URLs;
+- static imports, reexports and statically-analyzable dynamic imports are rewritten to those stable URLs;
+- nonliteral dynamic imports are routed to an explicit `__opencontainer_dynamic_import__` helper contract instead of guessing a path;
+- query/fragment identities are preserved in publication URLs and therefore in the native module cache;
+- source/defer phase imports fail closed until independently promoted;
+- builtin modules are synthetic publication routes supplied by an internal builtin-source provider;
+- publication caches are keyed by authoritative filesystem generation;
+- `response()` emits Service-Worker-ready JavaScript responses, but the edge never owns VFS truth.
+
+The exact-Node oracle materializes the same published graph to `file:` URLs and lets the native ESM engine prove cycles, live bindings, top-level await, dynamic import and query-separated module identities. Product browser execution still requires wiring this authority to the Dedicated Worker + disposable Service Worker edge.

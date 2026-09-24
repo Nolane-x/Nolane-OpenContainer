@@ -5,6 +5,7 @@ const required=[
   'packages/sdk/src/index.js','packages/kernel/src/index.js','packages/vfs/src/index.js','packages/process/src/index.js',
   'packages/package-env/src/index.js',
   'packages/package-env/src/resolver.js',
+  'packages/package-env/src/native-esm-publication.js',
   'packages/package-env/src/commonjs-loader.js',
   'packages/package-env/src/frozen-install.js',
   'packages/package-env/src/command-bridge.js',
@@ -28,6 +29,7 @@ const required=[
   'toolchain/artifacts/rolldown-browser-1.2.9.json',
   'toolchain/artifacts/rolldown-runtime-deps-1.2.9.json',
   'toolchain/artifacts/vite-c1-runtime-8.3.0.json',
+  'toolchain/artifacts/esm-lexer-3.0.2.json',
   'tests/runtime.test.js',
   'tests/resolver.test.js',
   'tests/node24-resolver-differential.test.js',
@@ -41,7 +43,8 @@ const required=[
   'tests/lightningcss-js-glue.test.js',
   'tests/rolldown-browser-artifact.test.js',
   'tests/rolldown-browser-execution.test.js',
-  'tests/vite-c1-oracle.test.js','apps/playground/server.mjs'
+  'tests/vite-c1-oracle.test.js',
+  'tests/native-esm-publication.test.js','apps/playground/server.mjs'
 ];
 for(const path of required)await access(resolve(path));
 const root=JSON.parse(await readFile('package.json','utf8'));
