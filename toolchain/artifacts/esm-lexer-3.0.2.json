@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "status": "LOCKED",
+  "observedAt": "2026-09-24T15:05:55.134Z",
+  "package": "es-module-lexer",
+  "version": "3.0.2",
+  "integrity": "sha512-BuIB67FngDSyQ/dpQNOZybwdEBDUGJQvOqwWr4ha/ufYiqzuEwPkKO2zLhRAgay28tStRIHUeWmszZAJo3GCOg==",
+  "resolved": "https://registry.npmjs.org/es-module-lexer/-/es-module-lexer-3.0.2.tgz",
+  "dependencyCount": 0,
+  "packageLockSha256": "4476bec7d55a9cca24f96e87ad563b0b28df614cc9da882902442a790e7fdf1c"
+}

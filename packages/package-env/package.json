@@ -3,5 +3,8 @@
   "version": "0.1.0-alpha.1",
   "type": "module",
   "private": true,
-  "exports": "./src/index.js"
+  "exports": "./src/index.js",
+  "dependencies": {
+    "es-module-lexer": "3.0.2"
+  }
 }
