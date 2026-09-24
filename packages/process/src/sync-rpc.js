@@ -113,7 +113,9 @@ export function waitSyncRpcMailbox(shared, { timeoutMs = 5000 } = {}) {
 
   let envelope;
   try {
-    envelope = JSON.parse(decoder.decode(payload.subarray(0, length)));
+    const copy = new Uint8Array(length);
+    copy.set(payload.subarray(0, length));
+    envelope = JSON.parse(decoder.decode(copy));
   } catch (error) {
     throw ocError(ErrorCodes.GUEST_WORKER_FAILED, 'Invalid synchronous Worker RPC response envelope', {
       cause: error?.message
