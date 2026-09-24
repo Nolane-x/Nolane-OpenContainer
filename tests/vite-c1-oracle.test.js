@@ -153,8 +153,9 @@ test('VITE-C1 exact native oracle closes production-build composition', { timeou
       'Vite/Rolldown must use the retained exact WASI loader override'
     );
 
-    const lightningPackagePath = require.resolve('lightningcss/package.json');
-    const lightningRoot = dirname(lightningPackagePath);
+    const lightningEntryPath = require.resolve('lightningcss');
+    const lightningRoot = dirname(lightningEntryPath);
+    const lightningPackagePath = join(lightningRoot, 'package.json');
     const lightningPackage = JSON.parse(await readFile(lightningPackagePath, 'utf8'));
     assert.equal(lightningPackage.name, 'lightningcss-wasm');
     assert.equal(lightningPackage.version, '1.33.0');
