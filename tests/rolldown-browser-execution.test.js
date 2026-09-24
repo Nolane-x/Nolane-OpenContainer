@@ -24,14 +24,23 @@ class BrowserWorkerAdapter {
       globalThis.MessagePort ??= MessagePort;
       globalThis.BroadcastChannel ??= BroadcastChannel;
       let handler = null;
+      const pending = [];
       Object.defineProperty(globalThis, 'onmessage', {
         configurable: true,
         get() { return handler; },
-        set(value) { handler = value; }
+        set(value) {
+          handler = value;
+          if (typeof handler === 'function') {
+            for (const data of pending.splice(0)) handler({ data });
+          }
+        }
       });
       globalThis.postMessage = (value, transfer) => parentPort.postMessage(value, transfer);
       globalThis.close = () => process.exit(0);
-      parentPort.on('message', (data) => handler?.({ data }));
+      parentPort.on('message', (data) => {
+        if (typeof handler === 'function') handler({ data });
+        else pending.push(data);
+      });
       await import(${JSON.stringify(targetUrl)});
     `;
     const url = new URL('data:text/javascript;base64,' + Buffer.from(bootstrap).toString('base64'));
