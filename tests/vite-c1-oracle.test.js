@@ -184,7 +184,11 @@ test('VITE-C1 exact native oracle closes production-build composition', { timeou
     const vite = await import('vite');
 
     const resolved = await vite.resolveConfig({ root, logLevel: 'silent' }, 'build');
-    assert.equal(resolved.build.cssMinify, 'lightningcss', 'client default CSS minifier must remain Lightning CSS');
+    // Vite 8.3 normalizes client default cssMinify to boolean true.
+    // css.ts selects esbuild only for the literal string 'esbuild'; the
+    // default truthy branch imports Lightning CSS.
+    assert.equal(resolved.build.cssMinify, true, 'client default CSS minification must remain enabled');
+    assert.notEqual(resolved.build.cssMinify, 'esbuild', 'default client CSS minification must not select esbuild');
 
     const buildOnce = async () => {
       await vite.build({ root, logLevel: 'silent' });
