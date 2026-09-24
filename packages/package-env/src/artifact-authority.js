@@ -103,7 +103,8 @@ export async function inspectTarArchive(input, {
     const type = String.fromCharCode(bytes[offset + 156] || 48);
     const size = parseOctal(readNullTerminated(bytes, offset + 124, 12), 'size');
 
-    if (requiredPrefix && !path.startsWith(requiredPrefix)) {
+    const prefixRoot = requiredPrefix?.replace(/\/$/, '');
+    if (requiredPrefix && path !== prefixRoot && !path.startsWith(requiredPrefix)) {
       throw ocError(ErrorCodes.ARCHIVE_UNSAFE, 'Archive entry is outside required prefix', { path, requiredPrefix });
     }
     if (!['0', '5'].includes(type)) {
