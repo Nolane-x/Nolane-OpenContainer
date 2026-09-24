@@ -1,6 +1,7 @@
 import { OpenContainer } from '/packages/sdk/src/index.js';
 import { BrowserEsmServiceWorkerBridge } from '/packages/package-env/src/browser-esm-edge.js';
 import { BrowserGuestWorkerAuthority } from '/packages/process/src/browser-guest-worker.js';
+import { MemoryVFS, OpfsCheckpointAuthority } from '/packages/vfs/src/index.js';
 
 const resultNode = document.getElementById('result');
 const stages = [];
@@ -105,6 +106,50 @@ async function run() {
 
   workerB.close();
   bridgeB.close();
+
+  stage('opfs-real-start');
+  assert(navigator.storage?.getDirectory, 'OPFS API is unavailable');
+  const opfsRoot = await navigator.storage.getDirectory();
+  const opfsDirectory = 'opencontainer-browser-acceptance-' + crypto.randomUUID();
+  try {
+    const opfsFs = new MemoryVFS();
+    opfsFs.mount({ 'value.txt': 'first' });
+    const opfs = await new OpfsCheckpointAuthority({
+      root: opfsRoot,
+      directoryName: opfsDirectory
+    }).open();
+    const firstCheckpoint = await opfs.checkpoint(opfsFs);
+
+    opfsFs.beginTransaction().writeFile('value.txt', 'second').commit();
+    const secondCheckpoint = await opfs.checkpoint(opfsFs);
+    assert(secondCheckpoint.sequence === firstCheckpoint.sequence + 1, 'OPFS manifest sequence did not advance');
+
+    const workspace = await opfsRoot.getDirectoryHandle(opfsDirectory);
+    const generations = await workspace.getDirectoryHandle('generations');
+    const newestPayload = await generations.getFileHandle(secondCheckpoint.payload);
+    const corrupt = await newestPayload.createWritable();
+    await corrupt.write('{"corrupt":true}');
+    await corrupt.close();
+
+    const reopened = await new OpfsCheckpointAuthority({
+      root: opfsRoot,
+      directoryName: opfsDirectory
+    }).open();
+    assert(reopened.current?.sequence === firstCheckpoint.sequence, 'OPFS did not fall back from corrupt newest payload');
+
+    const restored = new MemoryVFS();
+    await reopened.restoreInto(restored);
+    assert(restored.readFile('value.txt') === 'first', 'OPFS recovery restored the wrong generation');
+
+    stage('opfs-real-pass', {
+      firstSequence: firstCheckpoint.sequence,
+      rejectedSequence: secondCheckpoint.sequence,
+      recoveredSequence: reopened.current.sequence
+    });
+  } finally {
+    await opfsRoot.removeEntry(opfsDirectory, { recursive: true });
+  }
+
   await runtime.terminate();
 
   return {
@@ -113,6 +158,7 @@ async function run() {
     secondResult: second.exports.result,
     staleStatus: stale.status,
     serviceWorkerEdge: edgeResponse.headers.get('x-opencontainer-edge'),
+    opfsRealBrowser: true,
     stages
   };
 }
