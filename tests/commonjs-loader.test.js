@@ -47,7 +47,7 @@ test('builtin compatibility profile is explicit and injectable',async()=>{
   const runtime=await makeRuntime({'x.cjs':'module.exports=require("path").marker'});
   const loader=runtime.packages.createCommonJsLoader({allowDynamicCode:true,builtins:{path:{marker:'path'}}});
   assert.equal(loader.require('./x.cjs','/workspace/entry.cjs'),'path');
-  assert.throws(()=>loader.require('fs','/workspace/entry.cjs'),e=>e.code===ErrorCodes.BUILTIN_UNAVAILABLE);
+  assert.throws(()=>loader.require('crypto','/workspace/entry.cjs'),e=>e.code===ErrorCodes.BUILTIN_UNAVAILABLE);
 });
 
 test('failed CommonJS modules are removed from cache',async()=>{
