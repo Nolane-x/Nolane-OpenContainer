@@ -84,6 +84,81 @@ export class FrozenInstallAuthority {
 
   get contentStore() { return this.#store; }
 
+  async installAll({
+    artifactAuthority,
+    concurrency = 4,
+    signal = null,
+    onProgress = null
+  } = {}) {
+    const graph = this.#packages.graph;
+    assertOc(graph, ErrorCodes.INVALID_STATE, 'Compile a lockfile before installing artifacts');
+    assertOc(artifactAuthority && typeof artifactAuthority.fetchArtifact === 'function', ErrorCodes.INVALID_ARGUMENT, 'PackageArtifactAuthority is required');
+
+    const unique = new Map();
+    let packageInstances = 0;
+    for (const node of graph.nodes) {
+      if (node.link) continue;
+      packageInstances++;
+      assertOc(node.resolved, ErrorCodes.INVALID_PACKAGE_CONFIG, 'Frozen package is missing resolved artifact URL', { location: node.location });
+      assertOc(node.integrity, ErrorCodes.ARTIFACT_INTEGRITY, 'Frozen package is missing integrity', { location: node.location });
+      if (!this.#store.has(node.contentId) && !unique.has(node.contentId)) unique.set(node.contentId, node);
+    }
+
+    const queue = [...unique.values()];
+    const workerCount = Math.min(queue.length || 1, Math.max(1, Number(concurrency) || 1));
+    let cursor = 0;
+    let fetchedContents = 0;
+    let bytes = 0;
+    let redirects = 0;
+
+    const assertNotAborted = () => {
+      if (signal?.aborted) {
+        throw ocError(ErrorCodes.INVALID_STATE, 'Frozen package installation aborted', {
+          reason: signal.reason ? String(signal.reason) : undefined
+        });
+      }
+    };
+
+    const worker = async () => {
+      while (true) {
+        assertNotAborted();
+        const index = cursor++;
+        if (index >= queue.length) return;
+        const node = queue[index];
+
+        const artifact = await artifactAuthority.fetchArtifact({
+          url: node.resolved,
+          integrity: node.integrity,
+          signal
+        });
+        assertNotAborted();
+
+        const receipt = await this.ingestLocation(node.location, artifact.bytes);
+        fetchedContents++;
+        bytes += artifact.bytes.byteLength;
+        redirects += artifact.redirects ?? 0;
+        onProgress?.(Object.freeze({
+          completed: fetchedContents,
+          total: queue.length,
+          location: node.location,
+          contentId: node.contentId,
+          bytes: artifact.bytes.byteLength,
+          reused: receipt.reused
+        }));
+      }
+    };
+
+    await Promise.all(Array.from({ length: workerCount }, () => worker()));
+    return Object.freeze({
+      packageInstances,
+      requestedContents: queue.length,
+      fetchedContents,
+      contentCount: this.#store.size,
+      bytes,
+      redirects
+    });
+  }
+
   async ingestLocation(location, bytes) {
     const graph = this.#packages.graph;
     assertOc(graph, ErrorCodes.INVALID_STATE, 'Compile a lockfile before ingesting artifacts');

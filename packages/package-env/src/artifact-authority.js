@@ -169,7 +169,7 @@ export class PackageArtifactAuthority {
     this.#archiveLimits = { maxFiles, maxUnpackedBytes };
   }
 
-  async fetchArtifact({ url, integrity }) {
+  async fetchArtifact({ url, integrity, signal } = {}) {
     let current = String(url);
     let redirects = 0;
     let authorized;
@@ -180,7 +180,8 @@ export class PackageArtifactAuthority {
       response = await this.#fetch(authorized.url, {
         method: 'GET',
         credentials: 'omit',
-        redirect: 'manual'
+        redirect: 'manual',
+        signal
       });
 
       if (response?.type === 'opaqueredirect') {

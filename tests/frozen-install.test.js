@@ -102,3 +102,86 @@ test('artifact package identity must agree with lockfile before content publicat
   await assert.rejects(()=>installer.ingestLocation('node_modules/a',bytes),e=>e.code===ErrorCodes.INVALID_PACKAGE_CONFIG);
   assert.equal(installer.contentStore.size,0);
 });
+
+
+test('frozen installAll deduplicates content across logical instances',async()=>{
+  const runtime=await OpenContainer.boot();
+  const bytes=packageTar('a','1.0.0'),integrity=sri(bytes);
+  runtime.packages.compile({name:'app',version:'1',lockfileVersion:3,packages:{
+    '':{name:'app',version:'1'},
+    'node_modules/a':{name:'a',version:'1.0.0',resolved:'https://registry.example/a.tgz',integrity},
+    'node_modules/nested/node_modules/a':{name:'a',version:'1.0.0',resolved:'https://registry.example/a.tgz',integrity}
+  }});
+
+  const calls=[];
+  const progress=[];
+  const installer=runtime.packages.createFrozenInstaller();
+  const receipt=await installer.installAll({
+    artifactAuthority:{
+      async fetchArtifact({url,integrity:requestedIntegrity}){
+        calls.push(url);
+        assert.equal(requestedIntegrity,integrity);
+        return {url,bytes,verified:{algorithm:'sha512'},redirects:0};
+      }
+    },
+    concurrency:8,
+    onProgress:(value)=>progress.push(value)
+  });
+
+  assert.deepEqual(calls,['https://registry.example/a.tgz']);
+  assert.equal(receipt.packageInstances,2);
+  assert.equal(receipt.requestedContents,1);
+  assert.equal(receipt.fetchedContents,1);
+  assert.equal(receipt.contentCount,1);
+  assert.equal(progress.length,1);
+  const mounted=installer.mountFrozenGraph();
+  assert.equal(mounted.packageCount,2);
+});
+
+test('frozen installAll honors bounded concurrency',async()=>{
+  const runtime=await OpenContainer.boot();
+  const artifacts={};
+  const packages={'':{name:'app',version:'1'}};
+  for(const name of ['a','b','c','d']){
+    const bytes=packageTar(name,'1.0.0');
+    const integrity=sri(bytes);
+    artifacts[name]={bytes,integrity};
+    packages['node_modules/'+name]={name,version:'1.0.0',resolved:'https://registry.example/'+name+'.tgz',integrity};
+  }
+  runtime.packages.compile({lockfileVersion:3,packages});
+  let active=0,maxActive=0;
+  const installer=runtime.packages.createFrozenInstaller();
+  const receipt=await installer.installAll({
+    concurrency:2,
+    artifactAuthority:{
+      async fetchArtifact({url}){
+        active++;maxActive=Math.max(maxActive,active);
+        await new Promise(resolve=>setTimeout(resolve,5));
+        const name=url.split('/').pop().replace('.tgz','');
+        active--;
+        return {url,bytes:artifacts[name].bytes,redirects:0};
+      }
+    }
+  });
+  assert.equal(receipt.fetchedContents,4);
+  assert.ok(maxActive<=2);
+  assert.ok(maxActive>=1);
+});
+
+test('frozen installAll aborts before requesting more content',async()=>{
+  const runtime=await OpenContainer.boot();
+  const bytes=packageTar('a','1.0.0'),integrity=sri(bytes);
+  runtime.packages.compile({lockfileVersion:3,packages:{
+    'node_modules/a':{name:'a',version:'1.0.0',resolved:'https://registry.example/a.tgz',integrity}
+  }});
+  const controller=new AbortController();
+  controller.abort('stop');
+  const installer=runtime.packages.createFrozenInstaller();
+  await assert.rejects(
+    ()=>installer.installAll({
+      signal:controller.signal,
+      artifactAuthority:{fetchArtifact:async()=>{throw new Error('must not fetch');}}
+    }),
+    e=>e.code===ErrorCodes.INVALID_STATE&&/aborted/.test(e.message)
+  );
+});

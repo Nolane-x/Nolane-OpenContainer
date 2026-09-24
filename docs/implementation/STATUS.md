@@ -435,3 +435,18 @@ The native ESM product path now promotes an initial Node builtin subset rather t
 The Chrome acceptance fixture now imports `node:fs` and `node:path` from native guest ESM and performs the generation-sensitive synchronous read through those public compatibility surfaces rather than calling an internal RPC helper directly.
 
 This is an initial builtin court, not full Node 24 API closure. `node:module/createRequire`, streams, crypto, os, util, timers, child_process policy and broader error parity remain open.
+
+
+## Frozen graph bulk installer
+
+FrozenInstallAuthority now installs a compiled lock graph as a bounded operation rather than requiring one manual ingest call per package:
+
+- deduplicates fetches by immutable contentId even when the lockfile contains multiple logical PackageInstances;
+- requires each non-link node to have a frozen resolved URL and integrity;
+- uses PackageArtifactAuthority for capability-checked, SRI-verified fetches;
+- supports bounded fetch concurrency;
+- supports AbortSignal cancellation;
+- emits progress receipts without publishing a partial VNFS graph;
+- mountFrozenGraph still fails closed until all required immutable content exists.
+
+The real-browser retained-package acceptance now uses `installAll()`, so the promoted Chrome path covers the product installer API rather than a test-only manual ingestion sequence.

@@ -198,14 +198,12 @@ async function run() {
     maxArtifactBytes: 8 * 1024 * 1024,
     maxUnpackedBytes: 64 * 1024 * 1024
   });
-  const lightningArtifact = await artifactAuthority.fetchArtifact({
-    url: lightningUrl,
-    integrity: lightningIntegrity
-  });
-  assert(lightningArtifact.redirects === 0, 'same-origin retained package unexpectedly redirected');
-
   const frozenInstaller = runtime.packages.createFrozenInstaller();
-  const ingest = await frozenInstaller.ingestLocation('node_modules/lightningcss-wasm', lightningArtifact.bytes);
+  const installReceipt = await frozenInstaller.installAll({
+    artifactAuthority,
+    concurrency: 2
+  });
+  assert(installReceipt.redirects === 0, 'same-origin retained package unexpectedly redirected');
   const mountedPackages = frozenInstaller.mountFrozenGraph();
   const resolvedLightning = runtime.packages.resolve(
     'lightningcss-wasm',
@@ -219,8 +217,9 @@ async function run() {
   assert(lightningPackageJson.version === '1.33.0', 'browser-installed package version mismatch');
   assert(resolvedLightning.path.includes('/workspace/node_modules/lightningcss-wasm/'), 'browser resolver did not target installed immutable package');
   stage('browser-package-install-pass', {
-    bytes: lightningArtifact.bytes.byteLength,
-    files: ingest.fileCount,
+    bytes: installReceipt.bytes,
+    fetchedContents: installReceipt.fetchedContents,
+    packageInstances: installReceipt.packageInstances,
     contentCount: mountedPackages.contentCount,
     resolved: resolvedLightning.path
   });
