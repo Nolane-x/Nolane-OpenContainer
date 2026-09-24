@@ -209,24 +209,40 @@ export class NativeEsmPublicationAuthority {
       }
 
       if (record.n !== undefined) {
-        const resolved = this.#resolver.resolve(record.n, publication.path, { mode: 'esm' });
-        const targetURL = this.#urlForResolved(resolved);
-        const raw = source.slice(record.s, record.e);
+        const isDynamic = record.d >= 0 || record.t === DYNAMIC_IMPORT;
+        try {
+          const resolved = this.#resolver.resolve(record.n, publication.path, { mode: 'esm' });
+          const targetURL = this.#urlForResolved(resolved);
+          const raw = source.slice(record.s, record.e);
 
-        replacements.push({
-          start: record.s,
-          end: record.e,
-          value: quoteLike(raw, targetURL.href)
-        });
-        dependencies.push(
-          Object.freeze({
-            specifier: record.n,
-            url: targetURL.href,
-            dynamic: record.d >= 0 || record.t === DYNAMIC_IMPORT,
-            kind: resolved.kind
-          })
-        );
-        continue;
+          replacements.push({
+            start: record.s,
+            end: record.e,
+            value: quoteLike(raw, targetURL.href)
+          });
+          dependencies.push(
+            Object.freeze({
+              specifier: record.n,
+              url: targetURL.href,
+              dynamic: isDynamic,
+              kind: resolved.kind
+            })
+          );
+          continue;
+        } catch (error) {
+          if (!isDynamic || error?.code !== ErrorCodes.MODULE_NOT_FOUND) throw error;
+          const dynamic = source.slice(record.ss, record.se);
+          const open = dynamic.indexOf('(');
+          const close = dynamic.lastIndexOf(')');
+          if (open < 0 || close <= open) throw error;
+          const args = dynamic.slice(open + 1, close);
+          replacements.push({
+            start: record.ss,
+            end: record.se,
+            value: 'globalThis.__opencontainer_dynamic_import__(import.meta.url,' + args + ')'
+          });
+          continue;
+        }
       }
 
       if (record.d >= 0 || record.t === DYNAMIC_IMPORT) {

@@ -236,3 +236,27 @@ test('publication session containment rejects foreign URLs and source/defer phas
     (error) => error.code === ErrorCodes.ESM_PUBLICATION_INVALID
   );
 });
+
+
+test('missing literal dynamic optional package is deferred to runtime helper', async () => {
+  const runtime = await createRuntime();
+  runtime.mount({
+    'src/entry.mjs': `
+      export async function optionalFeature() {
+        return import('optional-peer-that-is-not-installed');
+      }
+    `
+  });
+  const authority = runtime.packages.createNativeEsmPublication({
+    baseURL: 'https://example.invalid/modules/',
+    session: 'optional-dynamic'
+  });
+  const entryURL = authority.moduleURL('./entry.mjs', '/workspace/src/bootstrap.mjs');
+  const served = await authority.serve(entryURL);
+  assert.match(served.source, /__opencontainer_dynamic_import__\(import\.meta\.url,'optional-peer-that-is-not-installed'\)/);
+  assert.equal(served.dependencies.length, 0);
+  assert.throws(
+    () => authority.resolveDynamic(entryURL, 'optional-peer-that-is-not-installed'),
+    (error) => error.code === ErrorCodes.MODULE_NOT_FOUND
+  );
+});

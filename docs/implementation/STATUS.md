@@ -480,3 +480,12 @@ The clean Chrome acceptance now advances beyond a single retained package and at
 - the selected graph is mounted into VirtualNodeModulesFS and Vite must resolve as exact 8.3.0.
 
 This court is intentionally before Vite execution: it separates package acquisition/corpus compatibility failures from Node-builtin/module-execution failures in the subsequent VITE-C1 guest court.
+
+
+### Dynamic optional dependency semantics
+
+Native ESM publication no longer promotes every statically-analyzable dynamic import into an eager required graph edge.
+
+If a literal dynamic import resolves, it is still rewritten to the stable publication URL and included in graph evidence. If it is a missing package, publication rewrites the call through the authoritative runtime dynamic-import helper instead of failing graph construction. The same dependency will still fail with `OC_MODULE_NOT_FOUND` if that branch is actually executed.
+
+This is required for packages such as Vite that contain optional feature loaders (for example optional config-loader peers) in code paths that are not used by the selected runtime profile.
