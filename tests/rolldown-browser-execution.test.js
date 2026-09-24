@@ -46,6 +46,15 @@ class BrowserWorkerAdapter {
   ref() { this.#worker.ref(); return this; }
   unref() { this.#worker.unref(); return this; }
 
+  // emnapi selects its Node worker-manager path in this exact-Node oracle,
+  // while Rolldown's browser loader itself uses EventTarget methods. Expose
+  // both contracts over the same underlying worker.
+  on(type, listener) { this.#worker.on(type, listener); return this; }
+  once(type, listener) { this.#worker.once(type, listener); return this; }
+  off(type, listener) { this.#worker.off(type, listener); return this; }
+  removeListener(type, listener) { this.#worker.removeListener(type, listener); return this; }
+  removeAllListeners(type) { this.#worker.removeAllListeners(type); return this; }
+
   addEventListener(type, listener) {
     const set = this.#listeners.get(type) ?? new Set();
     set.add(listener);
