@@ -24,3 +24,5 @@ export function certifyToolchain(candidate,profile=FrozenToolchains.vite830){
 export { WasmArtifactManager, RolldownWasi129Profile, LightningCssWasm133Profile } from './wasm-artifact-manager.js';
 
 export { LightningCssPackage133Profile, verifyRetainedLightningCssPackage } from './lightningcss-profile.js';
+
+export { RolldownBrowser129Profile, verifyRetainedRolldownBrowserPackage } from './rolldown-browser-profile.js';

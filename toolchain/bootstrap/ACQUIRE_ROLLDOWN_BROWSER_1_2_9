@@ -1,9 +1,0 @@
-Acquire @rolldown/browser@1.2.9 from npm and prove its dist tree is byte-identical
-to the official Rolldown v1.2.9 GitHub Actions browser artifact.
-
-Official browser artifact ID: 10447416443
-Official ZIP SHA-256: 44ab2d4a313065c8fb448433877a4a50628aca0a4a972a6f11660ca8f5002ac7
-Normalized 63-file dist manifest SHA-256:
-75492b477ad45162d0f92543ddb3fb0ae9b3a727ff652ef251b8532cb53f1308
-
-This bootstrap trigger must be removed after the verified artifact is retained.

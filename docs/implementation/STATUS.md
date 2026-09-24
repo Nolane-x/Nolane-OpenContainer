@@ -254,3 +254,19 @@ The retained exact `lightningcss-wasm@1.33.0` package is now promoted beyond raw
 - `transformStyleAttribute` is also compared.
 
 This establishes local JS-glue + WASM execution/differential evidence for Lightning CSS 1.33.0. It is still not an unmanaged-browser receipt, and VITE-C1 remains open.
+
+
+## Rolldown browser artifact promotion
+
+The exact `@rolldown/browser@1.2.9` npm package is now retained and permanently tied to the official v1.2.9 GitHub Actions browser artifact:
+
+- retained npm tarball bytes `3,809,446`;
+- retained npm tarball SHA-256 `9accf3cdfe3d2287ad7d5f49cd2cfcddbc9c112abfcbc295863e401ef44b8576`;
+- official GitHub Actions artifact ID `10447416443`;
+- official artifact ZIP SHA-256 `44ab2d4a313065c8fb448433877a4a50628aca0a4a972a6f11660ca8f5002ac7`;
+- all 63 published `dist/` files are byte-identical to the official artifact via normalized manifest SHA-256 `75492b477ad45162d0f92543ddb3fb0ae9b3a727ff652ef251b8532cb53f1308`;
+- inner WASI payload remains exact SHA-256 `629aa10c37a9920cd5729a35af148983c881f4ff9edd6368a7d63b5acbf89dc2`.
+
+Permanent CI now verifies package identity, exact dependency declarations, complete dist-tree concordance, key-file hashes and WASM compile/shape through WasmArtifactManager.
+
+Still open: retaining/proving the exact emnapi/@napi-rs runtime dependency closure, executing the browser binding, browser Worker/thread integration and VITE-C1.
