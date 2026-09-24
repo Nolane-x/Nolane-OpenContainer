@@ -88,16 +88,22 @@ export class FrozenInstallAuthority {
     artifactAuthority,
     concurrency = 4,
     signal = null,
-    onProgress = null
+    onProgress = null,
+    locations = null,
+    artifactUrlResolver = null
   } = {}) {
     const graph = this.#packages.graph;
     assertOc(graph, ErrorCodes.INVALID_STATE, 'Compile a lockfile before installing artifacts');
     assertOc(artifactAuthority && typeof artifactAuthority.fetchArtifact === 'function', ErrorCodes.INVALID_ARGUMENT, 'PackageArtifactAuthority is required');
 
+    const selected = locations ? new Set(locations) : null;
     const unique = new Map();
     let packageInstances = 0;
+    let embeddedInstances = 0;
     for (const node of graph.nodes) {
+      if (selected && !selected.has(node.location)) continue;
       if (node.link) continue;
+      if (node.inBundle) { embeddedInstances++; continue; }
       packageInstances++;
       assertOc(node.resolved, ErrorCodes.INVALID_PACKAGE_CONFIG, 'Frozen package is missing resolved artifact URL', { location: node.location });
       assertOc(node.integrity, ErrorCodes.ARTIFACT_INTEGRITY, 'Frozen package is missing integrity', { location: node.location });
@@ -126,8 +132,10 @@ export class FrozenInstallAuthority {
         if (index >= queue.length) return;
         const node = queue[index];
 
+        const artifactUrl = artifactUrlResolver ? await artifactUrlResolver(node) : node.resolved;
+        assertOc(artifactUrl, ErrorCodes.INVALID_PACKAGE_CONFIG, 'Artifact URL resolver returned no URL', { location: node.location });
         const artifact = await artifactAuthority.fetchArtifact({
-          url: node.resolved,
+          url: artifactUrl,
           integrity: node.integrity,
           signal
         });
@@ -151,6 +159,7 @@ export class FrozenInstallAuthority {
     await Promise.all(Array.from({ length: workerCount }, () => worker()));
     return Object.freeze({
       packageInstances,
+      embeddedInstances,
       requestedContents: queue.length,
       fetchedContents,
       contentCount: this.#store.size,
@@ -176,13 +185,17 @@ export class FrozenInstallAuthority {
     });
   }
 
-  mountFrozenGraph() {
+  mountFrozenGraph({ locations = null } = {}) {
     const graph = this.#packages.graph;
     assertOc(graph, ErrorCodes.INVALID_STATE, 'Compile a lockfile before mounting packages');
 
+    const selected = locations ? new Set(locations) : null;
     const packages = [];
     const symlinks = [];
+    let embeddedCount = 0;
     for (const node of graph.nodes) {
+      if (selected && !selected.has(node.location)) continue;
+      if (node.inBundle) { embeddedCount++; continue; }
       if (node.link) {
         assertOc(typeof node.resolved === 'string' && node.resolved.length > 0, ErrorCodes.INVALID_PACKAGE_CONFIG, 'Linked package is missing resolved workspace path', { location: node.location });
         const target = node.resolved.startsWith('/') ? node.resolved : '/workspace/' + node.resolved.replace(/^\.\//, '');
@@ -195,6 +208,6 @@ export class FrozenInstallAuthority {
     }
 
     const mounted = this.#packages.mountCatalog({ packages, symlinks });
-    return Object.freeze({ ...mounted, packageCount: packages.length, linkCount: symlinks.length, contentCount: this.#store.size });
+    return Object.freeze({ ...mounted, packageCount: packages.length, linkCount: symlinks.length, embeddedCount, contentCount: this.#store.size });
   }
 }

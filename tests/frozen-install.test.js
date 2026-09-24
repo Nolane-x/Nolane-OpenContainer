@@ -185,3 +185,43 @@ test('frozen installAll aborts before requesting more content',async()=>{
     e=>e.code===ErrorCodes.INVALID_STATE&&/aborted/.test(e.message)
   );
 });
+
+
+test('Vite dependency closure excludes optional native Rolldown bindings and retains bundled dependencies',async()=>{
+  const {readFile}=await import('node:fs/promises');
+  const lock=JSON.parse(await readFile(new URL('../package-lock.json',import.meta.url),'utf8'));
+  const runtime=await OpenContainer.boot();
+  runtime.packages.compile(lock);
+  const closure=runtime.packages.selectDependencyClosure({roots:['vite']});
+
+  assert.ok(closure.locations.includes('node_modules/vite'));
+  assert.ok(closure.locations.includes('node_modules/rolldown'));
+  assert.ok(closure.locations.includes('node_modules/lightningcss'));
+  assert.ok(closure.locations.includes('node_modules/lightningcss/node_modules/napi-wasm'));
+  assert.ok(closure.locations.includes('node_modules/postcss'));
+  assert.ok(closure.locations.includes('node_modules/tinyglobby'));
+  assert.equal(closure.locations.some(location=>location.includes('@rolldown/binding-')),false);
+  assert.ok(closure.optionalSkipped.some(location=>location.includes('@rolldown/binding-')));
+  assert.ok(closure.optionalSkipped.includes('node_modules/fsevents'));
+
+  const bundled=runtime.packages.graph.nodes.find(node=>node.location==='node_modules/lightningcss/node_modules/napi-wasm');
+  assert.equal(bundled.inBundle,true);
+});
+
+test('installAll skips inBundle nodes because parent artifact owns their bytes',async()=>{
+  const runtime=await OpenContainer.boot();
+  const parentBytes=packageTar('parent','1.0.0'),integrity=sri(parentBytes);
+  runtime.packages.compile({lockfileVersion:3,packages:{
+    'node_modules/parent':{name:'parent',version:'1.0.0',resolved:'https://registry.example/parent.tgz',integrity,dependencies:{child:'1'}},
+    'node_modules/parent/node_modules/child':{name:'child',version:'1.0.0',inBundle:true}
+  }});
+  const closure=runtime.packages.selectDependencyClosure({roots:['parent']});
+  let calls=0;
+  const installer=runtime.packages.createFrozenInstaller();
+  const receipt=await installer.installAll({
+    locations:closure.locations,
+    artifactAuthority:{async fetchArtifact(){calls++;return {bytes:parentBytes,redirects:0};}}
+  });
+  assert.equal(calls,1);
+  assert.equal(receipt.embeddedInstances,1);
+});

@@ -14,6 +14,20 @@ function stableId(prefix,value){
   return prefix+':'+h1.toString(16).padStart(8,'0')+h2.toString(16).padStart(8,'0');
 }
 function packageNameFromPath(path){const marker='node_modules/';const index=path.lastIndexOf(marker);return index>=0?path.slice(index+marker.length):path;}
+function frozenRecord(value={}){return Object.freeze({...value});}
+function dependencyLocation(nodesByLocation,issuerLocation,name){
+  let current=issuerLocation;
+  while(true){
+    const candidate=(current?current+'/':'')+'node_modules/'+name;
+    if(nodesByLocation.has(candidate))return candidate;
+    if(!current)break;
+    const nested=current.lastIndexOf('/node_modules/');
+    if(nested>=0)current=current.slice(0,nested);
+    else if(current.startsWith('node_modules/'))current='';
+    else current='';
+  }
+  return null;
+}
 
 export class PackageGraphAuthority {
   #generation=0;#graph=null;#baseFs=null;#nodeModules=null;#resolver=null;
@@ -33,14 +47,33 @@ export class PackageGraphAuthority {
       const name=meta.name??packageNameFromPath(location);const version=meta.version??'0.0.0-link';
       const contentKey=meta.integrity??meta.resolved??(name+'@'+version);
       const contentId=stableId('content',contentKey);const instanceId=stableId('instance',contentId+'|'+location);
-      nodes.push(Object.freeze({name,version,location,contentId,instanceId,integrity:meta.integrity,resolved:meta.resolved,link:!!meta.link}));
+      nodes.push(Object.freeze({
+        name,version,location,contentId,instanceId,
+        integrity:meta.integrity,resolved:meta.resolved,link:!!meta.link,inBundle:!!meta.inBundle,
+        dependencies:frozenRecord(meta.dependencies),
+        optionalDependencies:frozenRecord(meta.optionalDependencies),
+        peerDependencies:frozenRecord(meta.peerDependencies),
+        peerDependenciesMeta:frozenRecord(meta.peerDependenciesMeta),
+        dev:!!meta.dev,optional:!!meta.optional
+      }));
       if(meta.bin){
         if(typeof meta.bin==='string')bins[name]=Object.freeze({package:name,path:meta.bin,location});
         else for(const [command,path] of Object.entries(meta.bin))bins[command]=Object.freeze({package:name,path,location});
       }
     }
     nodes.sort((a,b)=>a.location.localeCompare(b.location));
-    this.#graph=Object.freeze({version:1,lockfileVersion:doc.lockfileVersion,nodes:Object.freeze(nodes),bins:Object.freeze(bins),rootName:doc.name,rootVersion:doc.version});
+    const root=doc.packages?.['']??{};
+    this.#graph=Object.freeze({
+      version:1,
+      lockfileVersion:doc.lockfileVersion,
+      nodes:Object.freeze(nodes),
+      bins:Object.freeze(bins),
+      rootName:doc.name??root.name,
+      rootVersion:doc.version??root.version,
+      rootDependencies:frozenRecord(root.dependencies),
+      rootDevDependencies:frozenRecord(root.devDependencies),
+      rootOptionalDependencies:frozenRecord(root.optionalDependencies)
+    });
     this.#nodeModules=null;this.#resolver=null;
     this.#generation++;return this.#graph;
   }
@@ -55,6 +88,46 @@ export class PackageGraphAuthority {
   resolve(specifier,issuer,options){
     assertOc(this.#resolver,ErrorCodes.INVALID_STATE,'Package catalog is not mounted');
     return this.#resolver.resolve(specifier,issuer,options);
+  }
+
+  selectDependencyClosure({roots=[],includeOptional=false}={}){
+    assertOc(this.#graph,ErrorCodes.INVALID_STATE,'Compile a lockfile before selecting dependency closure');
+    const rootNames=roots.length?[...roots]:Object.keys({...this.#graph.rootDependencies,...this.#graph.rootDevDependencies});
+    const byLocation=new Map(this.#graph.nodes.map(node=>[node.location,node]));
+    const queue=[];
+    for(const name of rootNames){
+      const location='node_modules/'+name;
+      assertOc(byLocation.has(location),ErrorCodes.INVALID_PACKAGE_CONFIG,'Dependency root is absent from lockfile',{name,location});
+      queue.push(location);
+    }
+
+    const selected=new Set();
+    const optionalSkipped=new Set();
+    while(queue.length){
+      const location=queue.shift();
+      if(selected.has(location))continue;
+      const node=byLocation.get(location);
+      assertOc(node,ErrorCodes.INVALID_PACKAGE_CONFIG,'Selected dependency location is absent from lockfile',{location});
+      selected.add(location);
+
+      for(const name of Object.keys(node.dependencies??{})){
+        const target=dependencyLocation(byLocation,location,name);
+        assertOc(target,ErrorCodes.INVALID_PACKAGE_CONFIG,'Required lockfile dependency cannot be resolved',{issuer:location,dependency:name});
+        if(!selected.has(target))queue.push(target);
+      }
+      for(const name of Object.keys(node.optionalDependencies??{})){
+        const target=dependencyLocation(byLocation,location,name);
+        if(!target){optionalSkipped.add(location+' -> '+name);continue;}
+        if(includeOptional){if(!selected.has(target))queue.push(target);}
+        else optionalSkipped.add(target);
+      }
+    }
+
+    return Object.freeze({
+      roots:Object.freeze(rootNames),
+      locations:Object.freeze([...selected].sort()),
+      optionalSkipped:Object.freeze([...optionalSkipped].sort())
+    });
   }
 
   createCommonJsLoader(options={}){

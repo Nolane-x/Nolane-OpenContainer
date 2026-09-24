@@ -450,3 +450,18 @@ FrozenInstallAuthority now installs a compiled lock graph as a bounded operation
 - mountFrozenGraph still fails closed until all required immutable content exists.
 
 The real-browser retained-package acceptance now uses `installAll()`, so the promoted Chrome path covers the product installer API rather than a test-only manual ingestion sequence.
+
+
+## Browser-target dependency closure
+
+PackageGraphAuthority now retains lockfile dependency/optional/peer metadata and can select a physical dependency closure for explicit roots.
+
+The browser profile defaults to required dependencies only:
+
+- Node-style nested/hoisted lockfile locations are resolved from each package location;
+- optionalDependencies are omitted unless explicitly requested;
+- `inBundle` lockfile nodes are retained as logical dependency locations but are not fetched/published as separate PackageContent because their bytes live inside the parent artifact;
+- FrozenInstallAuthority accepts a selected location set and an artifact URL resolver, enabling deterministic self-hosted/vendor mirrors without weakening SRI;
+- the current Vite 8.3.0 closure court includes Vite/Rolldown/Lightning CSS/PostCSS/Tinyglobby dependencies while excluding Rolldown's platform-native optional bindings and fsevents.
+
+This is the package-selection substrate for the upcoming VITE-C1 browser guest court.
