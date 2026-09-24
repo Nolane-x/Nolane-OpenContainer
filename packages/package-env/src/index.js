@@ -6,6 +6,7 @@ import { FrozenInstallAuthority } from './frozen-install.js';
 import { createCoreBuiltinRegistry } from './builtins/registry.js';
 import { PackageCommandBridge } from './command-bridge.js';
 import { NativeEsmPublicationAuthority } from './native-esm-publication.js';
+import { createBrowserNodeCompatBridge } from './browser-node-compat.js';
 
 function stableId(prefix,value){
   let h1=0x811c9dc5,h2=0x9e3779b9;
@@ -106,6 +107,11 @@ export class PackageGraphAuthority {
     assertOc(this.#nodeModules&&this.#resolver,ErrorCodes.INVALID_STATE,'Package catalog is not mounted');
     return new NativeEsmPublicationAuthority({fs:this.#nodeModules,resolver:this.#resolver,...options});
   }
+
+  createBrowserNodeCompat(options={}){
+    assertOc(this.#nodeModules&&this.#resolver,ErrorCodes.INVALID_STATE,'Package catalog is not mounted');
+    return createBrowserNodeCompatBridge({fs:this.#nodeModules,writableFs:this.#baseFs,...options});
+  }
 }
 
 export { PackageArtifactAuthority, verifySri, inspectTarArchive } from './artifact-authority.js';
@@ -130,3 +136,5 @@ export { createModuleBuiltin, BUILTIN_MODULES } from './builtins/module.js';
 export { NativeEsmPublicationAuthority } from './native-esm-publication.js';
 
 export { BrowserEsmServiceWorkerBridge } from './browser-esm-edge.js';
+
+export { createBrowserNodeCompatBridge } from './browser-node-compat.js';

@@ -5,6 +5,7 @@ const required=[
   'packages/sdk/src/index.js','packages/kernel/src/index.js','packages/vfs/src/index.js','packages/process/src/index.js',
   'packages/process/src/sync-rpc.js',
   'packages/package-env/src/index.js',
+  'packages/package-env/src/browser-node-compat.js',
   'packages/package-env/src/resolver.js',
   'packages/package-env/src/native-esm-publication.js',
   'packages/package-env/src/commonjs-loader.js',
@@ -47,6 +48,7 @@ const required=[
   'tests/vite-c1-oracle.test.js',
   'tests/native-esm-publication.test.js',
   'tests/browser-esm-edge.test.js',
+  'tests/browser-node-compat.test.js',
   'packages/process/src/browser-guest-worker.js','apps/playground/server.mjs'
 ];
 for(const path of required)await access(resolve(path));

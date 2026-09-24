@@ -29,7 +29,11 @@ async function run() {
     'src/dep.js': 'export let value=40; export function bump(){ value += 1 }',
     'src/dynamic.js': 'export default 1',
     'src/sync.txt': 'sync-one',
-    'src/sync.js': "export const syncValue = globalThis.__opencontainer_sync_host_call__('fs.readFile',{path:'/workspace/src/sync.txt'});",
+    'src/sync.js': [
+      "import { readFileSync } from 'node:fs';",
+      "import path from 'node:path';",
+      "export const syncValue = readFileSync(path.join('/workspace','src','sync.txt'),'utf8');"
+    ].join('\n'),
     'src/late.js': 'export default 2',
     'src/main.js': [
       "import { value, bump } from './dep.js';",
@@ -47,9 +51,11 @@ async function run() {
   stage('catalog-mounted');
 
   const baseURL = location.origin + '/__opencontainer__/esm/';
+  const nodeCompat = runtime.packages.createBrowserNodeCompat({ cwd: '/workspace' });
   const publicationA = runtime.packages.createNativeEsmPublication({
     baseURL,
-    session: 'browser-acceptance-a'
+    session: 'browser-acceptance-a',
+    builtinSource: nodeCompat.builtinSource
   });
   const bridgeA = new BrowserEsmServiceWorkerBridge({ publication: publicationA });
   stage('bridge-a-starting');
@@ -60,10 +66,7 @@ async function run() {
   const workerA = new BrowserGuestWorkerAuthority({
     publication: publicationA,
     diagnostics: runtime.diagnostics,
-    syncRequestHandler: async (method, payload) => {
-      if (method === 'fs.readFile') return runtime.fs.readFile(payload?.path);
-      throw new Error('Unsupported sync host method: ' + method);
-    }
+    syncRequestHandler: nodeCompat.syncRequestHandler
   });
   workerA.start();
   stage('worker-a-started', { entryA });
@@ -89,7 +92,8 @@ async function run() {
 
   const publicationB = runtime.packages.createNativeEsmPublication({
     baseURL,
-    session: 'browser-acceptance-b'
+    session: 'browser-acceptance-b',
+    builtinSource: nodeCompat.builtinSource
   });
   const bridgeB = new BrowserEsmServiceWorkerBridge({ publication: publicationB });
   stage('bridge-b-starting');
@@ -100,10 +104,7 @@ async function run() {
   const workerB = new BrowserGuestWorkerAuthority({
     publication: publicationB,
     diagnostics: runtime.diagnostics,
-    syncRequestHandler: async (method, payload) => {
-      if (method === 'fs.readFile') return runtime.fs.readFile(payload?.path);
-      throw new Error('Unsupported sync host method: ' + method);
-    }
+    syncRequestHandler: nodeCompat.syncRequestHandler
   });
   workerB.start();
   stage('worker-b-started', { entryB });

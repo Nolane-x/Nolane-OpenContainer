@@ -419,3 +419,19 @@ The browser guest path now includes a bounded synchronous Worker -> host RPC pri
 The Chrome product-path court reads `/workspace/src/sync.txt` synchronously from native guest ESM through this SAB path, edits the VFS, restarts publication/Worker and proves the second generation returns the new value.
 
 This primitive does not by itself claim complete Node synchronous builtin coverage. It is the transport needed to implement those APIs without embedding a second JS engine.
+
+
+## Native browser Node builtin bridge
+
+The native ESM product path now promotes an initial Node builtin subset rather than merely resolving `node:` specifiers:
+
+- `node:fs` and `node:fs/promises` project read/stat/readdir/realpath/readlink and controlled WorkspaceFS mutation through bounded SharedArrayBuffer RPC;
+- `node:path` / `node:path/posix` use the same logical process cwd as the host compatibility profile;
+- `node:process` exposes isolated env/argv/platform plus host-authoritative cwd/chdir/hrtime/uptime;
+- `node:buffer` and `node:events` reuse trusted browser-native compatibility implementations;
+- `node:url` exposes WHATWG URL plus file-path conversion through the host compatibility profile;
+- unsupported builtins such as `node:crypto` remain fail-closed.
+
+The Chrome acceptance fixture now imports `node:fs` and `node:path` from native guest ESM and performs the generation-sensitive synchronous read through those public compatibility surfaces rather than calling an internal RPC helper directly.
+
+This is an initial builtin court, not full Node 24 API closure. `node:module/createRequire`, streams, crypto, os, util, timers, child_process policy and broader error parity remain open.
