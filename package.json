@@ -1,0 +1,21 @@
+{
+  "name": "nolane-opencontainer",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "Open, self-hostable browser-native Node/web development runtime.",
+  "packageManager": "npm@11.19.0",
+  "engines": {
+    "node": "24.21.0",
+    "npm": "11.19.0"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "test": "node --test tests/*.test.js",
+    "ci": "npm run check && npm test",
+    "playground": "node apps/playground/server.mjs"
+  }
+}
