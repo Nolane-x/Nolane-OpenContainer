@@ -3,6 +3,7 @@ import { VirtualNodeModulesFS } from './virtual-node-modules.js';
 import { NodeResolver } from './resolver.js';
 import { CommonJsLoader } from './commonjs-loader.js';
 import { FrozenInstallAuthority } from './frozen-install.js';
+import { createCoreBuiltinRegistry } from './builtins/registry.js';
 
 function stableId(prefix,value){
   let h1=0x811c9dc5,h2=0x9e3779b9;
@@ -55,7 +56,13 @@ export class PackageGraphAuthority {
 
   createCommonJsLoader(options={}){
     assertOc(this.#nodeModules&&this.#resolver,ErrorCodes.INVALID_STATE,'Package catalog is not mounted');
-    return new CommonJsLoader({fs:this.#nodeModules,resolver:this.#resolver,...options});
+    const {builtins={},...rest}=options;
+    return new CommonJsLoader({
+      fs:this.#nodeModules,
+      resolver:this.#resolver,
+      builtins:{...createCoreBuiltinRegistry(),...builtins},
+      ...rest
+    });
   }
 
   createFrozenInstaller(options={}){
@@ -69,3 +76,7 @@ export { NodeResolver, NODE_BUILTINS } from './resolver.js';
 export { CommonJsLoader } from './commonjs-loader.js';
 
 export { FrozenInstallAuthority, PackageContentStore } from './frozen-install.js';
+
+export { createCoreBuiltinRegistry } from './builtins/registry.js';
+export { createPosixPath } from './builtins/path.js';
+export { EventEmitter, createEventsBuiltin } from './builtins/events.js';
