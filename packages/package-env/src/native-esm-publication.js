@@ -161,9 +161,11 @@ export class NativeEsmPublicationAuthority {
 
   async graph(entry) {
     const entryURL =
-      typeof entry === 'string' && /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(entry)
-        ? new URL(entry)
-        : this.moduleURL(entry, '/workspace/__opencontainer_entry__.mjs');
+      entry instanceof URL
+        ? new URL(entry.href)
+        : typeof entry === 'string' && /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(entry)
+          ? new URL(entry)
+          : this.moduleURL(entry, '/workspace/__opencontainer_entry__.mjs');
 
     const queue = [entryURL.href];
     const seen = new Map();
