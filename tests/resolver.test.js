@@ -94,3 +94,27 @@ test('Node builtin specifiers bypass package filesystem',async()=>{
   const runtime=await fixture();
   assert.deepEqual(runtime.packages.resolve('fs','/workspace/src/app.cjs',{mode:'cjs'}),{kind:'builtin',specifier:'node:fs',url:'node:fs',format:'builtin',cacheKey:'node:fs'});
 });
+
+
+test('browser package aliases substitute package roots without weakening normal resolution',async()=>{
+  const runtime=await OpenContainer.boot();
+  runtime.mount({'package.json':JSON.stringify({name:'alias-app',type:'module'}),'src/app.mjs':''});
+  runtime.packages.mountCatalog({
+    packages:[
+      {location:'node_modules/rolldown',packageJson:{name:'rolldown',version:'1.2.9',type:'module',exports:{'.':'./dist/index.mjs'}},files:{'dist/index.mjs':'export const target="native"'}},
+      {location:'node_modules/@rolldown/browser',packageJson:{name:'@rolldown/browser',version:'1.2.9',type:'module',exports:{'.':{browser:'./dist/index.browser.mjs',default:'./dist/index.mjs'}}},files:{'dist/index.browser.mjs':'export const target="browser"','dist/index.mjs':'export const target="node"'}}
+    ]
+  });
+  const normal=runtime.packages.resolve('rolldown','/workspace/src/app.mjs',{mode:'esm'});
+  const browser=runtime.packages.resolve('rolldown','/workspace/src/app.mjs',{
+    mode:'esm',
+    conditions:['browser','import','default'],
+    packageAliases:{rolldown:'@rolldown/browser'}
+  });
+  assert.equal(normal.path,'/workspace/node_modules/rolldown/dist/index.mjs');
+  assert.equal(browser.path,'/workspace/node_modules/@rolldown/browser/dist/index.browser.mjs');
+  assert.throws(
+    ()=>runtime.packages.resolve('rolldown','/workspace/src/app.mjs',{mode:'esm',packageAliases:{rolldown:'rolldown'}}),
+    (error)=>error.code===ErrorCodes.INVALID_ARGUMENT
+  );
+});

@@ -100,11 +100,20 @@ export class NodeResolver {
     const issuerInfo = issuer.startsWith('file:') ? pathFromFileURL(issuer) : { path: normalizeAbsolute(issuer), suffix: '' };
     const conditions = new Set(options.conditions ?? (mode === 'esm' ? ['node', 'import'] : ['node', 'require', 'module-sync']));
     const preserveSymlinks = !!options.preserveSymlinks;
+    const packageAliases = Object.create(null);
+    for (const [from, to] of Object.entries(options.packageAliases ?? {})) {
+      const fromParts = packageParts(from);
+      const toParts = packageParts(String(to));
+      assertOc(!fromParts.subpath && !toParts.subpath, ErrorCodes.INVALID_ARGUMENT, 'Package aliases must map package roots to package roots', { from, to });
+      assertOc(from !== to, ErrorCodes.INVALID_ARGUMENT, 'Package alias cannot target itself', { package: from });
+      packageAliases[from] = String(to);
+    }
+    const aliasKey = Object.entries(packageAliases).sort(([a],[b]) => a.localeCompare(b)).map(([from,to]) => from + '>' + to).join(',');
     const generation = String(this.#fs.generation ?? '0');
-    const key = [generation, mode, issuerInfo.path, specifier, preserveSymlinks ? '1' : '0', [...conditions].sort().join(',')].join('|');
+    const key = [generation, mode, issuerInfo.path, specifier, preserveSymlinks ? '1' : '0', [...conditions].sort().join(','), aliasKey].join('|');
     if (this.#cache.has(key)) return this.#cache.get(key);
 
-    const result = this.#resolveUncached(specifier, issuerInfo.path, { mode, conditions, preserveSymlinks });
+    const result = this.#resolveUncached(specifier, issuerInfo.path, { mode, conditions, preserveSymlinks, packageAliases });
     this.#cache.set(key, result);
     return result;
   }
@@ -156,6 +165,13 @@ export class NodeResolver {
 
   #resolveBare(specifier, issuer, suffix, context) {
     const parsed = packageParts(specifier);
+    const alias = context.packageAliases?.[parsed.name];
+    if (alias) {
+      const aliased = alias + (parsed.subpath ? '/' + parsed.subpath : '');
+      const remainingAliases = { ...context.packageAliases };
+      delete remainingAliases[parsed.name];
+      return this.#resolveBare(aliased, issuer, suffix, { ...context, packageAliases: remainingAliases });
+    }
     const self = this.#findPackageScope(issuer);
     let packageRoot;
     let packageJson;

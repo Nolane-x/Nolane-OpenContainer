@@ -228,10 +228,23 @@ async function run() {
   const lockResponse = await fetch('/package-lock.json', { cache: 'no-store' });
   assert(lockResponse.ok, 'failed to load frozen Vite C1 package-lock');
   const c1Lock = await lockResponse.json();
+  const rolldownBrowserLocation = 'node_modules/@rolldown/browser';
+  c1Lock.packages[rolldownBrowserLocation] = {
+    name: '@rolldown/browser',
+    version: '1.2.9',
+    resolved: location.origin + '/toolchain/vendor/rolldown-browser-1.2.9.tgz',
+    integrity: 'sha256-mszzzf49IoetfV9JzSz83bycESq/y8KVhj5AHvRLhXY=',
+    dependencies: {
+      '@emnapi/core': '2.0.0-alpha.5',
+      '@emnapi/runtime': '2.0.0-alpha.5',
+      '@napi-rs/wasm-runtime': '1.2.4'
+    }
+  };
   runtime.packages.compile(c1Lock);
-  const viteClosure = runtime.packages.selectDependencyClosure({ roots: ['vite'] });
+  const viteClosure = runtime.packages.selectDependencyClosure({ roots: ['vite', '@rolldown/browser'] });
   assert(viteClosure.locations.includes('node_modules/vite'), 'Vite missing from selected closure');
-  assert(viteClosure.locations.includes('node_modules/rolldown'), 'Rolldown missing from selected closure');
+  assert(viteClosure.locations.includes('node_modules/rolldown'), 'Rolldown metadata package missing from selected closure');
+  assert(viteClosure.locations.includes(rolldownBrowserLocation), 'Exact Rolldown browser package missing from selected closure');
   assert(viteClosure.locations.includes('node_modules/lightningcss'), 'Lightning CSS missing from selected closure');
   assert(!viteClosure.locations.some((location) => location.includes('@rolldown/binding-')), 'optional native Rolldown binding leaked into browser closure');
 
@@ -276,12 +289,20 @@ async function run() {
   stage('vite-publication-graph-start');
   const viteNodeCompat = runtime.packages.createBrowserNodeCompat({
     cwd: '/workspace',
-    env: { NODE_ENV: 'production' }
+    env: {
+      NODE_ENV: 'production',
+      NAPI_RS_FORCE_WASI: 'error',
+      NAPI_RS_WASI_FLAVOR: 'wasm32-wasi'
+    }
   });
   const vitePublication = runtime.packages.createNativeEsmPublication({
     baseURL,
     session: 'vite-c1-graph',
-    builtinSource: viteNodeCompat.builtinSource
+    builtinSource: viteNodeCompat.builtinSource,
+    resolveOptions: {
+      conditions: ['browser', 'import', 'default'],
+      packageAliases: { rolldown: '@rolldown/browser' }
+    }
   });
   const viteEntryUrl = vitePublication.moduleURL('vite', '/workspace/src/vite-probe.mjs');
   const viteGraph = await vitePublication.graph(viteEntryUrl);

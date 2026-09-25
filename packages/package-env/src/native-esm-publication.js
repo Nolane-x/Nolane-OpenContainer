@@ -109,6 +109,7 @@ export class NativeEsmPublicationAuthority {
   #root;
   #session;
   #builtinSource;
+  #resolveOptions;
   #cache = new Map();
   #ready;
 
@@ -117,7 +118,8 @@ export class NativeEsmPublicationAuthority {
     resolver,
     baseURL = 'https://opencontainer.invalid/__opencontainer__/esm/',
     session = 'runtime-1',
-    builtinSource = null
+    builtinSource = null,
+    resolveOptions = {}
   } = {}) {
     assertOc(fs && typeof fs.readFile === 'function', ErrorCodes.INVALID_ARGUMENT, 'ESM publication filesystem is required');
     assertOc(resolver && typeof resolver.resolve === 'function', ErrorCodes.INVALID_ARGUMENT, 'ESM publication resolver is required');
@@ -130,6 +132,11 @@ export class NativeEsmPublicationAuthority {
     this.#fs = fs;
     this.#resolver = resolver;
     this.#builtinSource = builtinSource;
+    this.#resolveOptions = Object.freeze({
+      ...resolveOptions,
+      conditions: resolveOptions.conditions ? Object.freeze([...resolveOptions.conditions]) : undefined,
+      packageAliases: resolveOptions.packageAliases ? Object.freeze({ ...resolveOptions.packageAliases }) : undefined
+    });
     this.#ready = initLexer();
   }
 
@@ -146,7 +153,7 @@ export class NativeEsmPublicationAuthority {
   }
 
   moduleURL(specifier, issuer = '/workspace/index.mjs') {
-    const resolved = this.#resolver.resolve(specifier, issuer, { mode: 'esm' });
+    const resolved = this.#resolver.resolve(specifier, issuer, { ...this.#resolveOptions, mode: 'esm' });
     return this.#urlForResolved(resolved);
   }
 
@@ -225,7 +232,7 @@ export class NativeEsmPublicationAuthority {
 
   async #serveFile(publication) {
     const source = this.#fs.readFile(publication.path);
-    const selfResolved = this.#resolver.resolve(publication.path, publication.path, { mode: 'esm' });
+    const selfResolved = this.#resolver.resolve(publication.path, publication.path, { ...this.#resolveOptions, mode: 'esm' });
     if (selfResolved.format === 'json') return this.#serveJson(publication, source);
     const [imports, exports] = parse(source, publication.path);
     if (
@@ -251,7 +258,7 @@ export class NativeEsmPublicationAuthority {
       if (record.n !== undefined) {
         const isDynamic = record.d >= 0 || record.t === DYNAMIC_IMPORT;
         try {
-          const resolved = this.#resolver.resolve(record.n, publication.path, { mode: 'esm' });
+          const resolved = this.#resolver.resolve(record.n, publication.path, { ...this.#resolveOptions, mode: 'esm' });
           const targetURL = this.#urlForResolved(resolved);
           const raw = source.slice(record.s, record.e);
 
@@ -348,7 +355,7 @@ export class NativeEsmPublicationAuthority {
 
     for (let index = 0; index < specifiers.length; index += 1) {
       const specifier = specifiers[index];
-      const resolved = this.#resolver.resolve(specifier, publication.path, { mode: 'cjs' });
+      const resolved = this.#resolver.resolve(specifier, publication.path, { ...this.#resolveOptions, mode: 'cjs' });
       if (resolved.kind === 'file' && resolved.format === 'module') {
         throw ocError(ErrorCodes.REQUIRE_ESM_UNSUPPORTED, 'Browser CommonJS bridge does not synchronously require ESM', {
           path: publication.path,
