@@ -370,7 +370,8 @@ export const types=Object.freeze({
   isArrayBuffer:(value)=>value instanceof ArrayBuffer,
   isTypedArray:(value)=>ArrayBuffer.isView(value)&&!(value instanceof DataView)
 });
-export { TextEncoder, TextDecoder };
+export const TextEncoder=globalThis.TextEncoder;
+export const TextDecoder=globalThis.TextDecoder;
 const api={inspect,format,formatWithOptions,promisify,isDeepStrictEqual,stripVTControlCharacters,parseEnv,deprecate,inherits,callbackify,types,TextEncoder,TextDecoder};
 export default api;
 `;
