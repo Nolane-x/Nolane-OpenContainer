@@ -323,8 +323,21 @@ async function run() {
     processDeclarationSnippet: viteProcessDeclarationMatch
       ? viteNodeChunkSource.slice(Math.max(0, viteProcessDeclarationMatch.index - 400), viteProcessDeclarationMatch.index + 800)
       : null,
-    processImportIndex: viteProcessImportMatch?.index ?? -1
+    processImportIndex: viteProcessImportMatch?.index ?? -1,
+    processImportSnippet: viteProcessImportMatch
+      ? viteNodeChunkSource.slice(Math.max(0, viteProcessImportMatch.index - 400), viteProcessImportMatch.index + 800)
+      : null
   });
+
+  runtime.fs.beginTransaction().writeFile(
+    'src/vite-process-probe.mjs',
+    [
+      "import process from 'node:process';",
+      "export const nodeVersion = process?.versions?.node ?? null;",
+      "export const platform = process?.platform ?? null;",
+      "export const globalNodeVersion = globalThis.process?.versions?.node ?? null;"
+    ].join('\n')
+  ).commit();
 
   stage('vite-publication-graph-start');
   const viteNodeCompat = runtime.packages.createBrowserNodeCompat({
@@ -365,6 +378,23 @@ async function run() {
     diagnostics: runtime.diagnostics
   });
   await viteBridge.start();
+
+  stage('vite-process-probe-start');
+  const viteProcessProbe = new BrowserGuestWorkerAuthority({
+    publication: vitePublication,
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: viteNodeCompat.syncRequestHandler
+  });
+  viteProcessProbe.start();
+  const viteProcessProbeResult = await viteProcessProbe.execute(
+    vitePublication.moduleURL('./vite-process-probe.mjs', '/workspace/src/entry.mjs').href,
+    { exportNames: ['nodeVersion', 'platform', 'globalNodeVersion'] }
+  );
+  stage('vite-process-probe-pass', viteProcessProbeResult.exports);
+  assert(viteProcessProbeResult.exports.nodeVersion === '24.21.0', 'node:process default export lost Node compatibility version');
+  assert(viteProcessProbeResult.exports.platform === 'linux', 'node:process default export lost logical platform');
+  assert(viteProcessProbeResult.exports.globalNodeVersion === null, 'browser global process incorrectly impersonates Node');
+  viteProcessProbe.close();
 
   stage('rolldown-wasi-worker-preflight-start');
   const rolldownWasiWorkerUrl = vitePublication.moduleURL(
