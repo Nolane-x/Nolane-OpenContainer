@@ -374,7 +374,7 @@ async function run() {
       "import './style.css';",
       "import logoUrl from './logo.svg';",
       "const app = document.querySelector<HTMLDivElement>('#app');",
-      "if (app) { app.textContent = 'OpenContainer Vite C1'; app.dataset.logo = logoUrl; }",
+      "if (app) { app.textContent = 'OpenContainer Vite C1'; app.dataset.logo = logoUrl; app.dataset.source = 'source-v1'; }",
       "export const marker: string = 'vite-c1';"
     ].join('\n'))
     .writeFile('c1-app/src/style.css', c1CssSource)
@@ -489,7 +489,7 @@ async function run() {
       "const firstRun = await runBuild();",
       "const sourcePath = root + '/src/main.ts';",
       "const originalSource = readFileSync(sourcePath, 'utf8');",
-      "const editedSource = originalSource.replace(\"export const marker: string = 'vite-c1';\", \"export const marker: string = 'vite-c1-edit';\");",
+      "const editedSource = originalSource.replace(\"source-v1\", \"source-v2\");",
       "if (editedSource === originalSource) throw new Error('Vite C1 source edit fixture did not change');",
       "writeFileSync(sourcePath, editedSource);",
       "const secondRun = await runBuild();",
@@ -520,7 +520,8 @@ async function run() {
       "export const outputCount = firstRun.outputs.length;",
       "export const outputFiles = firstRun.outputs.map((entry) => entry.fileName).sort().join('|');",
       "export const outputJson = JSON.stringify(firstRun.summary);",
-      "export const sourceEditObserved = secondJs.includes('vite-c1-edit');",
+      "export const sourceEditPersisted = readFileSync(sourcePath, 'utf8').includes('source-v2');",
+      "export const sourceEditObserved = secondJs.includes('source-v2');",
       "export const configReloadObserved = thirdJs.includes('OpenContainer Vite C1 Config V2');",
       "export const expectedBuildFailureObserved = expectedFailureObserved;",
       "export const sourceUnchangedAfterFailure = sourceBeforeFailure === sourceAfterFailure;",
@@ -688,6 +689,7 @@ async function run() {
       'outputCount',
       'outputFiles',
       'outputJson',
+      'sourceEditPersisted',
       'sourceEditObserved',
       'configReloadObserved',
       'expectedBuildFailureObserved',
@@ -731,6 +733,7 @@ async function run() {
   assert(c1Svg?.content.includes('<svg'), 'Vite C1 imported asset was not emitted');
   const c1Manifest = JSON.parse(c1ManifestEntry?.content ?? '{}');
   assert(Object.keys(c1Manifest).length >= 1, 'Vite C1 manifest is empty');
+  assert(viteBuildExecution.exports.sourceEditPersisted === true, 'Vite C1 source edit did not persist in canonical VFS');
   assert(viteBuildExecution.exports.sourceEditObserved === true, 'Vite C1 second build did not observe source edit');
   assert(viteBuildExecution.exports.configReloadObserved === true, 'Vite C1 did not re-read edited TypeScript config');
   assert(viteBuildExecution.exports.expectedBuildFailureObserved === true, 'Vite C1 failure atomicity probe did not fail as expected');
