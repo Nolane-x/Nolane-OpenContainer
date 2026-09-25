@@ -379,6 +379,19 @@ async function run() {
     ].join('\n'))
     .writeFile('c1-app/src/style.css', c1CssSource)
     .writeFile('c1-app/src/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32"/></svg>')
+    .writeFile('c1-app/vite.config.ts', [
+      "export default {",
+      "  plugins: [{",
+      "    name: 'opencontainer-config-plugin',",
+      "    transform(code, id) {",
+      "      if (String(id).endsWith('/src/main.ts')) {",
+      "        return code.replace('OpenContainer Vite C1', 'OpenContainer Vite C1 Config V1');",
+      "      }",
+      "      return null;",
+      "    }",
+      "  }]",
+      "};"
+    ].join('\n'))
     .writeFile('src/lightningcss-probe.mjs', [
       "import { transform } from 'lightningcss';",
       "const text = '.card { color: rgb(255, 0, 0); margin: 0px 0px 0px 0px; }';",
@@ -424,7 +437,6 @@ async function run() {
       "};",
       "const result = await build({",
       "  root,",
-      "  configFile: false,",
       "  logLevel: 'silent',",
       "  plugins: [vfsPlugin],",
       "  build: {",
@@ -643,7 +655,7 @@ async function run() {
   assert(!c1CssWithoutMapComment.includes('rgb(255, 0, 0)'), 'Vite C1 Lightning CSS did not normalize color syntax');
   assert(!c1CssWithoutMapComment.includes('0px 0px 0px 0px'), 'Vite C1 Lightning CSS did not minify zero margin syntax');
   assert(!/\.card\s+\{/.test(c1CssWithoutMapComment), 'Vite C1 Lightning CSS retained unminified selector spacing');
-  assert(c1Js?.content.includes('OpenContainer Vite C1'), 'Vite C1 JS output lost semantic marker');
+  assert(c1Js?.content.includes('OpenContainer Vite C1 Config V1'), 'Vite C1 TypeScript config plugin did not execute');
   assert(JSON.parse(c1Map?.content ?? '{}').version === 3, 'Vite C1 source map is invalid');
   assert(c1Svg?.content.includes('<svg'), 'Vite C1 imported asset was not emitted');
   const c1Manifest = JSON.parse(c1ManifestEntry?.content ?? '{}');
@@ -652,7 +664,8 @@ async function run() {
     outputCount: viteBuildExecution.exports.outputCount,
     outputFiles: viteBuildExecution.exports.outputFiles,
     cssBytes: c1Css.content.length,
-    manifestEntries: Object.keys(c1Manifest).length
+    manifestEntries: Object.keys(c1Manifest).length,
+    configPlugin: 'v1'
   });
 
   viteWorker.close();
