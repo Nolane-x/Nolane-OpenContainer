@@ -578,6 +578,31 @@ async function run() {
       "const directTsTransformed = !directTsResult.code.includes('querySelector<HTMLDivElement>');",
       "const pluginNames = server.config.plugins.map((plugin) => plugin?.name ?? '<anonymous>').join('|');",
       "const oxcEnabled = server.config.oxc !== false;",
+      "const clientContainer = server.environments?.client?.pluginContainer;",
+      "const manualResolved = clientContainer ? await clientContainer.resolveId('/src/main.ts', undefined) : null;",
+      "const manualResolvedId = manualResolved?.id ?? '';",
+      "let manualLoadType = '';",
+      "let manualLoadHasTsGeneric = null;",
+      "let manualLoadBytes = 0;",
+      "let manualTransformError = '';",
+      "let manualTransformPlugin = '';",
+      "let manualTransformId = '';",
+      "let manualTransformFrame = '';",
+      "if (clientContainer && manualResolvedId) {",
+      "  const loaded = await clientContainer.load(manualResolvedId);",
+      "  const loadedCode = typeof loaded === 'string' ? loaded : loaded?.code ?? '';",
+      "  manualLoadType = typeof loaded === 'string' ? 'string' : (loaded?.moduleType ?? typeof loaded);",
+      "  manualLoadHasTsGeneric = loadedCode.includes('querySelector<HTMLDivElement>');",
+      "  manualLoadBytes = loadedCode.length;",
+      "  try {",
+      "    await clientContainer.transform(loadedCode, manualResolvedId, { moduleType: typeof loaded === 'object' ? loaded?.moduleType : undefined });",
+      "  } catch (error) {",
+      "    manualTransformError = error?.message ?? String(error);",
+      "    manualTransformPlugin = error?.plugin ?? '';",
+      "    manualTransformId = error?.id ?? '';",
+      "    manualTransformFrame = error?.frame ?? '';",
+      "  }",
+      "}",
       "let html = '';",
       "let tsCode = '';",
       "let clientCode = '';",
@@ -614,7 +639,7 @@ async function run() {
       "export const tsBytes = tsCode.length;",
       "export { html, tsCode, clientCode };",
       "export const closeSucceeded = closed;",
-      "export { devErrorPhase, devErrorMessage, pluginNames, oxcEnabled, directTsTransformed, vfsTrace };"
+      "export { devErrorPhase, devErrorMessage, pluginNames, oxcEnabled, directTsTransformed, vfsTrace, manualResolvedId, manualLoadType, manualLoadHasTsGeneric, manualLoadBytes, manualTransformError, manualTransformPlugin, manualTransformId, manualTransformFrame };"
     ].join('\n'))
     .commit();
 
@@ -862,7 +887,15 @@ async function run() {
       'pluginNames',
       'oxcEnabled',
       'directTsTransformed',
-      'vfsTrace'
+      'vfsTrace',
+      'manualResolvedId',
+      'manualLoadType',
+      'manualLoadHasTsGeneric',
+      'manualLoadBytes',
+      'manualTransformError',
+      'manualTransformPlugin',
+      'manualTransformId',
+      'manualTransformFrame'
     ],
     observeNestedWorkers: true
   });
@@ -872,7 +905,15 @@ async function run() {
     oxcEnabled: viteDevExecution.exports.oxcEnabled,
     directTsTransformed: viteDevExecution.exports.directTsTransformed,
     pluginNames: viteDevExecution.exports.pluginNames,
-    vfsTrace: viteDevExecution.exports.vfsTrace
+    vfsTrace: viteDevExecution.exports.vfsTrace,
+    manualResolvedId: viteDevExecution.exports.manualResolvedId,
+    manualLoadType: viteDevExecution.exports.manualLoadType,
+    manualLoadHasTsGeneric: viteDevExecution.exports.manualLoadHasTsGeneric,
+    manualLoadBytes: viteDevExecution.exports.manualLoadBytes,
+    manualTransformError: viteDevExecution.exports.manualTransformError,
+    manualTransformPlugin: viteDevExecution.exports.manualTransformPlugin,
+    manualTransformId: viteDevExecution.exports.manualTransformId,
+    manualTransformFrame: viteDevExecution.exports.manualTransformFrame
   });
   assert(!viteDevExecution.exports.devErrorPhase, 'Vite C2 dev transform failed at ' + viteDevExecution.exports.devErrorPhase + ': ' + viteDevExecution.exports.devErrorMessage);
   assert(viteDevExecution.exports.viteVersion === '8.3.0', 'Vite C2 dev server used the wrong version');
