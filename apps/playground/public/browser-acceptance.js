@@ -641,6 +641,11 @@ async function run() {
       "export const closeSucceeded = closed;",
       "export { devErrorPhase, devErrorMessage, pluginNames, oxcEnabled, directTsTransformed, vfsTrace, manualResolvedId, manualLoadType, manualLoadHasTsGeneric, manualLoadBytes, manualTransformError, manualTransformPlugin, manualTransformId, manualTransformFrame };"
     ].join('\n'))
+    .writeFile('src/vite-es-module-lexer-v2-compat.mjs', [
+      "import { init as initV3, parse } from 'es-module-lexer/minimal/js';",
+      "export const init = initV3();",
+      "export { parse };"
+    ].join('\n'))
     .commit();
 
   stage('vite-publication-graph-start');
@@ -663,7 +668,7 @@ async function run() {
         '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi.cjs':
           '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi-browser.js',
         '/workspace/node_modules/es-module-lexer/dist/lexer.js':
-          '/workspace/node_modules/es-module-lexer/dist/lexer.minimal.asm.js'
+          '/workspace/src/vite-es-module-lexer-v2-compat.mjs'
       }
     },
     assetAllow: (path, asset) =>
