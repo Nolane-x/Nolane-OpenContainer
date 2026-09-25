@@ -202,7 +202,7 @@ async function readAcceptanceState(cdp, { retries = 60, retryDelayMs = 50 } = {}
   throw lastError ?? new Error('Chrome execution context did not become available');
 }
 
-async function waitForAcceptance(cdp, timeoutMs = 30000) {
+async function waitForAcceptance(cdp, timeoutMs = Number(process.env.OPENCONTAINER_BROWSER_ACCEPTANCE_TIMEOUT_MS || 75000)) {
   const deadline = Date.now() + timeoutMs;
   let state = {};
   while (Date.now() < deadline) {

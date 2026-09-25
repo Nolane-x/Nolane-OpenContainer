@@ -326,7 +326,7 @@ async function run() {
     publication: vitePublication,
     diagnostics: runtime.diagnostics,
     syncRequestHandler: viteNodeCompat.syncRequestHandler,
-    requestTimeoutMs: 15000
+    requestTimeoutMs: 60000
   });
   viteWorker.start();
   const viteExecution = await viteWorker.execute(viteGraph.entryURL, {
