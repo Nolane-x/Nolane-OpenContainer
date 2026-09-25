@@ -77,6 +77,14 @@ test('browser node:module source promotes synchronous builtin require inside gue
   assert.match(source,/if\(requireBuiltins\.has\(bare\)\)/);
 });
 
+test('browser node:module CommonJS self-require stays inside the builtin registry',async()=>{
+  const {bridge}=fixture();
+  const source=await bridge.builtinSource('node:module');
+  assert.match(source,/requireBuiltins\.set\('module',Module\)/);
+  assert.match(source,/Module\.createRequire=createRequire/);
+  assert.match(source,/Module\.isBuiltin=isBuiltin/);
+});
+
 test('browser node:module resolve maps publication URL issuers back to VFS authority',async()=>{
   const {bridge}=fixture();
   assert.equal(
