@@ -535,7 +535,7 @@ async function run() {
       "const root = '/workspace/c1-app';",
       "const cleanId = (id) => String(id).split('?')[0].split('#')[0];",
       "const vfsTrace = [];",
-      "const trace = (kind, detail) => { if (vfsTrace.length < 80) vfsTrace.push(kind + ':' + detail); };"
+      "const trace = (kind, detail) => { if (vfsTrace.length < 80) vfsTrace.push(kind + ':' + detail); };",
       "const vfsPlugin = {",
       "  name: 'opencontainer-vfs-dev',",
       "  enforce: 'pre',",
@@ -547,7 +547,7 @@ async function run() {
       "    else if (raw.startsWith('/') && !raw.startsWith('/@')) candidate = root + raw;",
       "    else if (importer && cleanId(importer).startsWith('/workspace/') && (raw.startsWith('./') || raw.startsWith('../'))) candidate = pathResolve(dirname(cleanId(importer)), raw);",
       "    if (candidate && existsSync(candidate)) { trace('resolved', candidate); return candidate; }",
-      "    if (candidate) trace('resolve-miss', candidate);"
+      "    if (candidate) trace('resolve-miss', candidate);",
       "    return null;",
       "  },",
       "  async load(id) {",
