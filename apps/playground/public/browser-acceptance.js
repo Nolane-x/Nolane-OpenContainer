@@ -321,7 +321,30 @@ async function run() {
       ? viteNodeChunkSource.slice(Math.max(0, viteRequireDeclarationIndex - 500), viteRequireDeclarationIndex + 900)
       : null
   });
-  const viteProcessVersionIndex = viteNodeChunkSource.indexOf('process.versions.node');
+  const viteImportAnalysisErrorIndex = viteNodeChunkSource.indexOf('Failed to parse source for import analysis');
+  const viteLexerMarkerIndex = viteNodeChunkSource.indexOf('es-module-lexer');
+  const viteParseImportsIndex = viteNodeChunkSource.indexOf('parseImports');
+  const viteWebAssemblyCompileIndex = viteNodeChunkSource.indexOf('WebAssembly.compile');
+  stage('vite-import-analysis-source-shape', {
+    errorIndex: viteImportAnalysisErrorIndex,
+    errorSnippet: viteImportAnalysisErrorIndex >= 0
+      ? viteNodeChunkSource.slice(Math.max(0, viteImportAnalysisErrorIndex - 2200), viteImportAnalysisErrorIndex + 1400)
+      : null,
+    lexerMarkerIndex: viteLexerMarkerIndex,
+    lexerMarkerSnippet: viteLexerMarkerIndex >= 0
+      ? viteNodeChunkSource.slice(Math.max(0, viteLexerMarkerIndex - 1200), viteLexerMarkerIndex + 2200)
+      : null,
+    parseImportsIndex: viteParseImportsIndex,
+    parseImportsSnippet: viteParseImportsIndex >= 0
+      ? viteNodeChunkSource.slice(Math.max(0, viteParseImportsIndex - 1200), viteParseImportsIndex + 2200)
+      : null,
+    webAssemblyCompileIndex: viteWebAssemblyCompileIndex,
+    webAssemblyCompileSnippet: viteWebAssemblyCompileIndex >= 0
+      ? viteNodeChunkSource.slice(Math.max(0, viteWebAssemblyCompileIndex - 1600), viteWebAssemblyCompileIndex + 2400)
+      : null,
+    importAnalysisLines: viteNodeChunkLines.slice(25970, 26045).join('\n')
+  });
+    const viteProcessVersionIndex = viteNodeChunkSource.indexOf('process.versions.node');
   const viteProcessDeclarationMatch = /\b(?:const|let|var|function|class)\s+process\b/.exec(viteNodeChunkSource);
   const viteProcessImportMatch = /\bimport\s+process\b/.exec(viteNodeChunkSource);
   stage('vite-picomatch-source-shape', {
