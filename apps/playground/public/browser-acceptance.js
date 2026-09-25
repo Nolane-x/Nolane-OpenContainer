@@ -313,6 +313,7 @@ async function run() {
       : null,
     line8763: viteNodeChunkLines.slice(8748, 8778).join('\n'),
     line8799: viteNodeChunkLines.slice(8788, 8810).join('\n'),
+    line10679: viteNodeChunkLines.slice(10660, 10700).join('\n'),
     line11472: viteNodeChunkLines.slice(11460, 11484).join('\n'),
     line24241: viteNodeChunkLines.slice(24230, 24252).join('\n'),
     processVersionIndex: viteProcessVersionIndex,
