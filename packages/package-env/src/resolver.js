@@ -108,12 +108,22 @@ export class NodeResolver {
       assertOc(from !== to, ErrorCodes.INVALID_ARGUMENT, 'Package alias cannot target itself', { package: from });
       packageAliases[from] = String(to);
     }
-    const aliasKey = Object.entries(packageAliases).sort(([a],[b]) => a.localeCompare(b)).map(([from,to]) => from + '>' + to).join(',');
+    const pathAliases = Object.create(null);
+    for (const [from, to] of Object.entries(options.pathAliases ?? {})) {
+      const source = normalizeAbsolute(String(from));
+      const target = normalizeAbsolute(String(to));
+      assertOc(source !== target, ErrorCodes.INVALID_ARGUMENT, 'Path alias cannot target itself', { path: source });
+      pathAliases[source] = target;
+    }
+    const aliasKey = [
+      ...Object.entries(packageAliases).sort(([a],[b]) => a.localeCompare(b)).map(([from,to]) => 'pkg:' + from + '>' + to),
+      ...Object.entries(pathAliases).sort(([a],[b]) => a.localeCompare(b)).map(([from,to]) => 'path:' + from + '>' + to)
+    ].join(',');
     const generation = String(this.#fs.generation ?? '0');
     const key = [generation, mode, issuerInfo.path, specifier, preserveSymlinks ? '1' : '0', [...conditions].sort().join(','), aliasKey].join('|');
     if (this.#cache.has(key)) return this.#cache.get(key);
 
-    const result = this.#resolveUncached(specifier, issuerInfo.path, { mode, conditions, preserveSymlinks, packageAliases });
+    const result = this.#resolveUncached(specifier, issuerInfo.path, { mode, conditions, preserveSymlinks, packageAliases, pathAliases });
     this.#cache.set(key, result);
     return result;
   }
@@ -414,7 +424,13 @@ export class NodeResolver {
   }
 
   #finalizeFile(path, suffix, context, packageRoot = null) {
-    const canonical = context.preserveSymlinks || typeof this.#fs.realpath !== 'function' ? normalizeAbsolute(path) : this.#fs.realpath(path);
+    let canonical = context.preserveSymlinks || typeof this.#fs.realpath !== 'function' ? normalizeAbsolute(path) : this.#fs.realpath(path);
+    const aliasTarget = context.pathAliases?.[canonical] ?? context.pathAliases?.[normalizeAbsolute(path)];
+    if (aliasTarget) {
+      const stat = this.#safeStat(aliasTarget);
+      assertOc(stat && fileType(stat) === 'file', ErrorCodes.MODULE_NOT_FOUND, 'Path alias target does not exist', { from: canonical, to: aliasTarget });
+      canonical = context.preserveSymlinks || typeof this.#fs.realpath !== 'function' ? normalizeAbsolute(aliasTarget) : this.#fs.realpath(aliasTarget);
+    }
     const format = this.#format(canonical);
     if (format === 'addon') throw ocError(ErrorCodes.NATIVE_ADDON_UNSUPPORTED, 'Native addons are outside the V1 profile', { path: canonical });
     const url = pathToFileURL(canonical) + suffix;

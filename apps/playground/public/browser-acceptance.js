@@ -301,7 +301,11 @@ async function run() {
     builtinSource: viteNodeCompat.builtinSource,
     resolveOptions: {
       conditions: ['browser', 'import', 'default'],
-      packageAliases: { rolldown: '@rolldown/browser' }
+      packageAliases: { rolldown: '@rolldown/browser' },
+      pathAliases: {
+        '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi.cjs':
+          '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi-browser.js'
+      }
     }
   });
   const viteEntryUrl = vitePublication.moduleURL('vite', '/workspace/src/vite-probe.mjs');

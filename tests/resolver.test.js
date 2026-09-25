@@ -118,3 +118,37 @@ test('browser package aliases substitute package roots without weakening normal 
     (error)=>error.code===ErrorCodes.INVALID_ARGUMENT
   );
 });
+
+
+test('browser path aliases can substitute one verified package artifact without changing default resolution',async()=>{
+  const runtime=await OpenContainer.boot();
+  runtime.mount({'package.json':JSON.stringify({name:'path-alias-app',type:'module'}),'src/app.mjs':''});
+  runtime.packages.mountCatalog({
+    packages:[{
+      location:'node_modules/@rolldown/browser',
+      packageJson:{name:'@rolldown/browser',version:'1.2.9',type:'module',exports:{'./parseAst':'./dist/parse-ast-index.mjs'}},
+      files:{
+        'dist/parse-ast-index.mjs':"import binding from './rolldown-binding.wasi.cjs'; export default binding;",
+        'dist/rolldown-binding.wasi.cjs':'module.exports={target:"node-wasi"}',
+        'dist/rolldown-binding.wasi-browser.js':'export default {target:"browser-wasi"}'
+      }
+    }]
+  });
+  const issuer='/workspace/node_modules/@rolldown/browser/dist/parse-ast-index.mjs';
+  const normal=runtime.packages.resolve('./rolldown-binding.wasi.cjs',issuer,{mode:'esm'});
+  const browser=runtime.packages.resolve('./rolldown-binding.wasi.cjs',issuer,{
+    mode:'esm',
+    pathAliases:{
+      '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi.cjs':
+        '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi-browser.js'
+    }
+  });
+  assert.equal(normal.path,'/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi.cjs');
+  assert.equal(normal.format,'commonjs');
+  assert.equal(browser.path,'/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi-browser.js');
+  assert.equal(browser.format,'module');
+  assert.throws(
+    ()=>runtime.packages.resolve('./rolldown-binding.wasi.cjs',issuer,{mode:'esm',pathAliases:{'/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi.cjs':'/workspace/node_modules/@rolldown/browser/dist/missing.js'}}),
+    (error)=>error.code===ErrorCodes.MODULE_NOT_FOUND
+  );
+});
