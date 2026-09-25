@@ -388,7 +388,7 @@ export class NativeEsmPublicationAuthority {
           'const __oc_prelinked_require__=globalThis.__opencontainer_prelinked_require__??=new Map();',
           ...registrations,
           transformed
-        ].join('\\n');
+        ].join('\n');
       }
     }
 
