@@ -67,15 +67,47 @@ function staticCommonJsRequires(source) {
   return found;
 }
 
+function skipCreateRequireTrivia(source, start) {
+  let index = start;
+  while (index < source.length) {
+    const code = source.charCodeAt(index);
+    if (
+      code === 9 || code === 10 || code === 11 || code === 12 ||
+      code === 13 || code === 32 || code === 160
+    ) {
+      index += 1;
+      continue;
+    }
+    if (source[index] === '/' && source[index + 1] === '*') {
+      const close = source.indexOf('*/', index + 2);
+      if (close < 0) return source.length;
+      index = close + 2;
+      continue;
+    }
+    break;
+  }
+  return index;
+}
+
+function isCreateRequireInitializer(source, start) {
+  const index = skipCreateRequireTrivia(source, start);
+  const sample = source.slice(index, index + 160);
+  return /^(?:[A-Za-z_$][\w$]*\s*\.\s*)?createRequire[A-Za-z0-9_$]*\s*\(/.test(sample);
+}
+
 function staticCreateRequireSpecifiers(source) {
   if (!/\bcreateRequire\b/.test(source)) return [];
 
   const aliases = new Set(['require']);
-  const declarations = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:\/\*[\s\S]*?\*\/\s*)*(?:[A-Za-z_$][\w$]*\.)?createRequire[A-Za-z0-9_$]*\s*\(/g;
-  for (const match of source.matchAll(declarations)) aliases.add(match[1]);
+  const declarations = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*/g;
+  for (const match of source.matchAll(declarations)) {
+    if (isCreateRequireInitializer(source, match.index + match[0].length)) aliases.add(match[1]);
+  }
 
-  const assignments = /(?:^|[;\n])\s*([A-Za-z_$][\w$]*)\s*=\s*(?:\/\*[\s\S]*?\*\/\s*)*(?:[A-Za-z_$][\w$]*\.)?createRequire[A-Za-z0-9_$]*\s*\(/gm;
-  for (const match of source.matchAll(assignments)) aliases.add(match[1]);
+  const assignments = /(?:^|[;\n])\s*([A-Za-z_$][\w$]*)\s*=\s*/gm;
+  for (const match of source.matchAll(assignments)) {
+    if (isCreateRequireInitializer(source, match.index + match[0].length)) aliases.add(match[1]);
+  }
 
   const found = [];
   const seen = new Set();
