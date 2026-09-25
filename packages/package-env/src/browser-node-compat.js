@@ -415,7 +415,8 @@ export function request(){return denied('request');}
 export function get(){return denied('get');}
 export function validateHeaderName(name){
   const value=String(name);
-  if(!/^[!#$%&'*+.^_\\`|~0-9A-Za-z-]+$/.test(value)){const error=new TypeError('Invalid HTTP header name');error.code='ERR_INVALID_HTTP_TOKEN';throw error;}
+  const withoutBacktick=value.split(String.fromCharCode(96)).join('');
+  if(!value||!/^[!#$%&'*+.^_|~0-9A-Za-z-]+$/.test(withoutBacktick)){const error=new TypeError('Invalid HTTP header name');error.code='ERR_INVALID_HTTP_TOKEN';throw error;}
 }
 export function validateHeaderValue(name,value){
   if(/[\\r\\n]/.test(String(value))){const error=new TypeError('Invalid HTTP header value');error.code='ERR_INVALID_CHAR';throw error;}
