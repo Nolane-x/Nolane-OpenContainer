@@ -303,7 +303,7 @@ test('browser node:path exposes lexical win32 helpers without host OS access',as
   const source=await bridge.builtinSource('node:path');
   const path=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64')+'#'+Date.now());
   assert.equal(path.win32.sep,'\\');
-  assert.equal(path.win32.join('C:\\\\root','.\\\\fixtures\\\\basic.js'),'C:\\\\root\\\\fixtures\\\\basic.js');
-  assert.equal(path.win32.isAbsolute('C:\\\\root\\\\x'),true);
-  assert.equal(path.win32.basename('C:\\\\root\\\\a.txt'), 'a.txt');
+  assert.equal(path.win32.join('C:\\root','.\\fixtures\\basic.js'),'C:\\root\\fixtures\\basic.js');
+  assert.equal(path.win32.isAbsolute('C:\\root\\x'),true);
+  assert.equal(path.win32.basename('C:\\root\\a.txt'), 'a.txt');
 });
