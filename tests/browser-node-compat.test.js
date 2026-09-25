@@ -250,9 +250,7 @@ test('browser HTTP family exposes metadata but never opens host sockets',async()
 
 test('browser node:querystring preserves repeated keys and form decoding',async()=>{
   const {bridge}=fixture();
-  let source=await bridge.builtinSource('node:querystring');
-  const bufferSource=await bridge.builtinSource('node:buffer');
-  source=source.replace("from 'node:buffer'","from 'data:text/javascript;base64,"+Buffer.from(bufferSource).toString('base64')+"'");
+  const source=await bridge.builtinSource('node:querystring');
   const qs=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64')+'#'+Date.now());
   assert.deepEqual({...qs.parse('a=1&a=2&hello=hello+world')},{a:['1','2'],hello:'hello world'});
   assert.equal(qs.stringify({a:['1','2'],hello:'hello world'}),'a=1&a=2&hello=hello%20world');
