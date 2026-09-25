@@ -288,6 +288,24 @@ async function run() {
     progress: c1Progress
   });
 
+  const lightningBrowserResolved = runtime.packages.resolve(
+    'lightningcss',
+    '/workspace/node_modules/vite/dist/node/chunks/node.js',
+    { mode: 'esm', conditions: ['browser', 'import', 'default'] }
+  );
+  assert(
+    lightningBrowserResolved.path === '/workspace/node_modules/lightningcss/index.mjs',
+    'Lightning CSS browser adapter resolved an unexpected entry'
+  );
+  assert(
+    runtime.packages.nodeModules.stat('/workspace/node_modules/lightningcss/lightningcss_node.wasm')?.type === 'file',
+    'Lightning CSS exact WASM payload is missing from mounted closure'
+  );
+  stage('lightningcss-browser-profile', {
+    entry: lightningBrowserResolved.path,
+    wasm: '/workspace/node_modules/lightningcss/lightningcss_node.wasm'
+  });
+
   const viteNodeChunkSource = runtime.packages.nodeModules.readFile('/workspace/node_modules/vite/dist/node/chunks/node.js');
   const picomatchSourceIndex = viteNodeChunkSource.indexOf('picomatch');
   const viteNodeChunkLines = viteNodeChunkSource.split('\n');
@@ -433,8 +451,15 @@ async function run() {
     },
     assetAllow: (path, asset) =>
       asset.kind === 'wasm' &&
-      path === '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasm32-wasi.wasm',
-    nodeGlobalAllow: (path) => path.startsWith('/workspace/node_modules/vite/dist/node/')
+      (
+        path === '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasm32-wasi.wasm' ||
+        path === '/workspace/node_modules/lightningcss/lightningcss_node.wasm'
+      ),
+    nodeGlobalAllow: (path) => path.startsWith('/workspace/node_modules/vite/dist/node/'),
+    modulePrelude: (path) =>
+      path === '/workspace/node_modules/lightningcss/index.mjs'
+        ? 'await init();'
+        : ''
   });
   const viteEntryUrl = vitePublication.moduleURL('vite', '/workspace/src/vite-probe.mjs');
   const viteGraph = await vitePublication.graph(viteEntryUrl);
