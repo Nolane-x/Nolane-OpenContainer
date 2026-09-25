@@ -407,14 +407,14 @@ export class NativeEsmPublicationAuthority {
 
     let transformed = applyReplacements(source, replacements);
 
-    // Node-targeted tool bundles may embed CommonJS that reads the Node process
-    // global while browser-runtime adapters in the same graph must continue to
-    // observe a browser host. Inject a lexical logical process only for paths
-    // explicitly authorized by the caller; never mutate the realm-global
-    // process used by browser/WASI environment detection.
+    // Node-targeted tool bundles can depend on the legacy Node process global
+    // through many shapes (process.env, process.platform, typeof process, etc.).
+    // The caller-provided allowlist is already the authority boundary, so do not
+    // under-inject based on a single source heuristic such as process.versions.node.
+    // Keep the logical process lexical to the authorized module and never mutate
+    // realm-global process, which browser/WASI adapters use for environment detection.
     if (
       this.#nodeGlobalAllow?.(publication.path) === true &&
-      /\bprocess\.versions\.node\b/.test(source) &&
       !/\bimport\s+process\b/.test(source) &&
       !/\b(?:const|let|var|function|class)\s+process\b/.test(source)
     ) {
