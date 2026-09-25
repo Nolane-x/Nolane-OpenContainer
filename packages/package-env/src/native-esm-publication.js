@@ -50,13 +50,13 @@ function dirnamePath(path) {
 }
 
 function looksLikeCommonJs(source) {
-  return /\\bmodule\\.exports\\b|\\bexports\\s*\\.|(?:^|[^\\w$.])require\\s*\\(/m.test(source);
+  return /\bmodule\.exports\b|\bexports\s*\.|(?:^|[^\w$.])require\s*\(/m.test(source);
 }
 
 function staticCommonJsRequires(source) {
   const found = [];
   const seen = new Set();
-  const pattern = /(^|[^\\w$.])require\\s*\\(\\s*(['"])([^'"\\\\\\r\\n]+)\\2\\s*\\)/gm;
+  const pattern = /(^|[^\w$.])require\s*\(\s*(['"])([^'"\\\r\n]+)\2\s*\)/gm;
   for (const match of source.matchAll(pattern)) {
     const specifier = match[3];
     if (!seen.has(specifier)) {
@@ -69,9 +69,9 @@ function staticCommonJsRequires(source) {
 
 function commonJsNamedExports(source) {
   const names = new Set();
-  const direct = /\\b(?:exports|module\\.exports)\\.([A-Za-z_$][\\w$]*)\\s*=/g;
+  const direct = /\b(?:exports|module\.exports)\.([A-Za-z_$][\w$]*)\s*=/g;
   for (const match of source.matchAll(direct)) names.add(match[1]);
-  const define = /Object\\.defineProperty\\(\\s*exports\\s*,\\s*['"]([A-Za-z_$][\\w$]*)['"]/g;
+  const define = /Object\.defineProperty\(\s*exports\s*,\s*['"]([A-Za-z_$][\w$]*)['"]/g;
   for (const match of source.matchAll(define)) names.add(match[1]);
   return [...names].filter((name) => name !== 'default' && name !== '__opencontainer_cjs_exports');
 }
