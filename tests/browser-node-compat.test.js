@@ -39,7 +39,7 @@ test('browser Node compat path and process share logical cwd',async()=>{
 
 test('browser Node compat exposes promoted native ESM builtin sources',async()=>{
   const {bridge}=fixture();
-  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:path/win32','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process','node:dns','node:dns/promises','node:os','node:net','node:tty','node:assert','node:assert/strict','node:v8','node:timers','node:timers/promises','node:readline','node:http','node:https','node:http2','node:tls','node:querystring','node:zlib']){
+  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:path/win32','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process','node:dns','node:dns/promises','node:os','node:net','node:tty','node:assert','node:assert/strict','node:v8','node:timers','node:timers/promises','node:readline','node:http','node:https','node:http2','node:tls','node:querystring','node:zlib','node:stream']){
     const source=await bridge.builtinSource(specifier);
     assert.equal(typeof source,'string');
     assert.ok(source.length>20);
@@ -53,6 +53,8 @@ test('browser node:module source promotes synchronous builtin require inside gue
   const source=await bridge.builtinSource('node:module');
   assert.match(source,/requireBuiltins=new Map/);
   assert.match(source,/node:fs/);
+  assert.match(source,/node:stream/);
+  assert.match(source,/\["stream",__oc_builtin_31\]/);
   assert.match(source,/if\(requireBuiltins\.has\(bare\)\)/);
 });
 
@@ -351,4 +353,32 @@ test('browser global process does not impersonate Node while node:process keeps 
 test('browser guest worker installs Node global alias in the isolated guest realm',async()=>{
   const source=await import('node:fs/promises').then(fs=>fs.readFile(new URL('../apps/playground/public/opencontainer-guest-worker.mjs',import.meta.url),'utf8'));
   assert.match(source,/globalThis\.global \?\?= globalThis/);
+});
+
+
+test('browser node:stream provides in-memory Transform and PassThrough semantics',async()=>{
+  const {bridge}=fixture();
+  const source=await bridge.builtinSource('node:stream');
+  const stream=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64')+'#'+Date.now());
+  const pass=new stream.PassThrough();
+  const seen=[];
+  pass.on('data',(chunk)=>seen.push(String(chunk)));
+  pass.write('a');
+  pass.end('b');
+  await new Promise((resolve)=>queueMicrotask(resolve));
+  assert.deepEqual(seen,['a','b']);
+  assert.equal(pass.writableFinished,true);
+  assert.equal(pass.readableEnded,true);
+
+  const upper=new stream.Transform({
+    transform(chunk,encoding,callback){callback(null,String(chunk).toUpperCase());}
+  });
+  const transformed=[];
+  upper.on('data',(chunk)=>transformed.push(chunk));
+  upper.write('hello');
+  upper.end();
+  await new Promise((resolve)=>queueMicrotask(resolve));
+  assert.deepEqual(transformed,['HELLO']);
+  assert.equal(stream.isDestroyed(upper),false);
+  assert.equal(stream.getDefaultHighWaterMark(false),64*1024);
 });

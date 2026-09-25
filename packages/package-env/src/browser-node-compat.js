@@ -490,6 +490,140 @@ export default api;
 `;
 }
 
+
+function streamSource() {
+  return `
+import { EventEmitter } from 'node:events';
+function asError(error){return error instanceof Error?error:new Error(String(error));}
+function onceSettled(stream,callback){
+  let done=false;
+  const finish=(error)=>{if(done)return;done=true;cleanup();callback?.(error);};
+  const cleanup=()=>{stream?.off?.('error',onError);stream?.off?.('finish',onFinish);stream?.off?.('end',onFinish);stream?.off?.('close',onFinish);};
+  const onError=(error)=>finish(error);
+  const onFinish=()=>finish();
+  stream?.once?.('error',onError);stream?.once?.('finish',onFinish);stream?.once?.('end',onFinish);stream?.once?.('close',onFinish);
+  return finish;
+}
+export class Stream extends EventEmitter{
+  pipe(destination){
+    this.on('data',(chunk)=>{if(destination?.write)destination.write(chunk);});
+    this.once('end',()=>destination?.end?.());
+    this.once('error',(error)=>destination?.emit?.('error',error));
+    destination?.emit?.('pipe',this);
+    return destination;
+  }
+}
+export class Readable extends Stream{
+  constructor(options={}){
+    super();this.readable=true;this.readableEnded=false;this.destroyed=false;this.readableEncoding=null;
+    this._queue=[];this._paused=false;this._read=typeof options.read==='function'?options.read.bind(this):this._read;
+  }
+  _read(){}
+  push(chunk){
+    if(chunk===null){
+      if(!this.readableEnded){this.readableEnded=true;this.readable=false;queueMicrotask(()=>this.emit('end'));}
+      return false;
+    }
+    this._queue.push(chunk);
+    if(!this._paused)queueMicrotask(()=>this.emit('data',this._queue.shift()));
+    return !this._paused;
+  }
+  read(){return this._queue.length?this._queue.shift():null;}
+  pause(){this._paused=true;return this;}
+  resume(){this._paused=false;while(this._queue.length)this.emit('data',this._queue.shift());return this;}
+  setEncoding(encoding){this.readableEncoding=encoding;return this;}
+  destroy(error){this.destroyed=true;this.readable=false;if(error)queueMicrotask(()=>this.emit('error',asError(error)));queueMicrotask(()=>this.emit('close'));return this;}
+  [Symbol.asyncIterator](){
+    const self=this;return {async next(){const value=self.read();if(value!==null)return {value,done:false};if(self.readableEnded)return {value:undefined,done:true};return await new Promise((resolve,reject)=>{const onData=(chunk)=>{cleanup();resolve({value:chunk,done:false});};const onEnd=()=>{cleanup();resolve({value:undefined,done:true});};const onError=(error)=>{cleanup();reject(error);};const cleanup=()=>{self.off('data',onData);self.off('end',onEnd);self.off('error',onError);};self.once('data',onData);self.once('end',onEnd);self.once('error',onError);});}}};
+  }
+  static from(iterable){
+    const out=new Readable();
+    queueMicrotask(async()=>{try{for await(const item of iterable)out.push(item);out.push(null);}catch(error){out.destroy(error);}});
+    return out;
+  }
+}
+export class Writable extends Stream{
+  constructor(options={}){
+    super();this.writable=true;this.writableEnded=false;this.writableFinished=false;this.destroyed=false;
+    this._write=typeof options.write==='function'?options.write.bind(this):this._write;
+    this._final=typeof options.final==='function'?options.final.bind(this):this._final;
+  }
+  _write(chunk,encoding,callback){callback();}
+  _final(callback){callback();}
+  write(chunk,encoding,callback){
+    if(typeof encoding==='function'){callback=encoding;encoding=undefined;}
+    if(this.writableEnded){const error=new Error('write after end');error.code='ERR_STREAM_WRITE_AFTER_END';if(callback)queueMicrotask(()=>callback(error));else queueMicrotask(()=>this.emit('error',error));return false;}
+    try{this._write(chunk,encoding??'utf8',(error)=>{if(error){this.emit('error',asError(error));callback?.(asError(error));}else callback?.();});return true;}
+    catch(error){this.emit('error',asError(error));callback?.(asError(error));return false;}
+  }
+  end(chunk,encoding,callback){
+    if(typeof chunk==='function'){callback=chunk;chunk=undefined;}
+    else if(typeof encoding==='function'){callback=encoding;encoding=undefined;}
+    if(chunk!==undefined)this.write(chunk,encoding);
+    if(this.writableEnded){callback?.();return this;}
+    this.writableEnded=true;
+    const finish=(error)=>{if(error){this.emit('error',asError(error));callback?.(asError(error));return;}this.writable=false;this.writableFinished=true;this.emit('finish');callback?.();};
+    try{this._final(finish);}catch(error){finish(error);}
+    return this;
+  }
+  destroy(error){this.destroyed=true;this.writable=false;if(error)queueMicrotask(()=>this.emit('error',asError(error)));queueMicrotask(()=>this.emit('close'));return this;}
+}
+export class Duplex extends Readable{
+  constructor(options={}){
+    super(options);this.writable=true;this.writableEnded=false;this.writableFinished=false;
+    this._write=typeof options.write==='function'?options.write.bind(this):Writable.prototype._write;
+    this._final=typeof options.final==='function'?options.final.bind(this):Writable.prototype._final;
+  }
+  write(...args){return Writable.prototype.write.apply(this,args);}
+  end(...args){return Writable.prototype.end.apply(this,args);}
+  destroy(error){Readable.prototype.destroy.call(this,error);this.writable=false;return this;}
+}
+export class Transform extends Duplex{
+  constructor(options={}){
+    super(options);this._transform=typeof options.transform==='function'?options.transform.bind(this):this._transform;
+    this._flush=typeof options.flush==='function'?options.flush.bind(this):null;
+  }
+  _transform(chunk,encoding,callback){callback(null,chunk);}
+  _write(chunk,encoding,callback){
+    this._transform(chunk,encoding,(error,value)=>{
+      if(error){callback(error);return;}
+      if(value!==undefined&&value!==null)this.push(value);
+      callback();
+    });
+  }
+  _final(callback){
+    if(!this._flush){this.push(null);callback();return;}
+    this._flush((error,value)=>{if(!error&&value!==undefined&&value!==null)this.push(value);if(!error)this.push(null);callback(error);});
+  }
+}
+export class PassThrough extends Transform{}
+export function finished(stream,options,callback){
+  if(typeof options==='function'){callback=options;options=undefined;}
+  if(typeof callback!=='function')throw new TypeError('callback must be a function');
+  return onceSettled(stream,callback);
+}
+export function pipeline(...args){
+  const callback=typeof args[args.length-1]==='function'?args.pop():null;
+  if(args.length<2){const error=new TypeError('pipeline requires at least two streams');callback?.(error);if(!callback)throw error;return args[0];}
+  for(let index=0;index<args.length-1;index++)args[index].pipe(args[index+1]);
+  if(callback)onceSettled(args[args.length-1],callback);
+  return args[args.length-1];
+}
+let byteHighWaterMark=64*1024;
+let objectHighWaterMark=16;
+export function getDefaultHighWaterMark(objectMode=false){return objectMode?objectHighWaterMark:byteHighWaterMark;}
+export function setDefaultHighWaterMark(objectMode,value){const next=Number(value);if(!Number.isFinite(next)||next<0)throw new RangeError('highWaterMark must be non-negative');if(objectMode)objectHighWaterMark=next;else byteHighWaterMark=next;}
+export function isReadable(stream){return !!stream&&stream.readable!==false&&!stream.readableEnded&&!stream.destroyed;}
+export function isWritable(stream){return !!stream&&stream.writable!==false&&!stream.writableEnded&&!stream.destroyed;}
+export function isErrored(stream){return !!stream?.errored;}
+export function isDestroyed(stream){return !!stream?.destroyed;}
+export function addAbortSignal(signal,stream){if(signal?.aborted)stream.destroy?.(signal.reason??new Error('aborted'));else signal?.addEventListener?.('abort',()=>stream.destroy?.(signal.reason??new Error('aborted')),{once:true});return stream;}
+Stream.Readable=Readable;Stream.Writable=Writable;Stream.Duplex=Duplex;Stream.Transform=Transform;Stream.PassThrough=PassThrough;Stream.pipeline=pipeline;Stream.finished=finished;
+const api={Stream,Readable,Writable,Duplex,Transform,PassThrough,pipeline,finished,getDefaultHighWaterMark,setDefaultHighWaterMark,isReadable,isWritable,isErrored,isDestroyed,addAbortSignal};
+export default Object.assign(Stream,api);
+`;
+}
+
 function zlibSource() {
   return `
 import { Buffer } from 'node:buffer';
@@ -1330,8 +1464,9 @@ export default api;
 function moduleSource(builtinModules) {
   return `
 import * as __oc_builtin_0 from "node:fs";\nimport * as __oc_builtin_1 from "node:fs/promises";\nimport * as __oc_builtin_2 from "node:path";\nimport * as __oc_builtin_3 from "node:path/posix";\nimport * as __oc_builtin_4 from "node:path/win32";\nimport * as __oc_builtin_5 from "node:buffer";\nimport * as __oc_builtin_6 from "node:events";\nimport * as __oc_builtin_7 from "node:process";\nimport * as __oc_builtin_8 from "node:url";\nimport * as __oc_builtin_9 from "node:crypto";\nimport * as __oc_builtin_10 from "node:perf_hooks";\nimport * as __oc_builtin_11 from "node:util";\nimport * as __oc_builtin_12 from "node:worker_threads";\nimport * as __oc_builtin_13 from "node:child_process";\nimport * as __oc_builtin_14 from "node:dns";\nimport * as __oc_builtin_15 from "node:dns/promises";\nimport * as __oc_builtin_16 from "node:os";\nimport * as __oc_builtin_17 from "node:net";\nimport * as __oc_builtin_18 from "node:tty";\nimport * as __oc_builtin_19 from "node:assert";\nimport * as __oc_builtin_20 from "node:assert/strict";\nimport * as __oc_builtin_21 from "node:v8";\nimport * as __oc_builtin_22 from "node:timers";\nimport * as __oc_builtin_23 from "node:timers/promises";\nimport * as __oc_builtin_24 from "node:readline";\nimport * as __oc_builtin_25 from "node:http";\nimport * as __oc_builtin_26 from "node:https";\nimport * as __oc_builtin_27 from "node:http2";\nimport * as __oc_builtin_28 from "node:tls";\nimport * as __oc_builtin_29 from "node:querystring";\nimport * as __oc_builtin_30 from "node:zlib";
+import * as __oc_builtin_31 from "node:stream";
 export const builtinModules=Object.freeze(${JSON.stringify(builtinModules)});
-const requireBuiltins=new Map([["fs",__oc_builtin_0],["fs/promises",__oc_builtin_1],["path",__oc_builtin_2],["path/posix",__oc_builtin_3],["path/win32",__oc_builtin_4],["buffer",__oc_builtin_5],["events",__oc_builtin_6],["process",__oc_builtin_7],["url",__oc_builtin_8],["crypto",__oc_builtin_9],["perf_hooks",__oc_builtin_10],["util",__oc_builtin_11],["worker_threads",__oc_builtin_12],["child_process",__oc_builtin_13],["dns",__oc_builtin_14],["dns/promises",__oc_builtin_15],["os",__oc_builtin_16],["net",__oc_builtin_17],["tty",__oc_builtin_18],["assert",__oc_builtin_19],["assert/strict",__oc_builtin_20],["v8",__oc_builtin_21],["timers",__oc_builtin_22],["timers/promises",__oc_builtin_23],["readline",__oc_builtin_24],["http",__oc_builtin_25],["https",__oc_builtin_26],["http2",__oc_builtin_27],["tls",__oc_builtin_28],["querystring",__oc_builtin_29],["zlib",__oc_builtin_30]]);
+const requireBuiltins=new Map([["fs",__oc_builtin_0],["fs/promises",__oc_builtin_1],["path",__oc_builtin_2],["path/posix",__oc_builtin_3],["path/win32",__oc_builtin_4],["buffer",__oc_builtin_5],["events",__oc_builtin_6],["process",__oc_builtin_7],["url",__oc_builtin_8],["crypto",__oc_builtin_9],["perf_hooks",__oc_builtin_10],["util",__oc_builtin_11],["worker_threads",__oc_builtin_12],["child_process",__oc_builtin_13],["dns",__oc_builtin_14],["dns/promises",__oc_builtin_15],["os",__oc_builtin_16],["net",__oc_builtin_17],["tty",__oc_builtin_18],["assert",__oc_builtin_19],["assert/strict",__oc_builtin_20],["v8",__oc_builtin_21],["timers",__oc_builtin_22],["timers/promises",__oc_builtin_23],["readline",__oc_builtin_24],["http",__oc_builtin_25],["https",__oc_builtin_26],["http2",__oc_builtin_27],["tls",__oc_builtin_28],["querystring",__oc_builtin_29],["zlib",__oc_builtin_30],["stream",__oc_builtin_31]]);
 function unwrapBuiltin(namespace){
   if(namespace&&Object.prototype.hasOwnProperty.call(namespace,'default'))return namespace.default;
   return namespace;
@@ -1428,6 +1563,7 @@ export function createBrowserNodeCompatBridge({
       case 'node:tls': return tlsSource();
       case 'node:querystring': return querystringSource();
       case 'node:zlib': return zlibSource();
+      case 'node:stream': return streamSource();
       default:
         throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Native browser ESM builtin is not implemented', { specifier });
     }
