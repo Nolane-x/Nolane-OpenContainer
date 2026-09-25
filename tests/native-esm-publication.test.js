@@ -461,7 +461,7 @@ test('native ESM publication can append an explicit bootstrap epilogue without m
     });
     const entryURL = authority.moduleURL('./bootstrap-entry.mjs', '/workspace/src/entry.mjs');
     const served = await authority.serve(entryURL);
-    assert.match(served.source, /^await init\(\);/);
+    assert.match(served.source, /await init\(\);$/);
     assert.equal(runtime.fs.readFile('/workspace/src/bootstrap-entry.mjs').startsWith('await init();'), false);
     await materializeGraph(await authority.graph(entryURL));
     const namespace = await import(entryURL.href + '?oracle=' + Date.now());
