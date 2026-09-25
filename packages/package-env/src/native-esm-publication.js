@@ -328,7 +328,7 @@ export class NativeEsmPublicationAuthority {
     } catch {
       throw ocError(ErrorCodes.ESM_PUBLICATION_INVALID, 'Invalid JSON module source', { path: publication.path });
     }
-    const serialized = JSON.stringify(value).replace(/<\\/script/gi, '<\\\\/script');
+    const serialized = JSON.stringify(value);
     return Object.freeze({
       kind: 'file',
       url: publication.url.href,
@@ -340,7 +340,7 @@ export class NativeEsmPublicationAuthority {
   }
 
   #serveCommonJs(publication, source) {
-    const body = source.replace(/^#![^\\r\\n]*(?:\\r?\\n|$)/, '');
+    const body = source.replace(/^#![^\r\n]*(?:\r?\n|$)/, '');
     const specifiers = staticCommonJsRequires(body);
     const imports = [];
     const mapEntries = [];
@@ -372,7 +372,7 @@ export class NativeEsmPublicationAuthority {
     const named = commonJsNamedExports(body);
     const namedExports = named.map((name) =>
       'export const ' + name + '=__opencontainer_cjs_exports?.[' + JSON.stringify(name) + '];'
-    ).join('\\n');
+    ).join('\n');
     const filename = JSON.stringify(publication.path);
     const moduleDir = JSON.stringify(dirnamePath(publication.path));
     const generated = [
@@ -384,13 +384,13 @@ export class NativeEsmPublicationAuthority {
       'require.resolve.paths=()=>null;require.main=null;require.cache=Object.create(null);require.extensions=Object.create(null);',
       'const module={id:' + filename + ',filename:' + filename + ',exports:{},loaded:false,parent:null,children:[]};',
       'const __filename=' + filename + ';const __dirname=' + moduleDir + ';const global=globalThis;',
-      'const __oc_wrapper=function(exports,require,module,__filename,__dirname){\\n' + body + '\\n};',
+      'const __oc_wrapper=function(exports,require,module,__filename,__dirname){\n' + body + '\n};',
       '__oc_wrapper.call(module.exports,module.exports,require,module,__filename,__dirname);module.loaded=true;',
       'const __opencontainer_cjs_exports=module.exports;',
       'export { __opencontainer_cjs_exports };',
       'export default __opencontainer_cjs_exports;',
       namedExports
-    ].filter(Boolean).join('\\n');
+    ].filter(Boolean).join('\n');
 
     return Object.freeze({
       kind: 'file',
