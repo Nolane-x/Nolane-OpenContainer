@@ -39,7 +39,7 @@ test('browser Node compat path and process share logical cwd',async()=>{
 
 test('browser Node compat exposes promoted native ESM builtin sources',async()=>{
   const {bridge}=fixture();
-  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process','node:dns','node:dns/promises','node:os','node:net','node:tty','node:assert','node:assert/strict','node:v8']){
+  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process','node:dns','node:dns/promises','node:os','node:net','node:tty','node:assert','node:assert/strict','node:v8','node:timers','node:timers/promises','node:readline']){
     const source=await bridge.builtinSource(specifier);
     assert.equal(typeof source,'string');
     assert.ok(source.length>20);
@@ -199,4 +199,26 @@ test('browser node:v8 exposes only deterministic logical metadata and denies hos
   assert.deepEqual(v8.getHeapSpaceStatistics(),[]);
   assert.throws(()=>v8.writeHeapSnapshot(),error=>error?.code==='OC_BUILTIN_UNAVAILABLE');
   assert.throws(()=>v8.serialize({secret:true}),error=>error?.code==='OC_BUILTIN_UNAVAILABLE');
+});
+
+
+test('browser timers/promises uses browser timers and honors AbortSignal',async()=>{
+  const {bridge}=fixture();
+  const source=await bridge.builtinSource('node:timers/promises');
+  const encoded=Buffer.from(source).toString('base64');
+  const timers=await import('data:text/javascript;base64,'+encoded+'#'+Date.now());
+  assert.equal(await timers.setTimeout(1,42),42);
+  const controller=new AbortController();
+  controller.abort();
+  await assert.rejects(()=>timers.setTimeout(10,1,{signal:controller.signal}),error=>error?.code==='ABORT_ERR');
+});
+
+test('browser readline and process stdio stay non-interactive',async()=>{
+  const {bridge}=fixture();
+  const readlineSource=await bridge.builtinSource('node:readline');
+  const readline=await import('data:text/javascript;base64,'+Buffer.from(readlineSource).toString('base64')+'#'+Date.now());
+  assert.equal(readline.clearLine(null,0),true);
+  const processSource=await bridge.builtinSource('node:process');
+  assert.match(processSource,/isTTY:false/);
+  assert.match(processSource,/export \{ stdout, stderr, stdin \}/);
 });

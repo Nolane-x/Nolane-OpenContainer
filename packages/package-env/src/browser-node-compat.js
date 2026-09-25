@@ -161,6 +161,30 @@ export default EventEmitter;
 function processSource(env, argv, platform, arch) {
   return `
 const call=(method,payload)=>globalThis.__opencontainer_sync_host_call__('node.process.'+method,payload);
+function stream(fd,kind){
+  return {
+    fd,
+    isTTY:false,
+    columns:undefined,
+    rows:undefined,
+    readable:kind==='stdin',
+    writable:kind!=='stdin',
+    write(chunk,encoding,callback){
+      if(typeof encoding==='function'){callback=encoding;}
+      const text=typeof chunk==='string'?chunk:String(chunk??'');
+      if(kind==='stderr')console.error(text);
+      else if(kind==='stdout')console.log(text);
+      if(typeof callback==='function')queueMicrotask(callback);
+      return true;
+    },
+    on(){return this;},once(){return this;},off(){return this;},removeListener(){return this;},
+    pause(){return this;},resume(){return this;},setEncoding(){return this;},
+    ref(){return this;},unref(){return this;}
+  };
+}
+const stdout=stream(1,'stdout');
+const stderr=stream(2,'stderr');
+const stdin=stream(0,'stdin');
 const process={
   browser:true,
   platform:${JSON.stringify(platform)},
@@ -170,6 +194,7 @@ const process={
   argv:${JSON.stringify(argv)},
   execArgv:[],
   env:Object.assign(Object.create(null),${JSON.stringify(env)}),
+  stdout,stderr,stdin,
   cwd:()=>call('cwd'),
   chdir:(directory)=>call('chdir',{directory}),
   nextTick:(callback,...args)=>queueMicrotask(()=>callback(...args)),
@@ -185,6 +210,7 @@ export const argv=process.argv;
 export const platform=process.platform;
 export const arch=process.arch;
 export const versions=process.versions;
+export { stdout, stderr, stdin };
 export const cwd=process.cwd;
 export const chdir=process.chdir;
 export const nextTick=process.nextTick;
@@ -320,6 +346,81 @@ export function createServer(){return denied('createServer');}
 export function connect(){return denied('connect');}
 export const createConnection=connect;
 const api={isIPv4,isIPv6,isIP,Socket,Server,createServer,connect,createConnection};
+export default api;
+`;
+}
+
+function timersSource() {
+  return `
+export const setTimeout=globalThis.setTimeout.bind(globalThis);
+export const clearTimeout=globalThis.clearTimeout.bind(globalThis);
+export const setInterval=globalThis.setInterval.bind(globalThis);
+export const clearInterval=globalThis.clearInterval.bind(globalThis);
+export const setImmediate=(callback,...args)=>globalThis.setTimeout(callback,0,...args);
+export const clearImmediate=(handle)=>globalThis.clearTimeout(handle);
+const api={setTimeout,clearTimeout,setInterval,clearInterval,setImmediate,clearImmediate};
+export default api;
+`;
+}
+
+function timersPromisesSource() {
+  return `
+function abortError(){
+  const error=new Error('The operation was aborted');
+  error.name='AbortError';
+  error.code='ABORT_ERR';
+  return error;
+}
+export function setTimeout(delay=1,value,options={}){
+  return new Promise((resolve,reject)=>{
+    const signal=options?.signal;
+    if(signal?.aborted){reject(abortError());return;}
+    const timer=globalThis.setTimeout(()=>{cleanup();resolve(value);},Math.max(0,Number(delay)||0));
+    const onAbort=()=>{globalThis.clearTimeout(timer);cleanup();reject(abortError());};
+    const cleanup=()=>signal?.removeEventListener?.('abort',onAbort);
+    signal?.addEventListener?.('abort',onAbort,{once:true});
+  });
+}
+export function setImmediate(value,options={}){return setTimeout(0,value,options);}
+export async function* setInterval(delay=1,value,options={}){
+  while(true){
+    yield await setTimeout(delay,value,options);
+  }
+}
+export const scheduler=Object.freeze({
+  wait:(delay,options)=>setTimeout(delay,undefined,options),
+  yield:()=>setImmediate()
+});
+export default {setTimeout,setImmediate,setInterval,scheduler};
+`;
+}
+
+function readlineSource() {
+  return `
+function done(callback){if(typeof callback==='function')queueMicrotask(callback);return true;}
+export function cursorTo(stream,x,y,callback){return done(typeof y==='function'?y:callback);}
+export function moveCursor(stream,dx,dy,callback){return done(callback);}
+export function clearLine(stream,dir,callback){return done(callback);}
+export function clearScreenDown(stream,callback){return done(callback);}
+export function emitKeypressEvents(){}
+export class Interface{
+  constructor(input,output){this.input=input;this.output=output;this.closed=false;}
+  on(){return this;}once(){return this;}off(){return this;}removeListener(){return this;}
+  pause(){return this;}resume(){return this;}
+  close(){this.closed=true;return this;}
+  question(query,options,callback){
+    if(typeof options==='function')callback=options;
+    const error=new Error('Interactive readline is unavailable in OpenContainer browser runtime');
+    error.code='OC_BUILTIN_UNAVAILABLE';
+    if(typeof callback==='function')queueMicrotask(()=>callback(''));
+    else return Promise.reject(error);
+  }
+}
+export function createInterface(optionsOrInput,output){
+  const options=optionsOrInput&&typeof optionsOrInput==='object'&&'input' in optionsOrInput?optionsOrInput:{input:optionsOrInput,output};
+  return new Interface(options.input,options.output);
+}
+const api={Interface,createInterface,cursorTo,moveCursor,clearLine,clearScreenDown,emitKeypressEvents};
 export default api;
 `;
 }
@@ -858,6 +959,9 @@ export function createBrowserNodeCompatBridge({
       case 'node:assert':
       case 'node:assert/strict': return assertSource();
       case 'node:v8': return v8Source();
+      case 'node:timers': return timersSource();
+      case 'node:timers/promises': return timersPromisesSource();
+      case 'node:readline': return readlineSource();
       default:
         throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Native browser ESM builtin is not implemented', { specifier });
     }
