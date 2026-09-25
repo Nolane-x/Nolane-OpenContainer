@@ -86,6 +86,13 @@ export function readdir(path,options,callback){if(typeof options==='function'){c
 export function stat(path,options,callback){if(typeof options==='function'){callback=options;options=null;}return callbackResult(callback,()=>statSync(path));}
 export function lstat(path,options,callback){if(typeof options==='function'){callback=options;options=null;}return callbackResult(callback,()=>lstatSync(path));}
 export function readlink(path,options,callback){if(typeof options==='function'){callback=options;options=null;}return callbackResult(callback,()=>readlinkSync(path));}
+export function openSync(path,flags='r',mode=0o666){return call('openSync',{path:String(path),flags,mode});}
+export function closeSync(fd){return call('closeSync',{fd:Number(fd)});}
+export function open(path,flags,mode,callback){
+  if(typeof mode==='function'){callback=mode;mode=0o666;}
+  return callbackResult(callback,()=>openSync(path,flags,mode));
+}
+export function close(fd,callback){return callbackResult(callback,()=>closeSync(fd),{value:false});}
 export function mkdirSync(path,options=null){return call('mkdirSync',{path:String(path),options});}
 export function renameSync(from,to){return call('renameSync',{from:String(from),to:String(to)});}
 export function rmSync(path,options=null){return call('rmSync',{path:String(path),options});}
@@ -108,7 +115,7 @@ export const promises=Object.freeze({
   rm:async(...args)=>rmSync(...args),
   unlink:async(...args)=>unlinkSync(...args)
 });
-const api={constants,existsSync,accessSync,access,readFileSync,readFile,writeFileSync,writeFile,readdirSync,readdir,statSync,stat,lstatSync,lstat,realpathSync,realpath,readlinkSync,readlink,mkdirSync,mkdir,renameSync,rename,rmSync,rm,unlinkSync,unlink,promises};
+const api={constants,existsSync,accessSync,access,readFileSync,readFile,writeFileSync,writeFile,readdirSync,readdir,statSync,stat,lstatSync,lstat,realpathSync,realpath,readlinkSync,readlink,openSync,open,closeSync,close,mkdirSync,mkdir,renameSync,rename,rmSync,rm,unlinkSync,unlink,promises};
 export default api;
 `;
 }
@@ -1539,6 +1546,10 @@ Module.createRequire=createRequire;
 Module.createRequireFromPath=createRequire;
 Module.syncBuiltinESMExports=syncBuiltinESMExports;
 Module.Module=Module;
+// CommonJS consumers legitimately use require('module') / require('node:module')
+// to reach createRequire and builtin metadata. Keep this self-reference inside the
+// synthetic builtin registry instead of widening synchronous require to packages.
+requireBuiltins.set('module',Module);
 export { Module };
 export default Module;
 `;
@@ -1557,6 +1568,78 @@ export function createBrowserNodeCompatBridge({
   assertOc(fs && typeof fs.readFile === 'function', ErrorCodes.INVALID_ARGUMENT, 'Browser Node compatibility bridge requires filesystem authority');
 
   const core = createCoreBuiltinRegistry({ fs, writableFs, cwd, env, argv, platform });
+  const virtualFileDescriptors = new Map();
+  const virtualSystemFiles = new Map([
+    ['/proc/version', Object.freeze({
+      text: 'Linux version 6.6.0-opencontainer (OpenContainer browser runtime) #1 SMP\\n',
+      mode: 0o100444
+    })]
+  ]);
+  const textEncoder = new TextEncoder();
+  let nextVirtualFd = 3;
+
+  const virtualSystemFile = (pathValue) => virtualSystemFiles.get(String(pathValue)) ?? null;
+
+  const readVirtualSystemFile = (pathValue, options = null) => {
+    const file = virtualSystemFile(pathValue);
+    if (!file) return null;
+    const encoding = typeof options === 'string' ? options : options?.encoding ?? null;
+    if (encoding === null || encoding === undefined) {
+      return { __opencontainerBytes: [...textEncoder.encode(file.text)] };
+    }
+    const normalizedEncoding = String(encoding).toLowerCase();
+    assertOc(
+      normalizedEncoding === 'utf8' || normalizedEncoding === 'utf-8',
+      ErrorCodes.INVALID_ARGUMENT,
+      'Virtual system files currently support UTF-8 text reads only',
+      { path: String(pathValue), encoding }
+    );
+    return file.text;
+  };
+
+  const statVirtualSystemFile = (pathValue) => {
+    const file = virtualSystemFile(pathValue);
+    if (!file) return null;
+    return {
+      size: textEncoder.encode(file.text).byteLength,
+      mode: file.mode,
+      file: true,
+      directory: false,
+      symlink: false
+    };
+  };
+
+  const openVirtualFd = (pathValue, flags = 'r') => {
+    const normalizedFlags = typeof flags === 'number' ? flags : String(flags ?? 'r');
+    const readOnly = normalizedFlags === 0 || normalizedFlags === 'r' || normalizedFlags === 'rs' || normalizedFlags === 'sr';
+    assertOc(
+      readOnly,
+      ErrorCodes.BUILTIN_UNAVAILABLE,
+      'Browser virtual file descriptors currently support read-only opens only',
+      { flags: normalizedFlags }
+    );
+    const systemStat = statVirtualSystemFile(pathValue);
+    const stat = systemStat ?? core.fs.statSync(pathValue);
+    const isDirectory = systemStat ? systemStat.directory : stat.isDirectory();
+    assertOc(!isDirectory, ErrorCodes.INVALID_ARGUMENT, 'Cannot open a directory as a browser virtual file descriptor', {
+      path: String(pathValue)
+    });
+    const fd = nextVirtualFd++;
+    virtualFileDescriptors.set(fd, Object.freeze({ path: String(pathValue), flags: normalizedFlags }));
+    return fd;
+  };
+
+  const closeVirtualFd = (fdValue) => {
+    const fd = Number(fdValue);
+    if (!Number.isInteger(fd) || !virtualFileDescriptors.has(fd)) {
+      const error = new Error('EBADF: bad file descriptor, close');
+      error.code = 'EBADF';
+      error.errno = 'EBADF';
+      error.syscall = 'close';
+      throw error;
+    }
+    virtualFileDescriptors.delete(fd);
+  };
 
   const builtinSource = async (specifier) => {
     switch (specifier) {
@@ -1707,6 +1790,23 @@ export function createBrowserNodeCompatBridge({
 
     if (method.startsWith('node.fs.')) {
       const name = method.slice('node.fs.'.length);
+      if (name === 'openSync') return openVirtualFd(payload.path, payload.flags);
+      if (name === 'closeSync') return closeVirtualFd(payload.fd);
+
+      const systemFile = virtualSystemFile(payload.path);
+      if (systemFile) {
+        if (name === 'existsSync') return true;
+        if (name === 'accessSync') return undefined;
+        if (name === 'readFileSync') return readVirtualSystemFile(payload.path, payload.options);
+        if (name === 'statSync' || name === 'lstatSync') return statVirtualSystemFile(payload.path);
+        if (name === 'realpathSync') return String(payload.path);
+        throw ocError(
+          ErrorCodes.BUILTIN_UNAVAILABLE,
+          'Virtual system file operation is read-only and not promoted',
+          { method, path: String(payload.path) }
+        );
+      }
+
       const fn = core.fs[name];
       if (typeof fn !== 'function') throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Filesystem builtin method is unavailable', { method });
 

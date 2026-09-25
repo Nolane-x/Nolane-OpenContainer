@@ -288,6 +288,24 @@ async function run() {
     progress: c1Progress
   });
 
+  const lightningBrowserResolved = runtime.packages.resolve(
+    'lightningcss',
+    '/workspace/node_modules/vite/dist/node/chunks/node.js',
+    { mode: 'esm', conditions: ['browser', 'import', 'default'] }
+  );
+  assert(
+    lightningBrowserResolved.path === '/workspace/node_modules/lightningcss/index.mjs',
+    'Lightning CSS browser adapter resolved an unexpected entry'
+  );
+  assert(
+    runtime.packages.nodeModules.stat('/workspace/node_modules/lightningcss/lightningcss_node.wasm')?.type === 'file',
+    'Lightning CSS exact WASM payload is missing from mounted closure'
+  );
+  stage('lightningcss-browser-profile', {
+    entry: lightningBrowserResolved.path,
+    wasm: '/workspace/node_modules/lightningcss/lightningcss_node.wasm'
+  });
+
   const viteNodeChunkSource = runtime.packages.nodeModules.readFile('/workspace/node_modules/vite/dist/node/chunks/node.js');
   const picomatchSourceIndex = viteNodeChunkSource.indexOf('picomatch');
   const viteNodeChunkLines = viteNodeChunkSource.split('\n');
@@ -303,13 +321,214 @@ async function run() {
       ? viteNodeChunkSource.slice(Math.max(0, viteRequireDeclarationIndex - 500), viteRequireDeclarationIndex + 900)
       : null
   });
+  const viteProcessVersionIndex = viteNodeChunkSource.indexOf('process.versions.node');
+  const viteProcessDeclarationMatch = /\b(?:const|let|var|function|class)\s+process\b/.exec(viteNodeChunkSource);
+  const viteProcessImportMatch = /\bimport\s+process\b/.exec(viteNodeChunkSource);
   stage('vite-picomatch-source-shape', {
     index: picomatchSourceIndex,
     snippet: picomatchSourceIndex >= 0
       ? viteNodeChunkSource.slice(Math.max(0, picomatchSourceIndex - 500), picomatchSourceIndex + 700)
       : null,
-    line8763: viteNodeChunkLines.slice(8748, 8778).join('\n')
+    line8763: viteNodeChunkLines.slice(8748, 8778).join('\n'),
+    line8799: viteNodeChunkLines.slice(8788, 8810).join('\n'),
+    line10679: viteNodeChunkLines.slice(10660, 10700).join('\n'),
+    line11472: viteNodeChunkLines.slice(11460, 11484).join('\n'),
+    line24241: viteNodeChunkLines.slice(24230, 24252).join('\n'),
+    processVersionIndex: viteProcessVersionIndex,
+    processVersionSnippet: viteProcessVersionIndex >= 0
+      ? viteNodeChunkSource.slice(Math.max(0, viteProcessVersionIndex - 500), viteProcessVersionIndex + 700)
+      : null,
+    processDeclarationIndex: viteProcessDeclarationMatch?.index ?? -1,
+    processDeclarationSnippet: viteProcessDeclarationMatch
+      ? viteNodeChunkSource.slice(Math.max(0, viteProcessDeclarationMatch.index - 400), viteProcessDeclarationMatch.index + 800)
+      : null,
+    processImportIndex: viteProcessImportMatch?.index ?? -1,
+    processImportSnippet: viteProcessImportMatch
+      ? viteNodeChunkSource.slice(Math.max(0, viteProcessImportMatch.index - 400), viteProcessImportMatch.index + 800)
+      : null
   });
+
+  runtime.fs.beginTransaction().writeFile(
+    'src/vite-process-probe.mjs',
+    [
+      "import process from 'node:process';",
+      "export const nodeVersion = process?.versions?.node ?? null;",
+      "export const platform = process?.platform ?? null;",
+      "export const globalNodeVersion = globalThis.process?.versions?.node ?? null;"
+    ].join('\n')
+  ).commit();
+
+  const c1CssSource = '.card { color: rgb(255, 0, 0); margin: 0px 0px 0px 0px; }';
+  runtime.fs.beginTransaction()
+    .mkdir('c1-app')
+    .mkdir('c1-app/src')
+    .mkdir('c1-app/public')
+    .writeFile('c1-app/index.html', [
+      '<!doctype html>',
+      '<html><body>',
+      '<div id="app" class="card"></div>',
+      '<script type="module" src="/src/main.ts"></script>',
+      '</body></html>'
+    ].join(''))
+    .writeFile('c1-app/src/main.ts', [
+      "import './style.css';",
+      "import logoUrl from './logo.svg';",
+      "const app = document.querySelector<HTMLDivElement>('#app');",
+      "if (app) { app.textContent = 'OpenContainer Vite C1'; app.dataset.logo = logoUrl; app.dataset.source = 'source-v1'; }",
+      "export const marker: string = 'vite-c1';"
+    ].join('\n'))
+    .writeFile('c1-app/src/style.css', c1CssSource)
+    .writeFile('c1-app/src/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32"/></svg>')
+    .writeFile('c1-app/vite.config.ts', [
+      "export default {",
+      "  plugins: [{",
+      "    name: 'opencontainer-config-plugin',",
+      "    transform(code, id) {",
+      "      if (String(id).endsWith('/src/main.ts')) {",
+      "        return code.replace('OpenContainer Vite C1', 'OpenContainer Vite C1 Config V1');",
+      "      }",
+      "      return null;",
+      "    }",
+      "  }]",
+      "};"
+    ].join('\n'))
+    .writeFile('src/lightningcss-probe.mjs', [
+      "import { transform } from 'lightningcss';",
+      "const text = '.card { color: rgb(255, 0, 0); margin: 0px 0px 0px 0px; }';",
+      "const code = new TextEncoder().encode(text);",
+      "const css = new TextDecoder().decode(transform({ filename: 'style.css', code, minify: true }).code);",
+      "export { css };"
+    ].join('\n'))
+    .writeFile('src/lightningcss-buffer-probe.mjs', [
+      "import { transform } from 'lightningcss';",
+      "import { Buffer } from 'node:buffer';",
+      "const text = '.card { color: rgb(255, 0, 0); margin: 0px 0px 0px 0px; }';",
+      "const code = Buffer.from(text);",
+      "const css = new TextDecoder().decode(transform({ filename: 'style.css', code, minify: true }).code);",
+      "export { css };",
+      "export const bufferLength = code.byteLength;",
+      "export const bufferPrefix = Array.from(code.slice(0, 12)).join(',');"
+    ].join('\n'))
+    .writeFile('src/vite-build-probe.mjs', [
+      "import { build, version } from 'vite';",
+      "import { memfs } from 'rolldown/experimental';",
+      "import { existsSync, readFileSync, writeFileSync } from 'node:fs';",
+      "import { dirname, resolve as pathResolve } from 'node:path';",
+      "const root = '/workspace/c1-app';",
+      "const configPath = root + '/vite.config.ts';",
+      "const mirrorConfig = () => {",
+      "  const configSource = readFileSync(configPath, 'utf8');",
+      "  if (!memfs) throw new Error('Rolldown browser memfs is unavailable');",
+      "  for (const path of [configPath, '/c1-app/vite.config.ts']) {",
+      "    const slash = path.lastIndexOf('/');",
+      "    memfs.fs.mkdirSync(path.slice(0, slash), { recursive: true });",
+      "    memfs.fs.writeFileSync(path, configSource);",
+      "  }",
+      "};",
+      "mirrorConfig();",
+      "const cleanId = (id) => String(id).split('?')[0].split('#')[0];",
+      "const vfsPlugin = {",
+      "  name: 'opencontainer-vfs-input',",
+      "  enforce: 'pre',",
+      "  resolveId(source, importer) {",
+      "    const raw = cleanId(source);",
+      "    let candidate = null;",
+      "    if (raw.startsWith('/workspace/')) candidate = raw;",
+      "    else if (!importer && (raw === 'index.html' || raw.endsWith('/index.html'))) candidate = root + '/index.html';",
+      "    else if (raw.startsWith('/') && !raw.startsWith('/@')) candidate = root + raw;",
+      "    else if (importer && cleanId(importer).startsWith('/workspace/') && (raw.startsWith('./') || raw.startsWith('../'))) candidate = pathResolve(dirname(cleanId(importer)), raw);",
+      "    if (candidate && existsSync(candidate)) return candidate;",
+      "    return null;",
+      "  },",
+      "  load(id) {",
+      "    const path = cleanId(id);",
+      "    if (!path.startsWith('/workspace/') || !existsSync(path)) return null;",
+      "    if (/\\.(?:svg|png|jpe?g|gif|webp|avif|ico|woff2?|ttf|otf|wasm)$/i.test(path)) return null;",
+      "    return readFileSync(path, 'utf8');",
+      "  }",
+      "};",
+      "const text = (entry) => entry.type === 'chunk' ? entry.code : typeof entry.source === 'string' ? entry.source : new TextDecoder().decode(entry.source);",
+      "const summarize = (outputs) => outputs.map((entry) => {",
+      "  const raw = entry.type === 'chunk' ? entry.code : entry.source;",
+      "  return {",
+      "    type: entry.type,",
+      "    fileName: entry.fileName,",
+      "    content: text(entry),",
+      "    rawType: typeof raw,",
+      "    rawCtor: raw?.constructor?.name ?? null,",
+      "    rawLength: raw?.length ?? null,",
+      "    rawByteLength: raw?.byteLength ?? null,",
+      "    rawByteOffset: raw?.byteOffset ?? null",
+      "  };",
+      "});",
+      "const runBuild = async (overrides = {}) => {",
+      "  const result = await build({",
+      "    root,",
+      "    logLevel: 'silent',",
+      "    plugins: [vfsPlugin],",
+      "    build: {",
+      "      write: false,",
+      "      sourcemap: true,",
+      "      manifest: true,",
+      "      assetsInlineLimit: 0,",
+      "      rollupOptions: { input: root + '/index.html' },",
+      "      ...(overrides.build ?? {})",
+      "    },",
+      "    ...overrides",
+      "  });",
+      "  const outputs = (Array.isArray(result) ? result : [result]).flatMap((entry) => entry?.output ?? []);",
+      "  return { outputs, summary: summarize(outputs) };",
+      "};",
+      "const outputBySuffix = (run, suffix) => run.summary.find((entry) => String(entry.fileName).endsWith(suffix));",
+      "const normalizeObject = (value) => {",
+      "  if (Array.isArray(value)) return value.map(normalizeObject);",
+      "  if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().map((key) => [key, normalizeObject(value[key])]));",
+      "  return value;",
+      "};",
+      "const normalizedManifest = (run) => JSON.stringify(normalizeObject(JSON.parse(outputBySuffix(run, 'manifest.json')?.content ?? '{}')));",
+      "const firstRun = await runBuild();",
+      "const sourcePath = root + '/src/main.ts';",
+      "const originalSource = readFileSync(sourcePath, 'utf8');",
+      "const editedSource = originalSource.replace(\"source-v1\", \"source-v2\");",
+      "if (editedSource === originalSource) throw new Error('Vite C1 source edit fixture did not change');",
+      "writeFileSync(sourcePath, editedSource);",
+      "const secondRun = await runBuild();",
+      "const secondJs = outputBySuffix(secondRun, '.js')?.content ?? '';",
+      "const configV1 = readFileSync(configPath, 'utf8');",
+      "const configV2 = configV1.replace('OpenContainer Vite C1 Config V1', 'OpenContainer Vite C1 Config V2');",
+      "if (configV2 === configV1) throw new Error('Vite C1 config edit fixture did not change');",
+      "writeFileSync(configPath, configV2);",
+      "mirrorConfig();",
+      "const thirdRun = await runBuild();",
+      "const thirdJs = outputBySuffix(thirdRun, '.js')?.content ?? '';",
+      "const fourthRun = await runBuild();",
+      "const sourceBeforeFailure = readFileSync(sourcePath, 'utf8');",
+      "let expectedFailureObserved = false;",
+      "try {",
+      "  await build({",
+      "    root,",
+      "    configFile: false,",
+      "    logLevel: 'silent',",
+      "    plugins: [vfsPlugin],",
+      "    build: { write: false, rollupOptions: { input: root + '/src/__opencontainer_missing_entry__.ts' } }",
+      "  });",
+      "} catch {",
+      "  expectedFailureObserved = true;",
+      "}",
+      "const sourceAfterFailure = readFileSync(sourcePath, 'utf8');",
+      "export const viteVersion = version;",
+      "export const outputCount = firstRun.outputs.length;",
+      "export const outputFiles = firstRun.outputs.map((entry) => entry.fileName).sort().join('|');",
+      "export const outputJson = JSON.stringify(firstRun.summary);",
+      "export const sourceEditPersisted = readFileSync(sourcePath, 'utf8').includes('source-v2');",
+      "export const sourceEditObserved = secondJs.includes('source-v2');",
+      "export const configReloadObserved = thirdJs.includes('OpenContainer Vite C1 Config V2');",
+      "export const expectedBuildFailureObserved = expectedFailureObserved;",
+      "export const sourceUnchangedAfterFailure = sourceBeforeFailure === sourceAfterFailure;",
+      "export const deterministicManifest = normalizedManifest(thirdRun) === normalizedManifest(fourthRun);",
+      "export const repeatedOutputFiles = thirdRun.outputs.map((entry) => entry.fileName).sort().join('|') === fourthRun.outputs.map((entry) => entry.fileName).sort().join('|');"
+    ].join('\n'))
+    .commit();
 
   stage('vite-publication-graph-start');
   const viteNodeCompat = runtime.packages.createBrowserNodeCompat({
@@ -334,8 +553,15 @@ async function run() {
     },
     assetAllow: (path, asset) =>
       asset.kind === 'wasm' &&
-      path === '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasm32-wasi.wasm',
-    nodeGlobalAllow: (path) => path.startsWith('/workspace/node_modules/vite/')
+      (
+        path === '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasm32-wasi.wasm' ||
+        path === '/workspace/node_modules/lightningcss/lightningcss_node.wasm'
+      ),
+    nodeGlobalAllow: (path) => path.startsWith('/workspace/node_modules/vite/dist/node/'),
+    moduleEpilogue: (path) =>
+      path === '/workspace/node_modules/lightningcss/index.mjs'
+        ? 'await init();'
+        : ''
   });
   const viteEntryUrl = vitePublication.moduleURL('vite', '/workspace/src/vite-probe.mjs');
   const viteGraph = await vitePublication.graph(viteEntryUrl);
@@ -350,6 +576,65 @@ async function run() {
     diagnostics: runtime.diagnostics
   });
   await viteBridge.start();
+
+  stage('vite-process-probe-start');
+  const viteProcessProbe = new BrowserGuestWorkerAuthority({
+    publication: vitePublication,
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: viteNodeCompat.syncRequestHandler
+  });
+  viteProcessProbe.start();
+  const viteProcessProbeResult = await viteProcessProbe.execute(
+    vitePublication.moduleURL('./vite-process-probe.mjs', '/workspace/src/entry.mjs').href,
+    { exportNames: ['nodeVersion', 'platform', 'globalNodeVersion'] }
+  );
+  stage('vite-process-probe-pass', viteProcessProbeResult.exports);
+  assert(viteProcessProbeResult.exports.nodeVersion === '24.21.0', 'node:process default export lost Node compatibility version');
+  assert(viteProcessProbeResult.exports.platform === 'linux', 'node:process default export lost logical platform');
+  assert(viteProcessProbeResult.exports.globalNodeVersion === null, 'browser global process incorrectly impersonates Node');
+  viteProcessProbe.close();
+
+  stage('lightningcss-direct-probe-start');
+  const lightningCssProbe = new BrowserGuestWorkerAuthority({
+    publication: vitePublication,
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: viteNodeCompat.syncRequestHandler,
+    requestTimeoutMs: 30000
+  });
+  lightningCssProbe.start();
+  const lightningCssDirect = await lightningCssProbe.execute(
+    vitePublication.moduleURL('./lightningcss-probe.mjs', '/workspace/src/entry.mjs').href,
+    { exportNames: ['css'] }
+  );
+  assert(lightningCssDirect.exports.css?.includes('.card'), 'direct Lightning CSS transform lost fixture selector');
+  stage('lightningcss-direct-probe-pass', {
+    cssPrefix: lightningCssDirect.exports.css.slice(0, 80),
+    cssLength: lightningCssDirect.exports.css.length,
+    cssNulls: (lightningCssDirect.exports.css.match(/\0/g) ?? []).length
+  });
+  lightningCssProbe.close();
+
+  stage('lightningcss-buffer-probe-start');
+  const lightningCssBufferProbe = new BrowserGuestWorkerAuthority({
+    publication: vitePublication,
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: viteNodeCompat.syncRequestHandler,
+    requestTimeoutMs: 30000
+  });
+  lightningCssBufferProbe.start();
+  const lightningCssBuffer = await lightningCssBufferProbe.execute(
+    vitePublication.moduleURL('./lightningcss-buffer-probe.mjs', '/workspace/src/entry.mjs').href,
+    { exportNames: ['css', 'bufferLength', 'bufferPrefix'] }
+  );
+  assert(lightningCssBuffer.exports.css?.includes('.card'), 'Buffer-backed Lightning CSS transform lost fixture selector');
+  stage('lightningcss-buffer-probe-pass', {
+    cssPrefix: lightningCssBuffer.exports.css.slice(0, 80),
+    cssLength: lightningCssBuffer.exports.css.length,
+    cssNulls: (lightningCssBuffer.exports.css.match(/\0/g) ?? []).length,
+    bufferLength: lightningCssBuffer.exports.bufferLength,
+    bufferPrefix: lightningCssBuffer.exports.bufferPrefix
+  });
+  lightningCssBufferProbe.close();
 
   stage('rolldown-wasi-worker-preflight-start');
   const rolldownWasiWorkerUrl = vitePublication.moduleURL(
@@ -394,6 +679,79 @@ async function run() {
     version: viteExecution.exports.version,
     workerCrossOriginIsolated: viteExecution.workerCrossOriginIsolated
   });
+
+  stage('vite-c1-build-start');
+  const viteBuildEntryUrl = vitePublication.moduleURL('./vite-build-probe.mjs', '/workspace/src/entry.mjs');
+  const viteBuildGraph = await vitePublication.graph(viteBuildEntryUrl);
+  const viteBuildExecution = await viteWorker.execute(viteBuildGraph.entryURL, {
+    exportNames: [
+      'viteVersion',
+      'outputCount',
+      'outputFiles',
+      'outputJson',
+      'sourceEditPersisted',
+      'sourceEditObserved',
+      'configReloadObserved',
+      'expectedBuildFailureObserved',
+      'sourceUnchangedAfterFailure',
+      'deterministicManifest',
+      'repeatedOutputFiles'
+    ],
+    observeNestedWorkers: true
+  });
+  assert(viteBuildExecution.exports.viteVersion === '8.3.0', 'Vite C1 build used the wrong Vite version');
+  const c1Outputs = JSON.parse(viteBuildExecution.exports.outputJson);
+  const bySuffix = (suffix) => c1Outputs.find((entry) => String(entry.fileName).endsWith(suffix));
+  const c1Html = c1Outputs.find((entry) => entry.fileName === 'index.html');
+  const c1Css = bySuffix('.css');
+  const c1Js = bySuffix('.js');
+  const c1Map = bySuffix('.map');
+  const c1Svg = bySuffix('.svg');
+  const c1ManifestEntry = bySuffix('manifest.json');
+  assert(viteBuildExecution.exports.outputCount >= 5, 'Vite C1 build emitted too few outputs');
+  assert(c1Html?.content.includes('type="module"'), 'Vite C1 build did not emit transformed index.html');
+  assert(c1Css?.content.includes('.card'), 'Vite C1 CSS output lost fixture selector');
+  const c1CssWithoutMapComment = c1Css.content.replace(/\/\*# sourceMappingURL=[\s\S]*?\*\//g, '').trim();
+  stage('vite-c1-css-output', {
+    bytes: c1CssWithoutMapComment.length,
+    nullCount: (c1CssWithoutMapComment.match(/\0/g) ?? []).length,
+    prefix: c1CssWithoutMapComment.slice(0, 120),
+    tail: c1CssWithoutMapComment.slice(-160),
+    rawType: c1Css.rawType,
+    rawCtor: c1Css.rawCtor,
+    rawLength: c1Css.rawLength,
+    rawByteLength: c1Css.rawByteLength,
+    rawByteOffset: c1Css.rawByteOffset,
+    firstNonNull: c1CssWithoutMapComment.search(/[^\0]/),
+    cardIndex: c1CssWithoutMapComment.indexOf('.card')
+  });
+  assert(!c1CssWithoutMapComment.includes('rgb(255, 0, 0)'), 'Vite C1 Lightning CSS did not normalize color syntax');
+  assert(!c1CssWithoutMapComment.includes('0px 0px 0px 0px'), 'Vite C1 Lightning CSS did not minify zero margin syntax');
+  assert(!/\.card\s+\{/.test(c1CssWithoutMapComment), 'Vite C1 Lightning CSS retained unminified selector spacing');
+  assert(c1Js?.content.includes('OpenContainer Vite C1 Config V1'), 'Vite C1 TypeScript config plugin did not execute');
+  assert(JSON.parse(c1Map?.content ?? '{}').version === 3, 'Vite C1 source map is invalid');
+  assert(c1Svg?.content.includes('<svg'), 'Vite C1 imported asset was not emitted');
+  const c1Manifest = JSON.parse(c1ManifestEntry?.content ?? '{}');
+  assert(Object.keys(c1Manifest).length >= 1, 'Vite C1 manifest is empty');
+  assert(viteBuildExecution.exports.sourceEditPersisted === true, 'Vite C1 source edit did not persist in canonical VFS');
+  assert(viteBuildExecution.exports.sourceEditObserved === true, 'Vite C1 second build did not observe source edit');
+  assert(viteBuildExecution.exports.configReloadObserved === true, 'Vite C1 did not re-read edited TypeScript config');
+  assert(viteBuildExecution.exports.expectedBuildFailureObserved === true, 'Vite C1 failure atomicity probe did not fail as expected');
+  assert(viteBuildExecution.exports.sourceUnchangedAfterFailure === true, 'Vite C1 failed build mutated canonical source');
+  assert(viteBuildExecution.exports.deterministicManifest === true, 'Vite C1 normalized manifest changed across identical builds');
+  assert(viteBuildExecution.exports.repeatedOutputFiles === true, 'Vite C1 output filenames changed across identical builds');
+  stage('vite-c1-build-pass', {
+    outputCount: viteBuildExecution.exports.outputCount,
+    outputFiles: viteBuildExecution.exports.outputFiles,
+    cssBytes: c1Css.content.length,
+    manifestEntries: Object.keys(c1Manifest).length,
+    configPlugin: 'v1->v2',
+    sourceRebuild: viteBuildExecution.exports.sourceEditObserved,
+    configReload: viteBuildExecution.exports.configReloadObserved,
+    failureAtomicity: viteBuildExecution.exports.sourceUnchangedAfterFailure,
+    deterministicManifest: viteBuildExecution.exports.deterministicManifest
+  });
+
   viteWorker.close();
   viteBridge.close();
 
@@ -413,6 +771,7 @@ async function run() {
     vitePublicationGraph: true,
     rolldownWasiWorkerPreflight: true,
     viteModuleExecution: true,
+    viteC1Build: true,
     stages
   };
 }

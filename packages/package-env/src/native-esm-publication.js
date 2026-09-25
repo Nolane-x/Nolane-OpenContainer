@@ -173,6 +173,7 @@ export class NativeEsmPublicationAuthority {
   #resolveOptions;
   #assetAllow;
   #nodeGlobalAllow;
+  #moduleEpilogue;
   #cache = new Map();
   #ready;
 
@@ -184,7 +185,8 @@ export class NativeEsmPublicationAuthority {
     builtinSource = null,
     resolveOptions = {},
     assetAllow = null,
-    nodeGlobalAllow = null
+    nodeGlobalAllow = null,
+    moduleEpilogue = null
   } = {}) {
     assertOc(fs && typeof fs.readFile === 'function', ErrorCodes.INVALID_ARGUMENT, 'ESM publication filesystem is required');
     assertOc(resolver && typeof resolver.resolve === 'function', ErrorCodes.INVALID_ARGUMENT, 'ESM publication resolver is required');
@@ -199,6 +201,7 @@ export class NativeEsmPublicationAuthority {
     this.#builtinSource = builtinSource;
     this.#assetAllow = typeof assetAllow === 'function' ? assetAllow : null;
     this.#nodeGlobalAllow = typeof nodeGlobalAllow === 'function' ? nodeGlobalAllow : null;
+    this.#moduleEpilogue = typeof moduleEpilogue === 'function' ? moduleEpilogue : null;
     this.#resolveOptions = Object.freeze({
       ...resolveOptions,
       conditions: resolveOptions.conditions ? Object.freeze([...resolveOptions.conditions]) : undefined,
@@ -407,16 +410,16 @@ export class NativeEsmPublicationAuthority {
 
     let transformed = applyReplacements(source, replacements);
 
-    // Node-targeted tool bundles may embed CommonJS that reads the Node process
-    // global while browser-runtime adapters in the same graph must continue to
-    // observe a browser host. Inject a lexical logical process only for paths
-    // explicitly authorized by the caller; never mutate the realm-global
-    // process used by browser/WASI environment detection.
+    // Node-targeted tool bundles can depend on the legacy Node process global
+    // through many shapes (process.env, process.platform, typeof process, etc.).
+    // The caller-provided allowlist is already the authority boundary, so do not
+    // under-inject based on a single source heuristic such as process.versions.node.
+    // Keep the logical process lexical to the authorized module and never mutate
+    // realm-global process, which browser/WASI adapters use for environment detection.
     if (
       this.#nodeGlobalAllow?.(publication.path) === true &&
-      /\bprocess\.versions\.node\b/.test(source) &&
-      !/\bimport\s+process\b/.test(source) &&
-      !/\b(?:const|let|var|function|class)\s+process\b/.test(source)
+      !/\bimport\s+process(?![\w$])/.test(source) &&
+      !/\b(?:const|let|var|function|class)\s+process(?![\w$])/.test(source)
     ) {
       const processURL = this.#urlForResolved({ kind: 'builtin', specifier: 'node:process' });
       transformed = 'import process from ' + JSON.stringify(processURL.href) + ';\n' + transformed;
@@ -478,6 +481,21 @@ export class NativeEsmPublicationAuthority {
           transformed
         ].join('\n');
       }
+    }
+
+    // Browser-adapted tool packages may require async bootstrap only after
+    // their declarations are initialized. Appending the adapter preserves the
+    // retained package bytes and makes importers wait for top-level await.
+    const moduleEpilogue = this.#moduleEpilogue?.(publication.path, {
+      source,
+      url: publication.url.href,
+      generation: this.generation
+    });
+    if (moduleEpilogue !== undefined && moduleEpilogue !== null && moduleEpilogue !== '') {
+      assertOc(typeof moduleEpilogue === 'string', ErrorCodes.INVALID_ARGUMENT, 'ESM module epilogue must be a string', {
+        path: publication.path
+      });
+      transformed += '\n' + moduleEpilogue;
     }
 
     return Object.freeze({

@@ -28,6 +28,25 @@ test('browser Node compat fs host bridge reads and writes WorkspaceFS',async()=>
   assert.equal(base.readFile('/workspace/src/b.txt'),'world');
 });
 
+test('browser Node compat exposes only allowlisted deterministic proc identity without widening VFS access',async()=>{
+  const {bridge}=fixture();
+  assert.equal(await bridge.syncRequestHandler('node.fs.existsSync',{path:'/proc/version'}),true);
+  const version=await bridge.syncRequestHandler('node.fs.readFileSync',{path:'/proc/version',options:'utf8'});
+  assert.match(version,/^Linux version 6\.6\.0-opencontainer /);
+  const stat=await bridge.syncRequestHandler('node.fs.statSync',{path:'/proc/version'});
+  assert.equal(stat.file,true);
+  assert.equal(stat.directory,false);
+  assert.equal(stat.mode,0o100444);
+  await assert.rejects(
+    ()=>bridge.syncRequestHandler('node.fs.readFileSync',{path:'/proc/cpuinfo',options:'utf8'}),
+    error=>error?.code==='EACCES'
+  );
+  await assert.rejects(
+    ()=>bridge.syncRequestHandler('node.fs.writeFileSync',{path:'/proc/version',data:'unsafe',options:'utf8'}),
+    error=>error?.code===ErrorCodes.BUILTIN_UNAVAILABLE
+  );
+});
+
 test('browser Node compat path and process share logical cwd',async()=>{
   const {bridge}=fixture();
   assert.equal(await bridge.syncRequestHandler('node.process.cwd'),'/workspace');
@@ -56,6 +75,14 @@ test('browser node:module source promotes synchronous builtin require inside gue
   assert.match(source,/node:stream/);
   assert.match(source,/\["stream",__oc_builtin_31\]/);
   assert.match(source,/if\(requireBuiltins\.has\(bare\)\)/);
+});
+
+test('browser node:module CommonJS self-require stays inside the builtin registry',async()=>{
+  const {bridge}=fixture();
+  const source=await bridge.builtinSource('node:module');
+  assert.match(source,/requireBuiltins\.set\('module',Module\)/);
+  assert.match(source,/Module\.createRequire=createRequire/);
+  assert.match(source,/Module\.isBuiltin=isBuiltin/);
 });
 
 test('browser node:module resolve maps publication URL issuers back to VFS authority',async()=>{

@@ -442,11 +442,43 @@ test('binary publication assets are default-deny and exact allowlisted WASM is s
 });
 
 
+test('native ESM publication can append an explicit bootstrap epilogue without mutating source bytes', async () => {
+  const runtime = await createRuntime();
+  runtime.mount({
+    'src/bootstrap-entry.mjs': [
+      'let ready = false;',
+      'async function init(){ ready = true; }',
+      'export { ready };'
+    ].join('\n')
+  });
+
+  const root = mkdtempSync(join(tmpdir(), 'oc-native-prelude-'));
+  try {
+    const authority = runtime.packages.createNativeEsmPublication({
+      baseURL: pathToFileURL(root + '/').href,
+      session: 'prelude',
+      moduleEpilogue: (path) => path === '/workspace/src/bootstrap-entry.mjs' ? 'await init();' : ''
+    });
+    const entryURL = authority.moduleURL('./bootstrap-entry.mjs', '/workspace/src/entry.mjs');
+    const served = await authority.serve(entryURL);
+    assert.match(served.source, /await init\(\);$/);
+    assert.equal(runtime.fs.readFile('/workspace/src/bootstrap-entry.mjs').startsWith('await init();'), false);
+    await materializeGraph(await authority.graph(entryURL));
+    const namespace = await import(entryURL.href + '?oracle=' + Date.now());
+    assert.equal(namespace.ready, true);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('node-targeted publication can inject a lexical logical process without changing the host global', async () => {
   const runtime = await createRuntime();
   runtime.mount({
     'src/process-entry.mjs': `
       export const version = process.versions.node;
+      export const mode = process.env.OPENCONTAINER_MODE;
+      export const platform = process.platform;
+      export const defined = typeof process !== 'undefined';
       export const isolated = process !== globalThis.process;
     `
   });
@@ -459,7 +491,7 @@ test('node-targeted publication can inject a lexical logical process without cha
       nodeGlobalAllow: (path) => path === '/workspace/src/process-entry.mjs',
       builtinSource(specifier) {
         if (specifier !== 'node:process') throw new Error('unexpected builtin '+specifier);
-        return `const process={versions:Object.freeze({node:'24.21.0'})};export default process;export const versions=process.versions;`;
+        return `const process={versions:Object.freeze({node:'24.21.0'}),env:Object.freeze({OPENCONTAINER_MODE:'production'}),platform:'linux'};export default process;export const versions=process.versions;export const env=process.env;export const platform=process.platform;`;
       }
     });
     const entryURL = authority.moduleURL('./process-entry.mjs', '/workspace/src/bootstrap.mjs');
@@ -471,6 +503,45 @@ test('node-targeted publication can inject a lexical logical process without cha
     await materializeGraph(graph);
     const namespace = await import(entryURL.href + '?oracle=' + Date.now());
     assert.equal(namespace.version, '24.21.0');
+    assert.equal(namespace.mode, 'production');
+    assert.equal(namespace.platform, 'linux');
+    assert.equal(namespace.defined, true);
+    assert.equal(namespace.isolated, true);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('node-global injection is not suppressed by a process$1 import binding', async () => {
+  const runtime = await createRuntime();
+  runtime.mount({
+    'src/process-suffix-entry.mjs': [
+"import process$1 from 'node:process';",
+      "export const bareVersion = process.versions.node;",
+      "export const importedVersion = process$1.versions.node;",
+      "export const isolated = process !== globalThis.process;"
+    ].join('\n')
+  });
+
+  const root = mkdtempSync(join(tmpdir(), 'oc-native-process-suffix-'));
+  try {
+    const authority = runtime.packages.createNativeEsmPublication({
+      baseURL: pathToFileURL(root + '/').href,
+      session: 'node-global-suffix',
+      nodeGlobalAllow: (path) => path === '/workspace/src/process-suffix-entry.mjs',
+      builtinSource(specifier) {
+        if (specifier !== 'node:process') throw new Error('unexpected builtin '+specifier);
+        return "const process={versions:Object.freeze({node:'24.21.0'})};export default process;export const versions=process.versions;";
+      }
+    });
+    const entryURL = authority.moduleURL('./process-suffix-entry.mjs', '/workspace/src/bootstrap.mjs');
+    const graph = await authority.graph(entryURL);
+    const entry = graph.modules.find((module) => module.path === '/workspace/src/process-suffix-entry.mjs');
+    assert.match(entry.source, /^import process from /);
+    await materializeGraph(graph);
+    const namespace = await import(entryURL.href + '?oracle=' + Date.now());
+    assert.equal(namespace.bareVersion, '24.21.0');
+    assert.equal(namespace.importedVersion, '24.21.0');
     assert.equal(namespace.isolated, true);
   } finally {
     await rm(root, { recursive: true, force: true });
