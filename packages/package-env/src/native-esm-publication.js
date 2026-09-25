@@ -356,13 +356,6 @@ export class NativeEsmPublicationAuthority {
     for (let index = 0; index < specifiers.length; index += 1) {
       const specifier = specifiers[index];
       const resolved = this.#resolver.resolve(specifier, publication.path, { ...this.#resolveOptions, mode: 'cjs' });
-      if (resolved.kind === 'file' && resolved.format === 'module') {
-        throw ocError(ErrorCodes.REQUIRE_ESM_UNSUPPORTED, 'Browser CommonJS bridge does not synchronously require ESM', {
-          path: publication.path,
-          specifier,
-          target: resolved.path
-        });
-      }
       const targetURL = this.#urlForResolved(resolved);
       const alias = '__oc_req_' + index;
       imports.push('import * as ' + alias + ' from ' + JSON.stringify(targetURL.href) + ';');
@@ -372,6 +365,7 @@ export class NativeEsmPublicationAuthority {
         url: targetURL.href,
         dynamic: false,
         kind: resolved.kind,
+        format: resolved.format,
         commonjs: true
       }));
     }
@@ -385,7 +379,7 @@ export class NativeEsmPublicationAuthority {
     const generated = [
       ...imports,
       'const __oc_modules=new Map([' + mapEntries.join(',') + ']);',
-      'function __oc_unwrap(ns){if(Object.prototype.hasOwnProperty.call(ns,"__opencontainer_cjs_exports"))return ns.__opencontainer_cjs_exports;if("default" in ns)return ns.default;return ns;}',
+      'function __oc_unwrap(ns){if(Object.prototype.hasOwnProperty.call(ns,"__opencontainer_cjs_exports"))return ns.__opencontainer_cjs_exports;return ns;}',
       'function require(specifier){if(!__oc_modules.has(specifier)){const error=new Error("Dynamic or unresolved CommonJS require is unavailable in native browser ESM: "+specifier);error.code="OC_REQUIRE_DYNAMIC_UNSUPPORTED";throw error;}return __oc_unwrap(__oc_modules.get(specifier));}',
       'require.resolve=(specifier)=>globalThis.__opencontainer_sync_host_call__("node.module.resolve",{specifier:String(specifier),issuer:' + filename + '});',
       'require.resolve.paths=()=>null;require.main=null;require.cache=Object.create(null);require.extensions=Object.create(null);',

@@ -332,3 +332,44 @@ test('native ESM publication bridges static CommonJS default exports and nested 
     await rm(root, { recursive: true, force: true });
   }
 });
+
+
+test('static CommonJS require can consume a prelinked ESM namespace in the browser publication bridge', async () => {
+  const runtime = await createRuntime();
+  runtime.packages.mountCatalog({
+    packages: [
+      {
+        location: 'node_modules/esm-runtime',
+        packageJson: { name: 'esm-runtime', type: 'module', exports: { '.': './index.js' } },
+        files: { 'index.js': 'export const answer=41; export default {answer};' }
+      },
+      {
+        location: 'node_modules/cjs-consumer',
+        packageJson: { name: 'cjs-consumer', type: 'commonjs', main: './index.js' },
+        files: { 'index.js': "const runtime=require('esm-runtime'); module.exports={value:runtime.answer+1};" }
+      }
+    ]
+  });
+  runtime.mount({
+    'src/cjs-esm-entry.mjs': "import consumer from 'cjs-consumer'; export const result=consumer.value;"
+  });
+
+  const root = mkdtempSync(join(tmpdir(), 'oc-native-cjs-require-esm-'));
+  try {
+    const authority = runtime.packages.createNativeEsmPublication({
+      baseURL: pathToFileURL(root + '/').href,
+      session: 'cjs-require-esm'
+    });
+    const entryURL = authority.moduleURL('./cjs-esm-entry.mjs', '/workspace/src/bootstrap.mjs');
+    const graph = await authority.graph(entryURL);
+    const cjs = graph.modules.find((module) => module.path?.endsWith('/cjs-consumer/index.js'));
+    assert.ok(cjs);
+    assert.ok(cjs.dependencies.some((dependency) => dependency.specifier === 'esm-runtime' && dependency.format === 'module'));
+    assert.doesNotMatch(cjs.source, /OC_REQUIRE_ESM_UNSUPPORTED/);
+    await materializeGraph(graph);
+    const namespace = await import(entryURL.href + '?oracle=' + Date.now());
+    assert.equal(namespace.result, 42);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
