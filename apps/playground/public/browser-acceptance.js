@@ -559,6 +559,7 @@ async function run() {
       "  logLevel: 'silent',",
       "  appType: 'spa',",
       "  plugins: [vfsPlugin],",
+      "  optimizeDeps: { noDiscovery: true, include: [] },",
       "  server: { middlewareMode: true, watch: null, ws: false, hmr: false }",
       "});",
       "let html = '';",
