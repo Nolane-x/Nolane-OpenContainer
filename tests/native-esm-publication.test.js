@@ -483,6 +483,42 @@ test('node-targeted publication can inject a lexical logical process without cha
   }
 });
 
+test('node-global injection is not suppressed by a process$1 import binding', async () => {
+  const runtime = await createRuntime();
+  runtime.mount({
+    'src/process-suffix-entry.mjs': [
+"import process$1 from 'node:process';"
+      "export const bareVersion = process.versions.node;",
+      "export const importedVersion = process$1.versions.node;",
+      "export const isolated = process !== globalThis.process;"
+    ].join('\n')
+  });
+
+  const root = mkdtempSync(join(tmpdir(), 'oc-native-process-suffix-'));
+  try {
+    const authority = runtime.packages.createNativeEsmPublication({
+      baseURL: pathToFileURL(root + '/').href,
+      session: 'node-global-suffix',
+      nodeGlobalAllow: (path) => path === '/workspace/src/process-suffix-entry.mjs',
+      builtinSource(specifier) {
+        if (specifier !== 'node:process') throw new Error('unexpected builtin '+specifier);
+        return "const process={versions:Object.freeze({node:'24.21.0'})};export default process;export const versions=process.versions;";
+      }
+    });
+    const entryURL = authority.moduleURL('./process-suffix-entry.mjs', '/workspace/src/bootstrap.mjs');
+    const graph = await authority.graph(entryURL);
+    const entry = graph.modules.find((module) => module.path === '/workspace/src/process-suffix-entry.mjs');
+    assert.match(entry.source, /^import process from /);
+    await materializeGraph(graph);
+    const namespace = await import(entryURL.href + '?oracle=' + Date.now());
+    assert.equal(namespace.bareVersion, '24.21.0');
+    assert.equal(namespace.importedVersion, '24.21.0');
+    assert.equal(namespace.isolated, true);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('ESM createRequire literal package edges are prelinked without guest eval', async () => {
   const runtime = await createRuntime();
   runtime.packages.mountCatalog({
