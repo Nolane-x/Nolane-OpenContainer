@@ -97,8 +97,8 @@ test('browser node:util source executes selected Vite helpers',async()=>{
   assert.deepEqual({...util.parseEnv('A=1\nB="two"\n# comment')},{A:'1',B:'two'});
   const callback=(value,done)=>done(null,value+1);
   assert.equal(await util.promisify(callback)(41),42);
-  assert.equal(util.styleText('red','x'),'\\u001b[31mx\\u001b[39m');
-  assert.equal(util.styleText(['bold','cyan'],'x'),'\\u001b[1m\\u001b[36mx\\u001b[39m\\u001b[22m');
+  assert.equal(util.styleText('red','x'),'\u001b[31mx\u001b[39m');
+  assert.equal(util.styleText(['bold','cyan'],'x'),'\u001b[1m\u001b[36mx\u001b[39m\u001b[22m');
   assert.equal(util.styleText('red','x',{validateStream:true,stream:{hasColors:()=>false}}),'x');
   assert.throws(()=>util.styleText('not-a-style','x'),error=>error?.code==='ERR_INVALID_ARG_VALUE');
 });
