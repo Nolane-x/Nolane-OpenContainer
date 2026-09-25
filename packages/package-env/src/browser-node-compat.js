@@ -210,6 +210,45 @@ export default {URL,URLSearchParams,pathToFileURL,fileURLToPath,urlToHttpOptions
 `;
 }
 
+function childProcessSource() {
+  return `
+function denied(operation){
+  const error=new Error('Host child process execution is unavailable in OpenContainer browser runtime: '+operation);
+  error.code='OC_BUILTIN_UNAVAILABLE';
+  error.operation=operation;
+  return error;
+}
+export class ChildProcess{
+  constructor(){this.pid=undefined;this.exitCode=null;this.killed=false;}
+  kill(){this.killed=true;return false;}
+  ref(){return this;}
+  unref(){return this;}
+  on(){return this;}
+  once(){return this;}
+}
+export function exec(command,options,callback){
+  if(typeof options==='function'){callback=options;options=undefined;}
+  const error=denied('exec');
+  if(typeof callback==='function'){queueMicrotask(()=>callback(error,'',''));return new ChildProcess();}
+  throw error;
+}
+export function execFile(file,args,options,callback){
+  if(typeof args==='function'){callback=args;args=[];options=undefined;}
+  else if(typeof options==='function'){callback=options;options=undefined;}
+  const error=denied('execFile');
+  if(typeof callback==='function'){queueMicrotask(()=>callback(error,'',''));return new ChildProcess();}
+  throw error;
+}
+export function spawn(){throw denied('spawn');}
+export function fork(){throw denied('fork');}
+export function execSync(){throw denied('execSync');}
+export function execFileSync(){throw denied('execFileSync');}
+export function spawnSync(){throw denied('spawnSync');}
+const api={ChildProcess,exec,execFile,spawn,fork,execSync,execFileSync,spawnSync};
+export default api;
+`;
+}
+
 function workerThreadsSource() {
   return `
 const environmentData=new Map();
@@ -549,6 +588,7 @@ export function createBrowserNodeCompatBridge({
       case 'node:perf_hooks': return perfHooksSource();
       case 'node:util': return utilSource();
       case 'node:worker_threads': return workerThreadsSource();
+      case 'node:child_process': return childProcessSource();
       default:
         throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Native browser ESM builtin is not implemented', { specifier });
     }

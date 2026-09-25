@@ -551,3 +551,8 @@ The browser C1 realm now exposes a deliberately narrow `node:worker_threads` sur
 - constructing a Node-style nested `Worker` remains explicit fail-closed.
 
 This is sufficient for capability/static graph paths without falsely claiming Node worker_threads execution parity.
+
+
+## Browser child_process policy
+
+The native browser graph now publishes `node:child_process` API shape without granting host-process authority. `exec`, `execFile`, `spawn`, `fork` and synchronous variants never invoke the runner/host OS; they fail closed with `OC_BUILTIN_UNAVAILABLE` (callback forms receive the error asynchronously). This lets optional platform/server code remain statically publishable while preserving the browser runtime security boundary.

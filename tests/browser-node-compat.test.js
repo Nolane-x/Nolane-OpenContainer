@@ -39,7 +39,7 @@ test('browser Node compat path and process share logical cwd',async()=>{
 
 test('browser Node compat exposes promoted native ESM builtin sources',async()=>{
   const {bridge}=fixture();
-  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads']){
+  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process']){
     const source=await bridge.builtinSource(specifier);
     assert.equal(typeof source,'string');
     assert.ok(source.length>20);
@@ -117,4 +117,23 @@ test('browser node:worker_threads keeps logical main-thread semantics and nested
   wt.setEnvironmentData('x',7);
   assert.equal(wt.getEnvironmentData('x'),7);
   assert.throws(()=>new wt.Worker('x'),error=>error?.code==='OC_BUILTIN_UNAVAILABLE');
+});
+
+
+test('browser node:child_process never escapes to host OS',async()=>{
+  const {bridge}=fixture();
+  const source=await bridge.builtinSource('node:child_process');
+  const encoded=Buffer.from(source).toString('base64');
+  const cp=await import('data:text/javascript;base64,'+encoded+'#'+Date.now());
+  assert.throws(()=>cp.spawn('node'),error=>error?.code==='OC_BUILTIN_UNAVAILABLE');
+  await new Promise((resolve,reject)=>{
+    cp.exec('echo unsafe',(error,stdout,stderr)=>{
+      try{
+        assert.equal(error?.code,'OC_BUILTIN_UNAVAILABLE');
+        assert.equal(stdout,'');
+        assert.equal(stderr,'');
+        resolve();
+      }catch(cause){reject(cause);}
+    });
+  });
 });
