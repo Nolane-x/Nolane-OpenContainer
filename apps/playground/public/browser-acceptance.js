@@ -658,7 +658,10 @@ async function run() {
     builtinSource: viteNodeCompat.builtinSource,
     resolveOptions: {
       conditions: ['browser', 'import', 'default'],
-      packageAliases: { rolldown: '@rolldown/browser' },
+      packageAliases: {
+        rolldown: '@rolldown/browser',
+        'es-module-lexer': 'es-module-lexer/minimal/js'
+      },
       pathAliases: {
         '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi.cjs':
           '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi-browser.js'
