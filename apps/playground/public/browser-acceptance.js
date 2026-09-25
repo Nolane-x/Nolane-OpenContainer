@@ -415,6 +415,7 @@ async function run() {
       "import { existsSync, readFileSync, writeFileSync } from 'node:fs';",
       "import { dirname, resolve as pathResolve } from 'node:path';",
       "import { parseAst } from 'rolldown/parseAst';",
+      "import { parseAst } from 'rolldown/parseAst';",
       "const root = '/workspace/c1-app';",
       "const configPath = root + '/vite.config.ts';",
       "const mirrorConfig = () => {",
