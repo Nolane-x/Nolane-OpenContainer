@@ -303,6 +303,9 @@ async function run() {
       ? viteNodeChunkSource.slice(Math.max(0, viteRequireDeclarationIndex - 500), viteRequireDeclarationIndex + 900)
       : null
   });
+  const viteProcessVersionIndex = viteNodeChunkSource.indexOf('process.versions.node');
+  const viteProcessDeclarationMatch = /\b(?:const|let|var|function|class)\s+process\b/.exec(viteNodeChunkSource);
+  const viteProcessImportMatch = /\bimport\s+process\b/.exec(viteNodeChunkSource);
   stage('vite-picomatch-source-shape', {
     index: picomatchSourceIndex,
     snippet: picomatchSourceIndex >= 0
@@ -311,7 +314,16 @@ async function run() {
     line8763: viteNodeChunkLines.slice(8748, 8778).join('\n'),
     line8799: viteNodeChunkLines.slice(8788, 8810).join('\n'),
     line11472: viteNodeChunkLines.slice(11460, 11484).join('\n'),
-    line24241: viteNodeChunkLines.slice(24230, 24252).join('\n')
+    line24241: viteNodeChunkLines.slice(24230, 24252).join('\n'),
+    processVersionIndex: viteProcessVersionIndex,
+    processVersionSnippet: viteProcessVersionIndex >= 0
+      ? viteNodeChunkSource.slice(Math.max(0, viteProcessVersionIndex - 500), viteProcessVersionIndex + 700)
+      : null,
+    processDeclarationIndex: viteProcessDeclarationMatch?.index ?? -1,
+    processDeclarationSnippet: viteProcessDeclarationMatch
+      ? viteNodeChunkSource.slice(Math.max(0, viteProcessDeclarationMatch.index - 400), viteProcessDeclarationMatch.index + 800)
+      : null,
+    processImportIndex: viteProcessImportMatch?.index ?? -1
   });
 
   stage('vite-publication-graph-start');
