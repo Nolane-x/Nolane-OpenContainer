@@ -564,7 +564,7 @@ async function run() {
       "let html = '';",
       "let tsCode = '';",
       "let clientCode = '';",
-      "let closeSucceeded = false;",
+      "let closed = false;",
       "try {",
       "  html = await server.transformIndexHtml('/', readFileSync(root + '/index.html', 'utf8'));",
       "  const ts = await server.transformRequest('/src/main.ts');",
@@ -573,7 +573,7 @@ async function run() {
       "  clientCode = client?.code ?? '';",
       "} finally {",
       "  await server.close();",
-      "  closeSucceeded = true;",
+      "  closed = true;",
       "}",
       "export const viteVersion = version;",
       "export const created = !!server && server.httpServer === null;",
@@ -583,7 +583,7 @@ async function run() {
       "export const viteClientServed = clientCode.includes('createHotContext') || clientCode.includes('HotContext');",
       "export const clientBytes = clientCode.length;",
       "export const tsBytes = tsCode.length;",
-      "export const closeSucceeded = closeSucceeded;"
+      "export const closeSucceeded = closed;"
     ].join('\n'))
     .commit();
 
