@@ -324,6 +324,62 @@ export default api;
 `;
 }
 
+function v8Source() {
+  return `
+function unavailable(operation){
+  const error=new Error('V8 host introspection is unavailable in OpenContainer browser runtime: '+operation);
+  error.code='OC_BUILTIN_UNAVAILABLE';
+  throw error;
+}
+const logicalHeapLimit=256*1024*1024;
+export function cachedDataVersionTag(){return 0;}
+export function getHeapStatistics(){
+  return Object.freeze({
+    total_heap_size:0,
+    total_heap_size_executable:0,
+    total_physical_size:0,
+    total_available_size:logicalHeapLimit,
+    used_heap_size:0,
+    heap_size_limit:logicalHeapLimit,
+    malloced_memory:0,
+    peak_malloced_memory:0,
+    does_zap_garbage:0,
+    number_of_native_contexts:1,
+    number_of_detached_contexts:0,
+    total_global_handles_size:0,
+    used_global_handles_size:0,
+    external_memory:0
+  });
+}
+export function getHeapSpaceStatistics(){return [];}
+export function getHeapCodeStatistics(){return Object.freeze({code_and_metadata_size:0,bytecode_and_metadata_size:0,external_script_source_size:0,cpu_profiler_metadata_size:0});}
+export function getCppHeapStatistics(){return Object.freeze({committed_size_bytes:0,resident_size_bytes:0,used_size_bytes:0,space_statistics:[]});}
+export function setFlagsFromString(){return unavailable('setFlagsFromString');}
+export function writeHeapSnapshot(){return unavailable('writeHeapSnapshot');}
+export function getHeapSnapshot(){return unavailable('getHeapSnapshot');}
+export function serialize(){return unavailable('serialize');}
+export function deserialize(){return unavailable('deserialize');}
+function makeHook(){
+  return Object.freeze({enable(){return this;},disable(){return this;}});
+}
+export const promiseHooks=Object.freeze({
+  createHook(){return makeHook();},
+  onInit(){return ()=>{};},
+  onBefore(){return ()=>{};},
+  onAfter(){return ()=>{};},
+  onSettled(){return ()=>{};}
+});
+export const startupSnapshot=Object.freeze({
+  isBuildingSnapshot(){return false;},
+  addSerializeCallback(){return unavailable('startupSnapshot.addSerializeCallback');},
+  addDeserializeCallback(){return unavailable('startupSnapshot.addDeserializeCallback');},
+  setDeserializeMainFunction(){return unavailable('startupSnapshot.setDeserializeMainFunction');}
+});
+const api={cachedDataVersionTag,getHeapStatistics,getHeapSpaceStatistics,getHeapCodeStatistics,getCppHeapStatistics,setFlagsFromString,writeHeapSnapshot,getHeapSnapshot,serialize,deserialize,promiseHooks,startupSnapshot};
+export default api;
+`;
+}
+
 function assertSource() {
   return `
 import { isDeepStrictEqual } from 'node:util';
@@ -801,6 +857,7 @@ export function createBrowserNodeCompatBridge({
       case 'node:tty': return ttySource();
       case 'node:assert':
       case 'node:assert/strict': return assertSource();
+      case 'node:v8': return v8Source();
       default:
         throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Native browser ESM builtin is not implemented', { specifier });
     }

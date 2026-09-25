@@ -39,7 +39,7 @@ test('browser Node compat path and process share logical cwd',async()=>{
 
 test('browser Node compat exposes promoted native ESM builtin sources',async()=>{
   const {bridge}=fixture();
-  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process','node:dns','node:dns/promises','node:os','node:net','node:tty','node:assert','node:assert/strict']){
+  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process','node:dns','node:dns/promises','node:os','node:net','node:tty','node:assert','node:assert/strict','node:v8']){
     const source=await bridge.builtinSource(specifier);
     assert.equal(typeof source,'string');
     assert.ok(source.length>20);
@@ -185,4 +185,18 @@ test('browser node:assert preserves failures instead of stubbing assertions',asy
   assertModule.deepStrictEqual({a:[1,2]},{a:[1,2]});
   assert.throws(()=>assertModule.strictEqual(4,5),error=>error?.code==='ERR_ASSERTION');
   assert.throws(()=>assertModule.ok(false),error=>error?.code==='ERR_ASSERTION');
+});
+
+
+test('browser node:v8 exposes only deterministic logical metadata and denies host introspection',async()=>{
+  const {bridge}=fixture();
+  const source=await bridge.builtinSource('node:v8');
+  const encoded=Buffer.from(source).toString('base64');
+  const v8=await import('data:text/javascript;base64,'+encoded+'#'+Date.now());
+  const heap=v8.getHeapStatistics();
+  assert.equal(heap.heap_size_limit,256*1024*1024);
+  assert.equal(heap.used_heap_size,0);
+  assert.deepEqual(v8.getHeapSpaceStatistics(),[]);
+  assert.throws(()=>v8.writeHeapSnapshot(),error=>error?.code==='OC_BUILTIN_UNAVAILABLE');
+  assert.throws(()=>v8.serialize({secret:true}),error=>error?.code==='OC_BUILTIN_UNAVAILABLE');
 });
