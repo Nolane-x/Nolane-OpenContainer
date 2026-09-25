@@ -39,7 +39,7 @@ test('browser Node compat path and process share logical cwd',async()=>{
 
 test('browser Node compat exposes promoted native ESM builtin sources',async()=>{
   const {bridge}=fixture();
-  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks']){
+  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util']){
     const source=await bridge.builtinSource(specifier);
     assert.equal(typeof source,'string');
     assert.ok(source.length>20);
@@ -83,4 +83,25 @@ test('browser node:perf_hooks source binds browser-native performance',async()=>
   const source=await bridge.builtinSource('node:perf_hooks');
   assert.match(source,/globalThis\.performance/);
   assert.match(source,/export const performance/);
+});
+
+
+test('browser node:util source executes selected Vite helpers',async()=>{
+  const {bridge}=fixture();
+  const source=await bridge.builtinSource('node:util');
+  const encoded=Buffer.from(source).toString('base64');
+  const util=await import('data:text/javascript;base64,'+encoded+'#'+Date.now());
+  assert.equal(util.stripVTControlCharacters('\u001b[31mred\u001b[0m'),'red');
+  assert.equal(util.isDeepStrictEqual({a:[1,2]},{a:[1,2]}),true);
+  assert.equal(util.isDeepStrictEqual({a:1},{a:2}),false);
+  assert.deepEqual({...util.parseEnv('A=1\nB="two"\n# comment')},{A:'1',B:'two'});
+  const callback=(value,done)=>done(null,value+1);
+  assert.equal(await util.promisify(callback)(41),42);
+});
+
+test('browser fs callback realpath supports util.promisify contract',async()=>{
+  const {bridge}=fixture();
+  const source=await bridge.builtinSource('node:fs');
+  assert.match(source,/export function realpath\(/);
+  assert.match(source,/callback\(null,realpathSync/);
 });

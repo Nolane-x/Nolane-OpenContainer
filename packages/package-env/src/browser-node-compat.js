@@ -65,6 +65,15 @@ export function statSync(path){return stats(call('statSync',{path:String(path)})
 export function lstatSync(path){return stats(call('lstatSync',{path:String(path)}));}
 export function realpathSync(path){return call('realpathSync',{path:String(path)});}
 realpathSync.native=realpathSync;
+export function realpath(path,options,callback){
+  if(typeof options==='function'){callback=options;options=null;}
+  if(typeof callback!=='function')throw new TypeError('callback must be a function');
+  queueMicrotask(()=>{
+    try{callback(null,realpathSync(path,options));}
+    catch(error){callback(error);}
+  });
+}
+realpath.native=realpath;
 export function readlinkSync(path){return call('readlinkSync',{path:String(path)});}
 export function mkdirSync(path,options=null){return call('mkdirSync',{path:String(path),options});}
 export function renameSync(from,to){return call('renameSync',{from:String(from),to:String(to)});}
@@ -84,7 +93,7 @@ export const promises=Object.freeze({
   rm:async(...args)=>rmSync(...args),
   unlink:async(...args)=>unlinkSync(...args)
 });
-const api={constants,existsSync,accessSync,readFileSync,writeFileSync,readdirSync,statSync,lstatSync,realpathSync,readlinkSync,mkdirSync,renameSync,rmSync,unlinkSync,promises};
+const api={constants,existsSync,accessSync,readFileSync,writeFileSync,readdirSync,statSync,lstatSync,realpathSync,realpath,readlinkSync,mkdirSync,renameSync,rmSync,unlinkSync,promises};
 export default api;
 `;
 }
@@ -198,6 +207,172 @@ export function urlToHttpOptions(value){
   return globalThis.__opencontainer_sync_host_call__('node.url.urlToHttpOptions',{value:String(value)});
 }
 export default {URL,URLSearchParams,pathToFileURL,fileURLToPath,urlToHttpOptions};
+`;
+}
+
+function utilSource() {
+  return `
+const inspectCustom=Symbol.for('nodejs.util.inspect.custom');
+const promisifyCustom=Symbol.for('nodejs.util.promisify.custom');
+
+function primitive(value){
+  if(typeof value==='string')return JSON.stringify(value);
+  if(typeof value==='bigint')return String(value)+'n';
+  if(typeof value==='symbol')return String(value);
+  return String(value);
+}
+function inspectValue(value,depth,seen){
+  if(value===null||typeof value!=='object')return primitive(value);
+  if(value[inspectCustom]&&typeof value[inspectCustom]==='function'){
+    try{return String(value[inspectCustom](depth,{depth}));}catch{}
+  }
+  if(value instanceof Error)return value.stack||value.name+': '+value.message;
+  if(value instanceof Date)return value.toISOString();
+  if(value instanceof RegExp)return String(value);
+  if(seen.has(value))return '[Circular]';
+  if(depth<0)return Array.isArray(value)?'[Array]':'[Object]';
+  seen.add(value);
+  let result;
+  if(Array.isArray(value)){
+    result='[ '+value.map((entry)=>inspectValue(entry,depth-1,seen)).join(', ')+' ]';
+  }else if(value instanceof Map){
+    result='Map('+value.size+') { '+[...value].map(([k,v])=>inspectValue(k,depth-1,seen)+' => '+inspectValue(v,depth-1,seen)).join(', ')+' }';
+  }else if(value instanceof Set){
+    result='Set('+value.size+') { '+[...value].map((entry)=>inspectValue(entry,depth-1,seen)).join(', ')+' }';
+  }else{
+    const entries=Object.keys(value).map((key)=>key+': '+inspectValue(value[key],depth-1,seen));
+    result='{ '+entries.join(', ')+' }';
+  }
+  seen.delete(value);
+  return result;
+}
+export function inspect(value,options={}){
+  const depth=typeof options==='number'?options:(options?.depth??2);
+  return inspectValue(value,depth,new Set());
+}
+inspect.custom=inspectCustom;
+
+export function format(first,...args){
+  if(typeof first!=='string')return [first,...args].map((value)=>inspect(value)).join(' ');
+  let index=0;
+  const text=first.replace(/%[sdijoO%]/g,(token)=>{
+    if(token==='%%')return '%';
+    if(index>=args.length)return token;
+    const value=args[index++];
+    if(token==='%s')return String(value);
+    if(token==='%d'||token==='%i')return String(Number.parseInt(value,10));
+    if(token==='%j'){try{return JSON.stringify(value);}catch{return '[Circular]';}}
+    return inspect(value);
+  });
+  return text+(index<args.length?' '+args.slice(index).map((value)=>typeof value==='string'?value:inspect(value)).join(' '):'');
+}
+export function formatWithOptions(options,...args){return format(...args);}
+
+export function promisify(original){
+  if(typeof original!=='function')throw new TypeError('original must be a function');
+  if(typeof original[promisifyCustom]==='function')return original[promisifyCustom];
+  const wrapped=(...args)=>new Promise((resolve,reject)=>{
+    original(...args,(error,...values)=>{
+      if(error){reject(error);return;}
+      resolve(values.length>1?values:values[0]);
+    });
+  });
+  Object.defineProperty(wrapped,promisifyCustom,{value:wrapped});
+  return wrapped;
+}
+promisify.custom=promisifyCustom;
+
+function deepEqual(a,b,seen){
+  if(Object.is(a,b))return true;
+  if(typeof a!==typeof b||a===null||b===null||typeof a!=='object')return false;
+  let peers=seen.get(a);
+  if(peers?.has(b))return true;
+  if(!peers){peers=new Set();seen.set(a,peers);}
+  peers.add(b);
+  if(Object.getPrototypeOf(a)!==Object.getPrototypeOf(b))return false;
+  if(a instanceof Date)return a.getTime()===b.getTime();
+  if(a instanceof RegExp)return a.source===b.source&&a.flags===b.flags;
+  if(ArrayBuffer.isView(a)){
+    if(!ArrayBuffer.isView(b)||a.byteLength!==b.byteLength)return false;
+    const left=new Uint8Array(a.buffer,a.byteOffset,a.byteLength);
+    const right=new Uint8Array(b.buffer,b.byteOffset,b.byteLength);
+    for(let i=0;i<left.length;i++)if(left[i]!==right[i])return false;
+    return true;
+  }
+  if(a instanceof ArrayBuffer){
+    if(!(b instanceof ArrayBuffer)||a.byteLength!==b.byteLength)return false;
+    return deepEqual(new Uint8Array(a),new Uint8Array(b),seen);
+  }
+  if(a instanceof Map){
+    if(!(b instanceof Map)||a.size!==b.size)return false;
+    for(const [key,value] of a)if(!b.has(key)||!deepEqual(value,b.get(key),seen))return false;
+    return true;
+  }
+  if(a instanceof Set){
+    if(!(b instanceof Set)||a.size!==b.size)return false;
+    for(const value of a)if(!b.has(value))return false;
+    return true;
+  }
+  const ka=Reflect.ownKeys(a),kb=Reflect.ownKeys(b);
+  if(ka.length!==kb.length)return false;
+  for(const key of ka){
+    if(!Object.prototype.hasOwnProperty.call(b,key)||!deepEqual(a[key],b[key],seen))return false;
+  }
+  return true;
+}
+export function isDeepStrictEqual(a,b){return deepEqual(a,b,new WeakMap());}
+
+const ansi=/[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*)?\\u0007)|(?:(?:\\d{1,4}(?:[;:]\\d{0,4})*)?[\\dA-PR-TZcf-nq-uy=><~]))/g;
+export function stripVTControlCharacters(value){return String(value).replace(ansi,'');}
+
+export function parseEnv(content){
+  const result=Object.create(null);
+  const lines=String(content).replace(/\\r\\n?/g,'\\n').split('\\n');
+  for(let line of lines){
+    line=line.trim();
+    if(!line||line.startsWith('#'))continue;
+    if(line.startsWith('export '))line=line.slice(7).trim();
+    const match=/^([A-Za-z_][A-Za-z0-9_]*)\\s*=\\s*(.*)$/.exec(line);
+    if(!match)continue;
+    let value=match[2].trim();
+    if((value.startsWith('"')&&value.endsWith('"'))||(value.startsWith("'")&&value.endsWith("'"))){
+      const quote=value[0];
+      value=value.slice(1,-1);
+      if(quote==='"')value=value.replace(/\\\\n/g,'\\n').replace(/\\\\r/g,'\\r').replace(/\\\\t/g,'\\t').replace(/\\\\\\\\/g,'\\\\');
+    }else{
+      const comment=value.search(/\\s+#/);
+      if(comment>=0)value=value.slice(0,comment).trimEnd();
+    }
+    result[match[1]]=value;
+  }
+  return result;
+}
+
+export function deprecate(fn){return fn;}
+export function inherits(ctor,superCtor){
+  Object.setPrototypeOf(ctor.prototype,superCtor.prototype);
+  Object.setPrototypeOf(ctor,superCtor);
+}
+export function callbackify(original){
+  return (...args)=>{
+    const callback=args.pop();
+    Promise.resolve().then(()=>original(...args)).then(
+      (value)=>queueMicrotask(()=>callback(null,value)),
+      (error)=>queueMicrotask(()=>callback(error))
+    );
+  };
+}
+export const types=Object.freeze({
+  isDate:(value)=>value instanceof Date,
+  isRegExp:(value)=>value instanceof RegExp,
+  isMap:(value)=>value instanceof Map,
+  isSet:(value)=>value instanceof Set,
+  isArrayBuffer:(value)=>value instanceof ArrayBuffer,
+  isTypedArray:(value)=>ArrayBuffer.isView(value)&&!(value instanceof DataView)
+});
+export { TextEncoder, TextDecoder };
+const api={inspect,format,formatWithOptions,promisify,isDeepStrictEqual,stripVTControlCharacters,parseEnv,deprecate,inherits,callbackify,types,TextEncoder,TextDecoder};
+export default api;
 `;
 }
 
@@ -342,6 +517,7 @@ export function createBrowserNodeCompatBridge({
       case 'node:module': return moduleSource(BUILTIN_MODULES);
       case 'node:crypto': return cryptoSource();
       case 'node:perf_hooks': return perfHooksSource();
+      case 'node:util': return utilSource();
       default:
         throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Native browser ESM builtin is not implemented', { specifier });
     }

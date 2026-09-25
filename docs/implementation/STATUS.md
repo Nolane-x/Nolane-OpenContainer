@@ -523,3 +523,18 @@ This promotes the crypto operations required by Vite without pretending to imple
 ## Native browser perf_hooks
 
 The native browser compatibility layer now publishes `node:perf_hooks` with browser-native `performance` and available Performance API constructors. Vite's selected C1 graph uses `performance.now()`, so no host RPC or synthetic clock is required. Node-only event-loop histogram APIs remain explicit fail-closed.
+
+
+## Native browser util compatibility
+
+The Vite browser profile now publishes the selected `node:util` behaviors exercised by Vite:
+
+- `promisify()` including the standard custom symbol contract;
+- `isDeepStrictEqual()` for structured configuration values;
+- `inspect()`, `format()` and `formatWithOptions()` for diagnostics;
+- `stripVTControlCharacters()`;
+- `parseEnv()` for the selected dotenv-style configuration path;
+- bounded `types`, `deprecate`, `inherits` and `callbackify` helpers;
+- browser-native TextEncoder/TextDecoder exports.
+
+The browser `node:fs` façade also now exposes callback-style `realpath()`, so Vite's `promisify(fs.realpath)` path is structurally executable rather than graph-only.
