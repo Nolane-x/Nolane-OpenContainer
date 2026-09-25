@@ -1321,7 +1321,13 @@ export default api;
 
 function moduleSource(builtinModules) {
   return `
+import * as __oc_builtin_0 from "node:fs";\nimport * as __oc_builtin_1 from "node:fs/promises";\nimport * as __oc_builtin_2 from "node:path";\nimport * as __oc_builtin_3 from "node:path/posix";\nimport * as __oc_builtin_4 from "node:path/win32";\nimport * as __oc_builtin_5 from "node:buffer";\nimport * as __oc_builtin_6 from "node:events";\nimport * as __oc_builtin_7 from "node:process";\nimport * as __oc_builtin_8 from "node:url";\nimport * as __oc_builtin_9 from "node:crypto";\nimport * as __oc_builtin_10 from "node:perf_hooks";\nimport * as __oc_builtin_11 from "node:util";\nimport * as __oc_builtin_12 from "node:worker_threads";\nimport * as __oc_builtin_13 from "node:child_process";\nimport * as __oc_builtin_14 from "node:dns";\nimport * as __oc_builtin_15 from "node:dns/promises";\nimport * as __oc_builtin_16 from "node:os";\nimport * as __oc_builtin_17 from "node:net";\nimport * as __oc_builtin_18 from "node:tty";\nimport * as __oc_builtin_19 from "node:assert";\nimport * as __oc_builtin_20 from "node:assert/strict";\nimport * as __oc_builtin_21 from "node:v8";\nimport * as __oc_builtin_22 from "node:timers";\nimport * as __oc_builtin_23 from "node:timers/promises";\nimport * as __oc_builtin_24 from "node:readline";\nimport * as __oc_builtin_25 from "node:http";\nimport * as __oc_builtin_26 from "node:https";\nimport * as __oc_builtin_27 from "node:http2";\nimport * as __oc_builtin_28 from "node:tls";\nimport * as __oc_builtin_29 from "node:querystring";\nimport * as __oc_builtin_30 from "node:zlib";
 export const builtinModules=Object.freeze(${JSON.stringify(builtinModules)});
+const requireBuiltins=new Map([["fs",__oc_builtin_0],["fs/promises",__oc_builtin_1],["path",__oc_builtin_2],["path/posix",__oc_builtin_3],["path/win32",__oc_builtin_4],["buffer",__oc_builtin_5],["events",__oc_builtin_6],["process",__oc_builtin_7],["url",__oc_builtin_8],["crypto",__oc_builtin_9],["perf_hooks",__oc_builtin_10],["util",__oc_builtin_11],["worker_threads",__oc_builtin_12],["child_process",__oc_builtin_13],["dns",__oc_builtin_14],["dns/promises",__oc_builtin_15],["os",__oc_builtin_16],["net",__oc_builtin_17],["tty",__oc_builtin_18],["assert",__oc_builtin_19],["assert/strict",__oc_builtin_20],["v8",__oc_builtin_21],["timers",__oc_builtin_22],["timers/promises",__oc_builtin_23],["readline",__oc_builtin_24],["http",__oc_builtin_25],["https",__oc_builtin_26],["http2",__oc_builtin_27],["tls",__oc_builtin_28],["querystring",__oc_builtin_29],["zlib",__oc_builtin_30]]);
+function unwrapBuiltin(namespace){
+  if(namespace&&Object.prototype.hasOwnProperty.call(namespace,'default'))return namespace.default;
+  return namespace;
+}
 const builtinSet=new Set(builtinModules);
 export function isBuiltin(specifier){
   const value=String(specifier);
@@ -1334,7 +1340,12 @@ function unsupportedRequire(specifier){
 }
 export function createRequire(filename){
   const issuer=String(filename);
-  const require=(specifier)=>unsupportedRequire(specifier);
+  const require=(specifier)=>{
+    const value=String(specifier);
+    const bare=value.startsWith('node:')?value.slice(5):value;
+    if(requireBuiltins.has(bare))return unwrapBuiltin(requireBuiltins.get(bare));
+    return unsupportedRequire(specifier);
+  };
   require.resolve=(specifier)=>globalThis.__opencontainer_sync_host_call__('node.module.resolve',{
     specifier:String(specifier),
     issuer

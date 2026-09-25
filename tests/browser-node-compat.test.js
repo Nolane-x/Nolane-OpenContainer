@@ -48,6 +48,14 @@ test('browser Node compat exposes promoted native ESM builtin sources',async()=>
 });
 
 
+test('browser node:module source promotes synchronous builtin require inside guest realm',async()=>{
+  const {bridge}=fixture();
+  const source=await bridge.builtinSource('node:module');
+  assert.match(source,/requireBuiltins=new Map/);
+  assert.match(source,/node:fs/);
+  assert.match(source,/if\(requireBuiltins\.has\(bare\)\)/);
+});
+
 test('browser node:module resolve maps publication URL issuers back to VFS authority',async()=>{
   const {bridge}=fixture();
   assert.equal(
