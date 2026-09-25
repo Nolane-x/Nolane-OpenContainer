@@ -568,16 +568,33 @@ async function run() {
       "  optimizeDeps: { noDiscovery: true, include: [] },",
       "  server: { middlewareMode: true, watch: null, ws: false, hmr: false }",
       "});",
+      "const directTsSource = readFileSync(root + '/src/main.ts', 'utf8');",
+      "const directTsResult = await transformWithOxc(directTsSource, root + '/src/main.ts');",
+      "const directTsTransformed = !directTsResult.code.includes('querySelector<HTMLDivElement>');",
+      "const pluginNames = server.config.plugins.map((plugin) => plugin?.name ?? '<anonymous>').join('|');",
+      "const oxcEnabled = server.config.oxc !== false;",
       "let html = '';",
       "let tsCode = '';",
       "let clientCode = '';",
       "let closed = false;",
+      "let devErrorPhase = '';",
+      "let devErrorMessage = '';",
       "try {",
-      "  html = await server.transformIndexHtml('/', readFileSync(root + '/index.html', 'utf8'));",
-      "  const ts = await server.transformRequest('/src/main.ts');",
-      "  tsCode = ts?.code ?? '';",
-      "  const client = await server.transformRequest('/@vite/client');",
-      "  clientCode = client?.code ?? '';",
+      "  try {",
+      "    html = await server.transformIndexHtml('/', readFileSync(root + '/index.html', 'utf8'));",
+      "  } catch (error) { devErrorPhase = 'index-html'; devErrorMessage = error?.stack ?? String(error); }",
+      "  if (!devErrorPhase) {",
+      "    try {",
+      "      const ts = await server.transformRequest('/src/main.ts');",
+      "      tsCode = ts?.code ?? '';",
+      "    } catch (error) { devErrorPhase = 'typescript'; devErrorMessage = error?.stack ?? String(error); }",
+      "  }",
+      "  if (!devErrorPhase) {",
+      "    try {",
+      "      const client = await server.transformRequest('/@vite/client');",
+      "      clientCode = client?.code ?? '';",
+      "    } catch (error) { devErrorPhase = 'vite-client'; devErrorMessage = error?.stack ?? String(error); }",
+      "  }",
       "} finally {",
       "  await server.close();",
       "  closed = true;",
@@ -591,7 +608,8 @@ async function run() {
       "export const clientBytes = clientCode.length;",
       "export const tsBytes = tsCode.length;",
       "export { html, tsCode, clientCode };",
-      "export const closeSucceeded = closed;"
+      "export const closeSucceeded = closed;",
+      "export { devErrorPhase, devErrorMessage, pluginNames, oxcEnabled, directTsTransformed };"
     ].join('\n'))
     .commit();
 
@@ -833,10 +851,23 @@ async function run() {
       'html',
       'tsCode',
       'clientCode',
-      'closeSucceeded'
+      'closeSucceeded',
+      'devErrorPhase',
+      'devErrorMessage',
+      'pluginNames',
+      'oxcEnabled',
+      'directTsTransformed'
     ],
     observeNestedWorkers: true
   });
+  stage('vite-c2-dev-probe', {
+    devErrorPhase: viteDevExecution.exports.devErrorPhase,
+    devErrorMessage: viteDevExecution.exports.devErrorMessage,
+    oxcEnabled: viteDevExecution.exports.oxcEnabled,
+    directTsTransformed: viteDevExecution.exports.directTsTransformed,
+    pluginNames: viteDevExecution.exports.pluginNames
+  });
+  assert(!viteDevExecution.exports.devErrorPhase, 'Vite C2 dev transform failed at ' + viteDevExecution.exports.devErrorPhase + ': ' + viteDevExecution.exports.devErrorMessage);
   assert(viteDevExecution.exports.viteVersion === '8.3.0', 'Vite C2 dev server used the wrong version');
   assert(viteDevExecution.exports.created === true, 'Vite C2 middleware dev server was not created');
   assert(viteDevExecution.exports.htmlHasClient === true, 'Vite C2 transformed HTML did not inject /@vite/client');
