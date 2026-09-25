@@ -210,6 +210,35 @@ export default {URL,URLSearchParams,pathToFileURL,fileURLToPath,urlToHttpOptions
 `;
 }
 
+function workerThreadsSource() {
+  return `
+const environmentData=new Map();
+export const isMainThread=true;
+export const parentPort=null;
+export const workerData=null;
+export const threadId=0;
+export const SHARE_ENV=Symbol.for('opencontainer.worker_threads.SHARE_ENV');
+export const BroadcastChannel=globalThis.BroadcastChannel;
+export const MessageChannel=globalThis.MessageChannel;
+export const MessagePort=globalThis.MessagePort;
+export function markAsUntransferable(){}
+export function isMarkedAsUntransferable(){return false;}
+export function moveMessagePortToContext(port){return port;}
+export function receiveMessageOnPort(){return undefined;}
+export function setEnvironmentData(key,value){environmentData.set(key,value);}
+export function getEnvironmentData(key){return environmentData.get(key);}
+export class Worker{
+  constructor(){
+    const error=new Error('Nested Node worker_threads.Worker is not promoted in the browser C1 profile');
+    error.code='OC_BUILTIN_UNAVAILABLE';
+    throw error;
+  }
+}
+const api={isMainThread,parentPort,workerData,threadId,SHARE_ENV,BroadcastChannel,MessageChannel,MessagePort,Worker,markAsUntransferable,isMarkedAsUntransferable,moveMessagePortToContext,receiveMessageOnPort,setEnvironmentData,getEnvironmentData};
+export default api;
+`;
+}
+
 function utilSource() {
   return `
 const inspectCustom=Symbol.for('nodejs.util.inspect.custom');
@@ -519,6 +548,7 @@ export function createBrowserNodeCompatBridge({
       case 'node:crypto': return cryptoSource();
       case 'node:perf_hooks': return perfHooksSource();
       case 'node:util': return utilSource();
+      case 'node:worker_threads': return workerThreadsSource();
       default:
         throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Native browser ESM builtin is not implemented', { specifier });
     }

@@ -538,3 +538,16 @@ The Vite browser profile now publishes the selected `node:util` behaviors exerci
 - browser-native TextEncoder/TextDecoder exports.
 
 The browser `node:fs` façade also now exposes callback-style `realpath()`, so Vite's `promisify(fs.realpath)` path is structurally executable rather than graph-only.
+
+
+## Native browser worker_threads compatibility
+
+The browser C1 realm now exposes a deliberately narrow `node:worker_threads` surface:
+
+- the Dedicated Worker guest is treated as the logical Node main thread (`isMainThread=true`, `threadId=0`);
+- browser-native BroadcastChannel/MessageChannel/MessagePort are exposed where available;
+- environment-data helpers are realm-local;
+- `parentPort` and `workerData` are null in the logical main realm;
+- constructing a Node-style nested `Worker` remains explicit fail-closed.
+
+This is sufficient for capability/static graph paths without falsely claiming Node worker_threads execution parity.
