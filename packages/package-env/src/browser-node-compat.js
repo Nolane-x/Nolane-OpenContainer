@@ -221,7 +221,8 @@ export const uptime=process.uptime;
 
 function urlSource() {
   return `
-export { URL, URLSearchParams };
+export const URL=globalThis.URL;
+export const URLSearchParams=globalThis.URLSearchParams;
 export function pathToFileURL(path){
   const resolved=globalThis.__opencontainer_sync_host_call__('node.url.pathToFileURL',{path:String(path)});
   return new URL(resolved);

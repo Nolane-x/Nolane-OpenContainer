@@ -269,3 +269,11 @@ test('browser node:zlib exposes async browser codecs and fails unsupported sync 
     assert.equal(Buffer.from(restored).toString('utf8'),'hello');
   }
 });
+
+
+test('browser node:url synthetic module binds WHATWG globals as lexical exports',async()=>{
+  const {bridge}=fixture();
+  const source=await bridge.builtinSource('node:url');
+  assert.match(source,/export const URL=globalThis\.URL/);
+  assert.match(source,/export const URLSearchParams=globalThis\.URLSearchParams/);
+});
