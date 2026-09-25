@@ -608,8 +608,10 @@ async function run() {
   assert(c1Css?.content.includes('.card'), 'Vite C1 CSS output lost fixture selector');
   const c1CssWithoutMapComment = c1Css.content.replace(/\/\*# sourceMappingURL=[\s\S]*?\*\//g, '').trim();
   stage('vite-c1-css-output', {
-    css: c1CssWithoutMapComment,
     bytes: c1CssWithoutMapComment.length,
+    nullCount: (c1CssWithoutMapComment.match(/\0/g) ?? []).length,
+    prefix: c1CssWithoutMapComment.slice(0, 120),
+    tail: c1CssWithoutMapComment.slice(-160),
     rawType: c1Css.rawType,
     rawCtor: c1Css.rawCtor,
     rawLength: c1Css.rawLength,
