@@ -442,6 +442,35 @@ test('binary publication assets are default-deny and exact allowlisted WASM is s
 });
 
 
+test('native ESM publication can inject an explicit bootstrap prelude without mutating source bytes', async () => {
+  const runtime = await createRuntime();
+  runtime.mount({
+    'src/bootstrap-entry.mjs': [
+      'let ready = false;',
+      'async function init(){ ready = true; }',
+      'export const value = ready ? 1 : 0;'
+    ].join('\n')
+  });
+
+  const root = mkdtempSync(join(tmpdir(), 'oc-native-prelude-'));
+  try {
+    const authority = runtime.packages.createNativeEsmPublication({
+      baseURL: pathToFileURL(root + '/').href,
+      session: 'prelude',
+      modulePrelude: (path) => path === '/workspace/src/bootstrap-entry.mjs' ? 'await init();' : ''
+    });
+    const entryURL = authority.moduleURL('./bootstrap-entry.mjs', '/workspace/src/entry.mjs');
+    const served = await authority.serve(entryURL);
+    assert.match(served.source, /^await init\(\);/);
+    assert.equal(runtime.fs.readFile('/workspace/src/bootstrap-entry.mjs').startsWith('await init();'), false);
+    await materializeGraph(await authority.graph(entryURL));
+    const namespace = await import(entryURL.href + '?oracle=' + Date.now());
+    assert.equal(namespace.value, 1);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('node-targeted publication can inject a lexical logical process without changing the host global', async () => {
   const runtime = await createRuntime();
   runtime.mount({
