@@ -29,6 +29,27 @@ test('Buffer subset covers utf8 hex base64 concat and identity', () => {
   assert.equal(BufferCompat.isBuffer(utf), true);
 });
 
+test('Buffer ArrayBuffer overload preserves byteOffset length and backing-store identity', () => {
+  const backing = new ArrayBuffer(16);
+  const bytes = new Uint8Array(backing);
+  bytes.set([10, 20, 30, 40, 50, 60], 4);
+
+  const view = BufferCompat.from(backing, 5, 3);
+  assert.equal(view.byteOffset, 5);
+  assert.equal(view.byteLength, 3);
+  assert.equal(view.buffer, backing);
+  assert.deepEqual([...view], [20, 30, 40]);
+
+  view[1] = 99;
+  assert.equal(bytes[6], 99);
+
+  const tail = BufferCompat.from(backing, 14);
+  assert.equal(tail.byteOffset, 14);
+  assert.equal(tail.byteLength, 2);
+  assert.throws(() => BufferCompat.from(backing, 17, 0), RangeError);
+  assert.throws(() => BufferCompat.from(backing, 15, 2), RangeError);
+});
+
 test('URL file conversion selected court matches Node POSIX semantics', async () => {
   const runtime = await runtimeFixture();
   const builtins = createCoreBuiltinRegistry({ fs: runtime.packages.nodeModules, writableFs: runtime.fs, cwd: '/workspace' });
