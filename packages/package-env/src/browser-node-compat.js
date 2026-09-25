@@ -1,5 +1,6 @@
 import { ErrorCodes, assertOc, ocError } from '../../protocol/src/index.js';
 import { createCoreBuiltinRegistry } from './builtins/registry.js';
+import { BUILTIN_MODULES } from './builtins/module.js';
 
 function statRecord(value) {
   return {
@@ -200,6 +201,48 @@ export default {URL,URLSearchParams,pathToFileURL,fileURLToPath,urlToHttpOptions
 `;
 }
 
+function moduleSource(builtinModules) {
+  return `
+export const builtinModules=Object.freeze(${JSON.stringify(builtinModules)});
+const builtinSet=new Set(builtinModules);
+export function isBuiltin(specifier){
+  const value=String(specifier);
+  return builtinSet.has(value.startsWith('node:')?value.slice(5):value);
+}
+function unsupportedRequire(specifier){
+  const error=new Error('Synchronous CommonJS require() is not promoted in the native browser ESM profile: '+String(specifier));
+  error.code='OC_REQUIRE_ESM_UNSUPPORTED';
+  throw error;
+}
+export function createRequire(filename){
+  const issuer=String(filename);
+  const require=(specifier)=>unsupportedRequire(specifier);
+  require.resolve=(specifier)=>globalThis.__opencontainer_sync_host_call__('node.module.resolve',{
+    specifier:String(specifier),
+    issuer
+  });
+  require.resolve.paths=()=>null;
+  require.cache=Object.create(null);
+  require.extensions=Object.create(null);
+  require.main=null;
+  return require;
+}
+export const createRequireFromPath=createRequire;
+export function syncBuiltinESMExports(){}
+function Module(id='',parent=null){
+  this.id=id;this.path='';this.exports={};this.filename=null;this.loaded=false;this.children=[];this.parent=parent;
+}
+Module.builtinModules=builtinModules;
+Module.isBuiltin=isBuiltin;
+Module.createRequire=createRequire;
+Module.createRequireFromPath=createRequire;
+Module.syncBuiltinESMExports=syncBuiltinESMExports;
+Module.Module=Module;
+export { Module };
+export default Module;
+`;
+}
+
 export function createBrowserNodeCompatBridge({
   fs,
   writableFs = fs,
@@ -207,7 +250,8 @@ export function createBrowserNodeCompatBridge({
   env = {},
   argv = ['opencontainer'],
   platform = 'linux',
-  arch = 'wasm32'
+  arch = 'wasm32',
+  resolver = null
 } = {}) {
   assertOc(fs && typeof fs.readFile === 'function', ErrorCodes.INVALID_ARGUMENT, 'Browser Node compatibility bridge requires filesystem authority');
 
@@ -223,6 +267,7 @@ export function createBrowserNodeCompatBridge({
       case 'node:events': return eventsSource();
       case 'node:process': return processSource(env, argv, platform, arch);
       case 'node:url': return urlSource();
+      case 'node:module': return moduleSource(BUILTIN_MODULES);
       default:
         throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Native browser ESM builtin is not implemented', { specifier });
     }
@@ -252,6 +297,35 @@ export function createBrowserNodeCompatBridge({
       if (name === 'fileURLToPath') return core.url.fileURLToPath(payload.value);
       if (name === 'urlToHttpOptions') return core.url.urlToHttpOptions(payload.value);
       throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'URL builtin method is unavailable', { method });
+    }
+
+    if (method.startsWith('node.module.')) {
+      const name = method.slice('node.module.'.length);
+      if (name !== 'resolve') throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Module builtin method is unavailable', { method });
+      assertOc(resolver && typeof resolver.resolve === 'function', ErrorCodes.INVALID_STATE, 'Browser node:module resolver authority is unavailable');
+
+      const rawIssuer = String(payload.issuer ?? '');
+      let issuer = rawIssuer;
+      if (/^[a-zA-Z][a-zA-Z\d+.-]*:/.test(rawIssuer)) {
+        const url = new URL(rawIssuer);
+        const marker = '/fs/';
+        const index = url.pathname.indexOf(marker);
+        if (index >= 0) {
+          issuer = '/' + url.pathname
+            .slice(index + marker.length)
+            .split('/')
+            .filter(Boolean)
+            .map(decodeURIComponent)
+            .join('/');
+        } else if (url.protocol === 'file:') {
+          issuer = core.url.fileURLToPath(url);
+        } else {
+          throw ocError(ErrorCodes.INVALID_MODULE_SPECIFIER, 'createRequire issuer is outside the OpenContainer publication namespace', { issuer: rawIssuer });
+        }
+      }
+
+      const resolved = resolver.resolve(String(payload.specifier), issuer, { mode: 'cjs' });
+      return resolved.kind === 'builtin' ? resolved.specifier : resolved.path;
     }
 
     if (method.startsWith('node.fs.')) {

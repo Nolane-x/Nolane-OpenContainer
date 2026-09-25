@@ -489,3 +489,17 @@ Native ESM publication no longer promotes every statically-analyzable dynamic im
 If a literal dynamic import resolves, it is still rewritten to the stable publication URL and included in graph evidence. If it is a missing package, publication rewrites the call through the authoritative runtime dynamic-import helper instead of failing graph construction. The same dependency will still fail with `OC_MODULE_NOT_FOUND` if that branch is actually executed.
 
 This is required for packages such as Vite that contain optional feature loaders (for example optional config-loader peers) in code paths that are not used by the selected runtime profile.
+
+
+## Native browser node:module bridge
+
+The native ESM compatibility profile now publishes an initial `node:module` surface required by Vite:
+
+- `builtinModules` and `isBuiltin()`;
+- `Module` compatibility constructor metadata;
+- `createRequire()` / `createRequireFromPath()`;
+- synchronous `require.resolve()` routed through the authoritative OpenContainer ResolverIndex;
+- publication URLs are mapped back to their canonical VFS issuer paths before resolution;
+- `require.cache`, `require.extensions` and `require.main` compatibility shapes are exposed.
+
+Security boundary: browser-native `require()` execution itself still fails closed. OpenContainer does not execute guest CommonJS on the trusted page realm merely to satisfy `createRequire`. The next execution court will promote only the CJS behavior actually required by the selected Vite path.

@@ -183,7 +183,7 @@ export class PackageGraphAuthority {
 
   createBrowserNodeCompat(options={}){
     assertOc(this.#nodeModules&&this.#resolver,ErrorCodes.INVALID_STATE,'Package catalog is not mounted');
-    return createBrowserNodeCompatBridge({fs:this.#nodeModules,writableFs:this.#baseFs,...options});
+    return createBrowserNodeCompatBridge({fs:this.#nodeModules,writableFs:this.#baseFs,resolver:this.#resolver,...options});
   }
 }
 
