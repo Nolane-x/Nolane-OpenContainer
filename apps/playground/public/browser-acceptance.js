@@ -385,10 +385,10 @@ async function run() {
       "const text = '.card { color: rgb(255, 0, 0); margin: 0px 0px 0px 0px; }';",
       "const encoded = new TextEncoder().encode(text);",
       "const buffered = Buffer.from(text);",
-      "const direct = transform({ filename: 'style.css', code: encoded, minify: true });",
-      "const viaBuffer = transform({ filename: 'style.css', code: buffered, minify: true });",
-      "export const css = new TextDecoder().decode(direct.code);",
-      "export const cssViaBuffer = new TextDecoder().decode(viaBuffer.code);",
+      "const decoder = new TextDecoder();",
+      "const css = decoder.decode(transform({ filename: 'style.css', code: encoded, minify: true }).code);",
+      "const cssViaBuffer = decoder.decode(transform({ filename: 'style.css', code: buffered, minify: true }).code);",
+      "export { css, cssViaBuffer };",
       "export const bufferLength = buffered.byteLength;",
       "export const bufferPrefix = Array.from(buffered.slice(0, 12)).join(',');"
     ].join('\n'))
@@ -532,8 +532,12 @@ async function run() {
   assert(lightningCssDirect.exports.css?.includes('.card'), 'direct Lightning CSS transform lost fixture selector');
   assert(lightningCssDirect.exports.cssViaBuffer?.includes('.card'), 'Buffer-backed Lightning CSS transform lost fixture selector');
   stage('lightningcss-direct-probe-pass', {
-    css: lightningCssDirect.exports.css,
-    cssViaBuffer: lightningCssDirect.exports.cssViaBuffer,
+    cssPrefix: lightningCssDirect.exports.css.slice(0, 80),
+    cssLength: lightningCssDirect.exports.css.length,
+    cssNulls: (lightningCssDirect.exports.css.match(/\0/g) ?? []).length,
+    cssViaBufferPrefix: lightningCssDirect.exports.cssViaBuffer.slice(0, 80),
+    cssViaBufferLength: lightningCssDirect.exports.cssViaBuffer.length,
+    cssViaBufferNulls: (lightningCssDirect.exports.cssViaBuffer.match(/\0/g) ?? []).length,
     bufferLength: lightningCssDirect.exports.bufferLength,
     bufferPrefix: lightningCssDirect.exports.bufferPrefix
   });
