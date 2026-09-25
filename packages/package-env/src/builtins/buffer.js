@@ -92,6 +92,64 @@ export class BufferCompat extends Uint8Array {
     return out;
   }
 
+  write(value, offset = 0, length = undefined, encoding = 'utf8') {
+    let actualOffset = offset;
+    let actualLength = length;
+    let actualEncoding = encoding;
+
+    if (typeof actualOffset === 'string') {
+      actualEncoding = actualOffset;
+      actualOffset = 0;
+      actualLength = this.length;
+    } else {
+      actualOffset = Number(actualOffset ?? 0);
+      if (typeof actualLength === 'string') {
+        actualEncoding = actualLength;
+        actualLength = this.length - actualOffset;
+      } else if (actualLength === undefined) {
+        actualLength = this.length - actualOffset;
+      }
+    }
+
+    if (!Number.isInteger(actualOffset) || actualOffset < 0 || actualOffset > this.length) {
+      throw new RangeError('Buffer.write offset is out of range');
+    }
+    actualLength = Number(actualLength);
+    if (!Number.isInteger(actualLength) || actualLength < 0) {
+      throw new RangeError('Buffer.write length is out of range');
+    }
+    actualLength = Math.min(actualLength, this.length - actualOffset);
+
+    const text = String(value);
+    const normalized = String(actualEncoding ?? 'utf8').toLowerCase();
+    let bytes;
+    if (normalized === 'utf8' || normalized === 'utf-8') {
+      bytes = encoder.encode(text);
+    } else if (['utf16le', 'utf-16le', 'ucs2', 'ucs-2'].includes(normalized)) {
+      bytes = new Uint8Array(text.length * 2);
+      for (let index = 0; index < text.length; index++) {
+        const code = text.charCodeAt(index);
+        bytes[index * 2] = code & 0xff;
+        bytes[index * 2 + 1] = code >>> 8;
+      }
+    } else if (normalized === 'hex') {
+      bytes = decodeHex(text);
+    } else if (normalized === 'base64' || normalized === 'base64url') {
+      const base64 = normalized === 'base64url'
+        ? text.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - text.length % 4) % 4)
+        : text;
+      bytes = decodeBase64(base64);
+    } else if (normalized === 'latin1' || normalized === 'binary' || normalized === 'ascii') {
+      bytes = Uint8Array.from(text, (char) => char.charCodeAt(0) & 0xff);
+    } else {
+      throw new TypeError('Unsupported Buffer encoding: ' + actualEncoding);
+    }
+
+    const written = Math.min(actualLength, bytes.length);
+    this.set(bytes.subarray(0, written), actualOffset);
+    return written;
+  }
+
   toString(encoding = 'utf8', start = 0, end = this.length) {
     const view = this.subarray(Math.max(0, start), Math.min(this.length, end));
     const normalized = String(encoding).toLowerCase();
