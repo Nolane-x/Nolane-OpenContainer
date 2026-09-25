@@ -381,9 +381,16 @@ async function run() {
     .writeFile('c1-app/src/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32"/></svg>')
     .writeFile('src/lightningcss-probe.mjs', [
       "import { transform } from 'lightningcss';",
-      "const source = new TextEncoder().encode('.card { color: rgb(255, 0, 0); margin: 0px 0px 0px 0px; }');",
-      "const result = transform({ filename: 'style.css', code: source, minify: true });",
-      "export const css = new TextDecoder().decode(result.code);"
+      "import { Buffer } from 'node:buffer';",
+      "const text = '.card { color: rgb(255, 0, 0); margin: 0px 0px 0px 0px; }';",
+      "const encoded = new TextEncoder().encode(text);",
+      "const buffered = Buffer.from(text);",
+      "const direct = transform({ filename: 'style.css', code: encoded, minify: true });",
+      "const viaBuffer = transform({ filename: 'style.css', code: buffered, minify: true });",
+      "export const css = new TextDecoder().decode(direct.code);",
+      "export const cssViaBuffer = new TextDecoder().decode(viaBuffer.code);",
+      "export const bufferLength = buffered.byteLength;",
+      "export const bufferPrefix = Array.from(buffered.slice(0, 12)).join(',');"
     ].join('\n'))
     .writeFile('src/vite-build-probe.mjs', [
       "import { build, version } from 'vite';",
@@ -508,11 +515,15 @@ async function run() {
   lightningCssProbe.start();
   const lightningCssDirect = await lightningCssProbe.execute(
     vitePublication.moduleURL('./lightningcss-probe.mjs', '/workspace/src/entry.mjs').href,
-    { exportNames: ['css'] }
+    { exportNames: ['css', 'cssViaBuffer', 'bufferLength', 'bufferPrefix'] }
   );
   assert(lightningCssDirect.exports.css?.includes('.card'), 'direct Lightning CSS transform lost fixture selector');
+  assert(lightningCssDirect.exports.cssViaBuffer?.includes('.card'), 'Buffer-backed Lightning CSS transform lost fixture selector');
   stage('lightningcss-direct-probe-pass', {
-    css: lightningCssDirect.exports.css
+    css: lightningCssDirect.exports.css,
+    cssViaBuffer: lightningCssDirect.exports.cssViaBuffer,
+    bufferLength: lightningCssDirect.exports.bufferLength,
+    bufferPrefix: lightningCssDirect.exports.bufferPrefix
   });
   lightningCssProbe.close();
 
