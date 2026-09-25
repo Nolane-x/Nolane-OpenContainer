@@ -71,10 +71,10 @@ function staticCreateRequireSpecifiers(source) {
   if (!/\bcreateRequire\b/.test(source)) return [];
 
   const aliases = new Set(['require']);
-  const declarations = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:[A-Za-z_$][\w$]*\.)?createRequire[A-Za-z0-9_$]*\s*\(/g;
+  const declarations = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:\/\*[\s\S]*?\*\/\s*)*(?:[A-Za-z_$][\w$]*\.)?createRequire[A-Za-z0-9_$]*\s*\(/g;
   for (const match of source.matchAll(declarations)) aliases.add(match[1]);
 
-  const assignments = /(?:^|[;\n])\s*([A-Za-z_$][\w$]*)\s*=\s*(?:[A-Za-z_$][\w$]*\.)?createRequire[A-Za-z0-9_$]*\s*\(/gm;
+  const assignments = /(?:^|[;\n])\s*([A-Za-z_$][\w$]*)\s*=\s*(?:\/\*[\s\S]*?\*\/\s*)*(?:[A-Za-z_$][\w$]*\.)?createRequire[A-Za-z0-9_$]*\s*\(/gm;
   for (const match of source.matchAll(assignments)) aliases.add(match[1]);
 
   const found = [];
