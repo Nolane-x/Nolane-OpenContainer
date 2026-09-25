@@ -57,6 +57,13 @@ export class BrowserGuestWorkerAuthority {
       }
       if (message.type === 'opencontainer:host-sync-request') {
         void this.#handleHostSyncRequest(message);
+        return;
+      }
+      if (message.type === 'opencontainer:guest-diagnostic') {
+        this.#diagnostics?.record('browser-worker.guest-diagnostic', {
+          kind: message.kind,
+          detail: message.detail
+        });
       }
     };
     this.#worker.addEventListener('message', this.#hostListener);
@@ -83,13 +90,14 @@ export class BrowserGuestWorkerAuthority {
     return this.identity;
   }
 
-  async execute(entryURL, { exportNames = null } = {}) {
+  async execute(entryURL, { exportNames = null, observeNestedWorkers = false } = {}) {
     if (!this.#worker) this.start();
     assertOc(typeof entryURL === 'string' && entryURL.length > 0, ErrorCodes.INVALID_ARGUMENT, 'Guest module entry URL is required');
     return this.#rpc.request('execute-module', {
       entryURL,
       exportNames: Array.isArray(exportNames) ? [...exportNames] : null,
-      publicationSession: this.#publication.session
+      publicationSession: this.#publication.session,
+      observeNestedWorkers: observeNestedWorkers === true
     });
   }
 

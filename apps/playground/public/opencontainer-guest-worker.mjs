@@ -27,6 +27,52 @@ globalThis.__opencontainer_dynamic_import__ = async (referrer, specifier) => {
   return import(target);
 };
 
+
+function reportDiagnostic(kind, detail = {}) {
+  try {
+    self.postMessage({
+      type: 'opencontainer:guest-diagnostic',
+      kind,
+      detail
+    });
+  } catch {}
+}
+
+let nestedWorkerTelemetryInstalled = false;
+function installNestedWorkerTelemetry() {
+  if (nestedWorkerTelemetryInstalled || typeof globalThis.Worker !== 'function') return;
+  nestedWorkerTelemetryInstalled = true;
+  const NativeWorker = globalThis.Worker;
+  globalThis.Worker = class OpenContainerObservedWorker extends NativeWorker {
+    constructor(url, options) {
+      super(url, options);
+      reportDiagnostic('nested-worker.created', {
+        url: String(url),
+        type: options?.type ?? null
+      });
+      this.addEventListener('error', (event) => {
+        reportDiagnostic('nested-worker.error', {
+          message: event.message,
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno
+        });
+      });
+      this.addEventListener('messageerror', () => {
+        reportDiagnostic('nested-worker.messageerror');
+      });
+    }
+  };
+  self.addEventListener('napi-rs-worker-error', (event) => {
+    const detail = event.detail;
+    reportDiagnostic('napi-rs-worker-error', {
+      type: detail?.type ?? null,
+      message: detail?.error?.message ?? (detail?.error ? String(detail.error) : null),
+      errorOutputs: detail?.errorOutputs ?? null
+    });
+  });
+}
+
 function cloneExports(namespace, exportNames) {
   const names = exportNames ?? Object.keys(namespace);
   const out = {};
@@ -61,6 +107,7 @@ self.addEventListener('message', async (event) => {
   let response;
   try {
     if (message.method !== 'execute-module') throw new Error('Unknown worker method: ' + message.method);
+    if (message.payload.observeNestedWorkers === true) installNestedWorkerTelemetry();
     const namespace = await import(message.payload.entryURL);
     response = {
       v: 1,

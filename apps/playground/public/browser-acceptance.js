@@ -6,6 +6,7 @@ import { MemoryVFS, OpfsCheckpointAuthority } from '/packages/vfs/src/index.js';
 
 const resultNode = document.getElementById('result');
 const stages = [];
+let acceptanceRuntime = null;
 function stage(name, details = {}) {
   const receipt = { name, at: Date.now(), ...details };
   stages.push(receipt);
@@ -23,6 +24,7 @@ async function run() {
   assert(globalThis.crossOriginIsolated, 'COOP/COEP isolation is required');
 
   const runtime = await OpenContainer.boot({ network: { allowLocal: true } });
+  acceptanceRuntime = runtime;
   stage('runtime-ready', { crossOriginIsolated: globalThis.crossOriginIsolated });
   runtime.mount({
     'package.json': JSON.stringify({ name: 'browser-acceptance', type: 'module' }),
@@ -330,7 +332,8 @@ async function run() {
   });
   viteWorker.start();
   const viteExecution = await viteWorker.execute(viteGraph.entryURL, {
-    exportNames: ['version']
+    exportNames: ['version'],
+    observeNestedWorkers: true
   });
   assert(viteExecution.workerCrossOriginIsolated === true, 'Vite guest worker is not cross-origin isolated');
   assert(viteExecution.exports.version === '8.3.0', 'Vite module execution returned the wrong version');
@@ -374,6 +377,7 @@ run().then((receipt) => {
       stack: error?.stack,
       details: error?.details
     },
-    stages
+    stages,
+    diagnostics: acceptanceRuntime?.diagnostics?.list?.().slice(-120) ?? []
   }, null, 2);
 });
