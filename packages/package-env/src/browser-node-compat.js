@@ -116,6 +116,7 @@ export default api;
 function fsPromisesSource() {
   return `
 import fs from 'node:fs';
+export const constants=fs.constants;
 export const access=fs.promises.access;
 export const readFile=fs.promises.readFile;
 export const writeFile=fs.promises.writeFile;
@@ -128,7 +129,8 @@ export const mkdir=fs.promises.mkdir;
 export const rename=fs.promises.rename;
 export const rm=fs.promises.rm;
 export const unlink=fs.promises.unlink;
-export default fs.promises;
+const api=Object.freeze({...fs.promises,constants});
+export default api;
 `;
 }
 

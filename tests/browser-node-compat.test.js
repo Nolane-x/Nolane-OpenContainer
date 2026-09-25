@@ -119,6 +119,12 @@ test('browser node:fs publishes callback APIs used by Vite',async()=>{
   assert.match(source,/export function access\(/);
 });
 
+test('browser node:fs/promises exposes constants for Vite imports',async()=>{
+  const {bridge}=fixture();
+  const source=await bridge.builtinSource('node:fs/promises');
+  assert.match(source,/export const constants=fs\.constants/);
+});
+
 
 test('browser node:worker_threads keeps logical main-thread semantics and nested Worker fail-closed',async()=>{
   const {bridge}=fixture();
