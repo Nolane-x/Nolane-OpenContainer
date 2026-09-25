@@ -39,7 +39,7 @@ test('browser Node compat path and process share logical cwd',async()=>{
 
 test('browser Node compat exposes promoted native ESM builtin sources',async()=>{
   const {bridge}=fixture();
-  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process','node:dns','node:dns/promises','node:os','node:net','node:tty']){
+  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process','node:dns','node:dns/promises','node:os','node:net','node:tty','node:assert','node:assert/strict']){
     const source=await bridge.builtinSource(specifier);
     assert.equal(typeof source,'string');
     assert.ok(source.length>20);
@@ -171,4 +171,18 @@ test('browser node:tty reports a non-interactive logical terminal without host l
   assert.equal(stdout.getColorDepth(),1);
   assert.equal(stdout.hasColors(),false);
   assert.deepEqual(stdout.getWindowSize(),[0,0]);
+});
+
+
+test('browser node:assert preserves failures instead of stubbing assertions',async()=>{
+  const {bridge}=fixture();
+  const source=await bridge.builtinSource('node:assert');
+  const utilSource=await bridge.builtinSource('node:util');
+  // Resolve the synthetic node:util import for the data-URL court.
+  const rewritten=source.replace("from 'node:util'","from 'data:text/javascript;base64,"+Buffer.from(utilSource).toString('base64')+"'");
+  const assertModule=await import('data:text/javascript;base64,'+Buffer.from(rewritten).toString('base64')+'#'+Date.now());
+  assertModule.strictEqual(4,4);
+  assertModule.deepStrictEqual({a:[1,2]},{a:[1,2]});
+  assert.throws(()=>assertModule.strictEqual(4,5),error=>error?.code==='ERR_ASSERTION');
+  assert.throws(()=>assertModule.ok(false),error=>error?.code==='ERR_ASSERTION');
 });

@@ -324,6 +324,66 @@ export default api;
 `;
 }
 
+function assertSource() {
+  return `
+import { isDeepStrictEqual } from 'node:util';
+export class AssertionError extends Error{
+  constructor({message='Assertion failed',actual,expected,operator='fail'}={}){
+    super(message);
+    this.name='AssertionError';
+    this.code='ERR_ASSERTION';
+    this.actual=actual;
+    this.expected=expected;
+    this.operator=operator;
+    this.generatedMessage=!message;
+  }
+}
+function error(message,actual,expected,operator){
+  return new AssertionError({message:message??('Expected values to satisfy '+operator),actual,expected,operator});
+}
+export function fail(message='Failed'){throw error(message,undefined,undefined,'fail');}
+export function ok(value,message){if(!value)throw error(message,value,true,'==');}
+export function equal(actual,expected,message){if(actual!=expected)throw error(message,actual,expected,'==');}
+export function notEqual(actual,expected,message){if(actual==expected)throw error(message,actual,expected,'!=');}
+export function strictEqual(actual,expected,message){if(!Object.is(actual,expected))throw error(message,actual,expected,'strictEqual');}
+export function notStrictEqual(actual,expected,message){if(Object.is(actual,expected))throw error(message,actual,expected,'notStrictEqual');}
+export function deepStrictEqual(actual,expected,message){if(!isDeepStrictEqual(actual,expected))throw error(message,actual,expected,'deepStrictEqual');}
+export function notDeepStrictEqual(actual,expected,message){if(isDeepStrictEqual(actual,expected))throw error(message,actual,expected,'notDeepStrictEqual');}
+export const deepEqual=deepStrictEqual;
+export const notDeepEqual=notDeepStrictEqual;
+export function match(value,regexp,message){if(!(regexp instanceof RegExp)||!regexp.test(String(value)))throw error(message,value,regexp,'match');}
+export function doesNotMatch(value,regexp,message){if(regexp instanceof RegExp&&regexp.test(String(value)))throw error(message,value,regexp,'doesNotMatch');}
+function expectedError(error,expected){
+  if(expected==null)return true;
+  if(typeof expected==='function'){
+    if(expected.prototype instanceof Error||expected===Error)return error instanceof expected;
+    return expected(error)===true;
+  }
+  if(expected instanceof RegExp)return expected.test(String(error?.message??error));
+  if(typeof expected==='object'){
+    return Object.entries(expected).every(([key,value])=>isDeepStrictEqual(error?.[key],value));
+  }
+  return false;
+}
+export function throws(fn,expected,message){
+  try{fn();}catch(cause){if(expectedError(cause,expected))return cause;throw error(message??'Thrown error did not match expectation',cause,expected,'throws');}
+  throw error(message??'Missing expected exception',undefined,expected,'throws');
+}
+export function doesNotThrow(fn,message){try{return fn();}catch(cause){throw error(message??'Got unwanted exception',cause,undefined,'doesNotThrow');}}
+export async function rejects(value,expected,message){
+  try{await (typeof value==='function'?value():value);}catch(cause){if(expectedError(cause,expected))return cause;throw error(message??'Rejected error did not match expectation',cause,expected,'rejects');}
+  throw error(message??'Missing expected rejection',undefined,expected,'rejects');
+}
+export async function doesNotReject(value,message){
+  try{return await (typeof value==='function'?value():value);}catch(cause){throw error(message??'Got unwanted rejection',cause,undefined,'doesNotReject');}
+}
+const assert=Object.assign(ok,{AssertionError,fail,ok,equal,notEqual,strictEqual,notStrictEqual,deepEqual,notDeepEqual,deepStrictEqual,notDeepStrictEqual,match,doesNotMatch,throws,doesNotThrow,rejects,doesNotReject});
+assert.strict=assert;
+export const strict=assert;
+export default assert;
+`;
+}
+
 function ttySource() {
   return `
 export function isatty(){return false;}
@@ -739,6 +799,8 @@ export function createBrowserNodeCompatBridge({
       case 'node:os': return osSource();
       case 'node:net': return netSource();
       case 'node:tty': return ttySource();
+      case 'node:assert':
+      case 'node:assert/strict': return assertSource();
       default:
         throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Native browser ESM builtin is not implemented', { specifier });
     }
