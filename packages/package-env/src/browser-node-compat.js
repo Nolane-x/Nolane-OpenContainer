@@ -150,10 +150,124 @@ export const extname=(path)=>call('extname',[path]);
 export const parse=(path)=>call('parse',[path]);
 export const format=(value)=>call('format',[value]);
 export const toNamespacedPath=(path)=>path;
+function winSlashes(value){return String(value).replace(/\\//g,'\\\\');}
+function winRoot(value){
+  const path=winSlashes(value);
+  const unc=/^\\\\\\\\([^\\\\]+)\\\\([^\\\\]+)(?:\\\\|$)/.exec(path);
+  if(unc)return {root:'\\\\\\\\'+unc[1]+'\\\\'+unc[2]+'\\\\',rest:path.slice(unc[0].length)};
+  const drive=/^[A-Za-z]:/.exec(path);
+  if(drive){
+    const absolute=path[2]==='\\\\';
+    return {root:drive[0]+(absolute?'\\\\':''),rest:path.slice(absolute?3:2)};
+  }
+  if(path.startsWith('\\\\'))return {root:'\\\\',rest:path.slice(1)};
+  return {root:'',rest:path};
+}
+function winNormalize(value){
+  const original=winSlashes(value);
+  if(!original)return '.';
+  const {root,rest}=winRoot(original);
+  const absolute=root.endsWith('\\\\')||root==='\\\\';
+  const parts=[];
+  for(const part of rest.split(/\\\\+/)){
+    if(!part||part==='.')continue;
+    if(part==='..'){
+      if(parts.length&&parts[parts.length-1]!=='..')parts.pop();
+      else if(!absolute)parts.push('..');
+    }else parts.push(part);
+  }
+  let out=root+parts.join('\\\\');
+  if(!out)out='.';
+  if(original.endsWith('\\\\')&&out!==root&&!out.endsWith('\\\\'))out+='\\\\';
+  return out;
+}
+function winIsAbsolute(value){
+  const path=winSlashes(value);
+  return /^\\\\\\\\/.test(path)||/^[A-Za-z]:\\\\/.test(path)||path.startsWith('\\\\');
+}
+function winJoin(...values){
+  const parts=values.filter((value)=>String(value).length>0).map(winSlashes);
+  if(!parts.length)return '.';
+  return winNormalize(parts.join('\\\\'));
+}
+function winResolve(...values){
+  let combined='';
+  for(let i=values.length-1;i>=0;i--){
+    const value=winSlashes(values[i]);
+    if(!value)continue;
+    combined=value+(combined?'\\\\'+combined:'');
+    if(winIsAbsolute(value))break;
+  }
+  return winNormalize(combined||'.');
+}
+function winDirname(value){
+  const path=winNormalize(value).replace(/\\\\+$/,'');
+  const {root}=winRoot(path);
+  const index=path.lastIndexOf('\\\\');
+  if(index<0)return '.';
+  if(index<root.length)return root||'.';
+  return path.slice(0,index)||root||'.';
+}
+function winBasename(value,suffix){
+  const path=winNormalize(value).replace(/\\\\+$/,'');
+  const index=Math.max(path.lastIndexOf('\\\\'),path.lastIndexOf(':'));
+  let name=path.slice(index+1);
+  if(suffix&&name.endsWith(suffix))name=name.slice(0,-suffix.length);
+  return name;
+}
+function winExtname(value){
+  const name=winBasename(value);
+  const index=name.lastIndexOf('.');
+  return index<=0?'':name.slice(index);
+}
+function winParse(value){
+  const normalized=winNormalize(value);
+  const {root}=winRoot(normalized);
+  const dir=winDirname(normalized);
+  const base=winBasename(normalized);
+  const ext=winExtname(base);
+  return {root,dir,base,ext,name:ext?base.slice(0,-ext.length):base};
+}
+function winFormat(value){
+  const dir=value.dir||value.root||'';
+  const base=value.base||String(value.name||'')+String(value.ext||'');
+  return dir?winJoin(dir,base):base;
+}
+function winRelative(from,to){
+  const left=winResolve(from).replace(/\\\\+$/,'').split('\\\\');
+  const right=winResolve(to).replace(/\\\\+$/,'').split('\\\\');
+  let index=0;
+  while(index<left.length&&index<right.length&&left[index].toLowerCase()===right[index].toLowerCase())index++;
+  return [...Array(left.length-index).fill('..'),...right.slice(index)].join('\\\\');
+}
+const win32Api={sep:'\\\\',delimiter:';',normalize:winNormalize,isAbsolute:winIsAbsolute,join:winJoin,resolve:winResolve,relative:winRelative,dirname:winDirname,basename:winBasename,extname:winExtname,parse:winParse,format:winFormat,toNamespacedPath:(path)=>winSlashes(path)};
+win32Api.win32=win32Api;
 const api={sep,delimiter,normalize,isAbsolute,join,resolve,relative,dirname,basename,extname,parse,format,toNamespacedPath};
 api.posix=api;
+api.win32=win32Api;
 export const posix=api;
+export const win32=win32Api;
 export default api;
+`;
+}
+
+function pathWin32Source() {
+  return `
+import path from 'node:path';
+export const sep=path.win32.sep;
+export const delimiter=path.win32.delimiter;
+export const normalize=path.win32.normalize;
+export const isAbsolute=path.win32.isAbsolute;
+export const join=path.win32.join;
+export const resolve=path.win32.resolve;
+export const relative=path.win32.relative;
+export const dirname=path.win32.dirname;
+export const basename=path.win32.basename;
+export const extname=path.win32.extname;
+export const parse=path.win32.parse;
+export const format=path.win32.format;
+export const toNamespacedPath=path.win32.toNamespacedPath;
+export default path.win32;
 `;
 }
 
@@ -1267,6 +1381,7 @@ export function createBrowserNodeCompatBridge({
       case 'node:fs/promises': return fsPromisesSource();
       case 'node:path':
       case 'node:path/posix': return pathSource();
+      case 'node:path/win32': return pathWin32Source();
       case 'node:buffer': return bufferSource();
       case 'node:events': return eventsSource();
       case 'node:process': return processSource(env, argv, platform, arch);

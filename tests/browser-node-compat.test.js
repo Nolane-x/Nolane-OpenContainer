@@ -39,7 +39,7 @@ test('browser Node compat path and process share logical cwd',async()=>{
 
 test('browser Node compat exposes promoted native ESM builtin sources',async()=>{
   const {bridge}=fixture();
-  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process','node:dns','node:dns/promises','node:os','node:net','node:tty','node:assert','node:assert/strict','node:v8','node:timers','node:timers/promises','node:readline','node:http','node:https','node:http2','node:tls','node:querystring','node:zlib']){
+  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:path/win32','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process','node:dns','node:dns/promises','node:os','node:net','node:tty','node:assert','node:assert/strict','node:v8','node:timers','node:timers/promises','node:readline','node:http','node:https','node:http2','node:tls','node:querystring','node:zlib']){
     const source=await bridge.builtinSource(specifier);
     assert.equal(typeof source,'string');
     assert.ok(source.length>20);
@@ -295,4 +295,15 @@ test('browser node:url synthetic module binds WHATWG globals as lexical exports'
   const source=await bridge.builtinSource('node:url');
   assert.match(source,/export const URL=globalThis\.URL/);
   assert.match(source,/export const URLSearchParams=globalThis\.URLSearchParams/);
+});
+
+
+test('browser node:path exposes lexical win32 helpers without host OS access',async()=>{
+  const {bridge}=fixture();
+  const source=await bridge.builtinSource('node:path');
+  const path=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64')+'#'+Date.now());
+  assert.equal(path.win32.sep,'\\\\');
+  assert.equal(path.win32.join('C:\\\\root','.\\\\fixtures\\\\basic.js'),'C:\\\\root\\\\fixtures\\\\basic.js');
+  assert.equal(path.win32.isAbsolute('C:\\\\root\\\\x'),true);
+  assert.equal(path.win32.basename('C:\\\\root\\\\a.txt'), 'a.txt');
 });
