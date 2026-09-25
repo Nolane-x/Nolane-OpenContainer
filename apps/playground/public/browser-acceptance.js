@@ -534,25 +534,31 @@ async function run() {
       "import { dirname, resolve as pathResolve } from 'node:path';",
       "const root = '/workspace/c1-app';",
       "const cleanId = (id) => String(id).split('?')[0].split('#')[0];",
+      "const vfsTrace = [];",
+      "const trace = (kind, detail) => { if (vfsTrace.length < 80) vfsTrace.push(kind + ':' + detail); };"
       "const vfsPlugin = {",
       "  name: 'opencontainer-vfs-dev',",
       "  enforce: 'pre',",
       "  resolveId(source, importer) {",
+      "    trace('resolve', String(source) + '<-' + String(importer ?? ''));",
       "    const raw = cleanId(source);",
       "    let candidate = null;",
       "    if (raw.startsWith('/workspace/')) candidate = raw;",
       "    else if (raw.startsWith('/') && !raw.startsWith('/@')) candidate = root + raw;",
       "    else if (importer && cleanId(importer).startsWith('/workspace/') && (raw.startsWith('./') || raw.startsWith('../'))) candidate = pathResolve(dirname(cleanId(importer)), raw);",
-      "    if (candidate && existsSync(candidate)) return candidate;",
+      "    if (candidate && existsSync(candidate)) { trace('resolved', candidate); return candidate; }",
+      "    if (candidate) trace('resolve-miss', candidate);"
       "    return null;",
       "  },",
       "  async load(id) {",
+      "    trace('load', String(id));",
       "    const file = cleanId(id);",
-      "    if (!file.startsWith('/workspace/') || !existsSync(file)) return null;",
+      "    if (!file.startsWith('/workspace/') || !existsSync(file)) { trace('load-miss', file); return null; }",
       "    if (/\\.(?:svg|png|jpe?g|gif|webp|avif|ico|woff2?|ttf|otf|wasm)$/i.test(file)) return null;",
       "    const source = readFileSync(file, 'utf8');",
       "    if (/\\.(?:[cm]?ts|tsx)$/i.test(file)) {",
       "      const transformed = await transformWithOxc(source, file);",
+      "      trace('load-oxc', file + ':' + String(source.length) + '->' + String(transformed.code.length));",
       "      return { code: transformed.code, map: transformed.map, moduleType: 'js' };",
       "    }",
       "    return source;",
@@ -608,7 +614,7 @@ async function run() {
       "export const tsBytes = tsCode.length;",
       "export { html, tsCode, clientCode };",
       "export const closeSucceeded = closed;",
-      "export { devErrorPhase, devErrorMessage, pluginNames, oxcEnabled, directTsTransformed };"
+      "export { devErrorPhase, devErrorMessage, pluginNames, oxcEnabled, directTsTransformed, vfsTrace };"
     ].join('\n'))
     .commit();
 
@@ -855,7 +861,8 @@ async function run() {
       'devErrorMessage',
       'pluginNames',
       'oxcEnabled',
-      'directTsTransformed'
+      'directTsTransformed',
+      'vfsTrace'
     ],
     observeNestedWorkers: true
   });
@@ -864,7 +871,8 @@ async function run() {
     devErrorMessage: viteDevExecution.exports.devErrorMessage,
     oxcEnabled: viteDevExecution.exports.oxcEnabled,
     directTsTransformed: viteDevExecution.exports.directTsTransformed,
-    pluginNames: viteDevExecution.exports.pluginNames
+    pluginNames: viteDevExecution.exports.pluginNames,
+    vfsTrace: viteDevExecution.exports.vfsTrace
   });
   assert(!viteDevExecution.exports.devErrorPhase, 'Vite C2 dev transform failed at ' + viteDevExecution.exports.devErrorPhase + ': ' + viteDevExecution.exports.devErrorMessage);
   assert(viteDevExecution.exports.viteVersion === '8.3.0', 'Vite C2 dev server used the wrong version');
