@@ -23,8 +23,9 @@ function decodeHex(value) {
 }
 
 export class BufferCompat extends Uint8Array {
-  static from(value, encoding = 'utf8') {
+  static from(value, encodingOrOffset = undefined, length = undefined) {
     if (typeof value === 'string') {
+      const encoding = encodingOrOffset ?? 'utf8';
       const normalized = String(encoding).toLowerCase();
       if (normalized === 'base64' || normalized === 'base64url') {
         const base64 = normalized === 'base64url'
@@ -36,8 +37,28 @@ export class BufferCompat extends Uint8Array {
       if (!['utf8', 'utf-8'].includes(normalized)) throw new TypeError('Unsupported Buffer encoding: ' + encoding);
       return new BufferCompat(encoder.encode(value));
     }
-    if (value instanceof ArrayBuffer) return new BufferCompat(value.slice(0));
-    if (ArrayBuffer.isView(value)) return new BufferCompat(new Uint8Array(value.buffer, value.byteOffset, value.byteLength));
+
+    const sharedArrayBuffer = typeof SharedArrayBuffer !== 'undefined' && value instanceof SharedArrayBuffer;
+    if (value instanceof ArrayBuffer || sharedArrayBuffer) {
+      const byteOffset = encodingOrOffset === undefined ? 0 : Number(encodingOrOffset);
+      if (!Number.isInteger(byteOffset) || byteOffset < 0 || byteOffset > value.byteLength) {
+        throw new RangeError('Buffer.from ArrayBuffer byteOffset is out of range');
+      }
+      const available = value.byteLength - byteOffset;
+      const byteLength = length === undefined ? available : Number(length);
+      if (!Number.isInteger(byteLength) || byteLength < 0 || byteLength > available) {
+        throw new RangeError('Buffer.from ArrayBuffer length is out of range');
+      }
+
+      // Node's ArrayBuffer overload creates a view over the supplied backing store.
+      // napi-wasm depends on this exact overload for WASM memory slices:
+      // Buffer.from(memory.buffer, ptr, length).
+      return new BufferCompat(value, byteOffset, byteLength);
+    }
+
+    if (ArrayBuffer.isView(value)) {
+      return new BufferCompat(new Uint8Array(value.buffer, value.byteOffset, value.byteLength));
+    }
     if (Array.isArray(value)) return new BufferCompat(value);
     throw new TypeError('Unsupported Buffer.from input');
   }
