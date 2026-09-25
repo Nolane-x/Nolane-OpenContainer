@@ -373,3 +373,39 @@ test('static CommonJS require can consume a prelinked ESM namespace in the brows
     await rm(root, { recursive: true, force: true });
   }
 });
+
+
+test('static CommonJS cycles use an initialized export cell instead of ESM TDZ markers', async () => {
+  const runtime = await createRuntime();
+  runtime.packages.mountCatalog({
+    packages: [{
+      location: 'node_modules/cjs-cycle',
+      packageJson: { name: 'cjs-cycle', type: 'commonjs', main: './a.js' },
+      files: {
+        'a.js': "const b=require('./b.js'); exports.result=()=>b.value+1;",
+        'b.js': "const a=require('./a.js'); exports.value=41; exports.peerType=()=>typeof a;"
+      }
+    }]
+  });
+  runtime.mount({
+    'src/cjs-cycle-entry.mjs': "import cycle from 'cjs-cycle'; export const result=cycle.result();"
+  });
+
+  const root = mkdtempSync(join(tmpdir(), 'oc-native-cjs-cycle-'));
+  try {
+    const authority = runtime.packages.createNativeEsmPublication({
+      baseURL: pathToFileURL(root + '/').href,
+      session: 'cjs-cycle'
+    });
+    const entryURL = authority.moduleURL('./cjs-cycle-entry.mjs', '/workspace/src/bootstrap.mjs');
+    const graph = await authority.graph(entryURL);
+    const modules = graph.modules.filter((module) => module.format === 'commonjs');
+    assert.equal(modules.length, 2);
+    assert.ok(modules.every((module) => module.source.includes('export function __opencontainer_cjs_cell()')));
+    await materializeGraph(graph);
+    const namespace = await import(entryURL.href + '?oracle=' + Date.now());
+    assert.equal(namespace.result, 42);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
