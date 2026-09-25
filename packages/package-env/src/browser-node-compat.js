@@ -571,9 +571,11 @@ export class Writable extends Stream{
 export class Duplex extends Readable{
   constructor(options={}){
     super(options);this.writable=true;this.writableEnded=false;this.writableFinished=false;
-    this._write=typeof options.write==='function'?options.write.bind(this):Writable.prototype._write;
-    this._final=typeof options.final==='function'?options.final.bind(this):Writable.prototype._final;
+    if(typeof options.write==='function')this._write=options.write.bind(this);
+    if(typeof options.final==='function')this._final=options.final.bind(this);
   }
+  _write(chunk,encoding,callback){callback();}
+  _final(callback){callback();}
   write(...args){return Writable.prototype.write.apply(this,args);}
   end(...args){return Writable.prototype.end.apply(this,args);}
   destroy(error){Readable.prototype.destroy.call(this,error);this.writable=false;return this;}
