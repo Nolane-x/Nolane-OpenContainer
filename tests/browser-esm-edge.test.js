@@ -135,3 +135,41 @@ test('unowned session produces no page-side response',async()=>{
   assert.deepEqual(messages,[]);
   bridge.close();
 });
+
+
+test('browser ESM bridge preserves WASM bytes without UTF-8 transcoding',async()=>{
+  const worker=new FakeWorker('activated');
+  const registration=new FakeRegistration(worker);
+  registration.installing=null;
+  registration.active=worker;
+  const container=new FakeContainer(registration);
+  container.controller=worker;
+  const wasmBytes=Uint8Array.from([0x00,0x61,0x73,0x6d,0xff,0xfe,0x80,0x01]);
+  const bridge=new BrowserEsmServiceWorkerBridge({
+    publication:{
+      session:'binary-session',
+      async response(){
+        return new Response(wasmBytes,{
+          headers:{'content-type':'application/wasm'}
+        });
+      }
+    },
+    serviceWorkerContainer:container,
+    timeoutMs:100
+  });
+  await bridge.start();
+
+  const messages=[];
+  container.sendMessage({
+    type:'opencontainer:esm-fetch',
+    session:'binary-session',
+    url:'https://example.test/__opencontainer__/esm/binary-session/fs/workspace/module.wasm'
+  },{postMessage(value){messages.push(value);}});
+
+  await new Promise((resolve)=>setTimeout(resolve,0));
+  assert.equal(messages.length,1);
+  assert.equal(messages[0].ok,true);
+  assert.ok(messages[0].body instanceof Uint8Array);
+  assert.deepEqual([...messages[0].body],[...wasmBytes]);
+  bridge.close();
+});

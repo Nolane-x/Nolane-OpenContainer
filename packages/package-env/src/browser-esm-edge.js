@@ -141,12 +141,18 @@ export class BrowserEsmServiceWorkerBridge {
 
     try {
       const response = await this.#publication.response(data.url);
+      const headers = Object.fromEntries(response.headers.entries());
+      const contentType = response.headers.get('content-type') ?? '';
+      const binary = contentType.split(';', 1)[0].trim().toLowerCase() === 'application/wasm';
+      const body = binary
+        ? new Uint8Array(await response.arrayBuffer())
+        : await response.text();
       port.postMessage({
         ok: true,
         status: response.status,
         statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries()),
-        body: await response.text()
+        headers,
+        body
       });
     } catch (error) {
       port.postMessage({
