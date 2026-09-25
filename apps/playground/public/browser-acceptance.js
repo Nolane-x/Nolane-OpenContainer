@@ -412,7 +412,7 @@ async function run() {
     .writeFile('src/vite-build-probe.mjs', [
       "import { build, version } from 'vite';",
       "import { memfs } from 'rolldown/experimental';",
-      "import { existsSync, readFileSync } from 'node:fs';"
+      "import { existsSync, readFileSync } from 'node:fs';",
       "import { dirname, resolve as pathResolve } from 'node:path';",
       "const root = '/workspace/c1-app';",
       "const configPath = root + '/vite.config.ts';",
@@ -423,7 +423,7 @@ async function run() {
       "  memfs.fs.mkdirSync(path.slice(0, slash), { recursive: true });",
       "  memfs.fs.writeFileSync(path, configSource);",
       "}",
-      "const cleanId = (id) => String(id).split('?')[0].split('#')[0];"
+      "const cleanId = (id) => String(id).split('?')[0].split('#')[0];",
       "const vfsPlugin = {",
       "  name: 'opencontainer-vfs-input',",
       "  enforce: 'pre',",
