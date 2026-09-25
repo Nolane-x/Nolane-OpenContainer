@@ -260,3 +260,38 @@ test('missing literal dynamic optional package is deferred to runtime helper', a
     (error) => error.code === ErrorCodes.MODULE_NOT_FOUND
   );
 });
+
+
+test('synthetic builtin modules rewrite nested node builtin imports into the publication graph', async () => {
+  const runtime = await createRuntime();
+  runtime.mount({
+    'src/entry.mjs': `
+      import pathValue from 'node:path';
+      export const value = pathValue.kind;
+    `
+  });
+
+  const authority = runtime.packages.createNativeEsmPublication({
+    baseURL: 'https://example.invalid/modules/',
+    session: 'nested-builtins',
+    builtinSource(specifier) {
+      if (specifier === 'node:path') {
+        return `import EventEmitter from 'node:events'; export default {kind: typeof EventEmitter === 'function' ? 'ok' : 'bad'};`;
+      }
+      if (specifier === 'node:events') {
+        return `export default class EventEmitter {}`;
+      }
+      throw new Error('unexpected builtin '+specifier);
+    }
+  });
+
+  const entryURL = authority.moduleURL('./entry.mjs', '/workspace/src/bootstrap.mjs');
+  const graph = await authority.graph(entryURL);
+  const pathModule = graph.modules.find((module) => module.specifier === 'node:path');
+  const eventsModule = graph.modules.find((module) => module.specifier === 'node:events');
+  assert.ok(pathModule);
+  assert.ok(eventsModule);
+  assert.equal(pathModule.dependencies.length, 1);
+  assert.equal(pathModule.dependencies[0].specifier, 'node:events');
+  assert.match(pathModule.source, /nested-builtins\/builtin\/node%3Aevents\.mjs/);
+});

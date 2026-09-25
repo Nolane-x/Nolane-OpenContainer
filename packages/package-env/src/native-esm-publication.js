@@ -291,13 +291,93 @@ export class NativeEsmPublicationAuthority {
     assertOc(typeof source === 'string', ErrorCodes.BUILTIN_UNAVAILABLE, 'Builtin source provider returned no module source', {
       specifier: publication.specifier
     });
+
+    const [imports] = parse(source, publication.specifier);
+    const replacements = [];
+    const dependencies = [];
+
+    for (const record of imports) {
+      if (record.d === -2 || record.t === IMPORT_META) continue;
+
+      if (PHASE_IMPORTS.has(record.t)) {
+        throw ocError(
+          ErrorCodes.ESM_IMPORT_PHASE_UNSUPPORTED,
+          'Source/defer phase imports are not promoted in native builtin modules',
+          { specifier: publication.specifier, type: record.t }
+        );
+      }
+
+      if (record.n !== undefined) {
+        const nested = record.n;
+        const isDynamic = record.d >= 0 || record.t === DYNAMIC_IMPORT;
+
+        if (nested.startsWith('node:')) {
+          const targetURL = this.#urlForResolved({ kind: 'builtin', specifier: nested });
+          const raw = source.slice(record.s, record.e);
+          replacements.push({
+            start: record.s,
+            end: record.e,
+            value: quoteLike(raw, targetURL.href)
+          });
+          dependencies.push(
+            Object.freeze({
+              specifier: nested,
+              url: targetURL.href,
+              dynamic: isDynamic,
+              kind: 'builtin'
+            })
+          );
+          continue;
+        }
+
+        // Trusted browser-runtime helper modules such as /packages/** remain
+        // same-origin absolute imports and are intentionally outside guest VFS.
+        if (
+          nested.startsWith('/') ||
+          /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(nested)
+        ) {
+          continue;
+        }
+
+        throw ocError(
+          ErrorCodes.ESM_PUBLICATION_INVALID,
+          'Native builtin source contains an unresolved bare import',
+          { builtin: publication.specifier, nested }
+        );
+      }
+
+      if (record.d >= 0 || record.t === DYNAMIC_IMPORT) {
+        const dynamic = source.slice(record.ss, record.se);
+        const open = dynamic.indexOf('(');
+        const close = dynamic.lastIndexOf(')');
+        if (open < 0 || close <= open) {
+          throw ocError(ErrorCodes.ESM_PUBLICATION_INVALID, 'Unable to isolate builtin dynamic import expression', {
+            builtin: publication.specifier,
+            statement: dynamic
+          });
+        }
+        const args = dynamic.slice(open + 1, close);
+        replacements.push({
+          start: record.ss,
+          end: record.se,
+          value: 'globalThis.__opencontainer_dynamic_import__(import.meta.url,' + args + ')'
+        });
+        continue;
+      }
+
+      throw ocError(ErrorCodes.ESM_PUBLICATION_INVALID, 'Builtin module edge has no analyzable specifier', {
+        builtin: publication.specifier,
+        type: record.t
+      });
+    }
+
     return Object.freeze({
       kind: 'builtin',
       url: publication.url.href,
       specifier: publication.specifier,
       generation: this.generation,
-      source,
-      dependencies: Object.freeze([])
+      source: applyReplacements(source, replacements),
+      dependencies: Object.freeze(dependencies)
     });
   }
 
