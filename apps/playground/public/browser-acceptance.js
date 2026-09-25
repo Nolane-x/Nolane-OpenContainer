@@ -456,7 +456,7 @@ async function run() {
         path === '/workspace/node_modules/lightningcss/lightningcss_node.wasm'
       ),
     nodeGlobalAllow: (path) => path.startsWith('/workspace/node_modules/vite/dist/node/'),
-    modulePrelude: (path) =>
+    moduleEpilogue: (path) =>
       path === '/workspace/node_modules/lightningcss/index.mjs'
         ? 'await init();'
         : ''
