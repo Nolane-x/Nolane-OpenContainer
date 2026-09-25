@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MemoryVFS } from '../packages/vfs/src/index.js';
+import { OpenContainer } from '../packages/sdk/src/index.js';
 import { VirtualNodeModulesFS } from '../packages/package-env/src/virtual-node-modules.js';
 import { createBrowserNodeCompatBridge } from '../packages/package-env/src/browser-node-compat.js';
 import { ErrorCodes } from '../packages/protocol/src/index.js';
