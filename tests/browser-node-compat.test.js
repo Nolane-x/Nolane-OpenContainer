@@ -75,6 +75,27 @@ test('browser node:module resolve maps publication URL issuers back to VFS autho
 });
 
 
+test('browser node:url maps only OpenContainer publication URLs back to canonical VFS paths',async()=>{
+  const {bridge}=fixture();
+  assert.equal(
+    await bridge.syncRequestHandler('node.url.fileURLToPath',{
+      value:'http://127.0.0.1:4187/__opencontainer__/esm/session/fs/workspace/node_modules/vite/dist/node/chunks/node.js?x=1#frag'
+    }),
+    '/workspace/node_modules/vite/dist/node/chunks/node.js'
+  );
+  assert.equal(
+    await bridge.syncRequestHandler('node.url.fileURLToPath',{
+      value:'file:///workspace/src/a.txt'
+    }),
+    '/workspace/src/a.txt'
+  );
+  await assert.rejects(
+    ()=>bridge.syncRequestHandler('node.url.fileURLToPath',{value:'https://example.com/not-a-publication.js'}),
+    /scheme file/
+  );
+});
+
+
 test('browser node:crypto hash bridge uses Web Crypto with exact SHA-256 bytes',async()=>{
   const {bridge}=fixture();
   const value=await bridge.syncRequestHandler('node.crypto.hash',{

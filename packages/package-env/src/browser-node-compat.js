@@ -1454,7 +1454,36 @@ export function createBrowserNodeCompatBridge({
     if (method.startsWith('node.url.')) {
       const name = method.slice('node.url.'.length);
       if (name === 'pathToFileURL') return core.url.pathToFileURL(payload.path).href;
-      if (name === 'fileURLToPath') return core.url.fileURLToPath(payload.value);
+      if (name === 'fileURLToPath') {
+        const raw = String(payload.value);
+        const url = new URL(raw);
+        if (url.protocol === 'file:') return core.url.fileURLToPath(url);
+
+        const publicationMarker = '/__opencontainer__/esm/';
+        const publicationIndex = url.pathname.indexOf(publicationMarker);
+        const fsMarker = '/fs/';
+        const fsIndex = publicationIndex >= 0
+          ? url.pathname.indexOf(fsMarker, publicationIndex + publicationMarker.length)
+          : -1;
+
+        if (fsIndex >= 0) {
+          const mapped = '/' + url.pathname
+            .slice(fsIndex + fsMarker.length)
+            .split('/')
+            .filter(Boolean)
+            .map(decodeURIComponent)
+            .join('/');
+          assertOc(
+            mapped === '/workspace' || mapped.startsWith('/workspace/'),
+            ErrorCodes.PATH_ESCAPE,
+            'Published module URL escaped /workspace',
+            { value: raw, mapped }
+          );
+          return mapped;
+        }
+
+        return core.url.fileURLToPath(url);
+      }
       if (name === 'urlToHttpOptions') return core.url.urlToHttpOptions(payload.value);
       throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'URL builtin method is unavailable', { method });
     }
