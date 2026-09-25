@@ -335,7 +335,7 @@ async function run() {
     assetAllow: (path, asset) =>
       asset.kind === 'wasm' &&
       path === '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasm32-wasi.wasm',
-    nodeGlobalAllow: (path) => path.startsWith('/workspace/node_modules/vite/')
+    nodeGlobalAllow: (path) => path.startsWith('/workspace/node_modules/vite/dist/node/')
   });
   const viteEntryUrl = vitePublication.moduleURL('vite', '/workspace/src/vite-probe.mjs');
   const viteGraph = await vitePublication.graph(viteEntryUrl);
