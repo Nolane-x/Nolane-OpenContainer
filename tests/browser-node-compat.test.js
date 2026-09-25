@@ -44,7 +44,7 @@ test('browser Node compat exposes promoted native ESM builtin sources',async()=>
     assert.equal(typeof source,'string');
     assert.ok(source.length>20);
   }
-  await assert.rejects(()=>bridge.builtinSource('node:crypto'),e=>e.code===ErrorCodes.BUILTIN_UNAVAILABLE);
+  await assert.rejects(()=>bridge.builtinSource('node:os'),e=>e.code===ErrorCodes.BUILTIN_UNAVAILABLE);
 });
 
 
