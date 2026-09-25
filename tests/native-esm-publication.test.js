@@ -479,7 +479,7 @@ test('ESM createRequire literal package edges are prelinked without guest eval',
           export function createRequire(filename){
             const issuer=String(filename);
             return (specifier)=>{
-              const key=issuer+'\\0'+String(specifier);
+              const key=JSON.stringify([issuer,String(specifier)]);
               const registry=globalThis.__opencontainer_prelinked_require__;
               if(!registry?.has(key))throw new Error('missing prelink '+key);
               return unwrap(registry.get(key));

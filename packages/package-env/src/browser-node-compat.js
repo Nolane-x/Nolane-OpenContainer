@@ -1508,7 +1508,7 @@ export function createRequire(filename){
     const bare=value.startsWith('node:')?value.slice(5):value;
     if(requireBuiltins.has(bare))return unwrapBuiltin(requireBuiltins.get(bare));
     const prelinked=globalThis.__opencontainer_prelinked_require__;
-    const exactKey=issuer+'\\0'+value;
+    const exactKey=JSON.stringify([issuer,value]);
     if(prelinked?.has(exactKey))return unwrapPrelinked(prelinked.get(exactKey));
     return unsupportedRequire(specifier);
   };

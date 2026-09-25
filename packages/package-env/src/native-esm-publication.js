@@ -346,7 +346,7 @@ export class NativeEsmPublicationAuthority {
     // ESM packages such as Vite may intentionally use createRequire(import.meta.url)
     // for CJS-only dependencies. Literal requires are safe to prelink: resolution
     // stays authoritative and execution remains native ESM/CJS-bridge code.
-    if (/\\bcreateRequire\\b/.test(source)) {
+    if (/\bcreateRequire\b/.test(source)) {
       const requireSpecifiers = staticCommonJsRequires(source);
       const prelinkImports = [];
       const registrations = [];
@@ -365,8 +365,8 @@ export class NativeEsmPublicationAuthority {
         const targetURL = this.#urlForResolved(resolved);
         const alias = '__oc_prelinked_require_' + prelinkIndex++;
         prelinkImports.push('import * as ' + alias + ' from ' + JSON.stringify(targetURL.href) + ';');
-        const canonicalKey = publication.path + '\\0' + specifier;
-        const urlKey = publication.url.href + '\\0' + specifier;
+        const canonicalKey = JSON.stringify([publication.path, specifier]);
+        const urlKey = JSON.stringify([publication.url.href, specifier]);
         registrations.push(
           '__oc_prelinked_require__.set(' + JSON.stringify(canonicalKey) + ',' + alias + ');' +
           '__oc_prelinked_require__.set(' + JSON.stringify(urlKey) + ',' + alias + ');'
