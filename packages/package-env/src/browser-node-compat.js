@@ -982,6 +982,31 @@ export function format(first,...args){
 }
 export function formatWithOptions(options,...args){return format(...args);}
 
+const styleCodes=Object.freeze({
+  bold:[1,22],italic:[3,23],underline:[4,24],inverse:[7,27],strikethrough:[9,29],
+  white:[37,39],grey:[90,39],gray:[90,39],black:[30,39],blue:[34,39],cyan:[36,39],green:[32,39],magenta:[35,39],red:[31,39],yellow:[33,39],
+  bgWhite:[47,49],bgGrey:[100,49],bgGray:[100,49],bgBlack:[40,49],bgBlue:[44,49],bgCyan:[46,49],bgGreen:[42,49],bgMagenta:[45,49],bgRed:[41,49],bgYellow:[43,49]
+});
+export function styleText(formatValue,text,options={}){
+  const styles=Array.isArray(formatValue)?formatValue:[formatValue];
+  if(options?.validateStream===true){
+    const stream=options.stream??globalThis.process?.stdout;
+    if(stream&&typeof stream.hasColors==='function'&&!stream.hasColors())return String(text);
+  }
+  let open='',close='';
+  for(const style of styles){
+    const codes=styleCodes[style];
+    if(!codes){
+      const error=new TypeError('Unknown style: '+String(style));
+      error.code='ERR_INVALID_ARG_VALUE';
+      throw error;
+    }
+    open+='\\u001b['+codes[0]+'m';
+    close='\\u001b['+codes[1]+'m'+close;
+  }
+  return open+String(text)+close;
+}
+
 export function promisify(original){
   if(typeof original!=='function')throw new TypeError('original must be a function');
   if(typeof original[promisifyCustom]==='function')return original[promisifyCustom];
@@ -1086,7 +1111,7 @@ export const types=Object.freeze({
 });
 export const TextEncoder=globalThis.TextEncoder;
 export const TextDecoder=globalThis.TextDecoder;
-const api={inspect,format,formatWithOptions,promisify,isDeepStrictEqual,stripVTControlCharacters,parseEnv,deprecate,inherits,callbackify,types,TextEncoder,TextDecoder};
+const api={inspect,format,formatWithOptions,styleText,promisify,isDeepStrictEqual,stripVTControlCharacters,parseEnv,deprecate,inherits,callbackify,types,TextEncoder,TextDecoder};
 export default api;
 `;
 }
