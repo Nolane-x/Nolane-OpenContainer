@@ -529,7 +529,7 @@ async function run() {
       "export const repeatedOutputFiles = thirdRun.outputs.map((entry) => entry.fileName).sort().join('|') === fourthRun.outputs.map((entry) => entry.fileName).sort().join('|');"
     ].join('\n'))
     .writeFile('src/vite-dev-probe.mjs', [
-      "import { createServer, version } from 'vite';",
+      "import { createServer, transformWithOxc, version } from 'vite';",
       "import { existsSync, readFileSync } from 'node:fs';",
       "import { dirname, resolve as pathResolve } from 'node:path';",
       "const root = '/workspace/c1-app';",
@@ -551,6 +551,12 @@ async function run() {
       "    if (!file.startsWith('/workspace/') || !existsSync(file)) return null;",
       "    if (/\\.(?:svg|png|jpe?g|gif|webp|avif|ico|woff2?|ttf|otf|wasm)$/i.test(file)) return null;",
       "    return readFileSync(file, 'utf8');",
+      "  },",
+      "  async transform(code, id) {",
+      "    const file = cleanId(id);",
+      "    if (!/\\.(?:[cm]?ts|tsx)$/i.test(file)) return null;",
+      "    const transformed = await transformWithOxc(code, file);",
+      "    return { code: transformed.code, map: transformed.map };",
       "  }",
       "};",
       "const server = await createServer({",
