@@ -409,3 +409,34 @@ test('static CommonJS cycles use an initialized export cell instead of ESM TDZ m
     await rm(root, { recursive: true, force: true });
   }
 });
+
+
+test('binary publication assets are default-deny and exact allowlisted WASM is served as raw bytes', async () => {
+  const runtime = await createRuntime();
+  const wasm = Uint8Array.from([0,97,115,109,1,0,0,0]);
+  runtime.fs.beginTransaction().writeFile('src/probe.wasm', wasm).commit();
+
+  const denied = runtime.packages.createNativeEsmPublication({
+    baseURL: 'https://example.invalid/modules/',
+    session: 'asset-denied'
+  });
+  const deniedURL = denied.moduleURL('./probe.wasm', '/workspace/src/entry.mjs');
+  await assert.rejects(
+    () => denied.response(deniedURL),
+    (error) => error.code === ErrorCodes.ESM_PUBLICATION_INVALID
+  );
+
+  const allowed = runtime.packages.createNativeEsmPublication({
+    baseURL: 'https://example.invalid/modules/',
+    session: 'asset-allowed',
+    assetAllow(path, asset) {
+      return path === '/workspace/src/probe.wasm' && asset.kind === 'wasm';
+    }
+  });
+  const allowedURL = allowed.moduleURL('./probe.wasm', '/workspace/src/entry.mjs');
+  const response = await allowed.response(allowedURL);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('content-type'), 'application/wasm');
+  assert.equal(response.headers.get('content-length'), String(wasm.byteLength));
+  assert.deepEqual(new Uint8Array(await response.arrayBuffer()), wasm);
+});

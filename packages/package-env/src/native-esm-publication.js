@@ -110,6 +110,7 @@ export class NativeEsmPublicationAuthority {
   #session;
   #builtinSource;
   #resolveOptions;
+  #assetAllow;
   #cache = new Map();
   #ready;
 
@@ -119,7 +120,8 @@ export class NativeEsmPublicationAuthority {
     baseURL = 'https://opencontainer.invalid/__opencontainer__/esm/',
     session = 'runtime-1',
     builtinSource = null,
-    resolveOptions = {}
+    resolveOptions = {},
+    assetAllow = null
   } = {}) {
     assertOc(fs && typeof fs.readFile === 'function', ErrorCodes.INVALID_ARGUMENT, 'ESM publication filesystem is required');
     assertOc(resolver && typeof resolver.resolve === 'function', ErrorCodes.INVALID_ARGUMENT, 'ESM publication resolver is required');
@@ -132,6 +134,7 @@ export class NativeEsmPublicationAuthority {
     this.#fs = fs;
     this.#resolver = resolver;
     this.#builtinSource = builtinSource;
+    this.#assetAllow = typeof assetAllow === 'function' ? assetAllow : null;
     this.#resolveOptions = Object.freeze({
       ...resolveOptions,
       conditions: resolveOptions.conditions ? Object.freeze([...resolveOptions.conditions]) : undefined,
@@ -186,7 +189,28 @@ export class NativeEsmPublicationAuthority {
   }
 
   async response(url) {
-    const receipt = await this.serve(url);
+    const publication = this.#classifyURL(url);
+    if (publication.kind === 'file' && publication.path.endsWith('.wasm')) {
+      assertOc(
+        this.#assetAllow && this.#assetAllow(publication.path, { kind: 'wasm', url: publication.url.href }) === true,
+        ErrorCodes.ESM_PUBLICATION_INVALID,
+        'Binary publication asset is not authorized',
+        { path: publication.path }
+      );
+      const bytes = this.#fs.readFile(publication.path, { encoding: null });
+      return new Response(bytes, {
+        status: 200,
+        headers: {
+          'content-type': 'application/wasm',
+          'content-length': String(bytes.byteLength),
+          'cache-control': 'no-store',
+          'x-opencontainer-generation': String(this.generation),
+          'x-opencontainer-session': this.#session
+        }
+      });
+    }
+
+    const receipt = await this.serve(publication.url);
     return new Response(receipt.source, {
       status: 200,
       headers: {

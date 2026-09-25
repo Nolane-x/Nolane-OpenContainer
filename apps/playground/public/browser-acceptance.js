@@ -306,7 +306,10 @@ async function run() {
         '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi.cjs':
           '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi-browser.js'
       }
-    }
+    },
+    assetAllow: (path, asset) =>
+      asset.kind === 'wasm' &&
+      path === '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasm32-wasi.wasm'
   });
   const viteEntryUrl = vitePublication.moduleURL('vite', '/workspace/src/vite-probe.mjs');
   const viteGraph = await vitePublication.graph(viteEntryUrl);
