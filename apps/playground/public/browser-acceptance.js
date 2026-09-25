@@ -601,7 +601,7 @@ async function run() {
       "const directTsTransformed = !directTsResult.code.includes('querySelector<HTMLDivElement>');",
       "const pluginNames = server.config.plugins.map((plugin) => plugin?.name ?? '<anonymous>').join('|');",
       "const oxcEnabled = server.config.oxc !== false;",
-      "const manualResolved = clientContainer ? await clientContainer.resolveId('/src/main.ts', undefined) : null;"
+      "const manualResolved = clientContainer ? await clientContainer.resolveId('/src/main.ts', undefined) : null;",
       "const manualResolvedId = manualResolved?.id ?? '';",
       "let manualLoadType = '';",
       "let manualLoadHasTsGeneric = null;",
