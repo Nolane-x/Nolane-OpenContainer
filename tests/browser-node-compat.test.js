@@ -382,3 +382,11 @@ test('browser node:stream provides in-memory Transform and PassThrough semantics
   assert.equal(stream.isDestroyed(upper),false);
   assert.equal(stream.getDefaultHighWaterMark(false),64*1024);
 });
+
+
+test('browser node:events preserves CommonJS EventEmitter self shape',async()=>{
+  const {bridge}=fixture();
+  const source=await bridge.builtinSource('node:events');
+  assert.match(source,/EventEmitter\.EventEmitter=EventEmitter/);
+  assert.match(source,/export const once=EventEmitter\.once/);
+});

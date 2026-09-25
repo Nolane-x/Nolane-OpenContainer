@@ -284,7 +284,16 @@ export default {Buffer,SlowBuffer};
 function eventsSource() {
   return `
 import { EventEmitter } from '/packages/package-env/src/builtins/events.js';
+EventEmitter.EventEmitter=EventEmitter;
+EventEmitter.once ??= (emitter,event)=>new Promise((resolve,reject)=>{
+  const onEvent=(...args)=>{cleanup();resolve(args);};
+  const onError=(error)=>{cleanup();reject(error);};
+  const cleanup=()=>{emitter.removeListener(event,onEvent);if(event!=='error')emitter.removeListener('error',onError);};
+  emitter.once(event,onEvent);
+  if(event!=='error')emitter.once('error',onError);
+});
 export { EventEmitter };
+export const once=EventEmitter.once;
 export default EventEmitter;
 `;
 }
