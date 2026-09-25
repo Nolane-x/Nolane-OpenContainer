@@ -346,3 +346,9 @@ test('browser global process does not impersonate Node while node:process keeps 
   assert.match(source,/versions:Object\.freeze\(\{opencontainer:'0\.1\.0-alpha\.1'\}\)/);
   assert.match(source,/globalThis\.process \?\?= globalProcess/);
 });
+
+
+test('browser guest worker installs Node global alias in the isolated guest realm',async()=>{
+  const source=await import('node:fs/promises').then(fs=>fs.readFile(new URL('../apps/playground/public/opencontainer-guest-worker.mjs',import.meta.url),'utf8'));
+  assert.match(source,/globalThis\.global \?\?= globalThis/);
+});

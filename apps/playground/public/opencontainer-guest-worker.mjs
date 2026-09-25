@@ -1,5 +1,9 @@
 import { createSyncRpcMailbox, waitSyncRpcMailbox } from '/packages/process/src/sync-rpc.js';
 
+// Node-targeted tooling frequently references the legacy global alias directly.
+// Keep it realm-local: it points at this isolated guest Worker, never the host Window.
+globalThis.global ??= globalThis;
+
 const pendingHost = new Map();
 let nextHostId = 0;
 
