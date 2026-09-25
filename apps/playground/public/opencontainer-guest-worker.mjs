@@ -86,7 +86,12 @@ self.addEventListener('message', async (event) => {
       error: {
         code: error?.code ?? 'OC_GUEST_WORKER_FAILED',
         message: error?.message ?? String(error),
-        details: error?.details
+        details: {
+          ...(error?.details && typeof error.details === 'object' ? error.details : {}),
+          guestName: error?.name,
+          guestStack: error?.stack,
+          entryURL: message.payload?.entryURL
+        }
       }
     };
   }
