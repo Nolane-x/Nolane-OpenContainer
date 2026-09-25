@@ -291,6 +291,18 @@ async function run() {
   const viteNodeChunkSource = runtime.packages.nodeModules.readFile('/workspace/node_modules/vite/dist/node/chunks/node.js');
   const picomatchSourceIndex = viteNodeChunkSource.indexOf('picomatch');
   const viteNodeChunkLines = viteNodeChunkSource.split('\n');
+  const viteCreateRequireIndex = viteNodeChunkSource.indexOf('createRequire');
+  const viteRequireDeclarationIndex = viteNodeChunkSource.indexOf('__require =');
+  stage('vite-create-require-source-shape', {
+    createRequireIndex: viteCreateRequireIndex,
+    requireDeclarationIndex: viteRequireDeclarationIndex,
+    createRequireSnippet: viteCreateRequireIndex >= 0
+      ? viteNodeChunkSource.slice(Math.max(0, viteCreateRequireIndex - 500), viteCreateRequireIndex + 900)
+      : null,
+    requireDeclarationSnippet: viteRequireDeclarationIndex >= 0
+      ? viteNodeChunkSource.slice(Math.max(0, viteRequireDeclarationIndex - 500), viteRequireDeclarationIndex + 900)
+      : null
+  });
   stage('vite-picomatch-source-shape', {
     index: picomatchSourceIndex,
     snippet: picomatchSourceIndex >= 0
