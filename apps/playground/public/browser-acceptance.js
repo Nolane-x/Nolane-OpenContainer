@@ -288,6 +288,15 @@ async function run() {
     progress: c1Progress
   });
 
+  const viteNodeChunkSource = runtime.packages.nodeModules.readFile('/workspace/node_modules/vite/dist/node/chunks/node.js');
+  const picomatchSourceIndex = viteNodeChunkSource.indexOf('picomatch');
+  stage('vite-picomatch-source-shape', {
+    index: picomatchSourceIndex,
+    snippet: picomatchSourceIndex >= 0
+      ? viteNodeChunkSource.slice(Math.max(0, picomatchSourceIndex - 500), picomatchSourceIndex + 700)
+      : null
+  });
+
   stage('vite-publication-graph-start');
   const viteNodeCompat = runtime.packages.createBrowserNodeCompat({
     cwd: '/workspace',
