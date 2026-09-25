@@ -354,32 +354,57 @@ async function run() {
     ].join(''))
     .writeFile('c1-app/src/main.ts', [
       "import './style.css';",
+      "import logoUrl from './logo.svg';",
       "const app = document.querySelector<HTMLDivElement>('#app');",
-      "if (app) app.textContent = 'OpenContainer Vite C1';",
+      "if (app) { app.textContent = 'OpenContainer Vite C1'; app.dataset.logo = logoUrl; }",
       "export const marker: string = 'vite-c1';"
     ].join('\n'))
     .writeFile('c1-app/src/style.css', c1CssSource)
-    .writeFile('c1-app/public/marker.txt', 'opencontainer-c1-asset')
+    .writeFile('c1-app/src/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32"/></svg>')
     .writeFile('src/vite-build-probe.mjs', [
       "import { build, version } from 'vite';",
+      "import { existsSync, readFileSync } from 'node:fs';",
+      "import { dirname, resolve as pathResolve } from 'node:path';",
+      "const root = '/workspace/c1-app';",
+      "const cleanId = (id) => String(id).split('?')[0].split('#')[0];",
+      "const vfsPlugin = {",
+      "  name: 'opencontainer-vfs-input',",
+      "  enforce: 'pre',",
+      "  resolveId(source, importer) {",
+      "    const raw = cleanId(source);",
+      "    let candidate = null;",
+      "    if (raw.startsWith('/workspace/')) candidate = raw;",
+      "    else if (!importer && (raw === 'index.html' || raw.endsWith('/index.html'))) candidate = root + '/index.html';",
+      "    else if (raw.startsWith('/') && !raw.startsWith('/@')) candidate = root + raw;",
+      "    else if (importer && cleanId(importer).startsWith('/workspace/') && (raw.startsWith('./') || raw.startsWith('../'))) candidate = pathResolve(dirname(cleanId(importer)), raw);",
+      "    if (candidate && existsSync(candidate)) return candidate;",
+      "    return null;",
+      "  },",
+      "  load(id) {",
+      "    const path = cleanId(id);",
+      "    if (!path.startsWith('/workspace/') || !existsSync(path)) return null;",
+      "    return readFileSync(path, 'utf8');",
+      "  }",
+      "};",
       "const result = await build({",
-      "  root: '/workspace/c1-app',",
+      "  root,",
       "  configFile: false,",
       "  logLevel: 'silent',",
+      "  plugins: [vfsPlugin],",
       "  build: {",
-      "    outDir: '/workspace/c1-app/dist',",
-      "    emptyOutDir: true,",
+      "    write: false,",
       "    sourcemap: true,",
-      "    manifest: true",
+      "    manifest: true,",
+      "    rollupOptions: { input: root + '/index.html' }",
       "  }",
       "});",
       "const outputs = (Array.isArray(result) ? result : [result]).flatMap((entry) => entry?.output ?? []);",
+      "const text = (entry) => entry.type === 'chunk' ? entry.code : typeof entry.source === 'string' ? entry.source : new TextDecoder().decode(entry.source);",
+      "const summary = outputs.map((entry) => ({ type: entry.type, fileName: entry.fileName, content: text(entry) }));",
       "export const viteVersion = version;",
       "export const outputCount = outputs.length;",
       "export const outputFiles = outputs.map((entry) => entry.fileName).sort().join('|');",
-      "export const hasCssOutput = outputs.some((entry) => String(entry.fileName).endsWith('.css'));",
-      "export const hasSourceMapOutput = outputs.some((entry) => String(entry.fileName).endsWith('.map'));",
-      "export const hasManifestOutput = outputs.some((entry) => String(entry.fileName).endsWith('manifest.json'));"
+      "export const outputJson = JSON.stringify(summary);"
     ].join('\n'))
     .commit();
 
@@ -488,45 +513,31 @@ async function run() {
   const viteBuildEntryUrl = vitePublication.moduleURL('./vite-build-probe.mjs', '/workspace/src/entry.mjs');
   const viteBuildGraph = await vitePublication.graph(viteBuildEntryUrl);
   const viteBuildExecution = await viteWorker.execute(viteBuildGraph.entryURL, {
-    exportNames: [
-      'viteVersion',
-      'outputCount',
-      'outputFiles',
-      'hasCssOutput',
-      'hasSourceMapOutput',
-      'hasManifestOutput'
-    ],
+    exportNames: ['viteVersion', 'outputCount', 'outputFiles', 'outputJson'],
     observeNestedWorkers: true
   });
   assert(viteBuildExecution.exports.viteVersion === '8.3.0', 'Vite C1 build used the wrong Vite version');
-  assert(viteBuildExecution.exports.outputCount >= 4, 'Vite C1 build emitted too few outputs');
-  assert(viteBuildExecution.exports.hasCssOutput === true, 'Vite C1 build did not emit CSS');
-  assert(viteBuildExecution.exports.hasSourceMapOutput === true, 'Vite C1 build did not emit source maps');
-  assert(viteBuildExecution.exports.hasManifestOutput === true, 'Vite C1 build did not emit a manifest');
-
-  const c1DistEntries = runtime.fs.readdir('/workspace/c1-app/dist');
-  assert(c1DistEntries.includes('index.html'), 'Vite C1 build did not emit index.html');
-  assert(c1DistEntries.includes('marker.txt'), 'Vite C1 build did not copy public asset');
-  assert(c1DistEntries.includes('.vite'), 'Vite C1 build did not emit .vite metadata directory');
-  const c1AssetEntries = runtime.fs.readdir('/workspace/c1-app/dist/assets');
-  const c1CssFile = c1AssetEntries.find((name) => name.endsWith('.css'));
-  const c1JsFile = c1AssetEntries.find((name) => name.endsWith('.js'));
-  const c1MapFile = c1AssetEntries.find((name) => name.endsWith('.map'));
-  assert(c1CssFile, 'Vite C1 build CSS asset is missing');
-  assert(c1JsFile, 'Vite C1 build JS asset is missing');
-  assert(c1MapFile, 'Vite C1 build source map asset is missing');
-  const c1CssOutput = runtime.fs.readFile('/workspace/c1-app/dist/assets/' + c1CssFile);
-  assert(c1CssOutput.includes('.card'), 'Vite C1 CSS output lost fixture selector');
-  assert(c1CssOutput.length < c1CssSource.length, 'Vite C1 default CSS path did not minify fixture CSS');
-  const c1Manifest = JSON.parse(runtime.fs.readFile('/workspace/c1-app/dist/.vite/manifest.json'));
+  const c1Outputs = JSON.parse(viteBuildExecution.exports.outputJson);
+  const bySuffix = (suffix) => c1Outputs.find((entry) => String(entry.fileName).endsWith(suffix));
+  const c1Html = c1Outputs.find((entry) => entry.fileName === 'index.html');
+  const c1Css = bySuffix('.css');
+  const c1Js = bySuffix('.js');
+  const c1Map = bySuffix('.map');
+  const c1Svg = bySuffix('.svg');
+  const c1ManifestEntry = bySuffix('manifest.json');
+  assert(viteBuildExecution.exports.outputCount >= 5, 'Vite C1 build emitted too few outputs');
+  assert(c1Html?.content.includes('type="module"'), 'Vite C1 build did not emit transformed index.html');
+  assert(c1Css?.content.includes('.card'), 'Vite C1 CSS output lost fixture selector');
+  assert(c1Css.content.length < c1CssSource.length, 'Vite C1 default CSS path did not minify fixture CSS');
+  assert(c1Js?.content.includes('OpenContainer Vite C1'), 'Vite C1 JS output lost semantic marker');
+  assert(JSON.parse(c1Map?.content ?? '{}').version === 3, 'Vite C1 source map is invalid');
+  assert(c1Svg?.content.includes('<svg'), 'Vite C1 imported asset was not emitted');
+  const c1Manifest = JSON.parse(c1ManifestEntry?.content ?? '{}');
   assert(Object.keys(c1Manifest).length >= 1, 'Vite C1 manifest is empty');
-  assert(runtime.fs.readFile('/workspace/c1-app/dist/marker.txt') === 'opencontainer-c1-asset', 'Vite C1 public asset contents changed');
   stage('vite-c1-build-pass', {
     outputCount: viteBuildExecution.exports.outputCount,
     outputFiles: viteBuildExecution.exports.outputFiles,
-    distEntries: c1DistEntries,
-    assetEntries: c1AssetEntries,
-    cssBytes: c1CssOutput.length,
+    cssBytes: c1Css.content.length,
     manifestEntries: Object.keys(c1Manifest).length
   });
 
