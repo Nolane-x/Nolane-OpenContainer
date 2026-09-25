@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MemoryVFS } from '../packages/vfs/src/index.js';
-import { OpenContainer } from '../packages/sdk/src/index.js';
 import { VirtualNodeModulesFS } from '../packages/package-env/src/virtual-node-modules.js';
 import { createBrowserNodeCompatBridge } from '../packages/package-env/src/browser-node-compat.js';
 import { ErrorCodes } from '../packages/protocol/src/index.js';
@@ -319,8 +318,7 @@ test('browser node:path exposes lexical win32 helpers without host OS access',as
 
 
 test('browser global process does not impersonate Node while node:process keeps compatibility version',async()=>{
-  const runtime=await OpenContainer.boot();
-  const bridge=createBrowserNodeCompatBridge({runtime,packageAuthority:runtime.packages});
+  const {bridge}=fixture();
   const source=await bridge.builtinSource('node:process');
   assert.match(source,/versions:Object\.freeze\(\{node:'24\.21\.0',opencontainer:/);
   assert.match(source,/const globalProcess=\{/);
