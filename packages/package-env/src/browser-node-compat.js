@@ -1565,7 +1565,45 @@ export function createBrowserNodeCompatBridge({
 
   const core = createCoreBuiltinRegistry({ fs, writableFs, cwd, env, argv, platform });
   const virtualFileDescriptors = new Map();
+  const virtualSystemFiles = new Map([
+    ['/proc/version', Object.freeze({
+      text: 'Linux version 6.6.0-opencontainer (OpenContainer browser runtime) #1 SMP\\n',
+      mode: 0o100444
+    })]
+  ]);
+  const textEncoder = new TextEncoder();
   let nextVirtualFd = 3;
+
+  const virtualSystemFile = (pathValue) => virtualSystemFiles.get(String(pathValue)) ?? null;
+
+  const readVirtualSystemFile = (pathValue, options = null) => {
+    const file = virtualSystemFile(pathValue);
+    if (!file) return null;
+    const encoding = typeof options === 'string' ? options : options?.encoding ?? null;
+    if (encoding === null || encoding === undefined) {
+      return { __opencontainerBytes: [...textEncoder.encode(file.text)] };
+    }
+    const normalizedEncoding = String(encoding).toLowerCase();
+    assertOc(
+      normalizedEncoding === 'utf8' || normalizedEncoding === 'utf-8',
+      ErrorCodes.INVALID_ARGUMENT,
+      'Virtual system files currently support UTF-8 text reads only',
+      { path: String(pathValue), encoding }
+    );
+    return file.text;
+  };
+
+  const statVirtualSystemFile = (pathValue) => {
+    const file = virtualSystemFile(pathValue);
+    if (!file) return null;
+    return {
+      size: textEncoder.encode(file.text).byteLength,
+      mode: file.mode,
+      file: true,
+      directory: false,
+      symlink: false
+    };
+  };
 
   const openVirtualFd = (pathValue, flags = 'r') => {
     const normalizedFlags = typeof flags === 'number' ? flags : String(flags ?? 'r');
@@ -1576,8 +1614,10 @@ export function createBrowserNodeCompatBridge({
       'Browser virtual file descriptors currently support read-only opens only',
       { flags: normalizedFlags }
     );
-    const stat = core.fs.statSync(pathValue);
-    assertOc(!stat.isDirectory(), ErrorCodes.INVALID_ARGUMENT, 'Cannot open a directory as a browser virtual file descriptor', {
+    const systemStat = statVirtualSystemFile(pathValue);
+    const stat = systemStat ?? core.fs.statSync(pathValue);
+    const isDirectory = systemStat ? systemStat.directory : stat.isDirectory();
+    assertOc(!isDirectory, ErrorCodes.INVALID_ARGUMENT, 'Cannot open a directory as a browser virtual file descriptor', {
       path: String(pathValue)
     });
     const fd = nextVirtualFd++;
@@ -1748,6 +1788,20 @@ export function createBrowserNodeCompatBridge({
       const name = method.slice('node.fs.'.length);
       if (name === 'openSync') return openVirtualFd(payload.path, payload.flags);
       if (name === 'closeSync') return closeVirtualFd(payload.fd);
+
+      const systemFile = virtualSystemFile(payload.path);
+      if (systemFile) {
+        if (name === 'existsSync') return true;
+        if (name === 'accessSync') return undefined;
+        if (name === 'readFileSync') return readVirtualSystemFile(payload.path, payload.options);
+        if (name === 'statSync' || name === 'lstatSync') return statVirtualSystemFile(payload.path);
+        if (name === 'realpathSync') return String(payload.path);
+        throw ocError(
+          ErrorCodes.BUILTIN_UNAVAILABLE,
+          'Virtual system file operation is read-only and not promoted',
+          { method, path: String(payload.path) }
+        );
+      }
 
       const fn = core.fs[name];
       if (typeof fn !== 'function') throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Filesystem builtin method is unavailable', { method });
