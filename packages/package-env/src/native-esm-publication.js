@@ -341,7 +341,57 @@ export class NativeEsmPublicationAuthority {
       });
     }
 
-    const transformed = applyReplacements(source, replacements);
+    let transformed = applyReplacements(source, replacements);
+
+    // ESM packages such as Vite may intentionally use createRequire(import.meta.url)
+    // for CJS-only dependencies. Literal requires are safe to prelink: resolution
+    // stays authoritative and execution remains native ESM/CJS-bridge code.
+    if (/\\bcreateRequire\\b/.test(source)) {
+      const requireSpecifiers = staticCommonJsRequires(source);
+      const prelinkImports = [];
+      const registrations = [];
+      let prelinkIndex = 0;
+
+      for (const specifier of requireSpecifiers) {
+        let resolved;
+        try {
+          resolved = this.#resolver.resolve(specifier, publication.path, { ...this.#resolveOptions, mode: 'cjs' });
+        } catch (error) {
+          if (error?.code === ErrorCodes.MODULE_NOT_FOUND) continue;
+          throw error;
+        }
+        if (resolved.kind === 'builtin') continue;
+
+        const targetURL = this.#urlForResolved(resolved);
+        const alias = '__oc_prelinked_require_' + prelinkIndex++;
+        prelinkImports.push('import * as ' + alias + ' from ' + JSON.stringify(targetURL.href) + ';');
+        const canonicalKey = publication.path + '\\0' + specifier;
+        const urlKey = publication.url.href + '\\0' + specifier;
+        registrations.push(
+          '__oc_prelinked_require__.set(' + JSON.stringify(canonicalKey) + ',' + alias + ');' +
+          '__oc_prelinked_require__.set(' + JSON.stringify(urlKey) + ',' + alias + ');'
+        );
+        dependencies.push(Object.freeze({
+          specifier,
+          url: targetURL.href,
+          dynamic: false,
+          kind: resolved.kind,
+          format: resolved.format,
+          commonjs: true,
+          prelinkedRequire: true
+        }));
+      }
+
+      if (prelinkImports.length) {
+        transformed = [
+          ...prelinkImports,
+          'const __oc_prelinked_require__=globalThis.__opencontainer_prelinked_require__??=new Map();',
+          ...registrations,
+          transformed
+        ].join('\\n');
+      }
+    }
+
     return Object.freeze({
       kind: 'file',
       url: publication.url.href,

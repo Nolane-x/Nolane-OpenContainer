@@ -1492,12 +1492,24 @@ function unsupportedRequire(specifier){
   error.code='OC_REQUIRE_ESM_UNSUPPORTED';
   throw error;
 }
+function unwrapPrelinked(namespace){
+  if(namespace&&Object.prototype.hasOwnProperty.call(namespace,'__opencontainer_cjs_cell')){
+    const cell=namespace.__opencontainer_cjs_cell;
+    return Object.prototype.hasOwnProperty.call(cell,'current')?cell.current:cell;
+  }
+  if(namespace&&Object.prototype.hasOwnProperty.call(namespace,'__opencontainer_cjs_exports'))return namespace.__opencontainer_cjs_exports;
+  if(namespace&&Object.prototype.hasOwnProperty.call(namespace,'default'))return namespace.default;
+  return namespace;
+}
 export function createRequire(filename){
   const issuer=String(filename);
   const require=(specifier)=>{
     const value=String(specifier);
     const bare=value.startsWith('node:')?value.slice(5):value;
     if(requireBuiltins.has(bare))return unwrapBuiltin(requireBuiltins.get(bare));
+    const prelinked=globalThis.__opencontainer_prelinked_require__;
+    const exactKey=issuer+'\\0'+value;
+    if(prelinked?.has(exactKey))return unwrapPrelinked(prelinked.get(exactKey));
     return unsupportedRequire(specifier);
   };
   require.resolve=(specifier)=>globalThis.__opencontainer_sync_host_call__('node.module.resolve',{

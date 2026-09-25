@@ -440,3 +440,64 @@ test('binary publication assets are default-deny and exact allowlisted WASM is s
   assert.equal(response.headers.get('content-length'), String(wasm.byteLength));
   assert.deepEqual(new Uint8Array(await response.arrayBuffer()), wasm);
 });
+
+
+test('ESM createRequire literal package edges are prelinked without guest eval', async () => {
+  const runtime = await createRuntime();
+  runtime.packages.mountCatalog({
+    packages: [{
+      location: 'node_modules/prelinked-cjs',
+      packageJson: { name: 'prelinked-cjs', type: 'commonjs', main: './index.js' },
+      files: { 'index.js': 'module.exports={value:41};' }
+    }]
+  });
+  runtime.mount({
+    'src/prelinked-entry.mjs': `
+      import { createRequire } from 'node:module';
+      const require = createRequire(import.meta.url);
+      const dep = require('prelinked-cjs');
+      export const result = dep.value + 1;
+    `
+  });
+
+  const root = mkdtempSync(join(tmpdir(), 'oc-esm-create-require-'));
+  try {
+    const authority = runtime.packages.createNativeEsmPublication({
+      baseURL: pathToFileURL(root + '/').href,
+      session: 'esm-create-require',
+      builtinSource(specifier) {
+        if (specifier !== 'node:module') throw new Error('unexpected builtin '+specifier);
+        return `
+          function unwrap(ns){
+            if(ns&&Object.prototype.hasOwnProperty.call(ns,'__opencontainer_cjs_cell')){
+              const cell=ns.__opencontainer_cjs_cell;
+              return Object.prototype.hasOwnProperty.call(cell,'current')?cell.current:cell;
+            }
+            if(ns&&Object.prototype.hasOwnProperty.call(ns,'__opencontainer_cjs_exports'))return ns.__opencontainer_cjs_exports;
+            return ns?.default ?? ns;
+          }
+          export function createRequire(filename){
+            const issuer=String(filename);
+            return (specifier)=>{
+              const key=issuer+'\\0'+String(specifier);
+              const registry=globalThis.__opencontainer_prelinked_require__;
+              if(!registry?.has(key))throw new Error('missing prelink '+key);
+              return unwrap(registry.get(key));
+            };
+          }
+        `;
+      }
+    });
+    const entryURL = authority.moduleURL('./prelinked-entry.mjs', '/workspace/src/bootstrap.mjs');
+    const graph = await authority.graph(entryURL);
+    const entry = graph.modules.find((module) => module.path === '/workspace/src/prelinked-entry.mjs');
+    assert.ok(entry.dependencies.some((dependency) => dependency.specifier === 'prelinked-cjs' && dependency.prelinkedRequire === true));
+    assert.match(entry.source, /__opencontainer_prelinked_require__/);
+    assert.match(entry.source, /prelinked-cjs/);
+    await materializeGraph(graph);
+    const namespace = await import(entryURL.href + '?oracle=' + Date.now());
+    assert.equal(namespace.result, 42);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
