@@ -1546,6 +1546,10 @@ Module.createRequire=createRequire;
 Module.createRequireFromPath=createRequire;
 Module.syncBuiltinESMExports=syncBuiltinESMExports;
 Module.Module=Module;
+// CommonJS consumers legitimately use require('module') / require('node:module')
+// to reach createRequire and builtin metadata. Keep this self-reference inside the
+// synthetic builtin registry instead of widening synchronous require to packages.
+requireBuiltins.set('module',Module);
 export { Module };
 export default Module;
 `;
