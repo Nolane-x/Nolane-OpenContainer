@@ -325,6 +325,10 @@ async function run() {
   const viteLexerMarkerIndex = viteNodeChunkSource.indexOf('es-module-lexer');
   const viteParseImportsIndex = viteNodeChunkSource.indexOf('parseImports');
   const viteWebAssemblyCompileIndex = viteNodeChunkSource.indexOf('WebAssembly.compile');
+  const viteUtf16LexerIndex = viteNodeChunkSource.indexOf('utf16le');
+  const viteBufferLexerIndex = viteUtf16LexerIndex >= 0
+    ? viteNodeChunkSource.lastIndexOf('Buffer', viteUtf16LexerIndex)
+    : -1;
   stage('vite-import-analysis-source-shape', {
     errorIndex: viteImportAnalysisErrorIndex,
     errorSnippet: viteImportAnalysisErrorIndex >= 0
@@ -341,6 +345,14 @@ async function run() {
     webAssemblyCompileIndex: viteWebAssemblyCompileIndex,
     webAssemblyCompileSnippet: viteWebAssemblyCompileIndex >= 0
       ? viteNodeChunkSource.slice(Math.max(0, viteWebAssemblyCompileIndex - 1600), viteWebAssemblyCompileIndex + 2400)
+      : null,
+    utf16LexerIndex: viteUtf16LexerIndex,
+    utf16LexerSnippet: viteUtf16LexerIndex >= 0
+      ? viteNodeChunkSource.slice(Math.max(0, viteUtf16LexerIndex - 2200), viteUtf16LexerIndex + 2200)
+      : null,
+    bufferLexerIndex: viteBufferLexerIndex,
+    bufferLexerSnippet: viteBufferLexerIndex >= 0
+      ? viteNodeChunkSource.slice(Math.max(0, viteBufferLexerIndex - 800), viteBufferLexerIndex + 1600)
       : null,
     importAnalysisLines: viteNodeChunkLines.slice(25970, 26045).join('\n')
   });
