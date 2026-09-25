@@ -168,18 +168,38 @@ async function terminateChild(child, timeoutMs = 3000) {
   });
 }
 
-async function readAcceptanceState(cdp) {
-  const evaluated = await cdp.command('Runtime.evaluate', {
-    expression: `(() => ({
-      status: document.body?.dataset?.status ?? null,
-      stage: document.body?.dataset?.stage ?? null,
-      result: document.getElementById('result')?.textContent ?? null,
-      html: document.documentElement?.outerHTML ?? null
-    }))()`,
-    returnByValue: true,
-    awaitPromise: true
-  });
-  return evaluated.result?.value ?? {};
+function isTransientExecutionContextError(error) {
+  const message = String(error?.message ?? error);
+  return [
+    'Cannot find default execution context',
+    'Execution context was destroyed',
+    'Cannot find context with specified id',
+    'Inspected target navigated or closed'
+  ].some((needle) => message.includes(needle));
+}
+
+async function readAcceptanceState(cdp, { retries = 60, retryDelayMs = 50 } = {}) {
+  let lastError = null;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      const evaluated = await cdp.command('Runtime.evaluate', {
+        expression: `(() => ({
+          status: document.body?.dataset?.status ?? null,
+          stage: document.body?.dataset?.stage ?? null,
+          result: document.getElementById('result')?.textContent ?? null,
+          html: document.documentElement?.outerHTML ?? null
+        }))()`,
+        returnByValue: true,
+        awaitPromise: true
+      });
+      return evaluated.result?.value ?? {};
+    } catch (error) {
+      if (!isTransientExecutionContextError(error) || attempt === retries) throw error;
+      lastError = error;
+      await delay(retryDelayMs);
+    }
+  }
+  throw lastError ?? new Error('Chrome execution context did not become available');
 }
 
 async function waitForAcceptance(cdp, timeoutMs = 30000) {
