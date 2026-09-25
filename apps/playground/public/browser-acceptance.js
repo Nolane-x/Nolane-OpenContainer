@@ -658,13 +658,12 @@ async function run() {
     builtinSource: viteNodeCompat.builtinSource,
     resolveOptions: {
       conditions: ['browser', 'import', 'default'],
-      packageAliases: {
-        rolldown: '@rolldown/browser',
-        'es-module-lexer': 'es-module-lexer/minimal/js'
-      },
+      packageAliases: { rolldown: '@rolldown/browser' },
       pathAliases: {
         '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi.cjs':
-          '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi-browser.js'
+          '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi-browser.js',
+        '/workspace/node_modules/es-module-lexer/dist/lexer.js':
+          '/workspace/node_modules/es-module-lexer/dist/lexer.minimal.asm.js'
       }
     },
     assetAllow: (path, asset) =>
