@@ -226,14 +226,11 @@ test('browser readline and process stdio stay non-interactive',async()=>{
 
 test('browser HTTP family exposes metadata but never opens host sockets',async()=>{
   const {bridge}=fixture();
-  const eventsSource=await bridge.builtinSource('node:events');
   const encode=(source)=>'data:text/javascript;base64,'+Buffer.from(source).toString('base64');
   const importSynthetic=async(specifier)=>{
     let source=await bridge.builtinSource(specifier);
-    source=source.replaceAll("from 'node:events'","from '"+encode(eventsSource)+"'");
     if(specifier==='node:https'){
-      let http=await bridge.builtinSource('node:http');
-      http=http.replaceAll("from 'node:events'","from '"+encode(eventsSource)+"'");
+      const http=await bridge.builtinSource('node:http');
       source=source.replace("from 'node:http'","from '"+encode(http)+"'");
     }
     return import(encode(source)+'#'+encodeURIComponent(specifier)+Date.now());
