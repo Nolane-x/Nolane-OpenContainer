@@ -291,6 +291,28 @@ async function run() {
     entry: viteGraph.entryURL
   });
 
+  stage('vite-module-execution-start');
+  const viteBridge = new BrowserEsmServiceWorkerBridge({ publication: vitePublication });
+  await viteBridge.start();
+  const viteWorker = new BrowserGuestWorkerAuthority({
+    publication: vitePublication,
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: viteNodeCompat.syncRequestHandler,
+    requestTimeoutMs: 15000
+  });
+  viteWorker.start();
+  const viteExecution = await viteWorker.execute(viteGraph.entryURL, {
+    exportNames: ['version']
+  });
+  assert(viteExecution.workerCrossOriginIsolated === true, 'Vite guest worker is not cross-origin isolated');
+  assert(viteExecution.exports.version === '8.3.0', 'Vite module execution returned the wrong version');
+  stage('vite-module-execution-pass', {
+    version: viteExecution.exports.version,
+    workerCrossOriginIsolated: viteExecution.workerCrossOriginIsolated
+  });
+  viteWorker.close();
+  viteBridge.close();
+
   await runtime.terminate();
 
   return {
@@ -305,6 +327,7 @@ async function run() {
     browserPackageInstall: true,
     viteClosureInstall: true,
     vitePublicationGraph: true,
+    viteModuleExecution: true,
     stages
   };
 }
