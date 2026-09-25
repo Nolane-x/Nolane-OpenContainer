@@ -583,6 +583,9 @@ async function run() {
       "export const viteClientServed = clientCode.includes('createHotContext') || clientCode.includes('HotContext');",
       "export const clientBytes = clientCode.length;",
       "export const tsBytes = tsCode.length;",
+      "export const html = html;",
+      "export const tsCode = tsCode;",
+      "export const clientCode = clientCode;",
       "export const closeSucceeded = closed;"
     ].join('\n'))
     .commit();
