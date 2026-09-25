@@ -414,8 +414,7 @@ async function run() {
       "import { memfs } from 'rolldown/experimental';",
       "import { existsSync, readFileSync, writeFileSync } from 'node:fs';",
       "import { dirname, resolve as pathResolve } from 'node:path';",
-      "import { init as initLexerV3, parse as parseLexerV3 } from 'es-module-lexer/minimal/js';",
-      "await initLexerV3();",
+      "import { parseAst } from 'rolldown/parseAst';",
       "const root = '/workspace/c1-app';",
       "const configPath = root + '/vite.config.ts';",
       "const mirrorConfig = () => {",
@@ -577,8 +576,8 @@ async function run() {
       "});",
       "let preImportAnalysisCode = '';",
       "let preImportAnalysisBytes = 0;",
-      "let preImportAnalysisV3Parsed = false;",
-      "let preImportAnalysisV3Error = '';",
+      "let preImportAnalysisAstParsed = false;",
+      "let preImportAnalysisAstError = '';",
       "const importAnalysisPlugin = server.config.plugins.find((plugin) => plugin?.name === 'vite:import-analysis');",
       "const importAnalysisHook = importAnalysisPlugin?.transform;",
       "if (importAnalysisPlugin && importAnalysisHook) {",
@@ -587,8 +586,8 @@ async function run() {
       "    if (cleanId(id) === root + '/src/main.ts') {",
       "      preImportAnalysisCode = String(code);",
       "      preImportAnalysisBytes = preImportAnalysisCode.length;",
-      "      try { parseLexerV3(preImportAnalysisCode); preImportAnalysisV3Parsed = true; }",
-      "      catch (error) { preImportAnalysisV3Error = error?.stack ?? String(error); }",
+      "      try { parseAst(preImportAnalysisCode); preImportAnalysisAstParsed = true; }",
+      "      catch (error) { preImportAnalysisAstError = error?.stack ?? String(error); }"
       "    }",
       "    return originalHandler.call(this, code, id, options);",
       "  };",
@@ -662,12 +661,7 @@ async function run() {
       "export const tsBytes = tsCode.length;",
       "export { html, tsCode, clientCode };",
       "export const closeSucceeded = closed;",
-      "export { devErrorPhase, devErrorMessage, pluginNames, oxcEnabled, directTsTransformed, vfsTrace, manualResolvedId, manualLoadType, manualLoadHasTsGeneric, manualLoadBytes, manualTransformError, manualTransformPlugin, manualTransformId, manualTransformFrame, preImportAnalysisCode, preImportAnalysisBytes, preImportAnalysisV3Parsed, preImportAnalysisV3Error };"
-    ].join('\n'))
-    .writeFile('src/vite-es-module-lexer-v2-compat.mjs', [
-      "import { init as initV3, parse } from 'es-module-lexer/minimal/js';",
-      "export const init = initV3();",
-      "export { parse };"
+      "export { devErrorPhase, devErrorMessage, pluginNames, oxcEnabled, directTsTransformed, vfsTrace, manualResolvedId, manualLoadType, manualLoadHasTsGeneric, manualLoadBytes, manualTransformError, manualTransformPlugin, manualTransformId, manualTransformFrame, preImportAnalysisCode, preImportAnalysisBytes, preImportAnalysisAstParsed, preImportAnalysisAstError };"
     ].join('\n'))
     .commit();
 
@@ -689,9 +683,7 @@ async function run() {
       packageAliases: { rolldown: '@rolldown/browser' },
       pathAliases: {
         '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi.cjs':
-          '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi-browser.js',
-        '/workspace/node_modules/es-module-lexer/dist/lexer.js':
-          '/workspace/src/vite-es-module-lexer-v2-compat.mjs'
+          '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi-browser.js'
       }
     },
     assetAllow: (path, asset) =>
@@ -928,8 +920,8 @@ async function run() {
       'manualTransformFrame',
       'preImportAnalysisCode',
       'preImportAnalysisBytes',
-      'preImportAnalysisV3Parsed',
-      'preImportAnalysisV3Error'
+      'preImportAnalysisAstParsed',
+      'preImportAnalysisAstError'
     ],
     observeNestedWorkers: true
   });
@@ -950,8 +942,8 @@ async function run() {
     manualTransformFrame: viteDevExecution.exports.manualTransformFrame,
     preImportAnalysisCode: viteDevExecution.exports.preImportAnalysisCode,
     preImportAnalysisBytes: viteDevExecution.exports.preImportAnalysisBytes,
-    preImportAnalysisV3Parsed: viteDevExecution.exports.preImportAnalysisV3Parsed,
-    preImportAnalysisV3Error: viteDevExecution.exports.preImportAnalysisV3Error
+    preImportAnalysisAstParsed: viteDevExecution.exports.preImportAnalysisAstParsed,
+    preImportAnalysisAstError: viteDevExecution.exports.preImportAnalysisAstError
   });
   assert(!viteDevExecution.exports.devErrorPhase, 'Vite C2 dev transform failed at ' + viteDevExecution.exports.devErrorPhase + ': ' + viteDevExecution.exports.devErrorMessage);
   assert(viteDevExecution.exports.viteVersion === '8.3.0', 'Vite C2 dev server used the wrong version');
