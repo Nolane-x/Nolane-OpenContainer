@@ -39,7 +39,7 @@ test('browser Node compat path and process share logical cwd',async()=>{
 
 test('browser Node compat exposes promoted native ESM builtin sources',async()=>{
   const {bridge}=fixture();
-  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process','node:dns','node:dns/promises','node:os','node:net','node:tty','node:assert','node:assert/strict','node:v8','node:timers','node:timers/promises','node:readline','node:http','node:https','node:http2','node:tls']){
+  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process','node:dns','node:dns/promises','node:os','node:net','node:tty','node:assert','node:assert/strict','node:v8','node:timers','node:timers/promises','node:readline','node:http','node:https','node:http2','node:tls','node:querystring']){
     const source=await bridge.builtinSource(specifier);
     assert.equal(typeof source,'string');
     assert.ok(source.length>20);
@@ -245,4 +245,16 @@ test('browser HTTP family exposes metadata but never opens host sockets',async()
   assert.throws(()=>http2.connect('https://example.com'),error=>error?.code==='OC_BUILTIN_UNAVAILABLE');
   const tls=await importSynthetic('node:tls');
   assert.throws(()=>tls.connect(443,'example.com'),error=>error?.code==='OC_BUILTIN_UNAVAILABLE');
+});
+
+
+test('browser node:querystring preserves repeated keys and form decoding',async()=>{
+  const {bridge}=fixture();
+  let source=await bridge.builtinSource('node:querystring');
+  const bufferSource=await bridge.builtinSource('node:buffer');
+  source=source.replace("from 'node:buffer'","from 'data:text/javascript;base64,"+Buffer.from(bufferSource).toString('base64')+"'");
+  const qs=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64')+'#'+Date.now());
+  assert.deepEqual({...qs.parse('a=1&a=2&hello=hello+world')},{a:['1','2'],hello:'hello world'});
+  assert.equal(qs.stringify({a:['1','2'],hello:'hello world'}),'a=1&a=2&hello=hello%20world');
+  assert.equal(qs.unescape('a%2Fb'),'a/b');
 });

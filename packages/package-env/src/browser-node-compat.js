@@ -350,6 +350,70 @@ export default api;
 `;
 }
 
+function querystringSource() {
+  return `
+import { Buffer } from 'node:buffer';
+function primitive(value){
+  if(value===null||value===undefined)return '';
+  if(typeof value==='string'||typeof value==='number'||typeof value==='bigint'||typeof value==='boolean')return String(value);
+  return '';
+}
+export function escape(value){
+  return encodeURIComponent(primitive(value)).replace(/[!'()*]/g,(ch)=>'%'+ch.charCodeAt(0).toString(16).toUpperCase());
+}
+export function unescape(value){
+  const text=String(value).replace(/\\+/g,' ');
+  try{return decodeURIComponent(text);}catch{
+    try{return decodeURIComponent(text.replace(/%(?![0-9A-Fa-f]{2})/g,'%25'));}catch{return text;}
+  }
+}
+export function unescapeBuffer(value,decodeSpaces=false){
+  const text=decodeSpaces?String(value).replace(/\\+/g,' '):String(value);
+  return Buffer.from(unescape(text));
+}
+function append(target,key,value){
+  if(!Object.prototype.hasOwnProperty.call(target,key)){target[key]=value;return;}
+  if(Array.isArray(target[key]))target[key].push(value);
+  else target[key]=[target[key],value];
+}
+export function parse(input,sep='&',eq='=',options={}){
+  const result=Object.create(null);
+  const text=String(input??'');
+  if(!text)return result;
+  const maxKeys=options?.maxKeys===undefined?1000:Number(options.maxKeys);
+  let count=0;
+  for(const part of text.split(sep)){
+    if(maxKeys>0&&count>=maxKeys)break;
+    count+=1;
+    const index=part.indexOf(eq);
+    const rawKey=index<0?part:part.slice(0,index);
+    const rawValue=index<0?'':part.slice(index+eq.length);
+    append(result,unescape(rawKey),unescape(rawValue));
+  }
+  return result;
+}
+export const decode=parse;
+export function stringify(object,sep='&',eq='=',options={}){
+  if(object===null||typeof object!=='object')return '';
+  const encode=typeof options?.encodeURIComponent==='function'?options.encodeURIComponent:escape;
+  const parts=[];
+  for(const key of Object.keys(object)){
+    const value=object[key];
+    const encodedKey=encode(key);
+    if(Array.isArray(value)){
+      for(const entry of value)parts.push(encodedKey+eq+encode(primitive(entry)));
+    }else{
+      parts.push(encodedKey+eq+encode(primitive(value)));
+    }
+  }
+  return parts.join(sep);
+}
+export const encode=stringify;
+const api={escape,unescape,unescapeBuffer,parse,decode,stringify,encode};
+export default api;
+`;
+}
+
 function httpSource() {
   return `
 import { EventEmitter } from 'node:events';
@@ -1097,6 +1161,7 @@ export function createBrowserNodeCompatBridge({
       case 'node:https': return httpsSource();
       case 'node:http2': return http2Source();
       case 'node:tls': return tlsSource();
+      case 'node:querystring': return querystringSource();
       default:
         throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Native browser ESM builtin is not implemented', { specifier });
     }
