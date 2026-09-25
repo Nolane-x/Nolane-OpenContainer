@@ -683,7 +683,18 @@ async function run() {
   const viteBuildEntryUrl = vitePublication.moduleURL('./vite-build-probe.mjs', '/workspace/src/entry.mjs');
   const viteBuildGraph = await vitePublication.graph(viteBuildEntryUrl);
   const viteBuildExecution = await viteWorker.execute(viteBuildGraph.entryURL, {
-    exportNames: ['viteVersion', 'outputCount', 'outputFiles', 'outputJson'],
+    exportNames: [
+      'viteVersion',
+      'outputCount',
+      'outputFiles',
+      'outputJson',
+      'sourceEditObserved',
+      'configReloadObserved',
+      'expectedBuildFailureObserved',
+      'sourceUnchangedAfterFailure',
+      'deterministicManifest',
+      'repeatedOutputFiles'
+    ],
     observeNestedWorkers: true
   });
   assert(viteBuildExecution.exports.viteVersion === '8.3.0', 'Vite C1 build used the wrong Vite version');
@@ -720,12 +731,22 @@ async function run() {
   assert(c1Svg?.content.includes('<svg'), 'Vite C1 imported asset was not emitted');
   const c1Manifest = JSON.parse(c1ManifestEntry?.content ?? '{}');
   assert(Object.keys(c1Manifest).length >= 1, 'Vite C1 manifest is empty');
+  assert(viteBuildExecution.exports.sourceEditObserved === true, 'Vite C1 second build did not observe source edit');
+  assert(viteBuildExecution.exports.configReloadObserved === true, 'Vite C1 did not re-read edited TypeScript config');
+  assert(viteBuildExecution.exports.expectedBuildFailureObserved === true, 'Vite C1 failure atomicity probe did not fail as expected');
+  assert(viteBuildExecution.exports.sourceUnchangedAfterFailure === true, 'Vite C1 failed build mutated canonical source');
+  assert(viteBuildExecution.exports.deterministicManifest === true, 'Vite C1 normalized manifest changed across identical builds');
+  assert(viteBuildExecution.exports.repeatedOutputFiles === true, 'Vite C1 output filenames changed across identical builds');
   stage('vite-c1-build-pass', {
     outputCount: viteBuildExecution.exports.outputCount,
     outputFiles: viteBuildExecution.exports.outputFiles,
     cssBytes: c1Css.content.length,
     manifestEntries: Object.keys(c1Manifest).length,
-    configPlugin: 'v1'
+    configPlugin: 'v1->v2',
+    sourceRebuild: viteBuildExecution.exports.sourceEditObserved,
+    configReload: viteBuildExecution.exports.configReloadObserved,
+    failureAtomicity: viteBuildExecution.exports.sourceUnchangedAfterFailure,
+    deterministicManifest: viteBuildExecution.exports.deterministicManifest
   });
 
   viteWorker.close();
