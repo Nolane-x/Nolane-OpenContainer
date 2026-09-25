@@ -448,7 +448,7 @@ test('native ESM publication can append an explicit bootstrap epilogue without m
     'src/bootstrap-entry.mjs': [
       'let ready = false;',
       'async function init(){ ready = true; }',
-      'export const value = ready ? 1 : 0;'
+      'export { ready };'
     ].join('\n')
   });
 
@@ -465,7 +465,7 @@ test('native ESM publication can append an explicit bootstrap epilogue without m
     assert.equal(runtime.fs.readFile('/workspace/src/bootstrap-entry.mjs').startsWith('await init();'), false);
     await materializeGraph(await authority.graph(entryURL));
     const namespace = await import(entryURL.href + '?oracle=' + Date.now());
-    assert.equal(namespace.value, 1);
+    assert.equal(namespace.ready, true);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
