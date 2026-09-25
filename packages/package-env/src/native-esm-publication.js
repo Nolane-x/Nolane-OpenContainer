@@ -91,8 +91,13 @@ function skipCreateRequireTrivia(source, start) {
 
 function isCreateRequireInitializer(source, start) {
   const index = skipCreateRequireTrivia(source, start);
-  const sample = source.slice(index, index + 160);
-  return /^(?:[A-Za-z_$][\w$]*\s*\.\s*)?createRequire[A-Za-z0-9_$]*\s*\(/.test(sample);
+  const sample = source.slice(index, index + 256);
+  const createRequire = '(?:[A-Za-z_$][\\w$]*\\s*\\.\\s*)?createRequire[A-Za-z0-9_$]*';
+  if (new RegExp('^' + createRequire + '\\s*\\(').test(sample)) return true;
+  return new RegExp(
+    '^\\(\\s*\\(\\s*\\)\\s*=>\\s*' + createRequire +
+    '\\s*\\([^)]*\\)\\s*\\)\\s*\\(\\s*\\)'
+  ).test(sample);
 }
 
 function staticCreateRequireSpecifiers(source) {

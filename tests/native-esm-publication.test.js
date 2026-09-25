@@ -454,7 +454,7 @@ test('ESM createRequire literal package edges are prelinked without guest eval',
   runtime.mount({
     'src/prelinked-entry.mjs': `
       import { createRequire } from 'node:module';
-      const __require = /* @__PURE__ */ createRequire(import.meta.url);
+      var __require = /* #__PURE__ */ (() => createRequire(import.meta.url))();
       const dep = __require('prelinked-cjs');
       export const result = dep.value + 1;
     `
