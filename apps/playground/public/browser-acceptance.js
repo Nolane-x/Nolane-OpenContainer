@@ -915,7 +915,30 @@ async function run() {
     clientBytes: c2ClientBody.length,
     gracefulClose: viteDevExecution.exports.closeSucceeded
   });
-  runtime.preview.revoke(5173, { owner: c2Owner });
+
+  const c2RestartOwner = 'vite-c2-session-2';
+  const c2RestartRoute = runtime.listen(5173, () =>
+    new Response('restart-ok', { headers: { 'content-type': 'text/plain; charset=utf-8' } }),
+  { owner: c2RestartOwner });
+  let c2StaleRejected = false;
+  try {
+    await runtime.preview.dispatch(5173, { url: '/' }, c2Route);
+  } catch (error) {
+    c2StaleRejected = error?.code === 'OC_PREVIEW_STALE';
+  }
+  assert(c2RestartRoute.epoch > c2Route.epoch, 'Vite C2 restart did not advance preview epoch');
+  assert(c2StaleRejected, 'Vite C2 stale preview receipt was not rejected after restart');
+  const c2RestartResponse = await runtime.preview.dispatch(5173, { url: '/' }, c2RestartRoute);
+  assert(c2RestartResponse.status === 200 && await c2RestartResponse.text() === 'restart-ok', 'Vite C2 restarted route is not authoritative');
+  stage('vite-c2-restart-pass', {
+    port: c2RestartRoute.port,
+    oldOwner: c2Route.owner,
+    newOwner: c2RestartRoute.owner,
+    oldEpoch: c2Route.epoch,
+    newEpoch: c2RestartRoute.epoch,
+    staleRejected: c2StaleRejected
+  });
+  runtime.preview.revoke(5173, { owner: c2RestartOwner });
 
   viteWorker.close();
   viteBridge.close();
@@ -939,6 +962,7 @@ async function run() {
     viteC1Build: true,
     viteC2DevServer: true,
     viteC2VirtualHttp: true,
+    viteC2RestartEpoch: true,
     stages
   };
 }
