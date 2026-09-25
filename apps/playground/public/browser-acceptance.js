@@ -381,16 +381,20 @@ async function run() {
     .writeFile('c1-app/src/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32"/></svg>')
     .writeFile('src/lightningcss-probe.mjs', [
       "import { transform } from 'lightningcss';",
+      "const text = '.card { color: rgb(255, 0, 0); margin: 0px 0px 0px 0px; }';",
+      "const code = new TextEncoder().encode(text);",
+      "const css = new TextDecoder().decode(transform({ filename: 'style.css', code, minify: true }).code);",
+      "export { css };"
+    ].join('\n'))
+    .writeFile('src/lightningcss-buffer-probe.mjs', [
+      "import { transform } from 'lightningcss';",
       "import { Buffer } from 'node:buffer';",
       "const text = '.card { color: rgb(255, 0, 0); margin: 0px 0px 0px 0px; }';",
-      "const encoded = new TextEncoder().encode(text);",
-      "const buffered = Buffer.from(text);",
-      "const decoder = new TextDecoder();",
-      "const css = decoder.decode(transform({ filename: 'style.css', code: encoded, minify: true }).code);",
-      "const cssViaBuffer = decoder.decode(transform({ filename: 'style.css', code: buffered, minify: true }).code);",
-      "export { css, cssViaBuffer };",
-      "export const bufferLength = buffered.byteLength;",
-      "export const bufferPrefix = Array.from(buffered.slice(0, 12)).join(',');"
+      "const code = Buffer.from(text);",
+      "const css = new TextDecoder().decode(transform({ filename: 'style.css', code, minify: true }).code);",
+      "export { css };",
+      "export const bufferLength = code.byteLength;",
+      "export const bufferPrefix = Array.from(code.slice(0, 12)).join(',');"
     ].join('\n'))
     .writeFile('src/vite-build-probe.mjs', [
       "import { build, version } from 'vite';",
@@ -527,21 +531,37 @@ async function run() {
   lightningCssProbe.start();
   const lightningCssDirect = await lightningCssProbe.execute(
     vitePublication.moduleURL('./lightningcss-probe.mjs', '/workspace/src/entry.mjs').href,
-    { exportNames: ['css', 'cssViaBuffer', 'bufferLength', 'bufferPrefix'] }
+    { exportNames: ['css'] }
   );
   assert(lightningCssDirect.exports.css?.includes('.card'), 'direct Lightning CSS transform lost fixture selector');
-  assert(lightningCssDirect.exports.cssViaBuffer?.includes('.card'), 'Buffer-backed Lightning CSS transform lost fixture selector');
   stage('lightningcss-direct-probe-pass', {
     cssPrefix: lightningCssDirect.exports.css.slice(0, 80),
     cssLength: lightningCssDirect.exports.css.length,
-    cssNulls: (lightningCssDirect.exports.css.match(/\0/g) ?? []).length,
-    cssViaBufferPrefix: lightningCssDirect.exports.cssViaBuffer.slice(0, 80),
-    cssViaBufferLength: lightningCssDirect.exports.cssViaBuffer.length,
-    cssViaBufferNulls: (lightningCssDirect.exports.cssViaBuffer.match(/\0/g) ?? []).length,
-    bufferLength: lightningCssDirect.exports.bufferLength,
-    bufferPrefix: lightningCssDirect.exports.bufferPrefix
+    cssNulls: (lightningCssDirect.exports.css.match(/\0/g) ?? []).length
   });
   lightningCssProbe.close();
+
+  stage('lightningcss-buffer-probe-start');
+  const lightningCssBufferProbe = new BrowserGuestWorkerAuthority({
+    publication: vitePublication,
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: viteNodeCompat.syncRequestHandler,
+    requestTimeoutMs: 30000
+  });
+  lightningCssBufferProbe.start();
+  const lightningCssBuffer = await lightningCssBufferProbe.execute(
+    vitePublication.moduleURL('./lightningcss-buffer-probe.mjs', '/workspace/src/entry.mjs').href,
+    { exportNames: ['css', 'bufferLength', 'bufferPrefix'] }
+  );
+  assert(lightningCssBuffer.exports.css?.includes('.card'), 'Buffer-backed Lightning CSS transform lost fixture selector');
+  stage('lightningcss-buffer-probe-pass', {
+    cssPrefix: lightningCssBuffer.exports.css.slice(0, 80),
+    cssLength: lightningCssBuffer.exports.css.length,
+    cssNulls: (lightningCssBuffer.exports.css.match(/\0/g) ?? []).length,
+    bufferLength: lightningCssBuffer.exports.bufferLength,
+    bufferPrefix: lightningCssBuffer.exports.bufferPrefix
+  });
+  lightningCssBufferProbe.close();
 
   stage('rolldown-wasi-worker-preflight-start');
   const rolldownWasiWorkerUrl = vitePublication.moduleURL(
