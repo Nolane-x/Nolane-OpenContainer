@@ -350,6 +350,94 @@ export default api;
 `;
 }
 
+function zlibSource() {
+  return `
+import { Buffer } from 'node:buffer';
+function unavailable(operation){
+  const error=new Error('zlib operation is unavailable in OpenContainer browser runtime: '+operation);
+  error.code='OC_BUILTIN_UNAVAILABLE';
+  error.operation=operation;
+  return error;
+}
+function toBytes(value){
+  if(typeof value==='string')return new TextEncoder().encode(value);
+  if(value instanceof Uint8Array)return value;
+  if(value instanceof ArrayBuffer)return new Uint8Array(value);
+  if(ArrayBuffer.isView(value))return new Uint8Array(value.buffer,value.byteOffset,value.byteLength);
+  return new TextEncoder().encode(String(value??''));
+}
+async function codec(format,input,decompress){
+  const Ctor=decompress?globalThis.DecompressionStream:globalThis.CompressionStream;
+  if(typeof Ctor!=='function')throw unavailable((decompress?'decompress:':'compress:')+format);
+  let stream;
+  try{stream=new Ctor(format);}catch{throw unavailable((decompress?'decompress:':'compress:')+format);}
+  const writer=stream.writable.getWriter();
+  await writer.write(toBytes(input));
+  await writer.close();
+  const bytes=new Uint8Array(await new Response(stream.readable).arrayBuffer());
+  return Buffer.from(bytes);
+}
+function callbackCodec(format,decompress,input,options,callback){
+  if(typeof options==='function'){callback=options;options=undefined;}
+  if(typeof callback!=='function')throw new TypeError('callback must be a function');
+  codec(format,input,decompress).then(
+    (value)=>callback(null,value),
+    (error)=>callback(error)
+  );
+}
+export const constants=Object.freeze({
+  Z_NO_FLUSH:0,Z_PARTIAL_FLUSH:1,Z_SYNC_FLUSH:2,Z_FULL_FLUSH:3,Z_FINISH:4,
+  Z_OK:0,Z_STREAM_END:1,Z_NEED_DICT:2,Z_ERRNO:-1,Z_STREAM_ERROR:-2,Z_DATA_ERROR:-3,Z_MEM_ERROR:-4,Z_BUF_ERROR:-5,Z_VERSION_ERROR:-6,
+  Z_DEFAULT_COMPRESSION:-1,Z_DEFAULT_STRATEGY:0,Z_DEFLATED:8
+});
+export const codes=Object.freeze({
+  Z_OK:0,Z_STREAM_END:1,Z_NEED_DICT:2,Z_ERRNO:-1,Z_STREAM_ERROR:-2,Z_DATA_ERROR:-3,Z_MEM_ERROR:-4,Z_BUF_ERROR:-5,Z_VERSION_ERROR:-6
+});
+export function gzip(input,options,callback){return callbackCodec('gzip',false,input,options,callback);}
+export function gunzip(input,options,callback){return callbackCodec('gzip',true,input,options,callback);}
+export function deflate(input,options,callback){return callbackCodec('deflate',false,input,options,callback);}
+export function inflate(input,options,callback){return callbackCodec('deflate',true,input,options,callback);}
+export function deflateRaw(input,options,callback){return callbackCodec('deflate-raw',false,input,options,callback);}
+export function inflateRaw(input,options,callback){return callbackCodec('deflate-raw',true,input,options,callback);}
+export function gzipSync(){throw unavailable('gzipSync');}
+export function gunzipSync(){throw unavailable('gunzipSync');}
+export function deflateSync(){throw unavailable('deflateSync');}
+export function inflateSync(){throw unavailable('inflateSync');}
+export function deflateRawSync(){throw unavailable('deflateRawSync');}
+export function inflateRawSync(){throw unavailable('inflateRawSync');}
+export function brotliCompress(input,options,callback){
+  if(typeof options==='function')callback=options;
+  const error=unavailable('brotliCompress');
+  if(typeof callback==='function'){queueMicrotask(()=>callback(error));return;}
+  throw error;
+}
+export function brotliDecompress(input,options,callback){
+  if(typeof options==='function')callback=options;
+  const error=unavailable('brotliDecompress');
+  if(typeof callback==='function'){queueMicrotask(()=>callback(error));return;}
+  throw error;
+}
+export function brotliCompressSync(){throw unavailable('brotliCompressSync');}
+export function brotliDecompressSync(){throw unavailable('brotliDecompressSync');}
+export function createGzip(){throw unavailable('createGzip');}
+export function createGunzip(){throw unavailable('createGunzip');}
+export function createDeflate(){throw unavailable('createDeflate');}
+export function createInflate(){throw unavailable('createInflate');}
+export function createDeflateRaw(){throw unavailable('createDeflateRaw');}
+export function createInflateRaw(){throw unavailable('createInflateRaw');}
+export function createBrotliCompress(){throw unavailable('createBrotliCompress');}
+export function createBrotliDecompress(){throw unavailable('createBrotliDecompress');}
+export class Deflate{constructor(){throw unavailable('Deflate');}}
+export class Inflate{constructor(){throw unavailable('Inflate');}}
+export class Gzip{constructor(){throw unavailable('Gzip');}}
+export class Gunzip{constructor(){throw unavailable('Gunzip');}}
+export class DeflateRaw{constructor(){throw unavailable('DeflateRaw');}}
+export class InflateRaw{constructor(){throw unavailable('InflateRaw');}}
+const api={constants,codes,gzip,gunzip,deflate,inflate,deflateRaw,inflateRaw,gzipSync,gunzipSync,deflateSync,inflateSync,deflateRawSync,inflateRawSync,brotliCompress,brotliDecompress,brotliCompressSync,brotliDecompressSync,createGzip,createGunzip,createDeflate,createInflate,createDeflateRaw,createInflateRaw,createBrotliCompress,createBrotliDecompress,Deflate,Inflate,Gzip,Gunzip,DeflateRaw,InflateRaw};
+export default api;
+`;
+}
+
 function querystringSource() {
   return `
 import { Buffer } from 'node:buffer';
@@ -1162,6 +1250,7 @@ export function createBrowserNodeCompatBridge({
       case 'node:http2': return http2Source();
       case 'node:tls': return tlsSource();
       case 'node:querystring': return querystringSource();
+      case 'node:zlib': return zlibSource();
       default:
         throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Native browser ESM builtin is not implemented', { specifier });
     }
