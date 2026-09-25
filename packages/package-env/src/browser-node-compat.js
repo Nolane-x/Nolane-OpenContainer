@@ -324,6 +324,37 @@ export default api;
 `;
 }
 
+function ttySource() {
+  return `
+export function isatty(){return false;}
+export class ReadStream{
+  constructor(fd=0){
+    this.fd=fd;
+    this.isTTY=false;
+    this.isRaw=false;
+  }
+  setRawMode(mode){this.isRaw=!!mode;return this;}
+  ref(){return this;}
+  unref(){return this;}
+}
+export class WriteStream{
+  constructor(fd=1){
+    this.fd=fd;
+    this.isTTY=false;
+    this.columns=undefined;
+    this.rows=undefined;
+  }
+  getColorDepth(){return 1;}
+  hasColors(){return false;}
+  getWindowSize(){return [0,0];}
+  ref(){return this;}
+  unref(){return this;}
+}
+const api={isatty,ReadStream,WriteStream};
+export default api;
+`;
+}
+
 function childProcessSource() {
   return `
 function denied(operation){
@@ -707,6 +738,7 @@ export function createBrowserNodeCompatBridge({
       case 'node:dns/promises': return `import dns from 'node:dns'; export const lookup=dns.promises.lookup; export const getDefaultResultOrder=dns.promises.getDefaultResultOrder; export const setDefaultResultOrder=dns.promises.setDefaultResultOrder; export default dns.promises;`;
       case 'node:os': return osSource();
       case 'node:net': return netSource();
+      case 'node:tty': return ttySource();
       default:
         throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Native browser ESM builtin is not implemented', { specifier });
     }

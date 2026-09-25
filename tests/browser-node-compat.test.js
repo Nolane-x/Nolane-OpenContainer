@@ -39,7 +39,7 @@ test('browser Node compat path and process share logical cwd',async()=>{
 
 test('browser Node compat exposes promoted native ESM builtin sources',async()=>{
   const {bridge}=fixture();
-  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process','node:dns','node:dns/promises','node:os','node:net']){
+  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process','node:dns','node:dns/promises','node:os','node:net','node:tty']){
     const source=await bridge.builtinSource(specifier);
     assert.equal(typeof source,'string');
     assert.ok(source.length>20);
@@ -157,4 +157,18 @@ test('browser dns/os/net profile is deterministic and privacy-preserving',async(
   assert.equal(net.isIPv6('::1'),true);
   assert.equal(net.isIP('example.com'),0);
   assert.throws(()=>net.createServer(),error=>error?.code==='OC_BUILTIN_UNAVAILABLE');
+});
+
+
+test('browser node:tty reports a non-interactive logical terminal without host leakage',async()=>{
+  const {bridge}=fixture();
+  const source=await bridge.builtinSource('node:tty');
+  const encoded=Buffer.from(source).toString('base64');
+  const tty=await import('data:text/javascript;base64,'+encoded+'#'+Date.now());
+  assert.equal(tty.isatty(0),false);
+  const stdout=new tty.WriteStream(1);
+  assert.equal(stdout.isTTY,false);
+  assert.equal(stdout.getColorDepth(),1);
+  assert.equal(stdout.hasColors(),false);
+  assert.deepEqual(stdout.getWindowSize(),[0,0]);
 });
