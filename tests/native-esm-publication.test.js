@@ -487,7 +487,7 @@ test('node-global injection is not suppressed by a process$1 import binding', as
   const runtime = await createRuntime();
   runtime.mount({
     'src/process-suffix-entry.mjs': [
-"import process$1 from 'node:process';"
+"import process$1 from 'node:process';",
       "export const bareVersion = process.versions.node;",
       "export const importedVersion = process$1.versions.node;",
       "export const isolated = process !== globalThis.process;"
