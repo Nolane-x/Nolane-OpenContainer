@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -40,33 +40,50 @@ function waitForServer(child) {
   });
 }
 
-function waitForDevTools(child, timeoutMs = 10000) {
-  return new Promise((resolve, reject) => {
-    let stderr = '';
-    let settled = false;
-    const timer = setTimeout(() => finish(reject, new Error('Chrome DevTools endpoint did not appear\n' + stderr)), timeoutMs);
+async function waitForDevTools(child, profile, timeoutMs = 30000) {
+  let stderr = '';
+  const onData = (chunk) => { stderr += String(chunk); };
+  child.stderr.on('data', onData);
+  const deadline = Date.now() + timeoutMs;
 
-    const onData = (chunk) => {
-      const text = String(chunk);
-      stderr += text;
-      const match = stderr.match(/DevTools listening on (ws:\/\/[^\s]+)/);
-      if (match) finish(resolve, { browserWebSocket: match[1], stderr: () => stderr });
-    };
+  try {
+    while (Date.now() < deadline) {
+      const stderrMatch = stderr.match(/DevTools listening on (ws:\/\/[^\s]+)/);
+      if (stderrMatch) {
+        return { browserWebSocket: stderrMatch[1], stderr: () => stderr, source: 'stderr' };
+      }
 
-    const onExit = (code) => finish(reject, new Error('Chrome exited before DevTools was ready: ' + code + '\n' + stderr));
+      try {
+        const activePort = await readFile(join(profile, 'DevToolsActivePort'), 'utf8');
+        const [portLine, pathLine] = activePort.trim().split(/\r?\n/);
+        const debugPort = Number(portLine);
+        if (
+          Number.isInteger(debugPort) &&
+          debugPort > 0 &&
+          typeof pathLine === 'string' &&
+          pathLine.startsWith('/devtools/browser/')
+        ) {
+          return {
+            browserWebSocket: 'ws://127.0.0.1:' + debugPort + pathLine,
+            stderr: () => stderr,
+            source: 'DevToolsActivePort'
+          };
+        }
+      } catch {}
 
-    function finish(fn, value) {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      child.stderr.off('data', onData);
-      child.off('exit', onExit);
-      fn(value);
+      if (child.exitCode !== null) {
+        throw new Error('Chrome exited before DevTools was ready: ' + child.exitCode + '\n' + stderr);
+      }
+      await delay(100);
     }
 
-    child.stderr.on('data', onData);
-    child.once('exit', onExit);
-  });
+    throw new Error(
+      'Chrome DevTools endpoint did not appear within ' + timeoutMs + 'ms\n' +
+      'profile=' + profile + '\n' + stderr
+    );
+  } finally {
+    child.stderr.off('data', onData);
+  }
 }
 
 async function waitForPageTarget(debugPort, expectedUrl, timeoutMs = 10000) {
@@ -206,7 +223,7 @@ try {
     stdio: ['ignore', 'ignore', 'pipe']
   });
 
-  const devtools = await waitForDevTools(chrome);
+  const devtools = await waitForDevTools(chrome, profile);
   const debugPort = new URL(devtools.browserWebSocket).port;
   const page = await waitForPageTarget(debugPort, url);
   cdp = await connectCdp(page.webSocketDebuggerUrl);
