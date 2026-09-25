@@ -534,7 +534,7 @@ export class Readable extends Stream{
   setEncoding(encoding){this.readableEncoding=encoding;return this;}
   destroy(error){this.destroyed=true;this.readable=false;if(error)queueMicrotask(()=>this.emit('error',asError(error)));queueMicrotask(()=>this.emit('close'));return this;}
   [Symbol.asyncIterator](){
-    const self=this;return {async next(){const value=self.read();if(value!==null)return {value,done:false};if(self.readableEnded)return {value:undefined,done:true};return await new Promise((resolve,reject)=>{const onData=(chunk)=>{cleanup();resolve({value:chunk,done:false});};const onEnd=()=>{cleanup();resolve({value:undefined,done:true});};const onError=(error)=>{cleanup();reject(error);};const cleanup=()=>{self.off('data',onData);self.off('end',onEnd);self.off('error',onError);};self.once('data',onData);self.once('end',onEnd);self.once('error',onError);});}}};
+    const self=this;return {async next(){const value=self.read();if(value!==null)return {value,done:false};if(self.readableEnded)return {value:undefined,done:true};return await new Promise((resolve,reject)=>{const onData=(chunk)=>{cleanup();resolve({value:chunk,done:false});};const onEnd=()=>{cleanup();resolve({value:undefined,done:true});};const onError=(error)=>{cleanup();reject(error);};const cleanup=()=>{self.off('data',onData);self.off('end',onEnd);self.off('error',onError);};self.once('data',onData);self.once('end',onEnd);self.once('error',onError);});}};
   }
   static from(iterable){
     const out=new Readable();
