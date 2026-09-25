@@ -26,7 +26,12 @@ export class BufferCompat extends Uint8Array {
   static from(value, encoding = 'utf8') {
     if (typeof value === 'string') {
       const normalized = String(encoding).toLowerCase();
-      if (normalized === 'base64') return new BufferCompat(decodeBase64(value));
+      if (normalized === 'base64' || normalized === 'base64url') {
+        const base64 = normalized === 'base64url'
+          ? value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4)
+          : value;
+        return new BufferCompat(decodeBase64(base64));
+      }
       if (normalized === 'hex') return new BufferCompat(decodeHex(value));
       if (!['utf8', 'utf-8'].includes(normalized)) throw new TypeError('Unsupported Buffer encoding: ' + encoding);
       return new BufferCompat(encoder.encode(value));
@@ -69,7 +74,10 @@ export class BufferCompat extends Uint8Array {
   toString(encoding = 'utf8', start = 0, end = this.length) {
     const view = this.subarray(Math.max(0, start), Math.min(this.length, end));
     const normalized = String(encoding).toLowerCase();
-    if (normalized === 'base64') return encodeBase64(view);
+    if (normalized === 'base64' || normalized === 'base64url') {
+      const encoded = encodeBase64(view);
+      return normalized === 'base64url' ? encoded.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/,'') : encoded;
+    }
     if (normalized === 'hex') return [...view].map((byte) => byte.toString(16).padStart(2, '0')).join('');
     if (!['utf8', 'utf-8'].includes(normalized)) throw new TypeError('Unsupported Buffer encoding: ' + encoding);
     return new TextDecoder().decode(view);

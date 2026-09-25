@@ -23,6 +23,8 @@ test('Buffer subset covers utf8 hex base64 concat and identity', () => {
   assert.equal(utf.toString(), 'hello');
   assert.equal(BufferCompat.from('6869', 'hex').toString(), 'hi');
   assert.equal(BufferCompat.from('aGk=', 'base64').toString(), 'hi');
+  assert.equal(BufferCompat.from([251,255,239]).toString('base64url'), '-__v');
+  assert.equal(BufferCompat.from('-__v','base64url').toString('hex'), 'fbffef');
   assert.equal(BufferCompat.concat([BufferCompat.from('a'), BufferCompat.from('b')]).toString(), 'ab');
   assert.equal(BufferCompat.isBuffer(utf), true);
 });

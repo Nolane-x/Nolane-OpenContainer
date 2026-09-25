@@ -201,6 +201,60 @@ export default {URL,URLSearchParams,pathToFileURL,fileURLToPath,urlToHttpOptions
 `;
 }
 
+function cryptoSource() {
+  return `
+import { Buffer } from 'node:buffer';
+const call=(method,payload)=>globalThis.__opencontainer_sync_host_call__('node.crypto.'+method,payload);
+const bytes=(value)=>value&&value.__opencontainerBytes?Buffer.from(value.__opencontainerBytes):value;
+const payload=(value,encoding)=>{
+  if(typeof value==='string')return {text:value,encoding:encoding??'utf8'};
+  if(value instanceof Uint8Array)return {bytes:[...value]};
+  if(value instanceof ArrayBuffer)return {bytes:[...new Uint8Array(value)]};
+  if(ArrayBuffer.isView(value))return {bytes:[...new Uint8Array(value.buffer,value.byteOffset,value.byteLength)]};
+  return {text:String(value),encoding:encoding??'utf8'};
+};
+export const webcrypto=globalThis.crypto;
+export const subtle=globalThis.crypto.subtle;
+export const getRandomValues=globalThis.crypto.getRandomValues.bind(globalThis.crypto);
+export const randomUUID=globalThis.crypto.randomUUID.bind(globalThis.crypto);
+export function randomBytes(size,callback){
+  if(!Number.isInteger(size)||size<0)throw new RangeError('size must be a non-negative integer');
+  const out=Buffer.alloc(size);
+  for(let offset=0;offset<size;offset+=65536){
+    globalThis.crypto.getRandomValues(out.subarray(offset,Math.min(size,offset+65536)));
+  }
+  if(typeof callback==='function'){queueMicrotask(()=>callback(null,out));return;}
+  return out;
+}
+export function timingSafeEqual(a,b){
+  const left=Buffer.from(a),right=Buffer.from(b);
+  if(left.length!==right.length)throw new RangeError('Input buffers must have the same byte length');
+  let diff=0;
+  for(let i=0;i<left.length;i++)diff|=left[i]^right[i];
+  return diff===0;
+}
+export function hash(algorithm,data,outputEncoding){
+  const digest=bytes(call('hash',{algorithm:String(algorithm),data:payload(data)}));
+  return outputEncoding===undefined?digest:digest.toString(outputEncoding);
+}
+export function createHash(algorithm){
+  const chunks=[];
+  return {
+    update(data,encoding){chunks.push(Buffer.from(typeof data==='string'?data:Buffer.from(data),encoding));return this;},
+    digest(outputEncoding){
+      const digest=hash(algorithm,Buffer.concat(chunks));
+      return outputEncoding===undefined?digest:digest.toString(outputEncoding);
+    }
+  };
+}
+export class X509Certificate{
+  constructor(){const error=new Error('X509Certificate is not promoted in the browser runtime profile');error.code='OC_BUILTIN_UNAVAILABLE';throw error;}
+}
+const api={webcrypto,subtle,getRandomValues,randomUUID,randomBytes,timingSafeEqual,hash,createHash,X509Certificate};
+export default api;
+`;
+}
+
 function moduleSource(builtinModules) {
   return `
 export const builtinModules=Object.freeze(${JSON.stringify(builtinModules)});
@@ -268,6 +322,7 @@ export function createBrowserNodeCompatBridge({
       case 'node:process': return processSource(env, argv, platform, arch);
       case 'node:url': return urlSource();
       case 'node:module': return moduleSource(BUILTIN_MODULES);
+      case 'node:crypto': return cryptoSource();
       default:
         throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Native browser ESM builtin is not implemented', { specifier });
     }
@@ -297,6 +352,29 @@ export function createBrowserNodeCompatBridge({
       if (name === 'fileURLToPath') return core.url.fileURLToPath(payload.value);
       if (name === 'urlToHttpOptions') return core.url.urlToHttpOptions(payload.value);
       throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'URL builtin method is unavailable', { method });
+    }
+
+    if (method.startsWith('node.crypto.')) {
+      const name = method.slice('node.crypto.'.length);
+      if (name !== 'hash') throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Crypto builtin method is unavailable', { method });
+      const algorithm = String(payload.algorithm ?? '').toLowerCase().replace(/[^a-z0-9]/g,'');
+      const algorithms = {
+        sha1: 'SHA-1',
+        sha256: 'SHA-256',
+        sha384: 'SHA-384',
+        sha512: 'SHA-512'
+      };
+      const subtleName = algorithms[algorithm];
+      assertOc(subtleName, ErrorCodes.INVALID_ARGUMENT, 'Unsupported browser crypto hash algorithm', { algorithm: payload.algorithm });
+      let input;
+      if (payload.data?.bytes) input = Uint8Array.from(payload.data.bytes);
+      else {
+        const encoding = String(payload.data?.encoding ?? 'utf8').toLowerCase();
+        assertOc(encoding === 'utf8' || encoding === 'utf-8', ErrorCodes.INVALID_ARGUMENT, 'Only UTF-8 string hash input is promoted', { encoding });
+        input = new TextEncoder().encode(String(payload.data?.text ?? ''));
+      }
+      const digest = new Uint8Array(await globalThis.crypto.subtle.digest(subtleName, input));
+      return { __opencontainerBytes: [...digest] };
     }
 
     if (method.startsWith('node.module.')) {

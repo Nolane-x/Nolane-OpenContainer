@@ -503,3 +503,18 @@ The native ESM compatibility profile now publishes an initial `node:module` surf
 - `require.cache`, `require.extensions` and `require.main` compatibility shapes are exposed.
 
 Security boundary: browser-native `require()` execution itself still fails closed. OpenContainer does not execute guest CommonJS on the trusted page realm merely to satisfy `createRequire`. The next execution court will promote only the CJS behavior actually required by the selected Vite path.
+
+
+## Native browser crypto compatibility
+
+The Vite browser graph now has a bounded `node:crypto` profile backed by browser primitives:
+
+- `getRandomValues()`, `randomUUID()` and `randomBytes()` use Web Crypto entropy;
+- `hash()` and a bounded `createHash()` use the page authority's Web Crypto digest through synchronous guest RPC;
+- SHA-1/SHA-256/SHA-384/SHA-512 digest names are accepted;
+- `timingSafeEqual()` uses a full-length byte comparison after enforcing equal lengths;
+- `webcrypto` and `subtle` expose the browser-native Web Crypto objects;
+- Buffer compatibility now includes Node-style base64url encode/decode required by Vite's websocket-token construction;
+- `X509Certificate` remains explicit fail-closed because HTTPS certificate parsing is outside the current C1 browser profile.
+
+This promotes the crypto operations required by Vite without pretending to implement the full Node crypto module.
