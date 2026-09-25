@@ -415,8 +415,8 @@ export class NativeEsmPublicationAuthority {
     // realm-global process, which browser/WASI adapters use for environment detection.
     if (
       this.#nodeGlobalAllow?.(publication.path) === true &&
-      !/\bimport\s+process\b/.test(source) &&
-      !/\b(?:const|let|var|function|class)\s+process\b/.test(source)
+      !/\bimport\s+process(?![\w$])/.test(source) &&
+      !/\b(?:const|let|var|function|class)\s+process(?![\w$])/.test(source)
     ) {
       const processURL = this.#urlForResolved({ kind: 'builtin', specifier: 'node:process' });
       transformed = 'import process from ' + JSON.stringify(processURL.href) + ';\n' + transformed;
