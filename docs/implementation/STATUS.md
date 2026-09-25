@@ -518,3 +518,8 @@ The Vite browser graph now has a bounded `node:crypto` profile backed by browser
 - `X509Certificate` remains explicit fail-closed because HTTPS certificate parsing is outside the current C1 browser profile.
 
 This promotes the crypto operations required by Vite without pretending to implement the full Node crypto module.
+
+
+## Native browser perf_hooks
+
+The native browser compatibility layer now publishes `node:perf_hooks` with browser-native `performance` and available Performance API constructors. Vite's selected C1 graph uses `performance.now()`, so no host RPC or synthetic clock is required. Node-only event-loop histogram APIs remain explicit fail-closed.

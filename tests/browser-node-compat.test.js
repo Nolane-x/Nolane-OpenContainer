@@ -39,7 +39,7 @@ test('browser Node compat path and process share logical cwd',async()=>{
 
 test('browser Node compat exposes promoted native ESM builtin sources',async()=>{
   const {bridge}=fixture();
-  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto']){
+  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks']){
     const source=await bridge.builtinSource(specifier);
     assert.equal(typeof source,'string');
     assert.ok(source.length>20);
@@ -75,4 +75,12 @@ test('browser node:crypto hash bridge uses Web Crypto with exact SHA-256 bytes',
   });
   const hex=value.__opencontainerBytes.map(byte=>byte.toString(16).padStart(2,'0')).join('');
   assert.equal(hex,'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+});
+
+
+test('browser node:perf_hooks source binds browser-native performance',async()=>{
+  const {bridge}=fixture();
+  const source=await bridge.builtinSource('node:perf_hooks');
+  assert.match(source,/globalThis\.performance/);
+  assert.match(source,/export const performance/);
 });

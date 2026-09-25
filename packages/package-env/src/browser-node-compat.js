@@ -201,6 +201,24 @@ export default {URL,URLSearchParams,pathToFileURL,fileURLToPath,urlToHttpOptions
 `;
 }
 
+function perfHooksSource() {
+  return `
+export const performance=globalThis.performance;
+export const PerformanceObserver=globalThis.PerformanceObserver;
+export const PerformanceEntry=globalThis.PerformanceEntry;
+export const PerformanceMark=globalThis.PerformanceMark;
+export const PerformanceMeasure=globalThis.PerformanceMeasure;
+export const PerformanceResourceTiming=globalThis.PerformanceResourceTiming;
+export const constants=Object.freeze({});
+export function monitorEventLoopDelay(){
+  const error=new Error('monitorEventLoopDelay is not promoted in the browser runtime profile');
+  error.code='OC_BUILTIN_UNAVAILABLE';
+  throw error;
+}
+export default {performance,PerformanceObserver,PerformanceEntry,PerformanceMark,PerformanceMeasure,PerformanceResourceTiming,constants,monitorEventLoopDelay};
+`;
+}
+
 function cryptoSource() {
   return `
 import { Buffer } from 'node:buffer';
@@ -323,6 +341,7 @@ export function createBrowserNodeCompatBridge({
       case 'node:url': return urlSource();
       case 'node:module': return moduleSource(BUILTIN_MODULES);
       case 'node:crypto': return cryptoSource();
+      case 'node:perf_hooks': return perfHooksSource();
       default:
         throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Native browser ESM builtin is not implemented', { specifier });
     }
