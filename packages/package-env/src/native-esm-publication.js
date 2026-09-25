@@ -44,6 +44,38 @@ function quoteLike(raw, value) {
   return value;
 }
 
+function dirnamePath(path) {
+  const index = path.lastIndexOf('/');
+  return index <= 0 ? '/' : path.slice(0, index);
+}
+
+function looksLikeCommonJs(source) {
+  return /\\bmodule\\.exports\\b|\\bexports\\s*\\.|(?:^|[^\\w$.])require\\s*\\(/m.test(source);
+}
+
+function staticCommonJsRequires(source) {
+  const found = [];
+  const seen = new Set();
+  const pattern = /(^|[^\\w$.])require\\s*\\(\\s*(['"])([^'"\\\\\\r\\n]+)\\2\\s*\\)/gm;
+  for (const match of source.matchAll(pattern)) {
+    const specifier = match[3];
+    if (!seen.has(specifier)) {
+      seen.add(specifier);
+      found.push(specifier);
+    }
+  }
+  return found;
+}
+
+function commonJsNamedExports(source) {
+  const names = new Set();
+  const direct = /\\b(?:exports|module\\.exports)\\.([A-Za-z_$][\\w$]*)\\s*=/g;
+  for (const match of source.matchAll(direct)) names.add(match[1]);
+  const define = /Object\\.defineProperty\\(\\s*exports\\s*,\\s*['"]([A-Za-z_$][\\w$]*)['"]/g;
+  for (const match of source.matchAll(define)) names.add(match[1]);
+  return [...names].filter((name) => name !== 'default' && name !== '__opencontainer_cjs_exports');
+}
+
 function applyReplacements(source, replacements) {
   const ordered = [...replacements].sort((a, b) => b.start - a.start || b.end - a.end);
   let output = source;
@@ -193,7 +225,15 @@ export class NativeEsmPublicationAuthority {
 
   async #serveFile(publication) {
     const source = this.#fs.readFile(publication.path);
-    const [imports] = parse(source, publication.path);
+    const selfResolved = this.#resolver.resolve(publication.path, publication.path, { mode: 'esm' });
+    if (selfResolved.format === 'json') return this.#serveJson(publication, source);
+    const [imports, exports] = parse(source, publication.path);
+    if (
+      selfResolved.format === 'commonjs' ||
+      (selfResolved.format === 'ambiguous' && imports.length === 0 && exports.length === 0 && looksLikeCommonJs(source))
+    ) {
+      return this.#serveCommonJs(publication, source);
+    }
     const replacements = [];
     const dependencies = [];
 
@@ -278,6 +318,88 @@ export class NativeEsmPublicationAuthority {
       generation: this.generation,
       source: transformed,
       dependencies: Object.freeze(dependencies)
+    });
+  }
+
+  #serveJson(publication, source) {
+    let value;
+    try {
+      value = JSON.parse(source);
+    } catch {
+      throw ocError(ErrorCodes.ESM_PUBLICATION_INVALID, 'Invalid JSON module source', { path: publication.path });
+    }
+    const serialized = JSON.stringify(value).replace(/<\\/script/gi, '<\\\\/script');
+    return Object.freeze({
+      kind: 'file',
+      url: publication.url.href,
+      path: publication.path,
+      generation: this.generation,
+      source: 'const value=' + serialized + ';export const __opencontainer_cjs_exports=value;export default value;',
+      dependencies: Object.freeze([])
+    });
+  }
+
+  #serveCommonJs(publication, source) {
+    const body = source.replace(/^#![^\\r\\n]*(?:\\r?\\n|$)/, '');
+    const specifiers = staticCommonJsRequires(body);
+    const imports = [];
+    const mapEntries = [];
+    const dependencies = [];
+
+    for (let index = 0; index < specifiers.length; index += 1) {
+      const specifier = specifiers[index];
+      const resolved = this.#resolver.resolve(specifier, publication.path, { mode: 'cjs' });
+      if (resolved.kind === 'file' && resolved.format === 'module') {
+        throw ocError(ErrorCodes.REQUIRE_ESM_UNSUPPORTED, 'Browser CommonJS bridge does not synchronously require ESM', {
+          path: publication.path,
+          specifier,
+          target: resolved.path
+        });
+      }
+      const targetURL = this.#urlForResolved(resolved);
+      const alias = '__oc_req_' + index;
+      imports.push('import * as ' + alias + ' from ' + JSON.stringify(targetURL.href) + ';');
+      mapEntries.push('[' + JSON.stringify(specifier) + ',' + alias + ']');
+      dependencies.push(Object.freeze({
+        specifier,
+        url: targetURL.href,
+        dynamic: false,
+        kind: resolved.kind,
+        commonjs: true
+      }));
+    }
+
+    const named = commonJsNamedExports(body);
+    const namedExports = named.map((name) =>
+      'export const ' + name + '=__opencontainer_cjs_exports?.[' + JSON.stringify(name) + '];'
+    ).join('\\n');
+    const filename = JSON.stringify(publication.path);
+    const moduleDir = JSON.stringify(dirnamePath(publication.path));
+    const generated = [
+      ...imports,
+      'const __oc_modules=new Map([' + mapEntries.join(',') + ']);',
+      'function __oc_unwrap(ns){if(Object.prototype.hasOwnProperty.call(ns,"__opencontainer_cjs_exports"))return ns.__opencontainer_cjs_exports;if("default" in ns)return ns.default;return ns;}',
+      'function require(specifier){if(!__oc_modules.has(specifier)){const error=new Error("Dynamic or unresolved CommonJS require is unavailable in native browser ESM: "+specifier);error.code="OC_REQUIRE_DYNAMIC_UNSUPPORTED";throw error;}return __oc_unwrap(__oc_modules.get(specifier));}',
+      'require.resolve=(specifier)=>globalThis.__opencontainer_sync_host_call__("node.module.resolve",{specifier:String(specifier),issuer:' + filename + '});',
+      'require.resolve.paths=()=>null;require.main=null;require.cache=Object.create(null);require.extensions=Object.create(null);',
+      'const module={id:' + filename + ',filename:' + filename + ',exports:{},loaded:false,parent:null,children:[]};',
+      'const __filename=' + filename + ';const __dirname=' + moduleDir + ';const global=globalThis;',
+      'const __oc_wrapper=function(exports,require,module,__filename,__dirname){\\n' + body + '\\n};',
+      '__oc_wrapper.call(module.exports,module.exports,require,module,__filename,__dirname);module.loaded=true;',
+      'const __opencontainer_cjs_exports=module.exports;',
+      'export { __opencontainer_cjs_exports };',
+      'export default __opencontainer_cjs_exports;',
+      namedExports
+    ].filter(Boolean).join('\\n');
+
+    return Object.freeze({
+      kind: 'file',
+      url: publication.url.href,
+      path: publication.path,
+      generation: this.generation,
+      source: generated,
+      dependencies: Object.freeze(dependencies),
+      format: 'commonjs'
     });
   }
 

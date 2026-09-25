@@ -295,3 +295,40 @@ test('synthetic builtin modules rewrite nested node builtin imports into the pub
   assert.equal(pathModule.dependencies[0].specifier, 'node:events');
   assert.match(pathModule.source, /nested-builtins\/builtin\/node%3Aevents\.mjs/);
 });
+
+
+test('native ESM publication bridges static CommonJS default exports and nested require edges', async () => {
+  const runtime = await createRuntime();
+  runtime.packages.mountCatalog({
+    packages: [{
+      location: 'node_modules/cjs-dep',
+      packageJson: { name: 'cjs-dep', type: 'commonjs', main: './index.js' },
+      files: {
+        'index.js': "const inner=require('./inner.js'); module.exports={value:inner.value+1};",
+        'inner.js': 'exports.value=41;'
+      }
+    }]
+  });
+  runtime.mount({
+    'src/cjs-entry.mjs': "import dep from 'cjs-dep'; export const result=dep.value;"
+  });
+
+  const root = mkdtempSync(join(tmpdir(), 'oc-native-cjs-'));
+  try {
+    const authority = runtime.packages.createNativeEsmPublication({
+      baseURL: pathToFileURL(root + '/').href,
+      session: 'cjs-interop'
+    });
+    const entryURL = authority.moduleURL('./cjs-entry.mjs', '/workspace/src/bootstrap.mjs');
+    const graph = await authority.graph(entryURL);
+    const cjs = graph.modules.find((module) => module.path?.endsWith('/cjs-dep/index.js'));
+    assert.equal(cjs?.format, 'commonjs');
+    assert.match(cjs.source, /export default __opencontainer_cjs_exports/);
+    assert.ok(cjs.dependencies.some((dependency) => dependency.specifier === './inner.js'));
+    await materializeGraph(graph);
+    const namespace = await import(entryURL.href + '?oracle=' + Date.now());
+    assert.equal(namespace.result, 42);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
