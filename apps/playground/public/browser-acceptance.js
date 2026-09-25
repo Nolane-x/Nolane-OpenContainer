@@ -321,9 +321,38 @@ async function run() {
     entry: viteGraph.entryURL
   });
 
-  stage('vite-module-execution-start');
-  const viteBridge = new BrowserEsmServiceWorkerBridge({ publication: vitePublication });
+  const viteBridge = new BrowserEsmServiceWorkerBridge({
+    publication: vitePublication,
+    diagnostics: runtime.diagnostics
+  });
   await viteBridge.start();
+
+  stage('rolldown-wasi-worker-preflight-start');
+  const rolldownWasiWorkerUrl = vitePublication.moduleURL(
+    './wasi-worker-browser.mjs',
+    '/workspace/node_modules/@rolldown/browser/dist/rolldown-binding.wasi-browser.js'
+  ).href;
+  const rolldownWasiProbe = new BrowserGuestWorkerAuthority({
+    publication: vitePublication,
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: viteNodeCompat.syncRequestHandler,
+    requestTimeoutMs: 15000
+  });
+  rolldownWasiProbe.start();
+  const rolldownWasiPreflight = await rolldownWasiProbe.execute(rolldownWasiWorkerUrl, {
+    exportNames: []
+  });
+  assert(
+    rolldownWasiPreflight.workerCrossOriginIsolated === true,
+    'Rolldown WASI worker preflight is not cross-origin isolated'
+  );
+  stage('rolldown-wasi-worker-preflight-pass', {
+    entry: rolldownWasiWorkerUrl,
+    workerCrossOriginIsolated: rolldownWasiPreflight.workerCrossOriginIsolated
+  });
+  rolldownWasiProbe.close();
+
+  stage('vite-module-execution-start');
   const viteWorker = new BrowserGuestWorkerAuthority({
     publication: vitePublication,
     diagnostics: runtime.diagnostics,
@@ -358,6 +387,7 @@ async function run() {
     browserPackageInstall: true,
     viteClosureInstall: true,
     vitePublicationGraph: true,
+    rolldownWasiWorkerPreflight: true,
     viteModuleExecution: true,
     stages
   };

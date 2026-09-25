@@ -78,6 +78,7 @@ export class BrowserEsmServiceWorkerBridge {
   #scriptURL;
   #scope;
   #timeoutMs;
+  #diagnostics;
   #registration = null;
   #listener = null;
   #closed = false;
@@ -87,7 +88,8 @@ export class BrowserEsmServiceWorkerBridge {
     serviceWorkerContainer = globalThis.navigator?.serviceWorker,
     scriptURL = '/opencontainer-sw.js',
     scope = '/',
-    timeoutMs = 5000
+    timeoutMs = 5000,
+    diagnostics = null
   } = {}) {
     assertOc(publication && typeof publication.response === 'function', ErrorCodes.INVALID_ARGUMENT, 'Native ESM publication authority is required');
     assertOc(serviceWorkerContainer && typeof serviceWorkerContainer.register === 'function', ErrorCodes.ESM_EDGE_UNAVAILABLE, 'Service Worker API is unavailable');
@@ -96,6 +98,7 @@ export class BrowserEsmServiceWorkerBridge {
     this.#scriptURL = scriptURL;
     this.#scope = scope;
     this.#timeoutMs = timeoutMs;
+    this.#diagnostics = diagnostics;
   }
 
   get session() { return this.#publication.session; }
@@ -147,6 +150,15 @@ export class BrowserEsmServiceWorkerBridge {
       const body = binary
         ? new Uint8Array(await response.arrayBuffer())
         : await response.text();
+      if (binary) {
+        this.#diagnostics?.record('esm-edge.binary-response', {
+          session: this.session,
+          url: data.url,
+          status: response.status,
+          bytes: body.byteLength,
+          contentType
+        });
+      }
       port.postMessage({
         ok: true,
         status: response.status,
@@ -155,6 +167,13 @@ export class BrowserEsmServiceWorkerBridge {
         body
       });
     } catch (error) {
+      this.#diagnostics?.record('esm-edge.fetch-failure', {
+        session: this.session,
+        url: data.url,
+        code: error?.code ?? ErrorCodes.GUEST_WORKER_FAILED,
+        message: error?.message ?? String(error),
+        details: error?.details
+      });
       port.postMessage({
         ok: false,
         code: error?.code ?? ErrorCodes.GUEST_WORKER_FAILED,
