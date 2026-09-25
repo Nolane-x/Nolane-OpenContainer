@@ -379,6 +379,12 @@ async function run() {
     ].join('\n'))
     .writeFile('c1-app/src/style.css', c1CssSource)
     .writeFile('c1-app/src/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32"/></svg>')
+    .writeFile('src/lightningcss-probe.mjs', [
+      "import { transform } from 'lightningcss';",
+      "const source = new TextEncoder().encode('.card { color: rgb(255, 0, 0); margin: 0px 0px 0px 0px; }');",
+      "const result = transform({ filename: 'style.css', code: source, minify: true });",
+      "export const css = new TextDecoder().decode(result.code);"
+    ].join('\n'))
     .writeFile('src/vite-build-probe.mjs', [
       "import { build, version } from 'vite';",
       "import { existsSync, readFileSync } from 'node:fs';",
@@ -492,6 +498,24 @@ async function run() {
   assert(viteProcessProbeResult.exports.globalNodeVersion === null, 'browser global process incorrectly impersonates Node');
   viteProcessProbe.close();
 
+  stage('lightningcss-direct-probe-start');
+  const lightningCssProbe = new BrowserGuestWorkerAuthority({
+    publication: vitePublication,
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: viteNodeCompat.syncRequestHandler,
+    requestTimeoutMs: 30000
+  });
+  lightningCssProbe.start();
+  const lightningCssDirect = await lightningCssProbe.execute(
+    vitePublication.moduleURL('./lightningcss-probe.mjs', '/workspace/src/entry.mjs').href,
+    { exportNames: ['css'] }
+  );
+  assert(lightningCssDirect.exports.css?.includes('.card'), 'direct Lightning CSS transform lost fixture selector');
+  stage('lightningcss-direct-probe-pass', {
+    css: lightningCssDirect.exports.css
+  });
+  lightningCssProbe.close();
+
   stage('rolldown-wasi-worker-preflight-start');
   const rolldownWasiWorkerUrl = vitePublication.moduleURL(
     './wasi-worker-browser.mjs',
@@ -556,6 +580,10 @@ async function run() {
   assert(c1Html?.content.includes('type="module"'), 'Vite C1 build did not emit transformed index.html');
   assert(c1Css?.content.includes('.card'), 'Vite C1 CSS output lost fixture selector');
   const c1CssWithoutMapComment = c1Css.content.replace(/\/\*# sourceMappingURL=[\s\S]*?\*\//g, '').trim();
+  stage('vite-c1-css-output', {
+    css: c1CssWithoutMapComment,
+    bytes: c1CssWithoutMapComment.length
+  });
   assert(!c1CssWithoutMapComment.includes('rgb(255, 0, 0)'), 'Vite C1 Lightning CSS did not normalize color syntax');
   assert(!c1CssWithoutMapComment.includes('0px 0px 0px 0px'), 'Vite C1 Lightning CSS did not minify zero margin syntax');
   assert(!/\.card\s+\{/.test(c1CssWithoutMapComment), 'Vite C1 Lightning CSS retained unminified selector spacing');
