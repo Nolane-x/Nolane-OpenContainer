@@ -315,3 +315,14 @@ test('browser node:path exposes lexical win32 helpers without host OS access',as
   assert.equal(path.win32.isAbsolute('C:\\root\\x'),true);
   assert.equal(path.win32.basename('C:\\root\\a.txt'), 'a.txt');
 });
+
+
+test('browser global process does not impersonate Node while node:process keeps compatibility version',async()=>{
+  const runtime=await OpenContainer.boot();
+  const bridge=createBrowserNodeCompatBridge({runtime,packageAuthority:runtime.packages});
+  const source=await bridge.builtinSource('node:process');
+  assert.match(source,/versions:Object\.freeze\(\{node:'24\.21\.0',opencontainer:/);
+  assert.match(source,/const globalProcess=\{/);
+  assert.match(source,/versions:Object\.freeze\(\{opencontainer:'0\.1\.0-alpha\.1'\}\)/);
+  assert.match(source,/globalThis\.process \?\?= globalProcess/);
+});

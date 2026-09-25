@@ -334,7 +334,15 @@ const process={
   emitWarning:(warning)=>console.warn(warning)
 };
 process.hrtime.bigint=()=>BigInt(call('hrtime.bigint'));
-globalThis.process ??= process;
+// Keep the imported node:process module on the frozen Node compatibility
+// profile, but do not make browser environment detectors believe this realm
+// is a real Node process. Packages such as @emnapi/wasi-threads intentionally
+// branch on global process.versions.node to choose Node Worker APIs.
+const globalProcess={
+  ...process,
+  versions:Object.freeze({opencontainer:'0.1.0-alpha.1'})
+};
+globalThis.process ??= globalProcess;
 export default process;
 export const env=process.env;
 export const argv=process.argv;
