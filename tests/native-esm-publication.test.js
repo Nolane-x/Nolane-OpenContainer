@@ -447,6 +447,9 @@ test('node-targeted publication can inject a lexical logical process without cha
   runtime.mount({
     'src/process-entry.mjs': `
       export const version = process.versions.node;
+      export const mode = process.env.OPENCONTAINER_MODE;
+      export const platform = process.platform;
+      export const defined = typeof process !== 'undefined';
       export const isolated = process !== globalThis.process;
     `
   });
@@ -459,7 +462,7 @@ test('node-targeted publication can inject a lexical logical process without cha
       nodeGlobalAllow: (path) => path === '/workspace/src/process-entry.mjs',
       builtinSource(specifier) {
         if (specifier !== 'node:process') throw new Error('unexpected builtin '+specifier);
-        return `const process={versions:Object.freeze({node:'24.21.0'})};export default process;export const versions=process.versions;`;
+        return `const process={versions:Object.freeze({node:'24.21.0'}),env:Object.freeze({OPENCONTAINER_MODE:'production'}),platform:'linux'};export default process;export const versions=process.versions;export const env=process.env;export const platform=process.platform;`;
       }
     });
     const entryURL = authority.moduleURL('./process-entry.mjs', '/workspace/src/bootstrap.mjs');
@@ -471,6 +474,9 @@ test('node-targeted publication can inject a lexical logical process without cha
     await materializeGraph(graph);
     const namespace = await import(entryURL.href + '?oracle=' + Date.now());
     assert.equal(namespace.version, '24.21.0');
+    assert.equal(namespace.mode, 'production');
+    assert.equal(namespace.platform, 'linux');
+    assert.equal(namespace.defined, true);
     assert.equal(namespace.isolated, true);
   } finally {
     await rm(root, { recursive: true, force: true });
