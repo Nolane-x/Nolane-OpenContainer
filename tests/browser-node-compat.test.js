@@ -39,7 +39,7 @@ test('browser Node compat path and process share logical cwd',async()=>{
 
 test('browser Node compat exposes promoted native ESM builtin sources',async()=>{
   const {bridge}=fixture();
-  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process','node:dns','node:dns/promises','node:os','node:net','node:tty','node:assert','node:assert/strict','node:v8','node:timers','node:timers/promises','node:readline']){
+  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process','node:dns','node:dns/promises','node:os','node:net','node:tty','node:assert','node:assert/strict','node:v8','node:timers','node:timers/promises','node:readline','node:http','node:https','node:http2','node:tls']){
     const source=await bridge.builtinSource(specifier);
     assert.equal(typeof source,'string');
     assert.ok(source.length>20);
@@ -221,4 +221,31 @@ test('browser readline and process stdio stay non-interactive',async()=>{
   const processSource=await bridge.builtinSource('node:process');
   assert.match(processSource,/isTTY:false/);
   assert.match(processSource,/export \{ stdout, stderr, stdin \}/);
+});
+
+
+test('browser HTTP family exposes metadata but never opens host sockets',async()=>{
+  const {bridge}=fixture();
+  const eventsSource=await bridge.builtinSource('node:events');
+  const encode=(source)=>'data:text/javascript;base64,'+Buffer.from(source).toString('base64');
+  const importSynthetic=async(specifier)=>{
+    let source=await bridge.builtinSource(specifier);
+    source=source.replaceAll("from 'node:events'","from '"+encode(eventsSource)+"'");
+    if(specifier==='node:https'){
+      let http=await bridge.builtinSource('node:http');
+      http=http.replaceAll("from 'node:events'","from '"+encode(eventsSource)+"'");
+      source=source.replace("from 'node:http'","from '"+encode(http)+"'");
+    }
+    return import(encode(source)+'#'+encodeURIComponent(specifier)+Date.now());
+  };
+  const http=await importSynthetic('node:http');
+  assert.equal(http.STATUS_CODES[200],'OK');
+  assert.equal(http.createServer().listening,false);
+  assert.throws(()=>http.get('http://example.com'),error=>error?.code==='OC_BUILTIN_UNAVAILABLE');
+  const https=await importSynthetic('node:https');
+  assert.throws(()=>https.get('https://example.com'),error=>error?.code==='OC_BUILTIN_UNAVAILABLE');
+  const http2=await importSynthetic('node:http2');
+  assert.throws(()=>http2.connect('https://example.com'),error=>error?.code==='OC_BUILTIN_UNAVAILABLE');
+  const tls=await importSynthetic('node:tls');
+  assert.throws(()=>tls.connect(443,'example.com'),error=>error?.code==='OC_BUILTIN_UNAVAILABLE');
 });

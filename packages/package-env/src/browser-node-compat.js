@@ -350,6 +350,136 @@ export default api;
 `;
 }
 
+function httpSource() {
+  return `
+import { EventEmitter } from 'node:events';
+function denied(operation){
+  const error=new Error('Raw HTTP socket authority is unavailable in OpenContainer browser runtime: '+operation);
+  error.code='OC_BUILTIN_UNAVAILABLE';
+  error.operation=operation;
+  throw error;
+}
+export const METHODS=Object.freeze(['GET','HEAD','POST','PUT','DELETE','CONNECT','OPTIONS','TRACE','PATCH']);
+export const STATUS_CODES=Object.freeze({
+  100:'Continue',101:'Switching Protocols',200:'OK',201:'Created',202:'Accepted',204:'No Content',
+  206:'Partial Content',301:'Moved Permanently',302:'Found',303:'See Other',304:'Not Modified',307:'Temporary Redirect',308:'Permanent Redirect',
+  400:'Bad Request',401:'Unauthorized',403:'Forbidden',404:'Not Found',405:'Method Not Allowed',408:'Request Timeout',
+  409:'Conflict',410:'Gone',413:'Payload Too Large',414:'URI Too Long',415:'Unsupported Media Type',418:"I'm a Teapot",
+  422:'Unprocessable Entity',426:'Upgrade Required',429:'Too Many Requests',500:'Internal Server Error',501:'Not Implemented',
+  502:'Bad Gateway',503:'Service Unavailable',504:'Gateway Timeout'
+});
+export const maxHeaderSize=16*1024;
+export class Agent{
+  constructor(options={}){this.options=options;this.keepAlive=!!options.keepAlive;this.maxSockets=options.maxSockets??Infinity;}
+  destroy(){}
+}
+export const globalAgent=new Agent();
+export class IncomingMessage extends EventEmitter{
+  constructor(){super();this.headers=Object.create(null);this.rawHeaders=[];this.method=null;this.url='';this.statusCode=null;this.statusMessage=null;this.complete=false;}
+}
+export class OutgoingMessage extends EventEmitter{
+  constructor(){super();this.headersSent=false;this.finished=false;this.writableEnded=false;this._headers=new Map();}
+  setHeader(name,value){this._headers.set(String(name).toLowerCase(),value);return this;}
+  getHeader(name){return this._headers.get(String(name).toLowerCase());}
+  getHeaders(){return Object.fromEntries(this._headers);}
+  getHeaderNames(){return [...this._headers.keys()];}
+  hasHeader(name){return this._headers.has(String(name).toLowerCase());}
+  removeHeader(name){this._headers.delete(String(name).toLowerCase());}
+  flushHeaders(){this.headersSent=true;}
+  setTimeout(){return this;}
+}
+export class ServerResponse extends OutgoingMessage{
+  constructor(){super();this.statusCode=200;this.statusMessage=STATUS_CODES[200];}
+  writeHead(statusCode,statusMessage,headers){
+    this.statusCode=statusCode;
+    if(typeof statusMessage==='string')this.statusMessage=statusMessage;
+    else if(statusMessage&&typeof statusMessage==='object')headers=statusMessage;
+    if(headers)for(const [key,value] of Object.entries(headers))this.setHeader(key,value);
+    this.headersSent=true;return this;
+  }
+  write(){return denied('ServerResponse.write');}
+  end(){return denied('ServerResponse.end');}
+}
+export class ClientRequest extends OutgoingMessage{
+  abort(){return denied('ClientRequest.abort');}
+  end(){return denied('ClientRequest.end');}
+}
+export class Server extends EventEmitter{
+  constructor(){super();this.listening=false;}
+  listen(){return denied('Server.listen');}
+  close(callback){this.listening=false;if(typeof callback==='function')queueMicrotask(callback);return this;}
+  address(){return null;}
+}
+export function createServer(){return new Server();}
+export function request(){return denied('request');}
+export function get(){return denied('get');}
+export function validateHeaderName(name){
+  const value=String(name);
+  if(!/^[!#$%&'*+.^_\\`|~0-9A-Za-z-]+$/.test(value)){const error=new TypeError('Invalid HTTP header name');error.code='ERR_INVALID_HTTP_TOKEN';throw error;}
+}
+export function validateHeaderValue(name,value){
+  if(/[\\r\\n]/.test(String(value))){const error=new TypeError('Invalid HTTP header value');error.code='ERR_INVALID_CHAR';throw error;}
+}
+export function setMaxIdleHTTPParsers(){}
+const api={METHODS,STATUS_CODES,maxHeaderSize,Agent,globalAgent,IncomingMessage,OutgoingMessage,ServerResponse,ClientRequest,Server,createServer,request,get,validateHeaderName,validateHeaderValue,setMaxIdleHTTPParsers};
+export default api;
+`;
+}
+
+function httpsSource() {
+  return `
+import http from 'node:http';
+export class Agent extends http.Agent{}
+export const globalAgent=new Agent();
+export class Server extends http.Server{}
+export function createServer(){return new Server();}
+export function request(){const error=new Error('Raw HTTPS socket authority is unavailable in OpenContainer browser runtime');error.code='OC_BUILTIN_UNAVAILABLE';throw error;}
+export function get(){return request();}
+export const METHODS=http.METHODS;
+export const STATUS_CODES=http.STATUS_CODES;
+const api={Agent,globalAgent,Server,createServer,request,get,METHODS,STATUS_CODES};
+export default api;
+`;
+}
+
+function http2Source() {
+  return `
+import { EventEmitter } from 'node:events';
+function denied(operation){const error=new Error('HTTP/2 socket authority is unavailable in OpenContainer browser runtime: '+operation);error.code='OC_BUILTIN_UNAVAILABLE';throw error;}
+export const constants=Object.freeze({});
+export class Http2ServerRequest extends EventEmitter{}
+export class Http2ServerResponse extends EventEmitter{}
+export class Http2Server extends EventEmitter{listen(){return denied('Http2Server.listen');}}
+export class Http2SecureServer extends Http2Server{}
+export function createServer(){return new Http2Server();}
+export function createSecureServer(){return new Http2SecureServer();}
+export function connect(){return denied('connect');}
+export function getDefaultSettings(){return Object.freeze({});}
+export function getPackedSettings(){return new Uint8Array();}
+export function getUnpackedSettings(){return Object.freeze({});}
+const api={constants,Http2ServerRequest,Http2ServerResponse,Http2Server,Http2SecureServer,createServer,createSecureServer,connect,getDefaultSettings,getPackedSettings,getUnpackedSettings};
+export default api;
+`;
+}
+
+function tlsSource() {
+  return `
+import { EventEmitter } from 'node:events';
+function denied(operation){const error=new Error('TLS socket authority is unavailable in OpenContainer browser runtime: '+operation);error.code='OC_BUILTIN_UNAVAILABLE';throw error;}
+export const DEFAULT_MIN_VERSION='TLSv1.2';
+export const DEFAULT_MAX_VERSION='TLSv1.3';
+export class TLSSocket extends EventEmitter{constructor(){super();this.encrypted=true;this.authorized=false;}}
+export class Server extends EventEmitter{listen(){return denied('tls.Server.listen');}}
+export function createServer(){return new Server();}
+export function connect(){return denied('tls.connect');}
+export function createSecureContext(){return Object.freeze({context:null});}
+export function getCiphers(){return [];}
+export function rootCertificates(){return Object.freeze([]);}
+const api={DEFAULT_MIN_VERSION,DEFAULT_MAX_VERSION,TLSSocket,Server,createServer,connect,createSecureContext,getCiphers,rootCertificates};
+export default api;
+`;
+}
+
 function timersSource() {
   return `
 export const setTimeout=globalThis.setTimeout.bind(globalThis);
@@ -962,6 +1092,10 @@ export function createBrowserNodeCompatBridge({
       case 'node:timers': return timersSource();
       case 'node:timers/promises': return timersPromisesSource();
       case 'node:readline': return readlineSource();
+      case 'node:http': return httpSource();
+      case 'node:https': return httpsSource();
+      case 'node:http2': return http2Source();
+      case 'node:tls': return tlsSource();
       default:
         throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Native browser ESM builtin is not implemented', { specifier });
     }
