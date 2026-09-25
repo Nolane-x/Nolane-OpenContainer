@@ -210,6 +210,120 @@ export default {URL,URLSearchParams,pathToFileURL,fileURLToPath,urlToHttpOptions
 `;
 }
 
+function dnsSource() {
+  return `
+let defaultResultOrder='verbatim';
+function ipFamily(value){
+  const text=String(value);
+  if(/^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(text)){
+    const parts=text.split('.').map(Number);
+    if(parts.every((part)=>part>=0&&part<=255))return 4;
+  }
+  if(text.includes(':'))return 6;
+  return 0;
+}
+function resultFor(hostname,options={}){
+  const host=String(hostname);
+  const family=typeof options==='number'?options:(options?.family??0);
+  if(host==='localhost'){
+    const address=family===6?'::1':'127.0.0.1';
+    return {address,family:family===6?6:4};
+  }
+  const literal=ipFamily(host);
+  if(literal&&(family===0||family===literal))return {address:host,family:literal};
+  const error=new Error('DNS lookup is restricted to loopback/literal IPs in OpenContainer browser runtime: '+host);
+  error.code='ENOTFOUND';error.hostname=host;throw error;
+}
+export function lookup(hostname,options,callback){
+  if(typeof options==='function'){callback=options;options={};}
+  if(typeof callback!=='function')throw new TypeError('callback must be a function');
+  queueMicrotask(()=>{
+    try{
+      const one=resultFor(hostname,options);
+      if(options?.all)callback(null,[one]);
+      else callback(null,one.address,one.family);
+    }catch(error){callback(error);}
+  });
+}
+export function getDefaultResultOrder(){return defaultResultOrder;}
+export function setDefaultResultOrder(order){
+  if(order!=='verbatim'&&order!=='ipv4first'&&order!=='ipv6first')throw new TypeError('invalid DNS result order');
+  defaultResultOrder=order;
+}
+export function setServers(){const error=new Error('Custom DNS servers are unavailable in browser runtime');error.code='OC_BUILTIN_UNAVAILABLE';throw error;}
+export const promises=Object.freeze({
+  lookup:async(hostname,options={})=>{
+    const one=resultFor(hostname,options);
+    return options?.all?[one]:one;
+  },
+  getDefaultResultOrder,
+  setDefaultResultOrder
+});
+const api={lookup,getDefaultResultOrder,setDefaultResultOrder,setServers,promises};
+export default api;
+`;
+}
+
+function osSource() {
+  return `
+const loopback=Object.freeze({
+  lo:Object.freeze([
+    Object.freeze({address:'127.0.0.1',netmask:'255.0.0.0',family:'IPv4',mac:'00:00:00:00:00:00',internal:true,cidr:'127.0.0.1/8'}),
+    Object.freeze({address:'::1',netmask:'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff',family:'IPv6',mac:'00:00:00:00:00:00',internal:true,scopeid:0,cidr:'::1/128'})
+  ])
+});
+export const EOL='\\n';
+export const devNull='/dev/null';
+export const constants=Object.freeze({});
+export const arch=()=> 'wasm32';
+export const platform=()=> 'linux';
+export const type=()=> 'Linux';
+export const release=()=> 'opencontainer';
+export const version=()=> 'OpenContainer browser runtime';
+export const hostname=()=> 'opencontainer';
+export const homedir=()=> '/workspace';
+export const tmpdir=()=> '/workspace/.tmp';
+export const endianness=()=> 'LE';
+export const uptime=()=> globalThis.performance.now()/1000;
+export const totalmem=()=>0;
+export const freemem=()=>0;
+export const loadavg=()=>[0,0,0];
+export const cpus=()=>[];
+export const userInfo=()=>Object.freeze({username:'opencontainer',uid:-1,gid:-1,shell:null,homedir:'/workspace'});
+export const networkInterfaces=()=>loopback;
+const api={EOL,devNull,constants,arch,platform,type,release,version,hostname,homedir,tmpdir,endianness,uptime,totalmem,freemem,loadavg,cpus,userInfo,networkInterfaces};
+export default api;
+`;
+}
+
+function netSource() {
+  return `
+function ipv4(value){
+  const parts=String(value).split('.');
+  return parts.length===4&&parts.every((part)=>/^\\d{1,3}$/.test(part)&&Number(part)>=0&&Number(part)<=255);
+}
+function ipv6(value){
+  const text=String(value);
+  if(!text.includes(':'))return false;
+  try{new URL('http://['+text.replace(/%.*$/,'')+']/');return true;}catch{return false;}
+}
+export function isIPv4(value){return ipv4(value);}
+export function isIPv6(value){return ipv6(value);}
+export function isIP(value){return ipv4(value)?4:ipv6(value)?6:0;}
+function denied(operation){
+  const error=new Error('Raw TCP networking is unavailable in OpenContainer browser runtime: '+operation);
+  error.code='OC_BUILTIN_UNAVAILABLE';throw error;
+}
+export class Socket{constructor(){denied('Socket');}}
+export class Server{constructor(){denied('Server');}}
+export function createServer(){return denied('createServer');}
+export function connect(){return denied('connect');}
+export const createConnection=connect;
+const api={isIPv4,isIPv6,isIP,Socket,Server,createServer,connect,createConnection};
+export default api;
+`;
+}
+
 function childProcessSource() {
   return `
 function denied(operation){
@@ -589,6 +703,10 @@ export function createBrowserNodeCompatBridge({
       case 'node:util': return utilSource();
       case 'node:worker_threads': return workerThreadsSource();
       case 'node:child_process': return childProcessSource();
+      case 'node:dns': return dnsSource();
+      case 'node:dns/promises': return `import dns from 'node:dns'; export const lookup=dns.promises.lookup; export const getDefaultResultOrder=dns.promises.getDefaultResultOrder; export const setDefaultResultOrder=dns.promises.setDefaultResultOrder; export default dns.promises;`;
+      case 'node:os': return osSource();
+      case 'node:net': return netSource();
       default:
         throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE, 'Native browser ESM builtin is not implemented', { specifier });
     }

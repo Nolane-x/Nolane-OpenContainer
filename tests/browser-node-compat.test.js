@@ -39,7 +39,7 @@ test('browser Node compat path and process share logical cwd',async()=>{
 
 test('browser Node compat exposes promoted native ESM builtin sources',async()=>{
   const {bridge}=fixture();
-  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process']){
+  for(const specifier of ['node:fs','node:fs/promises','node:path','node:path/posix','node:buffer','node:events','node:process','node:url','node:module','node:crypto','node:perf_hooks','node:util','node:worker_threads','node:child_process','node:dns','node:dns/promises','node:os','node:net']){
     const source=await bridge.builtinSource(specifier);
     assert.equal(typeof source,'string');
     assert.ok(source.length>20);
@@ -136,4 +136,25 @@ test('browser node:child_process never escapes to host OS',async()=>{
       }catch(cause){reject(cause);}
     });
   });
+});
+
+
+test('browser dns/os/net profile is deterministic and privacy-preserving',async()=>{
+  const {bridge}=fixture();
+  const importSource=async(specifier)=>{
+    const source=await bridge.builtinSource(specifier);
+    return import('data:text/javascript;base64,'+Buffer.from(source).toString('base64')+'#'+encodeURIComponent(specifier)+Date.now());
+  };
+  const dns=await importSource('node:dns');
+  assert.deepEqual(await dns.promises.lookup('localhost'),{address:'127.0.0.1',family:4});
+  await assert.rejects(()=>dns.promises.lookup('example.com'),error=>error?.code==='ENOTFOUND');
+  const os=await importSource('node:os');
+  assert.deepEqual(Object.keys(os.networkInterfaces()),['lo']);
+  assert.equal(os.platform(),'linux');
+  assert.equal(os.arch(),'wasm32');
+  const net=await importSource('node:net');
+  assert.equal(net.isIPv4('127.0.0.1'),true);
+  assert.equal(net.isIPv6('::1'),true);
+  assert.equal(net.isIP('example.com'),0);
+  assert.throws(()=>net.createServer(),error=>error?.code==='OC_BUILTIN_UNAVAILABLE');
 });

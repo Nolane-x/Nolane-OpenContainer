@@ -556,3 +556,16 @@ This is sufficient for capability/static graph paths without falsely claiming No
 ## Browser child_process policy
 
 The native browser graph now publishes `node:child_process` API shape without granting host-process authority. `exec`, `execFile`, `spawn`, `fork` and synchronous variants never invoke the runner/host OS; they fail closed with `OC_BUILTIN_UNAVAILABLE` (callback forms receive the error asynchronously). This lets optional platform/server code remain statically publishable while preserving the browser runtime security boundary.
+
+
+## Browser DNS/OS/net privacy profile
+
+Vite's browser graph now receives deterministic, privacy-preserving networking/OS metadata:
+
+- `node:dns` and `node:dns/promises` resolve only localhost and literal IP addresses; arbitrary hostname lookup fails with `ENOTFOUND` instead of leaking host resolver/network state;
+- DNS result-order APIs are supported as logical runtime state;
+- `node:os.networkInterfaces()` exposes loopback only, never the user's LAN/WAN interfaces;
+- OS identity is the logical POSIX compatibility profile (`linux/wasm32`), not the user's real host OS;
+- `node:net` promotes IP classification helpers used by Vite, while raw TCP sockets/server creation remain fail-closed.
+
+This lets build/config code reason about addresses without expanding OpenContainer's network authority.
