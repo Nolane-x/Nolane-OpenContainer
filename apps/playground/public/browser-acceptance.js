@@ -411,10 +411,19 @@ async function run() {
     ].join('\n'))
     .writeFile('src/vite-build-probe.mjs', [
       "import { build, version } from 'vite';",
-      "import { existsSync, readFileSync } from 'node:fs';",
+      "import { memfs } from 'rolldown/experimental';",
+      "import { existsSync, readFileSync } from 'node:fs';"
       "import { dirname, resolve as pathResolve } from 'node:path';",
       "const root = '/workspace/c1-app';",
-      "const cleanId = (id) => String(id).split('?')[0].split('#')[0];",
+      "const configPath = root + '/vite.config.ts';",
+      "const configSource = readFileSync(configPath, 'utf8');",
+      "if (!memfs) throw new Error('Rolldown browser memfs is unavailable');",
+      "for (const path of [configPath, '/c1-app/vite.config.ts']) {",
+      "  const slash = path.lastIndexOf('/');",
+      "  memfs.fs.mkdirSync(path.slice(0, slash), { recursive: true });",
+      "  memfs.fs.writeFileSync(path, configSource);",
+      "}",
+      "const cleanId = (id) => String(id).split('?')[0].split('#')[0];"
       "const vfsPlugin = {",
       "  name: 'opencontainer-vfs-input',",
       "  enforce: 'pre',",
