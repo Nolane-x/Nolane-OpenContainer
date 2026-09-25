@@ -810,6 +810,68 @@ async function run() {
     deterministicManifest: viteBuildExecution.exports.deterministicManifest
   });
 
+  stage('vite-c2-dev-start');
+  const viteDevEntryUrl = vitePublication.moduleURL('./vite-dev-probe.mjs', '/workspace/src/entry.mjs');
+  const viteDevGraph = await vitePublication.graph(viteDevEntryUrl);
+  const viteDevExecution = await viteWorker.execute(viteDevGraph.entryURL, {
+    exportNames: [
+      'viteVersion',
+      'created',
+      'htmlHasClient',
+      'htmlHasEntry',
+      'tsTransformed',
+      'viteClientServed',
+      'clientBytes',
+      'tsBytes',
+      'html',
+      'tsCode',
+      'clientCode',
+      'closeSucceeded'
+    ],
+    observeNestedWorkers: true
+  });
+  assert(viteDevExecution.exports.viteVersion === '8.3.0', 'Vite C2 dev server used the wrong version');
+  assert(viteDevExecution.exports.created === true, 'Vite C2 middleware dev server was not created');
+  assert(viteDevExecution.exports.htmlHasClient === true, 'Vite C2 transformed HTML did not inject /@vite/client');
+  assert(viteDevExecution.exports.htmlHasEntry === true, 'Vite C2 transformed HTML lost source entry');
+  assert(viteDevExecution.exports.tsTransformed === true, 'Vite C2 did not transform TypeScript source');
+  assert(viteDevExecution.exports.viteClientServed === true, 'Vite C2 did not transform /@vite/client');
+  assert(viteDevExecution.exports.closeSucceeded === true, 'Vite C2 dev server did not close gracefully');
+
+  const c2Owner = 'vite-c2-session-1';
+  const c2Route = runtime.listen(5173, (request = {}) => {
+    const url = String(request.url ?? '/').split('?')[0];
+    if (url === '/' || url === '/index.html') {
+      return new Response(viteDevExecution.exports.html, { headers: { 'content-type': 'text/html; charset=utf-8' } });
+    }
+    if (url === '/src/main.ts') {
+      return new Response(viteDevExecution.exports.tsCode, { headers: { 'content-type': 'application/javascript; charset=utf-8' } });
+    }
+    if (url === '/@vite/client') {
+      return new Response(viteDevExecution.exports.clientCode, { headers: { 'content-type': 'application/javascript; charset=utf-8' } });
+    }
+    return new Response('Not Found', { status: 404 });
+  }, { owner: c2Owner });
+  const c2IndexResponse = await runtime.preview.dispatch(5173, { url: '/' }, c2Route);
+  const c2TsResponse = await runtime.preview.dispatch(5173, { url: '/src/main.ts' }, c2Route);
+  const c2ClientResponse = await runtime.preview.dispatch(5173, { url: '/@vite/client' }, c2Route);
+  const c2IndexBody = await c2IndexResponse.text();
+  const c2TsBody = await c2TsResponse.text();
+  const c2ClientBody = await c2ClientResponse.text();
+  assert(c2IndexResponse.status === 200 && c2IndexBody.includes('/@vite/client'), 'Vite C2 virtual HTTP index route failed');
+  assert(c2TsResponse.status === 200 && c2TsBody.includes('source-v2'), 'Vite C2 virtual HTTP TS route failed');
+  assert(c2ClientResponse.status === 200 && c2ClientBody.length > 1000, 'Vite C2 virtual HTTP /@vite/client route failed');
+  stage('vite-c2-http-pass', {
+    port: c2Route.port,
+    owner: c2Route.owner,
+    epoch: c2Route.epoch,
+    indexBytes: c2IndexBody.length,
+    tsBytes: c2TsBody.length,
+    clientBytes: c2ClientBody.length,
+    gracefulClose: viteDevExecution.exports.closeSucceeded
+  });
+  runtime.preview.revoke(5173, { owner: c2Owner });
+
   viteWorker.close();
   viteBridge.close();
 
@@ -830,6 +892,8 @@ async function run() {
     rolldownWasiWorkerPreflight: true,
     viteModuleExecution: true,
     viteC1Build: true,
+    viteC2DevServer: true,
+    viteC2VirtualHttp: true,
     stages
   };
 }
