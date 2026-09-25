@@ -172,6 +172,7 @@ export class NativeEsmPublicationAuthority {
   #builtinSource;
   #resolveOptions;
   #assetAllow;
+  #nodeGlobalAllow;
   #cache = new Map();
   #ready;
 
@@ -182,7 +183,8 @@ export class NativeEsmPublicationAuthority {
     session = 'runtime-1',
     builtinSource = null,
     resolveOptions = {},
-    assetAllow = null
+    assetAllow = null,
+    nodeGlobalAllow = null
   } = {}) {
     assertOc(fs && typeof fs.readFile === 'function', ErrorCodes.INVALID_ARGUMENT, 'ESM publication filesystem is required');
     assertOc(resolver && typeof resolver.resolve === 'function', ErrorCodes.INVALID_ARGUMENT, 'ESM publication resolver is required');
@@ -196,6 +198,7 @@ export class NativeEsmPublicationAuthority {
     this.#resolver = resolver;
     this.#builtinSource = builtinSource;
     this.#assetAllow = typeof assetAllow === 'function' ? assetAllow : null;
+    this.#nodeGlobalAllow = typeof nodeGlobalAllow === 'function' ? nodeGlobalAllow : null;
     this.#resolveOptions = Object.freeze({
       ...resolveOptions,
       conditions: resolveOptions.conditions ? Object.freeze([...resolveOptions.conditions]) : undefined,
@@ -403,6 +406,30 @@ export class NativeEsmPublicationAuthority {
     }
 
     let transformed = applyReplacements(source, replacements);
+
+    // Node-targeted tool bundles may embed CommonJS that reads the Node process
+    // global while browser-runtime adapters in the same graph must continue to
+    // observe a browser host. Inject a lexical logical process only for paths
+    // explicitly authorized by the caller; never mutate the realm-global
+    // process used by browser/WASI environment detection.
+    if (
+      this.#nodeGlobalAllow?.(publication.path) === true &&
+      /\bprocess\.versions\.node\b/.test(source) &&
+      !/\bimport\s+process\b/.test(source) &&
+      !/\b(?:const|let|var|function|class)\s+process\b/.test(source)
+    ) {
+      const processURL = this.#urlForResolved({ kind: 'builtin', specifier: 'node:process' });
+      transformed = 'import process from ' + JSON.stringify(processURL.href) + ';\n' + transformed;
+      if (!dependencies.some((dependency) => dependency.url === processURL.href)) {
+        dependencies.push(Object.freeze({
+          specifier: 'node:process',
+          url: processURL.href,
+          dynamic: false,
+          kind: 'builtin',
+          injectedNodeGlobal: true
+        }));
+      }
+    }
 
     // ESM packages such as Vite may intentionally use createRequire(import.meta.url)
     // for CJS-only dependencies. Literal requires are safe to prelink: resolution
