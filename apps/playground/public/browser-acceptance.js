@@ -555,7 +555,10 @@ async function run() {
   assert(viteBuildExecution.exports.outputCount >= 5, 'Vite C1 build emitted too few outputs');
   assert(c1Html?.content.includes('type="module"'), 'Vite C1 build did not emit transformed index.html');
   assert(c1Css?.content.includes('.card'), 'Vite C1 CSS output lost fixture selector');
-  assert(c1Css.content.length < c1CssSource.length, 'Vite C1 default CSS path did not minify fixture CSS');
+  const c1CssWithoutMapComment = c1Css.content.replace(/\/\*# sourceMappingURL=[\s\S]*?\*\//g, '').trim();
+  assert(!c1CssWithoutMapComment.includes('rgb(255, 0, 0)'), 'Vite C1 Lightning CSS did not normalize color syntax');
+  assert(!c1CssWithoutMapComment.includes('0px 0px 0px 0px'), 'Vite C1 Lightning CSS did not minify zero margin syntax');
+  assert(!/\.card\s+\{/.test(c1CssWithoutMapComment), 'Vite C1 Lightning CSS retained unminified selector spacing');
   assert(c1Js?.content.includes('OpenContainer Vite C1'), 'Vite C1 JS output lost semantic marker');
   assert(JSON.parse(c1Map?.content ?? '{}').version === 3, 'Vite C1 source map is invalid');
   assert(c1Svg?.content.includes('<svg'), 'Vite C1 imported asset was not emitted');
