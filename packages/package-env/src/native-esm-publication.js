@@ -79,8 +79,19 @@ function staticCreateRequireSpecifiers(source) {
 
   const found = [];
   const seen = new Set();
-  for (const alias of aliases) {
-    const escaped = alias.replace(/[$]/g, '\\
+  const calls = /(^|[^\w$.])([A-Za-z_$][\w$]*)\s*\(\s*(['"])([^'"\\\r\n]+)\3\s*\)/gm;
+  for (const match of source.matchAll(calls)) {
+    if (!aliases.has(match[2])) continue;
+    const specifier = match[4];
+    if (!seen.has(specifier)) {
+      seen.add(specifier);
+      found.push(specifier);
+    }
+  }
+  return found;
+}
+
+function commonJsNamedExports(source) {
   const names = new Set();
   const direct = /\b(?:exports|module\.exports)\.([A-Za-z_$][\w$]*)\s*=/g;
   for (const match of source.matchAll(direct)) names.add(match[1]);
