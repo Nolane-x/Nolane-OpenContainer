@@ -173,6 +173,7 @@ export class NativeEsmPublicationAuthority {
   #resolveOptions;
   #assetAllow;
   #nodeGlobalAllow;
+  #modulePrelude;
   #cache = new Map();
   #ready;
 
@@ -184,7 +185,8 @@ export class NativeEsmPublicationAuthority {
     builtinSource = null,
     resolveOptions = {},
     assetAllow = null,
-    nodeGlobalAllow = null
+    nodeGlobalAllow = null,
+    modulePrelude = null
   } = {}) {
     assertOc(fs && typeof fs.readFile === 'function', ErrorCodes.INVALID_ARGUMENT, 'ESM publication filesystem is required');
     assertOc(resolver && typeof resolver.resolve === 'function', ErrorCodes.INVALID_ARGUMENT, 'ESM publication resolver is required');
@@ -199,6 +201,7 @@ export class NativeEsmPublicationAuthority {
     this.#builtinSource = builtinSource;
     this.#assetAllow = typeof assetAllow === 'function' ? assetAllow : null;
     this.#nodeGlobalAllow = typeof nodeGlobalAllow === 'function' ? nodeGlobalAllow : null;
+    this.#modulePrelude = typeof modulePrelude === 'function' ? modulePrelude : null;
     this.#resolveOptions = Object.freeze({
       ...resolveOptions,
       conditions: resolveOptions.conditions ? Object.freeze([...resolveOptions.conditions]) : undefined,
@@ -406,6 +409,21 @@ export class NativeEsmPublicationAuthority {
     }
 
     let transformed = applyReplacements(source, replacements);
+
+    // Some browser-adapted tool packages need a deterministic bootstrap step
+    // before their exported API is usable. Keep this as an explicit publication
+    // adapter rather than mutating retained package bytes.
+    const modulePrelude = this.#modulePrelude?.(publication.path, {
+      source,
+      url: publication.url.href,
+      generation: this.generation
+    });
+    if (modulePrelude !== undefined && modulePrelude !== null && modulePrelude !== '') {
+      assertOc(typeof modulePrelude === 'string', ErrorCodes.INVALID_ARGUMENT, 'ESM module prelude must be a string', {
+        path: publication.path
+      });
+      transformed = modulePrelude + '\n' + transformed;
+    }
 
     // Node-targeted tool bundles can depend on the legacy Node process global
     // through many shapes (process.env, process.platform, typeof process, etc.).
