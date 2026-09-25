@@ -442,7 +442,7 @@ test('binary publication assets are default-deny and exact allowlisted WASM is s
 });
 
 
-test('native ESM publication can inject an explicit bootstrap prelude without mutating source bytes', async () => {
+test('native ESM publication can append an explicit bootstrap epilogue without mutating source bytes', async () => {
   const runtime = await createRuntime();
   runtime.mount({
     'src/bootstrap-entry.mjs': [
@@ -457,7 +457,7 @@ test('native ESM publication can inject an explicit bootstrap prelude without mu
     const authority = runtime.packages.createNativeEsmPublication({
       baseURL: pathToFileURL(root + '/').href,
       session: 'prelude',
-      modulePrelude: (path) => path === '/workspace/src/bootstrap-entry.mjs' ? 'await init();' : ''
+      moduleEpilogue: (path) => path === '/workspace/src/bootstrap-entry.mjs' ? 'await init();' : ''
     });
     const entryURL = authority.moduleURL('./bootstrap-entry.mjs', '/workspace/src/entry.mjs');
     const served = await authority.serve(entryURL);
