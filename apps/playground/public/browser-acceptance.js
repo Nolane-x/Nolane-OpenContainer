@@ -433,7 +433,19 @@ async function run() {
       "});",
       "const outputs = (Array.isArray(result) ? result : [result]).flatMap((entry) => entry?.output ?? []);",
       "const text = (entry) => entry.type === 'chunk' ? entry.code : typeof entry.source === 'string' ? entry.source : new TextDecoder().decode(entry.source);",
-      "const summary = outputs.map((entry) => ({ type: entry.type, fileName: entry.fileName, content: text(entry) }));",
+      "const summary = outputs.map((entry) => {",
+      "  const raw = entry.type === 'chunk' ? entry.code : entry.source;",
+      "  return {",
+      "    type: entry.type,",
+      "    fileName: entry.fileName,",
+      "    content: text(entry),",
+      "    rawType: typeof raw,",
+      "    rawCtor: raw?.constructor?.name ?? null,",
+      "    rawLength: raw?.length ?? null,",
+      "    rawByteLength: raw?.byteLength ?? null,",
+      "    rawByteOffset: raw?.byteOffset ?? null",
+      "  };",
+      "});",
       "export const viteVersion = version;",
       "export const outputCount = outputs.length;",
       "export const outputFiles = outputs.map((entry) => entry.fileName).sort().join('|');",
@@ -593,7 +605,14 @@ async function run() {
   const c1CssWithoutMapComment = c1Css.content.replace(/\/\*# sourceMappingURL=[\s\S]*?\*\//g, '').trim();
   stage('vite-c1-css-output', {
     css: c1CssWithoutMapComment,
-    bytes: c1CssWithoutMapComment.length
+    bytes: c1CssWithoutMapComment.length,
+    rawType: c1Css.rawType,
+    rawCtor: c1Css.rawCtor,
+    rawLength: c1Css.rawLength,
+    rawByteLength: c1Css.rawByteLength,
+    rawByteOffset: c1Css.rawByteOffset,
+    firstNonNull: c1CssWithoutMapComment.search(/[^\0]/),
+    cardIndex: c1CssWithoutMapComment.indexOf('.card')
   });
   assert(!c1CssWithoutMapComment.includes('rgb(255, 0, 0)'), 'Vite C1 Lightning CSS did not normalize color syntax');
   assert(!c1CssWithoutMapComment.includes('0px 0px 0px 0px'), 'Vite C1 Lightning CSS did not minify zero margin syntax');
