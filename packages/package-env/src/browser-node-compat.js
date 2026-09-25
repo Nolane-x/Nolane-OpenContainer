@@ -1508,8 +1508,14 @@ export function createRequire(filename){
     const bare=value.startsWith('node:')?value.slice(5):value;
     if(requireBuiltins.has(bare))return unwrapBuiltin(requireBuiltins.get(bare));
     const prelinked=globalThis.__opencontainer_prelinked_require__;
-    const exactKey=JSON.stringify([issuer,value]);
-    if(prelinked?.has(exactKey))return unwrapPrelinked(prelinked.get(exactKey));
+    const keys=[JSON.stringify([issuer,value])];
+    try{
+      const normalized=new URL(issuer);
+      normalized.search='';normalized.hash='';
+      const normalizedKey=JSON.stringify([normalized.href,value]);
+      if(normalizedKey!==keys[0])keys.push(normalizedKey);
+    }catch{}
+    for(const key of keys)if(prelinked?.has(key))return unwrapPrelinked(prelinked.get(key));
     return unsupportedRequire(specifier);
   };
   require.resolve=(specifier)=>globalThis.__opencontainer_sync_host_call__('node.module.resolve',{
