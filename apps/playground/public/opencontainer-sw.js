@@ -40,6 +40,8 @@ async function routeModule(request, url) {
     const result = await Promise.any(attempts);
     const headers = new Headers(result.headers ?? {});
     headers.set('cache-control', 'no-store');
+    headers.set('cross-origin-opener-policy', 'same-origin');
+    headers.set('cross-origin-embedder-policy', 'require-corp');
     headers.set('cross-origin-resource-policy', 'same-origin');
     headers.set('x-opencontainer-edge', 'service-worker');
     return new Response(result.body ?? '', {
@@ -53,6 +55,8 @@ async function routeModule(request, url) {
       headers: {
         'content-type': 'text/plain; charset=utf-8',
         'cache-control': 'no-store',
+        'cross-origin-opener-policy': 'same-origin',
+        'cross-origin-embedder-policy': 'require-corp',
         'cross-origin-resource-policy': 'same-origin'
       }
     });
