@@ -290,11 +290,13 @@ async function run() {
 
   const viteNodeChunkSource = runtime.packages.nodeModules.readFile('/workspace/node_modules/vite/dist/node/chunks/node.js');
   const picomatchSourceIndex = viteNodeChunkSource.indexOf('picomatch');
+  const viteNodeChunkLines = viteNodeChunkSource.split('\n');
   stage('vite-picomatch-source-shape', {
     index: picomatchSourceIndex,
     snippet: picomatchSourceIndex >= 0
       ? viteNodeChunkSource.slice(Math.max(0, picomatchSourceIndex - 500), picomatchSourceIndex + 700)
-      : null
+      : null,
+    line8763: viteNodeChunkLines.slice(8748, 8778).join('\n')
   });
 
   stage('vite-publication-graph-start');
