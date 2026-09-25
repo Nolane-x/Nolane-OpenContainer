@@ -75,10 +75,25 @@ export function realpath(path,options,callback){
 }
 realpath.native=realpath;
 export function readlinkSync(path){return call('readlinkSync',{path:String(path)});}
+function callbackResult(callback,fn,{value=true}={}){
+  if(typeof callback!=='function')throw new TypeError('callback must be a function');
+  queueMicrotask(()=>{try{const result=fn();value?callback(null,result):callback(null);}catch(error){callback(error);}});
+}
+export function access(path,mode,callback){if(typeof mode==='function'){callback=mode;mode=undefined;}return callbackResult(callback,()=>accessSync(path,mode),{value:false});}
+export function readFile(path,options,callback){if(typeof options==='function'){callback=options;options=null;}return callbackResult(callback,()=>readFileSync(path,options));}
+export function writeFile(path,data,options,callback){if(typeof options==='function'){callback=options;options=null;}return callbackResult(callback,()=>writeFileSync(path,data,options),{value:false});}
+export function readdir(path,options,callback){if(typeof options==='function'){callback=options;options=null;}return callbackResult(callback,()=>readdirSync(path,options));}
+export function stat(path,options,callback){if(typeof options==='function'){callback=options;options=null;}return callbackResult(callback,()=>statSync(path));}
+export function lstat(path,options,callback){if(typeof options==='function'){callback=options;options=null;}return callbackResult(callback,()=>lstatSync(path));}
+export function readlink(path,options,callback){if(typeof options==='function'){callback=options;options=null;}return callbackResult(callback,()=>readlinkSync(path));}
 export function mkdirSync(path,options=null){return call('mkdirSync',{path:String(path),options});}
 export function renameSync(from,to){return call('renameSync',{from:String(from),to:String(to)});}
 export function rmSync(path,options=null){return call('rmSync',{path:String(path),options});}
 export function unlinkSync(path){return call('unlinkSync',{path:String(path)});}
+export function mkdir(path,options,callback){if(typeof options==='function'){callback=options;options=null;}return callbackResult(callback,()=>mkdirSync(path,options));}
+export function rename(from,to,callback){return callbackResult(callback,()=>renameSync(from,to),{value:false});}
+export function rm(path,options,callback){if(typeof options==='function'){callback=options;options=null;}return callbackResult(callback,()=>rmSync(path,options),{value:false});}
+export function unlink(path,callback){return callbackResult(callback,()=>unlinkSync(path),{value:false});}
 export const promises=Object.freeze({
   access:async(...args)=>accessSync(...args),
   readFile:async(...args)=>readFileSync(...args),
@@ -93,7 +108,7 @@ export const promises=Object.freeze({
   rm:async(...args)=>rmSync(...args),
   unlink:async(...args)=>unlinkSync(...args)
 });
-const api={constants,existsSync,accessSync,readFileSync,writeFileSync,readdirSync,statSync,lstatSync,realpathSync,realpath,readlinkSync,mkdirSync,renameSync,rmSync,unlinkSync,promises};
+const api={constants,existsSync,accessSync,access,readFileSync,readFile,writeFileSync,writeFile,readdirSync,readdir,statSync,stat,lstatSync,lstat,realpathSync,realpath,readlinkSync,readlink,mkdirSync,mkdir,renameSync,rename,rmSync,rm,unlinkSync,unlink,promises};
 export default api;
 `;
 }

@@ -110,6 +110,15 @@ test('browser fs callback realpath supports util.promisify contract',async()=>{
   assert.match(source,/callback\(null,realpathSync/);
 });
 
+test('browser node:fs publishes callback APIs used by Vite',async()=>{
+  const {bridge}=fixture();
+  const source=await bridge.builtinSource('node:fs');
+  assert.match(source,/export function readdir\(/);
+  assert.match(source,/export function readFile\(/);
+  assert.match(source,/export function stat\(/);
+  assert.match(source,/export function access\(/);
+});
+
 
 test('browser node:worker_threads keeps logical main-thread semantics and nested Worker fail-closed',async()=>{
   const {bridge}=fixture();
