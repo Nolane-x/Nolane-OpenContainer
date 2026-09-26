@@ -183,16 +183,17 @@ export async function ensureCompatibleServiceWorker({
 
   if(candidate.state==='activated'){
     await queryCompatibility(candidate,timeoutMs);
-    if(!container.controller){
-      await authorize(candidate,'opencontainer:sw-claim',timeoutMs);
-    }
   }else{
     await waitForWorkerState(candidate,['installed'],timeoutMs);
     await queryCompatibility(candidate,timeoutMs);
     await authorize(candidate,'opencontainer:sw-activate',timeoutMs);
     await waitForWorkerState(candidate,['activated'],timeoutMs);
+    await queryCompatibility(candidate,timeoutMs);
   }
 
+  if(!container.controller){
+    await authorize(candidate,'opencontainer:sw-claim',timeoutMs);
+  }
   const controller=await waitForController(container,timeoutMs);
   const profile=await queryCompatibility(controller,timeoutMs);
   return Object.freeze({
