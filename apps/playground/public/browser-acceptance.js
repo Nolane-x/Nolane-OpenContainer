@@ -213,7 +213,80 @@ async function run() {
     }
     assert(removedOrphan, 'OPFS GC crash orphan is still reachable');
 
-    const newestPayload = await generations.getFileHandle(thirdCheckpoint.payload);
+    const quotaOrphanName = 'generation-quota-pressure-orphan.json';
+    const quotaOrphan = await generations.getFileHandle(quotaOrphanName, { create: true });
+    const quotaOrphanWriter = await quotaOrphan.createWritable();
+    await quotaOrphanWriter.write('{"quotaOrphan":true}');
+    await quotaOrphanWriter.close();
+
+    const quotaEstimates = [
+      { usage: 9990, quota: 10_000 },
+      { usage: 100, quota: 10_000 }
+    ];
+    let quotaEstimateIndex = 0;
+    const quotaPolicy = new BrowserStoragePolicy({
+      storageManager: {
+        async estimate() {
+          const index = Math.min(quotaEstimateIndex++, quotaEstimates.length - 1);
+          return quotaEstimates[index];
+        },
+        async persisted() { return true; }
+      },
+      criticalRatio: 0.95
+    });
+    const quotaAuthority = await new OpfsCheckpointAuthority({
+      root: opfsRoot,
+      directoryName: opfsDirectory,
+      lockManager: navigator.locks,
+      storagePolicy: quotaPolicy
+    }).open();
+
+    opfsFs.beginTransaction().writeFile('value.txt', 'fourth').commit();
+    const fourthCheckpoint = await quotaAuthority.checkpoint(opfsFs);
+    assert(fourthCheckpoint.sequence === thirdCheckpoint.sequence + 1, 'OPFS quota-guard checkpoint did not advance after GC retry');
+    assert(quotaAuthority.lastStorageGuard?.gcAttempted === true, 'OPFS quota guard did not run GC under projected pressure');
+    assert(quotaAuthority.lastStorageGuard?.gcRemoved?.includes(quotaOrphanName), 'OPFS quota guard did not remove the pressure orphan before retry');
+    let quotaOrphanRemoved = false;
+    try {
+      await generations.getFileHandle(quotaOrphanName);
+    } catch (error) {
+      quotaOrphanRemoved = error?.name === 'NotFoundError';
+    }
+    assert(quotaOrphanRemoved, 'OPFS quota-pressure orphan remained after successful retry');
+
+    const rejectingPolicy = new BrowserStoragePolicy({
+      storageManager: {
+        async estimate() { return { usage: 9990, quota: 10_000 }; },
+        async persisted() { return true; }
+      },
+      criticalRatio: 0.95
+    });
+    const rejectingAuthority = await new OpfsCheckpointAuthority({
+      root: opfsRoot,
+      directoryName: opfsDirectory,
+      lockManager: navigator.locks,
+      storagePolicy: rejectingPolicy
+    }).open();
+    opfsFs.beginTransaction().writeFile('value.txt', 'fifth-blocked').commit();
+    let quotaRejected = false;
+    try {
+      await rejectingAuthority.checkpoint(opfsFs);
+    } catch (error) {
+      quotaRejected = error?.code === 'OC_RESOURCE_EXHAUSTED';
+    }
+    assert(quotaRejected, 'OPFS quota guard did not fail closed under persistent pressure');
+    assert(rejectingAuthority.current?.sequence === fourthCheckpoint.sequence, 'OPFS quota rejection advanced the committed manifest');
+    assert(rejectingAuthority.lastStorageGuard?.rejected === true, 'OPFS quota rejection receipt was not retained');
+
+    stage('opfs-quota-guard-pass', {
+      successfulSequence: fourthCheckpoint.sequence,
+      gcRetried: quotaAuthority.lastStorageGuard.gcAttempted,
+      gcRemoved: quotaAuthority.lastStorageGuard.gcRemoved.length,
+      rejected: quotaRejected,
+      rejectedSequenceStayedAt: rejectingAuthority.current.sequence
+    });
+
+    const newestPayload = await generations.getFileHandle(fourthCheckpoint.payload);
     const corrupt = await newestPayload.createWritable();
     await corrupt.write('{"corrupt":true}');
     await corrupt.close();
@@ -222,16 +295,17 @@ async function run() {
       root: opfsRoot,
       directoryName: opfsDirectory
     }).open();
-    assert(reopened.current?.sequence === secondCheckpoint.sequence, 'OPFS did not preserve fallback recovery root after GC');
+    assert(reopened.current?.sequence === thirdCheckpoint.sequence, 'OPFS did not preserve fallback recovery root after quota guarding');
 
     const restored = new MemoryVFS();
     await reopened.restoreInto(restored);
-    assert(restored.readFile('value.txt') === 'second', 'OPFS recovery restored the wrong generation after GC');
+    assert(restored.readFile('value.txt') === 'third', 'OPFS recovery restored the wrong generation after quota guarding');
 
     stage('opfs-real-pass', {
       firstSequence: firstCheckpoint.sequence,
       rejectedSequence: secondCheckpoint.sequence,
       collectedSequence: thirdCheckpoint.sequence,
+      quotaCheckpointSequence: fourthCheckpoint.sequence,
       recoveredSequence: reopened.current.sequence,
       crossContextLocking: true,
       stalePeerRejected,
@@ -239,7 +313,10 @@ async function run() {
       gcRemoved: gcReceipt.removed.length,
       gcRetained: gcReceipt.retained.length,
       gcSupersededRemoved: removedSuperseded,
-      gcOrphanRemoved: removedOrphan
+      gcOrphanRemoved: removedOrphan,
+      quotaGcRetried: quotaAuthority.lastStorageGuard.gcAttempted,
+      quotaRejected,
+      quotaOrphanRemoved
     });
   } finally {
     await opfsRoot.removeEntry(opfsDirectory, { recursive: true });
