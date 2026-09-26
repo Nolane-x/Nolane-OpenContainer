@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot=resolve(dirname(fileURLToPath(import.meta.url)),'..');
@@ -17,6 +17,67 @@ async function copyInto(stage,source,destination=source){
 
 function hash(bytes,algorithm){
   return createHash(algorithm).update(bytes).digest('hex');
+}
+
+const forbiddenPathPatterns=[
+  /(^|\/)(?:test|tests|__tests__|coverage)(\/|$)/i,
+  /(^|\/)\.env(?:\.|$)/i,
+  /(^|\/)\.git(?:\/|$)/i,
+  /(^|\/)\.github(?:\/|$)/i,
+  /(^|\/)(?:secret|secrets|private-corpus)(\/|$)/i
+];
+const textExtensions=new Set(['.js','.mjs','.cjs','.json','.md','.txt','.html','.css','.yml','.yaml']);
+const forbiddenContentPatterns=[
+  {id:'private-key',regex:/-----BEGIN [A-Z ]*PRIVATE KEY-----/},
+  {id:'aws-access-key',regex:/\bAKIA[0-9A-Z]{16}\b/},
+  {id:'openai-style-secret',regex:/\bsk-[A-Za-z0-9_-]{20,}\b/},
+  {id:'runner-local-path',regex:/\/home\/runner\//},
+  {id:'mac-local-path',regex:/\/Users\/[A-Za-z0-9._-]+\//},
+  {id:'windows-local-path',regex:/[A-Za-z]:\\Users\\[^\\\r\n]+\\/}
+];
+
+function extension(path){
+  const index=path.lastIndexOf('.');
+  return index>=0?path.slice(index).toLowerCase():'';
+}
+
+async function scanDistributionStage(stage){
+  const entries=await readdir(stage,{recursive:true,withFileTypes:true});
+  const files=[];
+  const violations=[];
+  let textFilesScanned=0;
+
+  for(const entry of entries){
+    if(!entry.isFile())continue;
+    const full=join(entry.parentPath??entry.path,entry.name);
+    const path=relative(stage,full).split(sep).join('/');
+    files.push(path);
+    for(const pattern of forbiddenPathPatterns){
+      if(pattern.test(path))violations.push({kind:'path',path,pattern:String(pattern)});
+    }
+
+    if(textExtensions.has(extension(path))){
+      const bytes=await readFile(full);
+      if(bytes.byteLength<=2*1024*1024){
+        const text=bytes.toString('utf8');
+        textFilesScanned++;
+        for(const pattern of forbiddenContentPatterns){
+          if(pattern.regex.test(text))violations.push({kind:'content',path,rule:pattern.id});
+        }
+      }
+    }
+  }
+
+  if(violations.length){
+    throw new Error('distribution content policy rejected staged files: '+JSON.stringify(violations));
+  }
+
+  return Object.freeze({
+    schema:'opencontainer.distribution-content-policy.v0.1',
+    filesScanned:files.length,
+    textFilesScanned,
+    violations:0
+  });
 }
 
 export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','distribution')}={}){
@@ -67,7 +128,7 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
       'scripts/browser-acceptance.mjs',
       'scripts/hosting-self-check.mjs',
       'scripts/hosting-self-check-lib.mjs',
-      'fixtures/source-package-lock.json',
+      'metadata/source-package-lock.json',
       'README.md'
     ],
     repository:{
@@ -91,8 +152,10 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
     'scripts/hosting-self-check-lib.mjs'
   ];
   for(const path of copies)await copyInto(stage,path);
-  await copyInto(stage,'package-lock.json','fixtures/source-package-lock.json');
+  await copyInto(stage,'package-lock.json','metadata/source-package-lock.json');
   await writeFile(join(stage,'package.json'),JSON.stringify(packageManifest,null,2)+'\n');
+
+  const contentPolicy=await scanDistributionStage(stage);
 
   const result=spawnSync(npmCommand,['pack','--json','--pack-destination',output],{
     cwd:stage,
@@ -116,7 +179,7 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
     'package/scripts/browser-acceptance.mjs',
     'package/toolchain/vendor/lightningcss-wasm-1.33.0.tgz',
     'package/toolchain/vendor/rolldown-browser-1.2.9.tgz',
-    'package/fixtures/source-package-lock.json',
+    'package/metadata/source-package-lock.json',
     'package/docs/production/PRODUCTION-PROFILE.json'
   ];
   const packedFiles=new Set((receipt.files??[]).map((item)=>'package/'+item.path.replace(/^package\//,'')));
@@ -133,7 +196,8 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
     sha256:hash(bytes,'sha256'),
     sha512:hash(bytes,'sha512'),
     fileCount:receipt.entryCount??receipt.files?.length??null,
-    unpackedSize:receipt.unpackedSize??null
+    unpackedSize:receipt.unpackedSize??null,
+    contentPolicy
   });
 
   await rm(stageParent,{recursive:true,force:true});
