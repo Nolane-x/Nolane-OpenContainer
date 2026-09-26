@@ -1,0 +1,39 @@
+{
+  "schema": "opencontainer.release-candidate.v0.1",
+  "releaseId": "opencontainer-0.1.0-alpha.1-canary",
+  "channel": "canary",
+  "version": "0.1.0-alpha.1",
+  "reviewedChanges": [
+    {
+      "ref": "PR #30",
+      "mergeCommit": "4452905d079da1f1371418c08c8cac81ddea1248",
+      "title": "Reproducible release evidence bundle",
+      "implications": {
+        "api": "none",
+        "storage": "none",
+        "security": "Adds reproducible checksums, SPDX SBOM, in-toto/SLSA provenance, dependency/license inventory and distribution content-policy evidence."
+      }
+    },
+    {
+      "ref": "PR #31",
+      "mergeCommit": "c3431128f18696b59d455d62f057729702c69cff",
+      "title": "Compatibility-gated Service Worker promotion",
+      "implications": {
+        "api": "No public SDK shape change; browser edge startup receipts now expose Service Worker compatibility identity and activation mode.",
+        "storage": "none",
+        "security": "Removes unconditional Service Worker promotion and requires query, explicit activation, post-activation revalidation and explicit claim."
+      }
+    }
+  ],
+  "unresolvedRisks": [
+    "Cross-browser release matrix is not closed.",
+    "Signed/OIDC-authenticated public release provenance is not closed.",
+    "Release rollback, weak-device and production-topology campaigns are not closed."
+  ],
+  "criticalTestFlakiness": {
+    "unexplained": 0,
+    "policy": "Stable promotion must fail if this value is non-zero.",
+    "source": "Current CI preflight evaluates this manifest; channel canary does not use zero-flake status as a substitute for RC/stable campaigns."
+  },
+  "releaseVerified": false
+}
