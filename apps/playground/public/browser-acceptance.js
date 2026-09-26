@@ -413,6 +413,10 @@ async function run() {
       "if (app) { app.textContent = 'OpenContainer Vite C1'; app.dataset.logo = logoUrl; app.dataset.source = 'source-v1'; }",
       "export const marker: string = 'vite-c1';"
     ].join('\n'))
+    .writeFile('c1-app/src/dep-opt.ts', [
+      "import { nanoid } from 'nanoid';",
+      "export const optimizedMarker: string = nanoid(4);"
+    ].join('\n'))
     .writeFile('c1-app/src/style.css', c1CssSource)
     .writeFile('c1-app/src/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32"/></svg>')
     .writeFile('c1-app/vite.config.ts', [
@@ -809,6 +813,90 @@ async function run() {
       "export const hotChannelClosed = hotClosed;",
       "export { hotConnectEvents, hotDisconnectEvents, hmrSelfAccepting, hmrFirstUpdate, hmrFirstDelivered, hmrFailureObserved, hmrFailureDidNotBroadcast, hmrReconnectDelivered, hmrStaleClientQuiet, hmrRecovered, hmrUpdateCount };",
       "export { devErrorPhase, devErrorMessage, pluginNames, oxcEnabled, directTsTransformed, vfsTrace, manualResolvedId, manualLoadType, manualLoadHasTsGeneric, manualLoadBytes, manualTransformError, manualTransformPlugin, manualTransformId, manualTransformFrame, preImportAnalysisCode, preImportAnalysisBytes, preImportAnalysisAstParsed, preImportAnalysisAstError };"
+    ].join('\n'))
+    .writeFile('src/vite-dep-opt-probe.mjs', [
+      "import { createServer, transformWithOxc, version } from 'vite';",
+      "import { existsSync, readFileSync } from 'node:fs';",
+      "import { dirname, resolve as pathResolve } from 'node:path';",
+      "const root = '/workspace/c1-app';",
+      "const cleanId = (id) => String(id).split('?')[0].split('#')[0];",
+      "const vfsPlugin = {",
+      "  name: 'opencontainer-vfs-dep-opt',",
+      "  enforce: 'pre',",
+      "  resolveId(source, importer) {",
+      "    const raw = cleanId(source);",
+      "    let candidate = null;",
+      "    if (raw.startsWith('/workspace/')) candidate = raw;",
+      "    else if (raw.startsWith('/') && !raw.startsWith('/@')) candidate = root + raw;",
+      "    else if (importer && cleanId(importer).startsWith('/workspace/') && (raw.startsWith('./') || raw.startsWith('../'))) candidate = pathResolve(dirname(cleanId(importer)), raw);",
+      "    return candidate && existsSync(candidate) ? candidate : null;",
+      "  },",
+      "  async load(id) {",
+      "    const file = cleanId(id);",
+      "    if (!file.startsWith('/workspace/') || !existsSync(file)) return null;",
+      "    if (/\\.(?:svg|png|jpe?g|gif|webp|avif|ico|woff2?|ttf|otf|wasm)$/i.test(file)) return null;",
+      "    const source = readFileSync(file, 'utf8');",
+      "    if (/\\.(?:[cm]?ts|tsx)$/i.test(file)) {",
+      "      const transformed = await transformWithOxc(source, file);",
+      "      return { code: transformed.code, map: transformed.map, moduleType: 'js' };",
+      "    }",
+      "    return source;",
+      "  }",
+      "};",
+      "let depError = '';",
+      "let depOptimizerPresent = false;",
+      "let depOptimizedKeys = [];",
+      "let depDiscoveredKeys = [];",
+      "let depOptimizedFile = '';",
+      "let depOptimizedFileExists = false;",
+      "let depOptimizedBytes = 0;",
+      "let depTransformCode = '';",
+      "let depTransformUsesOptimizedPath = false;",
+      "let depMetadataHash = '';",
+      "let depCacheDir = '';",
+      "let depOptimizerClosed = false;",
+      "let server;",
+      "try {",
+      "  server = await createServer({",
+      "    root,",
+      "    configFile: false,",
+      "    logLevel: 'silent',",
+      "    appType: 'custom',",
+      "    cacheDir: root + '/node_modules/.vite',",
+      "    plugins: [vfsPlugin],",
+      "    optimizeDeps: { noDiscovery: true, include: ['nanoid'], force: true, holdUntilCrawlEnd: false },",
+      "    server: { middlewareMode: true, watch: null, ws: false, hmr: false }",
+      "  });",
+      "  const environment = server.environments.client;",
+      "  const optimizer = environment?.depsOptimizer;",
+      "  depOptimizerPresent = !!optimizer;",
+      "  if (!optimizer) throw new Error('Vite C2 dependency optimizer was not created');",
+      "  if (optimizer.scanProcessing) await optimizer.scanProcessing;",
+      "  depTransformCode = (await server.transformRequest('/src/dep-opt.ts'))?.code ?? '';",
+      "  const pendingBefore = optimizer.metadata?.depInfoList?.map((info) => info?.processing).filter(Boolean) ?? [];",
+      "  if (pendingBefore.length) await Promise.allSettled(pendingBefore);",
+      "  const metadata = optimizer.metadata ?? {};",
+      "  depOptimizedKeys = Object.keys(metadata.optimized ?? {});",
+      "  depDiscoveredKeys = Object.keys(metadata.discovered ?? {});",
+      "  const info = metadata.optimized?.nanoid ?? metadata.discovered?.nanoid ?? null;",
+      "  if (info?.processing) await info.processing;",
+      "  const finalMetadata = optimizer.metadata ?? metadata;",
+      "  const finalInfo = finalMetadata.optimized?.nanoid ?? finalMetadata.discovered?.nanoid ?? info;",
+      "  depOptimizedKeys = Object.keys(finalMetadata.optimized ?? {});",
+      "  depDiscoveredKeys = Object.keys(finalMetadata.discovered ?? {});",
+      "  depOptimizedFile = finalInfo?.file ?? '';",
+      "  depOptimizedFileExists = !!depOptimizedFile && existsSync(depOptimizedFile);",
+      "  depOptimizedBytes = depOptimizedFileExists ? readFileSync(depOptimizedFile).length : 0;",
+      "  depTransformUsesOptimizedPath = /node_modules\\/.vite\\/deps|\\/\\@id\\//.test(depTransformCode);",
+      "  depMetadataHash = String(finalMetadata.hash ?? finalMetadata.lockfileHash ?? finalMetadata.configHash ?? '');",
+      "  depCacheDir = server.config.cacheDir;",
+      "} catch (error) {",
+      "  depError = error?.stack ?? String(error);",
+      "} finally {",
+      "  if (server) { await server.close(); depOptimizerClosed = true; }",
+      "}",
+      "export const viteVersion = version;",
+      "export { depError, depOptimizerPresent, depOptimizedKeys, depDiscoveredKeys, depOptimizedFile, depOptimizedFileExists, depOptimizedBytes, depTransformCode, depTransformUsesOptimizedPath, depMetadataHash, depCacheDir, depOptimizerClosed };"
     ].join('\n'))
     .commit();
 
@@ -1242,6 +1330,55 @@ async function run() {
   c2RehydratedBridge.close();
   runtime.preview.revoke(5173, { owner: c2RestartOwner });
 
+  stage('vite-c2-dep-opt-start');
+  const viteDepOptEntryUrl = vitePublication.moduleURL('./vite-dep-opt-probe.mjs', '/workspace/src/entry.mjs');
+  const viteDepOptGraph = await vitePublication.graph(viteDepOptEntryUrl);
+  const viteDepOptExecution = await viteWorker.execute(viteDepOptGraph.entryURL, {
+    exportNames: [
+      'viteVersion',
+      'depError',
+      'depOptimizerPresent',
+      'depOptimizedKeys',
+      'depDiscoveredKeys',
+      'depOptimizedFile',
+      'depOptimizedFileExists',
+      'depOptimizedBytes',
+      'depTransformCode',
+      'depTransformUsesOptimizedPath',
+      'depMetadataHash',
+      'depCacheDir',
+      'depOptimizerClosed'
+    ],
+    observeNestedWorkers: true
+  });
+  stage('vite-c2-dep-opt-probe', {
+    error: viteDepOptExecution.exports.depError,
+    optimizedKeys: viteDepOptExecution.exports.depOptimizedKeys,
+    discoveredKeys: viteDepOptExecution.exports.depDiscoveredKeys,
+    optimizedFile: viteDepOptExecution.exports.depOptimizedFile,
+    optimizedFileExists: viteDepOptExecution.exports.depOptimizedFileExists,
+    optimizedBytes: viteDepOptExecution.exports.depOptimizedBytes,
+    transformPrefix: String(viteDepOptExecution.exports.depTransformCode ?? '').slice(0, 500),
+    usesOptimizedPath: viteDepOptExecution.exports.depTransformUsesOptimizedPath,
+    metadataHash: viteDepOptExecution.exports.depMetadataHash,
+    cacheDir: viteDepOptExecution.exports.depCacheDir,
+    closed: viteDepOptExecution.exports.depOptimizerClosed
+  });
+  assert(!viteDepOptExecution.exports.depError, 'Vite C2 dependency optimizer failed: ' + viteDepOptExecution.exports.depError);
+  assert(viteDepOptExecution.exports.viteVersion === '8.3.0', 'Vite C2 dependency optimizer used the wrong Vite version');
+  assert(viteDepOptExecution.exports.depOptimizerPresent === true, 'Vite C2 dependency optimizer authority was absent');
+  assert(viteDepOptExecution.exports.depOptimizedKeys.includes('nanoid'), 'Vite C2 did not promote nanoid into optimized metadata');
+  assert(viteDepOptExecution.exports.depOptimizedFileExists === true, 'Vite C2 optimized nanoid artifact was not materialized');
+  assert(viteDepOptExecution.exports.depOptimizedBytes > 0, 'Vite C2 optimized nanoid artifact is empty');
+  assert(viteDepOptExecution.exports.depTransformUsesOptimizedPath === true, 'Vite C2 transformed dependency import did not target optimized cache');
+  assert(viteDepOptExecution.exports.depOptimizerClosed === true, 'Vite C2 dependency optimizer server did not close gracefully');
+  stage('vite-c2-dep-opt-pass', {
+    optimized: viteDepOptExecution.exports.depOptimizedKeys,
+    file: viteDepOptExecution.exports.depOptimizedFile,
+    bytes: viteDepOptExecution.exports.depOptimizedBytes,
+    metadataHash: viteDepOptExecution.exports.depMetadataHash
+  });
+
   viteWorker.close();
   viteBridge.close();
 
@@ -1267,6 +1404,7 @@ async function run() {
     viteC2Hmr: true,
     viteC2RestartEpoch: true,
     viteC2PreviewRehydration: true,
+    viteC2DependencyOptimization: true,
     stages
   };
 }
