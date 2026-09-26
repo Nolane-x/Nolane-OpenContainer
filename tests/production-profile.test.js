@@ -33,9 +33,9 @@ test('Service Worker compatibility identity cannot drift from the canonical prod
   const installBlock=source.slice(installStart,activateStart);
   const activateBlock=source.slice(activateStart,messageStart);
   assert.doesNotMatch(installBlock,/skipWaiting\(/);
-  assert.match(activateBlock,/if \(activationAuthorized\)/);
-  assert.match(activateBlock,/clients\.claim\(/);
-  assert.ok(activateBlock.indexOf('if (activationAuthorized)')<activateBlock.indexOf('clients.claim()'));
+  assert.doesNotMatch(activateBlock,/clients\.claim\(/);
+  assert.match(source,/data\.type === 'opencontainer:sw-activate'/);
+  assert.match(source,/data\.type === 'opencontainer:sw-claim'/);
 });
 
 test('published production profile JSON cannot drift from canonical SDK identity',()=>{
