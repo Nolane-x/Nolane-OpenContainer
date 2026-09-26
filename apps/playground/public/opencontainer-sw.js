@@ -3,16 +3,13 @@ const PREVIEW_PREFIX = '/__opencontainer__/preview/';
 const REQUEST_TIMEOUT_MS = 5000;
 const SERVICE_WORKER_COMPATIBILITY_ID = 'opencontainer-sw-edge-v1:rpc1:snapshot1:opfs1';
 
-let activationAuthorized = false;
-
 self.addEventListener('install', () => {
   // Deliberately remain waiting. A compatible client must authorize promotion.
 });
 
-self.addEventListener('activate', (event) => {
-  if (activationAuthorized) {
-    event.waitUntil(self.clients.claim());
-  }
+self.addEventListener('activate', () => {
+  // Deliberately do not claim clients. The promoted worker must pass a second
+  // compatibility query and receive an explicit claim authorization.
 });
 
 self.addEventListener('message', (event) => {
@@ -39,7 +36,6 @@ self.addEventListener('message', (event) => {
       });
       return;
     }
-    activationAuthorized = true;
     event.waitUntil((async () => {
       await self.skipWaiting();
       port.postMessage({
