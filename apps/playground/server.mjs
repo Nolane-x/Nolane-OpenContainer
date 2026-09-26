@@ -63,6 +63,14 @@ const server = createServer(async (request, response) => {
         'Content-Security-Policy',
         "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; worker-src 'self'; child-src 'self'"
       );
+      response.setHeader('X-OpenContainer-Worker-Profile', 'strict');
+    }
+    if (url.pathname === '/opencontainer-toolchain-worker.mjs') {
+      response.setHeader(
+        'Content-Security-Policy',
+        "default-src 'none'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval'; connect-src 'self'; worker-src 'self'; child-src 'self'"
+      );
+      response.setHeader('X-OpenContainer-Worker-Profile', 'toolchain');
     }
     response.setHeader('Content-Type', contentType(target));
     response.end(await readFile(target));
