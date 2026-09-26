@@ -22,6 +22,7 @@ Promoted in the clean Chrome product/browser path:
 - the browser package corpus now also exercises exact `nanoid@3.3.19` conditional exports: the same frozen install resolves `nanoid/non-secure` to distinct ESM/CJS targets and executes the ESM subpath in a cross-origin-isolated Dedicated Worker.
 - the Dedicated Worker guest now installs a deny-by-default browser capability membrane: direct external/same-origin non-publication fetch, WebSocket/EventSource/WebTransport/XMLHttpRequest, SharedWorker/BroadcastChannel, origin OPFS/StorageManager, Web Locks, IndexedDB, CacheStorage/CookieStore and arbitrary nested Workers are denied; direct fetch remains scoped to the active publication session, and only the retained Rolldown WASI helper is admitted as a nested Worker.
 - guest execution deadlines are now destructive resource boundaries: an `OC_WORKER_TIMEOUT` hard-terminates the timed-out Dedicated Worker so runaway CPU code cannot survive behind a rejected RPC; the authority can subsequently create a fresh isolated realm for later work.
+- browser guest concurrency is now governed by `ResourceGovernor.workers`: each Dedicated Worker holds one lease, over-budget spawns fail with `OC_RESOURCE_EXHAUSTED`, and close/timeout destruction returns the lease for reuse.
 
 Evidence anchors:
 
@@ -40,6 +41,7 @@ Evidence anchors:
 - conditional package corpus court `9391f61ef6602fcfe059605c0b8ac4c2f3abf3ac` passed contract + Chrome browser-product-path in CI run #241: exact `nanoid@3.3.19` fetched 5,694 bytes, ESM resolved to `/workspace/node_modules/nanoid/non-secure/index.js`, CJS resolved to `/workspace/node_modules/nanoid/non-secure/index.cjs`, and the ESM subpath generated valid IDs inside an isolated worker.
 - guest browser-capability isolation court `e97d0a4eebca5f6482afabf500f59771f6f6164b` passed contract + Chrome browser-product-path in CI run #244: page realm stayed hidden; child_process/raw TCP/TLS/HTTPS/unknown host RPC/OPFS/Web Locks/IndexedDB/CacheStorage failed with explicit unavailable errors; external fetch, same-origin bypass, WebSocket, BroadcastChannel and arbitrary nested Worker failed with `OC_NETWORK_DENIED`; active-publication fetch still returned 200 through the Service Worker; all persistence/package/Vite C1/C2 courts remained green.
 - runaway guest resource-abuse court `114a416682e03bca90fc2eee6d7e14aacca0f5f4` passed contract + Chrome browser-product-path in CI run #247: a top-level infinite loop hit `OC_WORKER_TIMEOUT`, the timed-out realm was hard-terminated, and the same authority successfully executed a safe module on a fresh Worker while all persistence/package/Vite regression courts remained green.
+- browser guest worker-budget court `71d52b90c8e169b94cdca90c67b3f02755a4c12f` passed contract + Chrome browser-product-path in CI run #250: worker limit 1 admitted the first realm, rejected the second with `OC_RESOURCE_EXHAUSTED`, released usage to zero on close, then allowed the waiting authority to acquire the returned lease and execute successfully.
 
 Still required before production closure:
 
@@ -47,7 +49,7 @@ Still required before production closure:
 2. Extended WorkspaceFS/PackageFS durability campaigns beyond the promoted public SDK persistence profiles; WorkspaceFS restore/checkpoint/GC plus corrupt-newest fallback-and-continuation, persistent PackageContent hydration/forced-eviction recovery, policy/GC/quota preflight and multi-tab/Web Locks are promoted.
 3. Broader browser package-install corpus beyond the promoted Vite/Rolldown/Lightning CSS + standalone `es-module-lexer` and conditional-export `nanoid` courts; peer/optional/script policy, persistent immutable PackageContent, lockfile-authoritative hydration and concurrent cache dedupe are promoted.
 4. PC-A/PC-B target-device and browser matrix beyond CI Chrome.
-5. Weak-device/resource-budget, long-run/plateau, fault/security and release-packaging campaigns.
+5. Weak-device/resource-budget campaigns beyond the promoted concurrent Worker lease limit, plus long-run/plateau, memory-pressure/fault-security and release-packaging campaigns.
 6. Dependency/test-corpus licensing plus FTO/legal closure before a commercial production claim.
 
 `production_closed = false` until those remaining gates produce evidence.

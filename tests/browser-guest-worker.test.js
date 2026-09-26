@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BrowserGuestWorkerAuthority } from '../packages/process/src/index.js';
 import { ErrorCodes } from '../packages/protocol/src/index.js';
+import { ResourceGovernor } from '../packages/resources/src/index.js';
 
 class FakeWorker {
   static instances=[];
@@ -80,4 +81,32 @@ test('browser guest timeout hard-terminates runaway realm and later execution ca
   assert.equal(worker.terminated,false);
   authority.close();
   assert.equal(worker.terminated,true);
+});
+
+
+test('browser guest workers reserve and release ResourceGovernor worker leases',()=>{
+  FakeWorker.instances=[];
+  const resources=new ResourceGovernor({workers:1});
+  const publication={
+    session:'worker-quota-court',
+    resolveDynamic(){throw new Error('unused');}
+  };
+  const first=new BrowserGuestWorkerAuthority({publication,WorkerImpl:FakeWorker,resources});
+  const second=new BrowserGuestWorkerAuthority({publication,WorkerImpl:FakeWorker,resources});
+
+  first.start();
+  assert.equal(resources.usage.workers,1);
+  assert.throws(
+    ()=>second.start(),
+    (error)=>error.code===ErrorCodes.RESOURCE_EXHAUSTED
+  );
+  assert.equal(resources.usage.workers,1);
+
+  first.close();
+  assert.equal(resources.usage.workers,0);
+
+  second.start();
+  assert.equal(resources.usage.workers,1);
+  second.close();
+  assert.equal(resources.usage.workers,0);
 });
