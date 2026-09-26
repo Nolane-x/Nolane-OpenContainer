@@ -1,10 +1,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PreviewAuthority, BrowserPreviewServiceWorkerBridge } from '../packages/preview/src/index.js';
+import { SERVICE_WORKER_COMPATIBILITY_ID } from '../packages/protocol/src/service-worker-compatibility.js';
+
+class FakeWorker {
+  constructor(){
+    this.state='activated';
+    this.scriptURL='https://example.test/opencontainer-sw.js';
+  }
+  postMessage(data,ports=[]){
+    const port=ports[0];
+    if(!port)return;
+    if(data?.type==='opencontainer:sw-compatibility-query'){
+      queueMicrotask(()=>port.postMessage({ok:true,compatibilityId:SERVICE_WORKER_COMPATIBILITY_ID}));
+      return;
+    }
+    if(data?.type==='opencontainer:sw-claim'){
+      queueMicrotask(()=>port.postMessage({ok:true,action:'claim',compatibilityId:SERVICE_WORKER_COMPATIBILITY_ID}));
+    }
+  }
+}
 
 class FakeServiceWorkerContainer {
   constructor() {
-    this.controller = { scriptURL: 'https://example.test/opencontainer-sw.js' };
+    this.controller = new FakeWorker();
     this.listeners = new Map();
   }
   addEventListener(type, listener) { this.listeners.set(type, listener); }
@@ -12,7 +31,9 @@ class FakeServiceWorkerContainer {
   async register() {
     return {
       scope: 'https://example.test/',
-      active: { state: 'activated' },
+      active: this.controller,
+      waiting: null,
+      installing: null,
       addEventListener() {},
       removeEventListener() {}
     };
@@ -35,7 +56,9 @@ test('browser preview bridge encodes authority proof and dispatches through curr
     serviceWorkerContainer: container,
     baseURL: 'https://example.test'
   });
-  await bridge.start();
+  const startReceipt = await bridge.start();
+  assert.equal(startReceipt.serviceWorkerCompatibilityId,SERVICE_WORKER_COMPATIBILITY_ID);
+  assert.equal(startReceipt.serviceWorkerActivation,'existing-compatible');
 
   const url = new URL(bridge.url(route, '/src/main.ts?x=1'));
   assert.equal(url.pathname, '/__opencontainer__/preview/5173/src/main.ts');
