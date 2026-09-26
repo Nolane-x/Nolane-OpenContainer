@@ -251,7 +251,7 @@
     {
       "code": "OC_PACKAGE_IMPORT_NOT_DEFINED",
       "cause": "A package #imports specifier is not defined for the current package/conditions.",
-      "consequence": "Resolution fails.",
+      "consequence": "Package import resolution stops before loading or executing an undefined internal target.",
       "recovery": "Declare the imports mapping or use an existing public/internal package specifier.",
       "compatibilityClass": "package-resolution"
     },
