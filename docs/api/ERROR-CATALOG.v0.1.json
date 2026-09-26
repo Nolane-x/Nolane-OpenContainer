@@ -317,6 +317,13 @@
       "consequence": "Import is rejected rather than partially restoring invalid data.",
       "recovery": "Use a valid OpenContainer NDJSON export for the supported format version or restore a known-good backup.",
       "compatibilityClass": "data-format"
+    },
+    {
+      "code": "OC_INTERNAL",
+      "cause": "An unexpected non-OpenContainer exception crossed a public error-envelope boundary.",
+      "consequence": "The operation is reported as an internal failure without inventing a more specific stable code.",
+      "recovery": "Capture the privacy-minimized support bundle and reproduction steps, then fix or report the underlying unexpected exception.",
+      "compatibilityClass": "deployment-runtime"
     }
   ]
 }
