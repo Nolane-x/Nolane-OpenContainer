@@ -113,8 +113,21 @@ async function run() {
   });
   const bridgeA = new BrowserEsmServiceWorkerBridge({ publication: publicationA });
   stage('bridge-a-starting');
-  await bridgeA.start();
-  stage('bridge-a-ready', { controlled: !!navigator.serviceWorker.controller });
+  const bridgeAReceipt = await bridgeA.start();
+  assert(
+    bridgeAReceipt.serviceWorkerCompatibilityId === runtime.productionProfile.browser.serviceWorkerCompatibilityId,
+    'first Service Worker compatibility handshake drifted from production profile'
+  );
+  assert(
+    bridgeAReceipt.serviceWorkerActivation === 'compatibility-authorized' ||
+      bridgeAReceipt.serviceWorkerActivation === 'existing-compatible',
+    'first Service Worker activation did not use compatibility authorization'
+  );
+  stage('bridge-a-ready', {
+    controlled: !!navigator.serviceWorker.controller,
+    serviceWorkerCompatibilityId: bridgeAReceipt.serviceWorkerCompatibilityId,
+    serviceWorkerActivation: bridgeAReceipt.serviceWorkerActivation
+  });
 
   const entryA = publicationA.moduleURL('./main.js', '/workspace/src/entry.mjs').href;
   const workerA = new BrowserGuestWorkerAuthority({
@@ -151,8 +164,19 @@ async function run() {
   });
   const bridgeB = new BrowserEsmServiceWorkerBridge({ publication: publicationB });
   stage('bridge-b-starting');
-  await bridgeB.start();
-  stage('bridge-b-ready');
+  const bridgeBReceipt = await bridgeB.start();
+  assert(
+    bridgeBReceipt.serviceWorkerCompatibilityId === runtime.productionProfile.browser.serviceWorkerCompatibilityId,
+    'reused Service Worker compatibility profile drifted'
+  );
+  assert(
+    bridgeBReceipt.serviceWorkerActivation === 'existing-compatible',
+    'second bridge unexpectedly promoted a new Service Worker'
+  );
+  stage('bridge-b-ready', {
+    serviceWorkerCompatibilityId: bridgeBReceipt.serviceWorkerCompatibilityId,
+    serviceWorkerActivation: bridgeBReceipt.serviceWorkerActivation
+  });
 
   const entryB = publicationB.moduleURL('./main.js', '/workspace/src/entry.mjs').href;
   const workerB = new BrowserGuestWorkerAuthority({
