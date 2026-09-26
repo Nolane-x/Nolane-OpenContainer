@@ -3,7 +3,7 @@ import { DiagnosticJournal } from '../../diagnostics/src/index.js';
 import { ResourceGovernor } from '../../resources/src/index.js';
 import { MemoryVFS, OpfsCheckpointAuthority } from '../../vfs/src/index.js';
 import { ProcessSupervisor } from '../../process/src/index.js';
-import { PackageGraphAuthority } from '../../package-env/src/index.js';
+import { OpfsPackageContentStore, PackageGraphAuthority } from '../../package-env/src/index.js';
 import { NetworkAuthority } from '../../network/src/index.js';
 import { PreviewAuthority } from '../../preview/src/index.js';
 import { MemoryPersistenceAuthority } from '../../persistence/src/index.js';
@@ -20,9 +20,10 @@ export class OpenContainer {
     const preview=new PreviewAuthority();
     const snapshots=new MemoryPersistenceAuthority({fs});
     const kernel=new OpenContainerKernel({diagnostics});
-    Object.assign(this,{fs,process,packages,net,preview,snapshots,resources,diagnostics,workspacePersistence:null});
+    Object.assign(this,{fs,process,packages,net,preview,snapshots,resources,diagnostics,workspacePersistence:null,packageContentStore:null});
     Object.defineProperty(this,'_kernel',{value:kernel,enumerable:false});
     Object.defineProperty(this,'_workspacePersistenceOptions',{value:options.workspacePersistence??null,enumerable:false});
+    Object.defineProperty(this,'_packagePersistenceOptions',{value:options.packagePersistence??null,enumerable:false});
   }
   static async boot(options={}){const runtime=new OpenContainer(options);await runtime.boot();return runtime;}
   async boot(){
@@ -30,6 +31,11 @@ export class OpenContainer {
       const authority=await new OpfsCheckpointAuthority(this._workspacePersistenceOptions).open();
       await authority.restoreInto(this.fs);
       this.workspacePersistence=authority;
+    }
+    if(this._packagePersistenceOptions){
+      const store=await new OpfsPackageContentStore(this._packagePersistenceOptions).open();
+      this.packages.setContentStore(store);
+      this.packageContentStore=store;
     }
     await this._kernel.boot();
     return this;
