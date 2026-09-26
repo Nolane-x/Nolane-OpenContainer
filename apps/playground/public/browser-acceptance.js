@@ -565,14 +565,53 @@ async function run() {
       "export const repeatedOutputFiles = thirdRun.outputs.map((entry) => entry.fileName).sort().join('|') === fourthRun.outputs.map((entry) => entry.fileName).sort().join('|');"
     ].join('\n'))
     .writeFile('src/vite-dev-probe.mjs', [
-      "import { createServer, transformWithOxc, version } from 'vite';",
-      "import { existsSync, readFileSync } from 'node:fs';",
+      "import { createServer, DevEnvironment, transformWithOxc, version } from 'vite';",
+      "import { existsSync, readFileSync, writeFileSync } from 'node:fs';",
       "import { dirname, resolve as pathResolve } from 'node:path';",
       "import { parseAst } from 'rolldown/parseAst';",
       "const root = '/workspace/c1-app';",
       "const cleanId = (id) => String(id).split('?')[0].split('#')[0];",
       "const vfsTrace = [];",
       "const trace = (kind, detail) => { if (vfsTrace.length < 80) vfsTrace.push(kind + ':' + detail); };",
+      "const hotListeners = new Map();",
+      "const hotPayloads = [];",
+      "const hotDeliveries = [];",
+      "const hotReplies = [];",
+      "const hotClients = new Map();",
+      "let hotListening = false;",
+      "let hotClosed = false;",
+      "const hotHandlers = (event) => { let set = hotListeners.get(event); if (!set) { set = new Set(); hotListeners.set(event, set); } return set; };",
+      "const emitHot = (event, data, client) => { for (const handler of hotListeners.get(event) ?? []) handler(data, client); };",
+      "const hotTransport = {",
+      "  skipFsCheck: true,",
+      "  send(payload) {",
+      "    const copy = structuredClone(payload);",
+      "    hotPayloads.push(copy);",
+      "    for (const client of hotClients.values()) hotDeliveries.push({ clientId: client.id, payload: structuredClone(copy) });",
+      "  },",
+      "  on(event, handler) { hotHandlers(event).add(handler); },",
+      "  off(event, handler) { hotListeners.get(event)?.delete(handler); },",
+      "  listen() { hotListening = true; },",
+      "  close() {",
+      "    for (const client of [...hotClients.values()]) emitHot('vite:client:disconnect', undefined, client);",
+      "    hotClients.clear();",
+      "    hotClosed = true;",
+      "  }",
+      "};",
+      "const connectHot = (id) => {",
+      "  const client = { id, send(payload) { hotReplies.push({ clientId: id, payload: structuredClone(payload) }); } };",
+      "  hotClients.set(id, client);",
+      "  emitHot('vite:client:connect', undefined, client);",
+      "  return client;",
+      "};",
+      "const disconnectHot = (id) => {",
+      "  const client = hotClients.get(id);",
+      "  if (!client) return false;",
+      "  emitHot('vite:client:disconnect', undefined, client);",
+      "  hotClients.delete(id);",
+      "  return true;",
+      "};",
+      "const isJsUpdate = (payload) => payload?.type === 'update' && payload.updates?.some((update) => update.type === 'js-update' && (update.path === '/src/main.ts' || update.acceptedPath === '/src/main.ts'));",
       "const vfsPlugin = {",
       "  name: 'opencontainer-vfs-dev',",
       "  enforce: 'pre',",
@@ -595,8 +634,9 @@ async function run() {
       "    const source = readFileSync(file, 'utf8');",
       "    if (/\\.(?:[cm]?ts|tsx)$/i.test(file)) {",
       "      const transformed = await transformWithOxc(source, file);",
-      "      trace('load-oxc', file + ':' + String(source.length) + '->' + String(transformed.code.length));",
-      "      return { code: transformed.code, map: transformed.map, moduleType: 'js' };",
+      "      const hmrCode = file === root + '/src/main.ts' ? transformed.code + '\\nif (import.meta.hot) import.meta.hot.accept();' : transformed.code;",
+      "      trace('load-oxc', file + ':' + String(source.length) + '->' + String(hmrCode.length));",
+      "      return { code: hmrCode, map: transformed.map, moduleType: 'js' };",
       "    }",
       "    return source;",
       "  }",
@@ -608,8 +648,23 @@ async function run() {
       "  appType: 'spa',",
       "  plugins: [vfsPlugin],",
       "  optimizeDeps: { noDiscovery: true, include: [] },",
-      "  server: { middlewareMode: true, watch: null, ws: false, hmr: false }",
+      "  environments: {",
+      "    client: {",
+      "      dev: {",
+      "        createEnvironment(name, config, context) {",
+      "          return new DevEnvironment(name, config, { ...context, hot: true, transport: hotTransport });",
+      "        }",
+      "      }",
+      "    }",
+      "  },",
+      "  server: { middlewareMode: true, watch: null, ws: false, hmr: true }",
       "});",
+      "const hotEnvironment = server.environments.client;",
+      "let hotConnectEvents = 0;",
+      "let hotDisconnectEvents = 0;",
+      "hotEnvironment.hot.on('vite:client:connect', () => { hotConnectEvents += 1; });",
+      "hotEnvironment.hot.on('vite:client:disconnect', () => { hotDisconnectEvents += 1; });",
+      "connectHot('client-1');",
       "const clientContainer = server.environments?.client?.pluginContainer;",
       "let preImportAnalysisCode = '';",
       "let preImportAnalysisBytes = 0;",
@@ -667,6 +722,15 @@ async function run() {
       "let closed = false;",
       "let devErrorPhase = '';",
       "let devErrorMessage = '';",
+      "let hmrSelfAccepting = false;",
+      "let hmrFirstUpdate = false;",
+      "let hmrFirstDelivered = false;",
+      "let hmrFailureObserved = false;",
+      "let hmrFailureDidNotBroadcast = false;",
+      "let hmrReconnectDelivered = false;",
+      "let hmrStaleClientQuiet = false;",
+      "let hmrRecovered = false;",
+      "let hmrUpdateCount = 0;",
       "try {",
       "  try {",
       "    html = await server.transformIndexHtml('/', readFileSync(root + '/index.html', 'utf8'));",
@@ -683,7 +747,50 @@ async function run() {
       "      clientCode = client?.code ?? '';",
       "    } catch (error) { devErrorPhase = 'vite-client'; devErrorMessage = error?.stack ?? String(error); }",
       "  }",
-      "} finally {",
+      "  if (!devErrorPhase) {",
+      "    try {",
+      "      const environment = server.environments.client;",
+      "      const sourcePath = root + '/src/main.ts';",
+      "      const module = await environment.moduleGraph.getModuleByUrl('/src/main.ts');",
+      "      hmrSelfAccepting = module?.isSelfAccepting === true;",
+      "      if (!module) throw new Error('Vite C2 HMR module graph lost /src/main.ts');",
+      "      const sourceV2 = readFileSync(sourcePath, 'utf8');",
+      "      const sourceV3 = sourceV2.replace('source-v2', 'source-v3');",
+      "      if (sourceV3 === sourceV2) throw new Error('Vite C2 HMR fixture did not contain source-v2');",
+      "      const firstPayloadStart = hotPayloads.length;",
+      "      writeFileSync(sourcePath, sourceV3);",
+      "      environment.moduleGraph.onFileChange(sourcePath);",
+      "      await environment.reloadModule(module);",
+      "      const firstPayloads = hotPayloads.slice(firstPayloadStart);",
+      "      hmrFirstUpdate = firstPayloads.some(isJsUpdate);",
+      "      hmrFirstDelivered = hotDeliveries.some((entry) => entry.clientId === 'client-1' && isJsUpdate(entry.payload));",
+      "      const updated = await environment.transformRequest('/src/main.ts?oc-hmr=1');",
+      "      if (!(updated?.code ?? '').includes('source-v3')) throw new Error('Vite C2 HMR update did not expose source-v3');",
+      "      const payloadCountBeforeFailure = hotPayloads.length;",
+      "      writeFileSync(sourcePath, sourceV3 + '\\nexport const broken: = ;');",
+      "      environment.moduleGraph.onFileChange(sourcePath);",
+      "      try { await environment.transformRequest('/src/main.ts?oc-invalid=1'); }",
+      "      catch { hmrFailureObserved = true; }",
+      "      hmrFailureDidNotBroadcast = hotPayloads.length === payloadCountBeforeFailure;",
+      "      disconnectHot('client-1');",
+      "      const staleClientDeliveries = hotDeliveries.filter((entry) => entry.clientId === 'client-1').length;",
+      "      connectHot('client-2');",
+      "      const sourceV4 = sourceV3.replace('source-v3', 'source-v4');",
+      "      writeFileSync(sourcePath, sourceV4);",
+      "      environment.moduleGraph.onFileChange(sourcePath);",
+      "      const reconnectModule = await environment.moduleGraph.getModuleByUrl('/src/main.ts');",
+      "      if (!reconnectModule) throw new Error('Vite C2 HMR reconnect lost /src/main.ts');",
+      "      const reconnectPayloadStart = hotPayloads.length;",
+      "      await environment.reloadModule(reconnectModule);",
+      "      const recovered = await environment.transformRequest('/src/main.ts?oc-recover=1');",
+      "      hmrRecovered = (recovered?.code ?? '').includes('source-v4');",
+      "      hmrReconnectDelivered = hotDeliveries.some((entry) => entry.clientId === 'client-2' && isJsUpdate(entry.payload));",
+      "      hmrStaleClientQuiet = hotDeliveries.filter((entry) => entry.clientId === 'client-1').length === staleClientDeliveries;",
+      "      hmrUpdateCount = hotPayloads.filter(isJsUpdate).length;",
+      "      if (!hotPayloads.slice(reconnectPayloadStart).some(isJsUpdate)) throw new Error('Vite C2 reconnect did not emit js-update');",
+      "    } catch (error) { devErrorPhase = 'hmr'; devErrorMessage = error?.stack ?? String(error); }",
+      "  }",
+      "} finally {
       "  await server.close();",
       "  closed = true;",
       "}",
@@ -697,6 +804,9 @@ async function run() {
       "export const tsBytes = tsCode.length;",
       "export { html, tsCode, clientCode };",
       "export const closeSucceeded = closed;",
+      "export const hotChannelListening = hotListening;",
+      "export const hotChannelClosed = hotClosed;",
+      "export { hotConnectEvents, hotDisconnectEvents, hmrSelfAccepting, hmrFirstUpdate, hmrFirstDelivered, hmrFailureObserved, hmrFailureDidNotBroadcast, hmrReconnectDelivered, hmrStaleClientQuiet, hmrRecovered, hmrUpdateCount };",
       "export { devErrorPhase, devErrorMessage, pluginNames, oxcEnabled, directTsTransformed, vfsTrace, manualResolvedId, manualLoadType, manualLoadHasTsGeneric, manualLoadBytes, manualTransformError, manualTransformPlugin, manualTransformId, manualTransformFrame, preImportAnalysisCode, preImportAnalysisBytes, preImportAnalysisAstParsed, preImportAnalysisAstError };"
     ].join('\n'))
     .commit();
@@ -957,7 +1067,20 @@ async function run() {
       'preImportAnalysisCode',
       'preImportAnalysisBytes',
       'preImportAnalysisAstParsed',
-      'preImportAnalysisAstError'
+      'preImportAnalysisAstError',
+      'hotChannelListening',
+      'hotChannelClosed',
+      'hotConnectEvents',
+      'hotDisconnectEvents',
+      'hmrSelfAccepting',
+      'hmrFirstUpdate',
+      'hmrFirstDelivered',
+      'hmrFailureObserved',
+      'hmrFailureDidNotBroadcast',
+      'hmrReconnectDelivered',
+      'hmrStaleClientQuiet',
+      'hmrRecovered',
+      'hmrUpdateCount'
     ],
     observeNestedWorkers: true
   });
@@ -979,7 +1102,20 @@ async function run() {
     preImportAnalysisCode: viteDevExecution.exports.preImportAnalysisCode,
     preImportAnalysisBytes: viteDevExecution.exports.preImportAnalysisBytes,
     preImportAnalysisAstParsed: viteDevExecution.exports.preImportAnalysisAstParsed,
-    preImportAnalysisAstError: viteDevExecution.exports.preImportAnalysisAstError
+    preImportAnalysisAstError: viteDevExecution.exports.preImportAnalysisAstError,
+    hotChannelListening: viteDevExecution.exports.hotChannelListening,
+    hotChannelClosed: viteDevExecution.exports.hotChannelClosed,
+    hotConnectEvents: viteDevExecution.exports.hotConnectEvents,
+    hotDisconnectEvents: viteDevExecution.exports.hotDisconnectEvents,
+    hmrSelfAccepting: viteDevExecution.exports.hmrSelfAccepting,
+    hmrFirstUpdate: viteDevExecution.exports.hmrFirstUpdate,
+    hmrFirstDelivered: viteDevExecution.exports.hmrFirstDelivered,
+    hmrFailureObserved: viteDevExecution.exports.hmrFailureObserved,
+    hmrFailureDidNotBroadcast: viteDevExecution.exports.hmrFailureDidNotBroadcast,
+    hmrReconnectDelivered: viteDevExecution.exports.hmrReconnectDelivered,
+    hmrStaleClientQuiet: viteDevExecution.exports.hmrStaleClientQuiet,
+    hmrRecovered: viteDevExecution.exports.hmrRecovered,
+    hmrUpdateCount: viteDevExecution.exports.hmrUpdateCount
   });
   assert(!viteDevExecution.exports.devErrorPhase, 'Vite C2 dev transform failed at ' + viteDevExecution.exports.devErrorPhase + ': ' + viteDevExecution.exports.devErrorMessage);
   assert(viteDevExecution.exports.viteVersion === '8.3.0', 'Vite C2 dev server used the wrong version');
@@ -988,7 +1124,26 @@ async function run() {
   assert(viteDevExecution.exports.htmlHasEntry === true, 'Vite C2 transformed HTML lost source entry');
   assert(viteDevExecution.exports.tsTransformed === true, 'Vite C2 did not transform TypeScript source');
   assert(viteDevExecution.exports.viteClientServed === true, 'Vite C2 did not transform /@vite/client');
+  assert(viteDevExecution.exports.hotChannelListening === true, 'Vite C2 virtual hot channel never entered listening state');
+  assert(viteDevExecution.exports.hotChannelClosed === true, 'Vite C2 virtual hot channel did not close with dev server');
+  assert(viteDevExecution.exports.hotConnectEvents >= 2, 'Vite C2 virtual hot channel did not observe reconnect');
+  assert(viteDevExecution.exports.hotDisconnectEvents >= 1, 'Vite C2 virtual hot channel did not observe disconnect');
+  assert(viteDevExecution.exports.hmrSelfAccepting === true, 'Vite C2 main module was not self-accepting');
+  assert(viteDevExecution.exports.hmrFirstUpdate === true, 'Vite C2 did not emit a js-update for source edit');
+  assert(viteDevExecution.exports.hmrFirstDelivered === true, 'Vite C2 js-update was not delivered to the connected client');
+  assert(viteDevExecution.exports.hmrFailureObserved === true, 'Vite C2 invalid update did not fail safely');
+  assert(viteDevExecution.exports.hmrFailureDidNotBroadcast === true, 'Vite C2 invalid update broadcast an HMR payload');
+  assert(viteDevExecution.exports.hmrReconnectDelivered === true, 'Vite C2 reconnect client did not receive js-update');
+  assert(viteDevExecution.exports.hmrStaleClientQuiet === true, 'Vite C2 disconnected client received a later update');
+  assert(viteDevExecution.exports.hmrRecovered === true, 'Vite C2 did not recover after invalid update');
   assert(viteDevExecution.exports.closeSucceeded === true, 'Vite C2 dev server did not close gracefully');
+  stage('vite-c2-hmr-pass', {
+    updates: viteDevExecution.exports.hmrUpdateCount,
+    connects: viteDevExecution.exports.hotConnectEvents,
+    disconnects: viteDevExecution.exports.hotDisconnectEvents,
+    safeFailure: viteDevExecution.exports.hmrFailureDidNotBroadcast,
+    recovered: viteDevExecution.exports.hmrRecovered
+  });
 
   const c2Owner = 'vite-c2-session-1';
   const c2Route = runtime.listen(5173, (request = {}) => {
@@ -1069,6 +1224,7 @@ async function run() {
     viteC1Build: true,
     viteC2DevServer: true,
     viteC2VirtualHttp: true,
+    viteC2Hmr: true,
     viteC2RestartEpoch: true,
     stages
   };
