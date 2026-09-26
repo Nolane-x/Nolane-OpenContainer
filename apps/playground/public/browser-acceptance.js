@@ -136,6 +136,14 @@ async function run() {
   bridgeB.close();
 
   stage('guest-isolation-start');
+  const guestWorkerResponse = await fetch('/opencontainer-guest-worker.mjs', { cache: 'no-store' });
+  assert(guestWorkerResponse.ok, 'guest Worker bootstrap response is unavailable');
+  const guestWorkerCsp = guestWorkerResponse.headers.get('content-security-policy') ?? '';
+  assert(guestWorkerCsp.includes("default-src 'none'"), 'guest Worker CSP is missing default deny');
+  assert(guestWorkerCsp.includes("script-src 'self' 'wasm-unsafe-eval'"), 'guest Worker CSP does not preserve only self modules + WASM compilation');
+  assert(guestWorkerCsp.includes("connect-src 'self'"), 'guest Worker CSP does not restrict connect authority to self');
+  assert(!guestWorkerCsp.includes("'unsafe-eval'"), 'guest Worker CSP accidentally permits JavaScript eval');
+
   runtime.fs.beginTransaction().writeFile('src/guest-isolation.mjs', [
     "import { spawn } from 'node:child_process';",
     "import net from 'node:net';",
@@ -161,7 +169,9 @@ async function run() {
     "export const opfsCode = navigator.storage?.getDirectory ? await asyncCodeOf(() => navigator.storage.getDirectory()) : 'ABSENT';",
     "export const locksCode = navigator.locks?.request ? await asyncCodeOf(() => navigator.locks.request('guest-escape', () => true)) : 'ABSENT';",
     "export const indexedDbCode = typeof indexedDB !== 'undefined' ? codeOf(() => indexedDB.open('guest-escape')) : 'ABSENT';",
-    "export const cacheStorageCode = typeof caches !== 'undefined' ? await asyncCodeOf(() => caches.open('guest-escape')) : 'ABSENT';"
+    "export const cacheStorageCode = typeof caches !== 'undefined' ? await asyncCodeOf(() => caches.open('guest-escape')) : 'ABSENT';",
+    "export const evalCode = codeOf(() => eval('1 + 1'));",
+    "export const functionCtorCode = codeOf(() => Function('return 1')());"
   ].join('\n')).commit();
 
   runtime.fs.beginTransaction().writeFile(
@@ -203,7 +213,9 @@ async function run() {
       'opfsCode',
       'locksCode',
       'indexedDbCode',
-      'cacheStorageCode'
+      'cacheStorageCode',
+      'evalCode',
+      'functionCtorCode'
     ]
   });
 
@@ -236,7 +248,14 @@ async function run() {
   );
   assert(isolation.exports.internalFetchStatus === 200, 'guest membrane blocked its own authoritative publication resource');
   assert(isolation.exports.internalFetchEdge === 'service-worker', 'guest internal fetch escaped the publication service-worker edge');
+  assert(isolation.exports.evalCode === 'EvalError', 'guest CSP did not block direct eval: ' + isolation.exports.evalCode);
+  assert(isolation.exports.functionCtorCode === 'EvalError', 'guest CSP did not block Function constructor: ' + isolation.exports.functionCtorCode);
   assert(isolation.workerCrossOriginIsolated === true, 'security court guest lost cross-origin isolation');
+  stage('guest-csp-pass', {
+    policy: guestWorkerCsp,
+    eval: isolation.exports.evalCode,
+    functionConstructor: isolation.exports.functionCtorCode
+  });
 
   stage('guest-runaway-timeout-start');
   const runawayWorker = new BrowserGuestWorkerAuthority({
@@ -328,6 +347,8 @@ async function run() {
     webLocks: isolation.exports.locksCode,
     indexedDb: isolation.exports.indexedDbCode,
     cacheStorage: isolation.exports.cacheStorageCode,
+    eval: isolation.exports.evalCode,
+    functionConstructor: isolation.exports.functionCtorCode,
     unknownHostRpc: isolation.exports.unknownHostCode,
     internalPublicationFetch: isolation.exports.internalFetchStatus,
     workerCrossOriginIsolated: isolation.workerCrossOriginIsolated
