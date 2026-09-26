@@ -334,7 +334,8 @@
         "POSTINSTALL_DENIED_BY_DEFAULT",
         "NATIVE_BINARY_SELECTION_UNSUPPORTED",
         "ROOT_DEPENDENCY_GRAPH_NOT_PACKAGE_LOCK_AUTHORITY"
-      ]
+      ],
+      "packageJsonPath": "npm/esbuild/package.json"
     },
     {
       "id": "readable-stream",
