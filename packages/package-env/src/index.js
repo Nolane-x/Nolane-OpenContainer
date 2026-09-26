@@ -30,13 +30,24 @@ function dependencyLocation(nodesByLocation,issuerLocation,name){
 }
 
 export class PackageGraphAuthority {
-  #generation=0;#graph=null;#baseFs=null;#nodeModules=null;#resolver=null;
+  #generation=0;#graph=null;#baseFs=null;#nodeModules=null;#resolver=null;#contentStore=null;
 
-  constructor({fs=null}={}){this.#baseFs=fs;}
+  constructor({fs=null,contentStore=null}={}){this.#baseFs=fs;if(contentStore)this.setContentStore(contentStore);}
   get generation(){return this.#generation;}
   get graph(){return this.#graph;}
   get nodeModules(){return this.#nodeModules;}
   get resolver(){return this.#resolver;}
+  get contentStore(){return this.#contentStore;}
+
+  setContentStore(contentStore){
+    assertOc(
+      contentStore&&typeof contentStore.has==='function'&&typeof contentStore.get==='function'&&typeof contentStore.ingest==='function',
+      ErrorCodes.INVALID_ARGUMENT,
+      'Package content store must expose has(), get(), and ingest()'
+    );
+    this.#contentStore=contentStore;
+    return this;
+  }
 
   compile(lockfile){
     const doc=typeof lockfile==='string'?JSON.parse(lockfile):structuredClone(lockfile);
@@ -192,7 +203,8 @@ export class PackageGraphAuthority {
   }
 
   createFrozenInstaller(options={}){
-    return new FrozenInstallAuthority({packages:this,...options});
+    const contentStore=options.contentStore??this.#contentStore;
+    return new FrozenInstallAuthority({packages:this,...(contentStore?{contentStore}:{}),...options});
   }
 
   bindCommands(processSupervisor,options={}){
