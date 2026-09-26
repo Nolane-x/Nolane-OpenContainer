@@ -1,7 +1,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildDistribution } from './build-distribution.mjs';
@@ -104,6 +104,15 @@ console.log(JSON.stringify(receipt));
   if(receipt.previewText!=='distribution-preview'||receipt.restored!=='one'||receipt.imported!=='one')throw new Error('distribution preview/persistence court failed: '+JSON.stringify(receipt));
 
   const installedRoot=join(consumer,'node_modules','@nolane','opencontainer');
+  const installedManifest=JSON.parse(await readFile(join(installedRoot,'package.json'),'utf8'));
+  const installedSdkContract=JSON.parse(await readFile(join(installedRoot,'docs','api','PUBLIC-SDK.v0.1.json'),'utf8'));
+  if(JSON.stringify(installedManifest.exports)!==JSON.stringify(installedSdkContract.exportMap)){
+    throw new Error('installed package export map drifted from public SDK contract');
+  }
+  for(const subpath of installedSdkContract.privacyBoundary.noPublicPackageSubpaths){
+    if(Object.hasOwn(installedManifest.exports,subpath))throw new Error('installed package exposed forbidden internal subpath '+subpath);
+  }
+
   const exampleResult=run(process.execPath,[join(installedRoot,'examples','sdk-lifecycle.mjs')],{cwd:installedRoot});
   const exampleReceipt=JSON.parse(exampleResult.stdout.trim());
   if(exampleReceipt.exitCode!==0||exampleReceipt.stdout!=='hello opencontainer'||exampleReceipt.previewText!=='preview-ok'){
@@ -167,6 +176,11 @@ console.log(JSON.stringify(receipt));
     installedHostingSelfCheck:{
       source:'node_modules/@nolane/opencontainer/scripts/hosting-self-check.mjs',
       receipt:hostingReceipt
+    },
+    publicSdkContract:{
+      source:'node_modules/@nolane/opencontainer/docs/api/PUBLIC-SDK.v0.1.json',
+      exportMap:installedManifest.exports,
+      forbiddenInternalSubpaths:installedSdkContract.privacyBoundary.noPublicPackageSubpaths.length
     }
   },null,2));
 }finally{
