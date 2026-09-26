@@ -340,6 +340,59 @@ async function run() {
     await opfsRoot.removeEntry(opfsDirectory, { recursive: true });
   }
 
+  stage('sdk-workspace-persistence-start');
+  const sdkWorkspaceDirectory = 'opencontainer-sdk-workspace-' + crypto.randomUUID();
+  try {
+    const workspaceProfile = {
+      root: opfsRoot,
+      directoryName: sdkWorkspaceDirectory,
+      lockManager: navigator.locks,
+      storagePolicy: new BrowserStoragePolicy({ storageManager: navigator.storage })
+    };
+
+    const persistentRuntimeA = await OpenContainer.boot({ workspacePersistence: workspaceProfile });
+    persistentRuntimeA.mount({ 'persisted.txt': 'workspace-one' });
+    const sdkFirst = await persistentRuntimeA.persistWorkspace();
+    persistentRuntimeA.fs.beginTransaction().writeFile('persisted.txt', 'workspace-two').commit();
+    const sdkSecond = await persistentRuntimeA.persistWorkspace();
+    assert(sdkSecond.sequence === sdkFirst.sequence + 1, 'SDK workspace checkpoint sequence did not advance');
+    assert(sdkSecond.generation === persistentRuntimeA.fs.generation, 'SDK workspace checkpoint generation diverged before reopen');
+    await persistentRuntimeA.terminate();
+
+    const persistentRuntimeB = await OpenContainer.boot({ workspacePersistence: workspaceProfile });
+    assert(persistentRuntimeB.fs.readFile('persisted.txt') === 'workspace-two', 'SDK OPFS boot did not restore workspace content');
+    assert(persistentRuntimeB.fs.generation === sdkSecond.generation, 'SDK OPFS boot did not preserve persisted VFS generation');
+    assert(persistentRuntimeB.workspacePersistence?.current?.sequence === sdkSecond.sequence, 'SDK OPFS boot did not expose current persistence receipt');
+    assert(persistentRuntimeB.workspacePersistence?.crossContextLocking === true, 'SDK OPFS product profile lost Web Locks coordination');
+
+    persistentRuntimeB.fs.beginTransaction().writeFile('persisted.txt', 'workspace-three').commit();
+    const sdkThird = await persistentRuntimeB.persistWorkspace();
+    assert(sdkThird.sequence === sdkSecond.sequence + 1, 'SDK OPFS reopen could not continue checkpoint sequence');
+    assert(sdkThird.generation === sdkSecond.generation + 1, 'SDK OPFS reopen could not continue workspace generation');
+
+    const sdkGc = await persistentRuntimeB.collectWorkspaceGarbage();
+    assert(sdkGc.removed.includes(sdkFirst.payload), 'SDK workspace GC did not collect superseded payload');
+    assert(sdkGc.retained.includes(sdkSecond.payload) && sdkGc.retained.includes(sdkThird.payload), 'SDK workspace GC weakened two-slot recovery roots');
+    await persistentRuntimeB.terminate();
+
+    const persistentRuntimeC = await OpenContainer.boot({ workspacePersistence: workspaceProfile });
+    assert(persistentRuntimeC.fs.readFile('persisted.txt') === 'workspace-three', 'SDK OPFS second reopen restored the wrong workspace generation');
+    assert(persistentRuntimeC.fs.generation === sdkThird.generation, 'SDK OPFS second reopen generation drifted');
+    await persistentRuntimeC.terminate();
+
+    stage('sdk-workspace-persistence-pass', {
+      firstSequence: sdkFirst.sequence,
+      secondSequence: sdkSecond.sequence,
+      thirdSequence: sdkThird.sequence,
+      reopenedGeneration: sdkThird.generation,
+      gcRemoved: sdkGc.removed.length,
+      gcRetained: sdkGc.retained.length,
+      crossContextLocking: true
+    });
+  } finally {
+    await opfsRoot.removeEntry(sdkWorkspaceDirectory, { recursive: true });
+  }
+
   stage('browser-package-install-start');
   const lightningIntegrity = 'sha512-OLAtqEyInBSVWjPrTjpLzcZUMUHO0q+2PFBXKr86nxZOu0P38givj/ZMtRaZ0d38pMTb9wQx+LtaLtHclv+sEA==';
   const lightningUrl = location.origin + '/toolchain/vendor/lightningcss-wasm-1.33.0.tgz';
