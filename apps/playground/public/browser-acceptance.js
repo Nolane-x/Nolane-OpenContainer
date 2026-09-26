@@ -523,11 +523,13 @@ async function run() {
 
   runtime.fs.beginTransaction().writeFile('src/package-corpus-probe.mjs', [
     "import { init, parse } from 'es-module-lexer';",
-    'await init;',
+    'await init();',
     "const [imports, exports, facade, hasModuleSyntax] = parse(`import value from 'dep'; export const marker = value;`);",
     'export const importCount = imports.length;',
     'export const exportCount = exports.length;',
-    "export const firstImport = imports[0]?.n ?? '';",
+    "export const firstImport = imports[0]?.specifier ?? '';",
+    "export const firstImportType = imports[0]?.type ?? '';",
+    "export const firstExport = exports[0]?.name ?? '';",
     'export const facadeModule = facade;',
     'export const moduleSyntax = hasModuleSyntax;'
   ].join('\n')).commit();
@@ -549,11 +551,13 @@ async function run() {
   corpusWorker.start();
   const corpusEntry = corpusPublication.moduleURL('./package-corpus-probe.mjs', '/workspace/src/entry.mjs').href;
   const corpusExecution = await corpusWorker.execute(corpusEntry, {
-    exportNames: ['importCount', 'exportCount', 'firstImport', 'facadeModule', 'moduleSyntax']
+    exportNames: ['importCount', 'exportCount', 'firstImport', 'firstImportType', 'firstExport', 'facadeModule', 'moduleSyntax']
   });
   assert(corpusExecution.exports.importCount === 1, 'es-module-lexer corpus execution returned wrong import count');
   assert(corpusExecution.exports.exportCount === 1, 'es-module-lexer corpus execution returned wrong export count');
   assert(corpusExecution.exports.firstImport === 'dep', 'es-module-lexer corpus execution lost import specifier');
+  assert(corpusExecution.exports.firstImportType === 'static', 'es-module-lexer corpus execution returned wrong import type');
+  assert(corpusExecution.exports.firstExport === 'marker', 'es-module-lexer corpus execution returned wrong export name');
   assert(corpusExecution.exports.moduleSyntax === true, 'es-module-lexer corpus execution did not detect module syntax');
   assert(corpusExecution.workerCrossOriginIsolated === true, 'package corpus worker is not cross-origin isolated');
   corpusWorker.close();
@@ -569,6 +573,8 @@ async function run() {
     importCount: corpusExecution.exports.importCount,
     exportCount: corpusExecution.exports.exportCount,
     firstImport: corpusExecution.exports.firstImport,
+    firstImportType: corpusExecution.exports.firstImportType,
+    firstExport: corpusExecution.exports.firstExport,
     moduleSyntax: corpusExecution.exports.moduleSyntax,
     workerCrossOriginIsolated: corpusExecution.workerCrossOriginIsolated
   });
