@@ -139,17 +139,41 @@ async function run() {
   const opfsRoot = await navigator.storage.getDirectory();
   const opfsDirectory = 'opencontainer-browser-acceptance-' + crypto.randomUUID();
   try {
+    assert(navigator.locks?.request, 'Web Locks API is unavailable');
     const opfsFs = new MemoryVFS();
     opfsFs.mount({ 'value.txt': 'first' });
+    const firstSnapshot = opfsFs.snapshot();
     const opfs = await new OpfsCheckpointAuthority({
       root: opfsRoot,
-      directoryName: opfsDirectory
+      directoryName: opfsDirectory,
+      lockManager: navigator.locks
     }).open();
+    assert(opfs.crossContextLocking === true, 'OPFS authority did not enable cross-context locking');
     const firstCheckpoint = await opfs.checkpoint(opfsFs);
+
+    const peer = await new OpfsCheckpointAuthority({
+      root: opfsRoot,
+      directoryName: opfsDirectory,
+      lockManager: navigator.locks
+    }).open();
+    assert(peer.current?.sequence === firstCheckpoint.sequence, 'OPFS peer did not observe the first checkpoint');
 
     opfsFs.beginTransaction().writeFile('value.txt', 'second').commit();
     const secondCheckpoint = await opfs.checkpoint(opfsFs);
     assert(secondCheckpoint.sequence === firstCheckpoint.sequence + 1, 'OPFS manifest sequence did not advance');
+
+    let stalePeerRejected = false;
+    try {
+      await peer.checkpoint(firstSnapshot);
+    } catch (error) {
+      stalePeerRejected = error?.code === 'OC_STALE_GENERATION';
+    }
+    assert(stalePeerRejected, 'OPFS stale cross-context writer was not rejected');
+
+    const peerRestore = new MemoryVFS();
+    await peer.restoreInto(peerRestore);
+    assert(peerRestore.readFile('value.txt') === 'second', 'OPFS peer restore did not refresh to the latest shared checkpoint');
+    assert(peer.current?.sequence === secondCheckpoint.sequence, 'OPFS peer receipt did not refresh after restore');
 
     const workspace = await opfsRoot.getDirectoryHandle(opfsDirectory);
     const generations = await workspace.getDirectoryHandle('generations');
@@ -171,7 +195,10 @@ async function run() {
     stage('opfs-real-pass', {
       firstSequence: firstCheckpoint.sequence,
       rejectedSequence: secondCheckpoint.sequence,
-      recoveredSequence: reopened.current.sequence
+      recoveredSequence: reopened.current.sequence,
+      crossContextLocking: true,
+      stalePeerRejected,
+      peerRefreshSequence: peer.current.sequence
     });
   } finally {
     await opfsRoot.removeEntry(opfsDirectory, { recursive: true });
