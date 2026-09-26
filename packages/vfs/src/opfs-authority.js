@@ -3,9 +3,10 @@ import { ErrorCodes, assertOc, ocError } from '../../protocol/src/index.js';
 const MANIFEST_A = 'manifest-a.json';
 const MANIFEST_B = 'manifest-b.json';
 const PAYLOAD_DIR = 'generations';
+const encoder = new TextEncoder();
 
 async function sha256Hex(text) {
-  const bytes = new TextEncoder().encode(text);
+  const bytes = encoder.encode(text);
   const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
@@ -58,21 +59,31 @@ export class OpfsCheckpointAuthority {
   #current = null;
   #lockManager;
   #lockName;
+  #storagePolicy;
 
   constructor({
     root,
     directoryName = 'opencontainer-workspace',
     lockManager = globalThis.navigator?.locks ?? null,
-    lockName = null
+    lockName = null,
+    storagePolicy = null
   } = {}) {
     assertOc(root && typeof root.getDirectoryHandle === 'function', ErrorCodes.INVALID_ARGUMENT, 'OPFS root directory handle is required');
     if (lockManager !== null) {
       assertOc(typeof lockManager?.request === 'function', ErrorCodes.INVALID_ARGUMENT, 'OPFS lock manager must expose request()');
     }
+    if (storagePolicy !== null) {
+      assertOc(
+        typeof storagePolicy?.inspect === 'function' && typeof storagePolicy?.assertCanWrite === 'function',
+        ErrorCodes.INVALID_ARGUMENT,
+        'OPFS storage policy must expose inspect() and assertCanWrite()'
+      );
+    }
     this.#root = root;
     this.#directoryName = directoryName;
     this.#lockManager = lockManager;
     this.#lockName = lockName ?? 'opencontainer:opfs-checkpoint:' + directoryName;
+    this.#storagePolicy = storagePolicy;
   }
 
   get current() {
@@ -124,10 +135,6 @@ export class OpfsCheckpointAuthority {
 
       const sequence = (this.#current?.sequence ?? 0) + 1;
       const payload = 'generation-' + snapshot.generation + '-' + digest.slice(0, 16) + '.json';
-
-      // Payload first. A crash here can only leave an unreachable orphan.
-      await writeText(this.#payloads, payload, payloadText);
-
       const manifest = {
         version: 1,
         sequence,
@@ -138,7 +145,18 @@ export class OpfsCheckpointAuthority {
 
       // Alternate slots. The older valid slot remains a recovery point.
       const slot = this.#current?.slot === 'a' ? 'b' : 'a';
-      await writeText(this.#directory, slot === 'a' ? MANIFEST_A : MANIFEST_B, JSON.stringify(manifest));
+      const manifestName = slot === 'a' ? MANIFEST_A : MANIFEST_B;
+      const manifestText = JSON.stringify(manifest);
+
+      if (this.#storagePolicy) {
+        await this.#storagePolicy.assertCanWrite(
+          encoder.encode(payloadText).byteLength + encoder.encode(manifestText).byteLength
+        );
+      }
+
+      // Payload first. A crash here can only leave an unreachable orphan.
+      await this.#writeCheckpointText(this.#payloads, payload, payloadText, 'payload');
+      await this.#writeCheckpointText(this.#directory, manifestName, manifestText, 'manifest');
 
       this.#current = Object.freeze({ ...manifest, slot });
       return this.#current;
@@ -252,6 +270,23 @@ export class OpfsCheckpointAuthority {
 
     this.#current = null;
     return null;
+  }
+
+  async #writeCheckpointText(directory, name, content, phase) {
+    try {
+      await writeText(directory, name, content);
+    } catch (error) {
+      if (error?.name !== 'QuotaExceededError') throw error;
+      let storage = null;
+      if (this.#storagePolicy) {
+        try { storage = await this.#storagePolicy.inspect(); } catch {}
+      }
+      throw ocError(ErrorCodes.RESOURCE_EXHAUSTED, 'OPFS storage quota exhausted during checkpoint', {
+        phase,
+        name,
+        storage
+      });
+    }
   }
 
   async #withExclusiveLock(callback) {
