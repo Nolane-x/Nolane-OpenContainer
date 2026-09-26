@@ -3,6 +3,7 @@ import { BrowserEsmServiceWorkerBridge } from '/packages/package-env/src/browser
 import { PackageArtifactAuthority } from '/packages/package-env/src/index.js';
 import { BrowserGuestWorkerAuthority } from '/packages/process/src/browser-guest-worker.js';
 import { MemoryVFS, OpfsCheckpointAuthority } from '/packages/vfs/src/index.js';
+import { BrowserPreviewServiceWorkerBridge } from '/packages/preview/src/index.js';
 
 const resultNode = document.getElementById('result');
 const stages = [];
@@ -1178,6 +1179,24 @@ async function run() {
     gracefulClose: viteDevExecution.exports.closeSucceeded
   });
 
+  const c2PreviewBridge = new BrowserPreviewServiceWorkerBridge({
+    preview: runtime.preview,
+    diagnostics: runtime.diagnostics
+  });
+  await c2PreviewBridge.start();
+  const c2ServiceWorkerUrl = c2PreviewBridge.url(c2Route, '/');
+  const c2ServiceWorkerResponse = await fetch(c2ServiceWorkerUrl, { cache: 'no-store' });
+  const c2ServiceWorkerBody = await c2ServiceWorkerResponse.text();
+  assert(c2ServiceWorkerResponse.status === 200 && c2ServiceWorkerBody.includes('/@vite/client'), 'Vite C2 Service Worker preview route failed');
+  assert(c2ServiceWorkerResponse.headers.get('x-opencontainer-edge') === 'service-worker', 'Vite C2 preview did not traverse Service Worker edge');
+  stage('vite-c2-preview-edge-pass', {
+    status: c2ServiceWorkerResponse.status,
+    port: c2Route.port,
+    owner: c2Route.owner,
+    epoch: c2Route.epoch
+  });
+  c2PreviewBridge.close();
+
   const c2RestartOwner = 'vite-c2-session-2';
   const c2RestartRoute = runtime.listen(5173, () =>
     new Response('restart-ok', { headers: { 'content-type': 'text/plain; charset=utf-8' } }),
@@ -1200,6 +1219,27 @@ async function run() {
     newEpoch: c2RestartRoute.epoch,
     staleRejected: c2StaleRejected
   });
+
+  const c2RehydratedBridge = new BrowserPreviewServiceWorkerBridge({
+    preview: runtime.preview,
+    diagnostics: runtime.diagnostics
+  });
+  await c2RehydratedBridge.start();
+  const c2RestartServiceWorkerUrl = c2RehydratedBridge.url(c2RestartRoute, '/');
+  const c2RestartServiceWorkerResponse = await fetch(c2RestartServiceWorkerUrl, { cache: 'no-store' });
+  assert(
+    c2RestartServiceWorkerResponse.status === 200 && await c2RestartServiceWorkerResponse.text() === 'restart-ok',
+    'Vite C2 rehydrated Service Worker preview route is not authoritative'
+  );
+  const c2StaleServiceWorkerResponse = await fetch(c2ServiceWorkerUrl, { cache: 'no-store' });
+  assert(c2StaleServiceWorkerResponse.status === 409, 'Vite C2 stale Service Worker preview receipt did not fail closed');
+  stage('vite-c2-preview-rehydration-pass', {
+    port: c2RestartRoute.port,
+    oldEpoch: c2Route.epoch,
+    newEpoch: c2RestartRoute.epoch,
+    staleStatus: c2StaleServiceWorkerResponse.status
+  });
+  c2RehydratedBridge.close();
   runtime.preview.revoke(5173, { owner: c2RestartOwner });
 
   viteWorker.close();
@@ -1226,6 +1266,7 @@ async function run() {
     viteC2VirtualHttp: true,
     viteC2Hmr: true,
     viteC2RestartEpoch: true,
+    viteC2PreviewRehydration: true,
     stages
   };
 }
