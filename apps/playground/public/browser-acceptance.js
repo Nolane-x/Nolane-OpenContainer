@@ -847,6 +847,11 @@ async function run() {
       "};",
       "let depError = '';",
       "let depOptimizerPresent = false;",
+      "let depPackageJsonExists = false;",
+      "let depPackageIndexExists = false;",
+      "let depPackageJsonName = '';",
+      "let depManualResolvedId = '';",
+      "let depManualResolveError = '';",
       "let depOptimizedKeys = [];",
       "let depDiscoveredKeys = [];",
       "let depOptimizedFile = '';",
@@ -870,6 +875,15 @@ async function run() {
       "    server: { middlewareMode: true, watch: null, ws: false, hmr: false }",
       "  });",
       "  const environment = server.environments.client;",
+      "  depPackageJsonExists = existsSync('/workspace/node_modules/nanoid/package.json');",
+      "  depPackageIndexExists = existsSync('/workspace/node_modules/nanoid/index.js');",
+      "  if (depPackageJsonExists) {",
+      "    try { depPackageJsonName = JSON.parse(readFileSync('/workspace/node_modules/nanoid/package.json', 'utf8')).name ?? ''; } catch {}",
+      "  }",
+      "  try {",
+      "    const manual = await environment.pluginContainer.resolveId('nanoid', '/workspace/c1-app/src/dep-opt.ts');",
+      "    depManualResolvedId = manual?.id ?? '';",
+      "  } catch (error) { depManualResolveError = error?.stack ?? String(error); }",
       "  const optimizer = environment?.depsOptimizer;",
       "  depOptimizerPresent = !!optimizer;",
       "  if (!optimizer) throw new Error('Vite C2 dependency optimizer was not created');",
@@ -898,7 +912,7 @@ async function run() {
       "  if (server) { await server.close(); depOptimizerClosed = true; }",
       "}",
       "export const viteVersion = version;",
-      "export { depError, depOptimizerPresent, depOptimizedKeys, depDiscoveredKeys, depOptimizedFile, depOptimizedFileExists, depOptimizedBytes, depTransformCode, depTransformUsesOptimizedPath, depMetadataHash, depCacheDir, depOptimizerClosed };"
+      "export { depError, depOptimizerPresent, depPackageJsonExists, depPackageIndexExists, depPackageJsonName, depManualResolvedId, depManualResolveError, depOptimizedKeys, depDiscoveredKeys, depOptimizedFile, depOptimizedFileExists, depOptimizedBytes, depTransformCode, depTransformUsesOptimizedPath, depMetadataHash, depCacheDir, depOptimizerClosed };"
     ].join('\n'))
     .commit();
 
@@ -1356,6 +1370,11 @@ async function run() {
       'viteVersion',
       'depError',
       'depOptimizerPresent',
+      'depPackageJsonExists',
+      'depPackageIndexExists',
+      'depPackageJsonName',
+      'depManualResolvedId',
+      'depManualResolveError',
       'depOptimizedKeys',
       'depDiscoveredKeys',
       'depOptimizedFile',
@@ -1371,6 +1390,11 @@ async function run() {
   });
   stage('vite-c2-dep-opt-probe', {
     error: viteDepOptExecution.exports.depError,
+    packageJsonExists: viteDepOptExecution.exports.depPackageJsonExists,
+    packageIndexExists: viteDepOptExecution.exports.depPackageIndexExists,
+    packageJsonName: viteDepOptExecution.exports.depPackageJsonName,
+    manualResolvedId: viteDepOptExecution.exports.depManualResolvedId,
+    manualResolveError: viteDepOptExecution.exports.depManualResolveError,
     optimizedKeys: viteDepOptExecution.exports.depOptimizedKeys,
     discoveredKeys: viteDepOptExecution.exports.depDiscoveredKeys,
     optimizedFile: viteDepOptExecution.exports.depOptimizedFile,
