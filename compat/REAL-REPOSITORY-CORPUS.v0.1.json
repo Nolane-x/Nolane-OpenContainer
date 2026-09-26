@@ -212,7 +212,18 @@
       },
       "expectedBoundaries": [
         "PUBLISHED_DIST_IS_BUILD_OUTPUT_NOT_PRESENT_AT_REPOSITORY_COMMIT"
-      ]
+      ],
+      "pinnedSources": [
+        {
+          "path": "src/index.js",
+          "blobSha": "c1f53ca795dd8c91c50622476143c4e232ece247"
+        }
+      ],
+      "browserCourt": {
+        "enabled": true,
+        "entry": "src/index.js",
+        "probe": "clsx('a', {b:true,c:false}, ['d']) === 'a b d'"
+      }
     },
     {
       "id": "vitest-monorepo",
@@ -409,5 +420,10 @@
         "ZLIB_PACKAGE_CORPUS_NOT_YET_PROMOTED"
       ]
     }
-  ]
+  ],
+  "browserProgression": {
+    "requiredFreshSessionsPerEnabledCase": 2,
+    "staleSessionMustFailClosed": true,
+    "rule": "A passing real-repository case must execute on fresh publication/Worker realms repeatedly; one warm session is not promotion evidence."
+  }
 }
