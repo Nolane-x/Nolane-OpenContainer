@@ -524,7 +524,7 @@ async function run() {
   runtime.fs.beginTransaction().writeFile('src/package-corpus-probe.mjs', [
     "import { init, parse } from 'es-module-lexer';",
     'await init;',
-    "const [imports, exports, facade, hasModuleSyntax] = parse('import value from \\"dep\\"; export const marker = value;');",
+    "const [imports, exports, facade, hasModuleSyntax] = parse(`import value from 'dep'; export const marker = value;`);",
     'export const importCount = imports.length;',
     'export const exportCount = exports.length;',
     "export const firstImport = imports[0]?.n ?? '';",
