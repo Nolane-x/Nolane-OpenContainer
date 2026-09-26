@@ -44,6 +44,7 @@ Contract version: 0.1.0-alpha.1
 | export | method | runtime.export(snapshotRef?) -> ReadableStream<Uint8Array> |
 | import | method | runtime.import(source) -> Promise<generation> |
 | status | method | runtime.status() -> RuntimeStatus |
+| supportBundle | method | runtime.supportBundle(error?) -> SupportBundle |
 | persistWorkspace | method | runtime.persistWorkspace() -> Promise<CheckpointReceipt> |
 | collectWorkspaceGarbage | method | runtime.collectWorkspaceGarbage(options?) -> Promise<GCReceipt> |
 | teardown | method | runtime.teardown() -> Promise<void> |
