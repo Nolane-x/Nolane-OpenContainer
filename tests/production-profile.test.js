@@ -30,11 +30,6 @@ test('Service Worker compatibility identity cannot drift from the canonical prod
   assert.doesNotMatch(source,/addEventListener\('activate'[\s\S]{0,180}clients\.claim\(/);
 });
 
-test('published production profile JSON cannot drift from canonical SDK identity',()=>{')));
-  assert.doesNotMatch(source,/addEventListener\('install'[\s\S]{0,180}skipWaiting\(/);
-  assert.doesNotMatch(source,/addEventListener\('activate'[\s\S]{0,180}clients\.claim\(/);
-});
-
 test('published production profile JSON cannot drift from canonical SDK identity',()=>{
   const published=JSON.parse(readFileSync('docs/production/PRODUCTION-PROFILE.json','utf8'));
   assert.deepEqual(published,OpenContainerProductionProfile);
