@@ -20,6 +20,7 @@ export class BrowserGuestWorkerAuthority {
   #closed = false;
   #syncRequestHandler;
   #maxSyncResponseBytes;
+  #maxExportBytes;
   #resources;
   #workerLease = null;
 
@@ -33,6 +34,7 @@ export class BrowserGuestWorkerAuthority {
     requestTimeoutMs = 5000,
     syncRequestHandler = null,
     maxSyncResponseBytes = 1024 * 1024,
+    maxExportBytes = null,
     resources = null
   } = {}) {
     assertOc(publication && typeof publication.resolveDynamic === 'function', ErrorCodes.INVALID_ARGUMENT, 'Native ESM publication authority is required');
@@ -58,11 +60,20 @@ export class BrowserGuestWorkerAuthority {
     this.requestTimeoutMs = Math.max(1, Number(requestTimeoutMs) || 5000);
     this.#syncRequestHandler = syncRequestHandler;
     this.#maxSyncResponseBytes = Math.max(1024, Number(maxSyncResponseBytes) || 1024 * 1024);
+    const resolvedExportLimit = maxExportBytes ?? resources?.limits?.outputBytes ?? 4 * 1024 * 1024;
+    assertOc(
+      Number.isFinite(Number(resolvedExportLimit)) && Number(resolvedExportLimit) >= 1,
+      ErrorCodes.INVALID_ARGUMENT,
+      'Guest export byte limit must be a positive finite number',
+      { maxExportBytes: resolvedExportLimit }
+    );
+    this.#maxExportBytes = Math.floor(Number(resolvedExportLimit));
     this.#resources = resources;
   }
 
   get identity() { return this.#rpc?.identity ?? null; }
   get profile() { return this.#profile; }
+  get maxExportBytes() { return this.#maxExportBytes; }
 
   start() {
     if (this.#closed) throw ocError(ErrorCodes.WORKER_CLOSED, 'Browser guest worker authority is closed');
@@ -130,7 +141,8 @@ export class BrowserGuestWorkerAuthority {
         entryURL,
         exportNames: Array.isArray(exportNames) ? [...exportNames] : null,
         publicationSession: this.#publication.session,
-        observeNestedWorkers: observeNestedWorkers === true
+        observeNestedWorkers: observeNestedWorkers === true,
+        maxExportBytes: this.#maxExportBytes
       });
     } catch (error) {
       if (error?.code === ErrorCodes.WORKER_TIMEOUT) {
