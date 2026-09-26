@@ -49,6 +49,26 @@ class FakeDirectoryHandle {
   }
 }
 
+class FakeLockManager {
+  tails = new Map();
+  requests = [];
+
+  request(name, options, callback) {
+    const previous = this.tails.get(name) ?? Promise.resolve();
+    let release;
+    const current = new Promise((resolve) => { release = resolve; });
+    this.tails.set(name, current);
+    this.requests.push({ name, mode: options?.mode ?? 'exclusive' });
+
+    return previous
+      .then(() => callback({ name, mode: options?.mode ?? 'exclusive' }))
+      .finally(() => {
+        release();
+        if (this.tails.get(name) === current) this.tails.delete(name);
+      });
+  }
+}
+
 test('OPFS checkpoint round-trips a committed VFS generation', async () => {
   const root = new FakeDirectoryHandle();
   const fs = new MemoryVFS();
@@ -130,4 +150,50 @@ test('OPFS rejects publication from an older generation', async () => {
     () => authority.checkpoint(oldSnapshot),
     (error) => error.code === ErrorCodes.STALE_GENERATION
   );
+});
+
+test('OPFS cross-context lock refresh rejects a stale authority after a newer writer', async () => {
+  const root = new FakeDirectoryHandle();
+  const locks = new FakeLockManager();
+  const firstAuthority = await new OpfsCheckpointAuthority({ root, lockManager: locks }).open();
+  const staleAuthority = await new OpfsCheckpointAuthority({ root, lockManager: locks }).open();
+
+  const fs = new MemoryVFS();
+  fs.mount({ 'value.txt': 'generation-one' });
+  const staleSnapshot = fs.snapshot();
+  fs.beginTransaction().writeFile('value.txt', 'generation-two').commit();
+
+  const newest = await firstAuthority.checkpoint(fs);
+  assert.equal(newest.generation, fs.generation);
+  assert.equal(staleAuthority.current, null);
+
+  await assert.rejects(
+    () => staleAuthority.checkpoint(staleSnapshot),
+    (error) => error.code === ErrorCodes.STALE_GENERATION
+  );
+  assert.equal(staleAuthority.current.generation, newest.generation);
+  assert.ok(locks.requests.every((entry) => entry.mode === 'exclusive'));
+});
+
+test('OPFS cross-context writers share a monotonic sequence and latest restore', async () => {
+  const root = new FakeDirectoryHandle();
+  const locks = new FakeLockManager();
+  const firstAuthority = await new OpfsCheckpointAuthority({ root, lockManager: locks }).open();
+  const secondAuthority = await new OpfsCheckpointAuthority({ root, lockManager: locks }).open();
+
+  const fs = new MemoryVFS();
+  fs.mount({ 'value.txt': 'one' });
+  const first = await firstAuthority.checkpoint(fs);
+
+  fs.beginTransaction().writeFile('value.txt', 'two').commit();
+  const second = await secondAuthority.checkpoint(fs);
+
+  assert.equal(second.sequence, first.sequence + 1);
+  assert.notEqual(second.slot, first.slot);
+  assert.equal(firstAuthority.current.sequence, first.sequence);
+
+  const restored = new MemoryVFS();
+  await firstAuthority.restoreInto(restored);
+  assert.equal(restored.readFile('value.txt'), 'two');
+  assert.equal(firstAuthority.current.sequence, second.sequence);
 });
