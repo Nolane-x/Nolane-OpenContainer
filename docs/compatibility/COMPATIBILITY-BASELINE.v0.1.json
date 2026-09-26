@@ -1,0 +1,197 @@
+{
+  "schema": "opencontainer.compatibility-baseline.v0.1",
+  "corpus": "compat/REAL-REPOSITORY-CORPUS.v0.1.json",
+  "generatedFromCorpusSchema": "opencontainer.compatibility-corpus.v0.1",
+  "productionClosed": false,
+  "axes": [
+    "fs",
+    "module",
+    "process",
+    "http",
+    "package",
+    "watch"
+  ],
+  "reportingRule": "No synthetic Node compatibility percentage. Each surface is reported independently.",
+  "corpusSummary": {
+    "caseCount": 13,
+    "repositories": [
+      "SafdarJamal/vite-template-react",
+      "RicardoValdovinos/vite-react-boilerplate",
+      "sindresorhus/yoctocolors",
+      "expressjs/express",
+      "paulmillr/chokidar",
+      "lukeed/clsx",
+      "vitest-dev/vitest",
+      "t3-oss/create-t3-turbo",
+      "WiseLibs/better-sqlite3",
+      "evanw/esbuild",
+      "nodejs/readable-stream",
+      "browserify/crypto-browserify",
+      "browserify/browserify-zlib"
+    ],
+    "caseClasses": [
+      "cjs-heavy",
+      "dependency-heavy",
+      "esm-only",
+      "exports-heavy",
+      "medium-vite-react",
+      "monorepo",
+      "tiny-vite-react",
+      "watcher-heavy"
+    ],
+    "packageStrata": [
+      "cli",
+      "crypto",
+      "dual-package",
+      "http",
+      "native-addon",
+      "optional-native",
+      "postinstall",
+      "pure-js",
+      "streams",
+      "zlib"
+    ],
+    "lockfileSupport": {
+      "supported": [
+        "chokidar-watch",
+        "vite-react-tiny"
+      ],
+      "unsupported": [
+        "t3-turbo-monorepo",
+        "vite-react-medium",
+        "vitest-monorepo"
+      ],
+      "notRootAuthority": [
+        "esbuild-native-cli"
+      ],
+      "absent": [
+        "better-sqlite3-native",
+        "browserify-zlib",
+        "clsx-exports-dual",
+        "crypto-browserify",
+        "express-cjs-http",
+        "readable-stream",
+        "yoctocolors-esm"
+      ]
+    },
+    "unsupportedRetained": [
+      {
+        "id": "vite-react-medium",
+        "boundaries": [
+          "PNPM_LOCKFILE_UNSUPPORTED"
+        ]
+      },
+      {
+        "id": "vitest-monorepo",
+        "boundaries": [
+          "PNPM_LOCKFILE_UNSUPPORTED"
+        ]
+      },
+      {
+        "id": "t3-turbo-monorepo",
+        "boundaries": [
+          "PNPM_LOCKFILE_UNSUPPORTED"
+        ]
+      },
+      {
+        "id": "better-sqlite3-native",
+        "boundaries": [
+          "NATIVE_NODE_ADDON_UNSUPPORTED"
+        ]
+      },
+      {
+        "id": "esbuild-native-cli",
+        "boundaries": [
+          "NATIVE_BINARY_SELECTION_UNSUPPORTED"
+        ]
+      }
+    ]
+  },
+  "progression": {
+    "primitive": "promoted-selected",
+    "package": "promoted-selected",
+    "framework": "vite-8.3.0-c1-c2-promoted",
+    "realRepository": "yoctocolors-pass-ci-286",
+    "repeatedBrowser": "not-closed"
+  },
+  "adapters": [
+    {
+      "surface": "fs",
+      "semantics": "bounded",
+      "nodeSurface": "node:fs"
+    },
+    {
+      "surface": "module",
+      "semantics": "bounded",
+      "nodeSurface": "Node ESM/CJS resolution"
+    },
+    {
+      "surface": "process",
+      "semantics": "intentionally-different",
+      "nodeSurface": "OS child processes"
+    },
+    {
+      "surface": "http",
+      "semantics": "intentionally-different",
+      "nodeSurface": "node:http listen()"
+    },
+    {
+      "surface": "package",
+      "semantics": "bounded",
+      "nodeSurface": "npm install"
+    },
+    {
+      "surface": "watch",
+      "semantics": "bounded",
+      "nodeSurface": "fs.watch/chokidar"
+    },
+    {
+      "surface": "tty",
+      "semantics": "bounded",
+      "nodeSurface": "node:tty"
+    },
+    {
+      "surface": "native-addon",
+      "semantics": "unsupported",
+      "nodeSurface": ".node addons/node-gyp"
+    },
+    {
+      "surface": "network",
+      "semantics": "intentionally-different",
+      "nodeSurface": "raw TCP/UDP/http(s)"
+    }
+  ],
+  "limitations": [
+    "pnpm and yarn lockfiles are not accepted by the promoted frozen package graph parser",
+    "native .node addons and arbitrary node-gyp/native binary execution are unsupported",
+    "generic fs.watch/chokidar parity is not promoted",
+    "raw guest TCP/UDP and arbitrary host process creation are unsupported",
+    "minimum cross-browser versions are intentionally not frozen before browser matrix evidence"
+  ],
+  "surfaceEvidence": {
+    "fs": {
+      "state": "PASS-BROWSER-BOUNDED",
+      "evidence": "Workspace VFS + OPFS courts; real repo source mounted in CI #286"
+    },
+    "module": {
+      "state": "PASS-BROWSER-BOUNDED",
+      "evidence": "native ESM/CJS courts + pinned yoctocolors Native ESM execution in CI #286"
+    },
+    "process": {
+      "state": "PASS-BROWSER-BOUNDED",
+      "evidence": "virtual process/Worker authority; arbitrary host child process remains denied"
+    },
+    "http": {
+      "state": "PASS-BROWSER-BOUNDED",
+      "evidence": "PreviewAuthority virtual HTTP + Vite C2 virtual HTTP; raw host TCP listen is not claimed"
+    },
+    "package": {
+      "state": "PASS-BROWSER-SELECTED",
+      "evidence": "npm package-lock v2/v3 frozen installer + package corpus; pnpm/yarn remain unsupported"
+    },
+    "watch": {
+      "state": "PARTIAL",
+      "evidence": "Vite HMR is promoted; generic fs.watch/chokidar parity remains open"
+    }
+  }
+}

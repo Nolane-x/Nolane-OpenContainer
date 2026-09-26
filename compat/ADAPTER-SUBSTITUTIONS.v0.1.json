@@ -1,0 +1,74 @@
+{
+  "schema": "opencontainer.compatibility-adapters.v0.1",
+  "semantics": [
+    "exact",
+    "bounded",
+    "intentionally-different",
+    "unsupported"
+  ],
+  "adapters": [
+    {
+      "surface": "fs",
+      "name": "Workspace VFS",
+      "semantics": "bounded",
+      "nodeSurface": "node:fs",
+      "note": "Workspace-contained virtual filesystem; arbitrary host filesystem access is intentionally unavailable."
+    },
+    {
+      "surface": "module",
+      "name": "Native ESM publication + CommonJS loader",
+      "semantics": "bounded",
+      "nodeSurface": "Node ESM/CJS resolution",
+      "note": "Selected Node 24 resolution semantics are implemented; native addons and some dynamic loader behavior remain unsupported."
+    },
+    {
+      "surface": "process",
+      "name": "ProcessSupervisor",
+      "semantics": "intentionally-different",
+      "nodeSurface": "OS child processes",
+      "note": "Virtual commands/process receipts replace arbitrary host process creation; child_process execution is unavailable."
+    },
+    {
+      "surface": "http",
+      "name": "PreviewAuthority virtual HTTP",
+      "semantics": "intentionally-different",
+      "nodeSurface": "node:http listen()",
+      "note": "Preview routes are virtual browser-facing routes; raw host TCP listeners are not exposed to guest code."
+    },
+    {
+      "surface": "package",
+      "name": "Frozen npm installer",
+      "semantics": "bounded",
+      "nodeSurface": "npm install",
+      "note": "package-lock v2/v3 + SRI are supported; pnpm/yarn lockfiles and lifecycle script execution are not in the promoted profile."
+    },
+    {
+      "surface": "watch",
+      "name": "VFS/HMR generation path",
+      "semantics": "bounded",
+      "nodeSurface": "fs.watch/chokidar",
+      "note": "Vite HMR is promoted; generic Node filesystem watcher parity is not."
+    },
+    {
+      "surface": "tty",
+      "name": "Browser tty adapter",
+      "semantics": "bounded",
+      "nodeSurface": "node:tty",
+      "note": "WriteStream.hasColors() returns false and terminal dimensions/capabilities are conservative in the browser profile."
+    },
+    {
+      "surface": "native-addon",
+      "name": "Native addon boundary",
+      "semantics": "unsupported",
+      "nodeSurface": ".node addons/node-gyp",
+      "note": "Native .node binaries and node-gyp execution are outside the browser runtime boundary."
+    },
+    {
+      "surface": "network",
+      "name": "Capability-authorized fetch",
+      "semantics": "intentionally-different",
+      "nodeSurface": "raw TCP/UDP/http(s)",
+      "note": "External http(s) is capability-mediated; raw TCP/UDP is unavailable to guest code."
+    }
+  ]
+}

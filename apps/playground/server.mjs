@@ -9,6 +9,11 @@ const publicRoot = join(here, 'public');
 const port = Number(process.env.PORT || 4173);
 const lexerPath = fileURLToPath(import.meta.resolve('es-module-lexer/minimal/js'));
 
+const compatibilityUpstream = new Map([
+  ['/__compat__/yoctocolors/index.js', 'https://raw.githubusercontent.com/sindresorhus/yoctocolors/a85b98a90e5731914567d8c209e7ec45ac2d24e2/index.js'],
+  ['/__compat__/yoctocolors/base.js', 'https://raw.githubusercontent.com/sindresorhus/yoctocolors/a85b98a90e5731914567d8c209e7ec45ac2d24e2/base.js']
+]);
+
 const publicAliases = new Map([
   ['/', join(publicRoot, 'index.html')],
   ['/index.html', join(publicRoot, 'index.html')],
@@ -52,6 +57,24 @@ const server = createServer(async (request, response) => {
 
   try {
     const url = new URL(request.url, 'http://127.0.0.1');
+    const upstream = compatibilityUpstream.get(url.pathname);
+    if (upstream) {
+      const upstreamResponse = await fetch(upstream, {
+        headers: { 'User-Agent': 'OpenContainer-compatibility-corpus-v0.1' }
+      });
+      if (!upstreamResponse.ok) {
+        response.statusCode = 502;
+        response.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        response.end('Pinned compatibility upstream returned HTTP ' + upstreamResponse.status);
+        return;
+      }
+      response.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+      response.setHeader('X-OpenContainer-Compat-Repository', 'sindresorhus/yoctocolors');
+      response.setHeader('X-OpenContainer-Compat-Commit', 'a85b98a90e5731914567d8c209e7ec45ac2d24e2');
+      response.end(new Uint8Array(await upstreamResponse.arrayBuffer()));
+      return;
+    }
+
     const target = publicAliases.get(url.pathname) ?? safeRepoFile(url.pathname);
     if (!target) {
       response.statusCode = 404;

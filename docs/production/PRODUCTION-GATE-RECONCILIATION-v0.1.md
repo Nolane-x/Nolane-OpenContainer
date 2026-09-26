@@ -8,7 +8,7 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **48**
+- Seed-reconciled against implementation evidence: **58**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -26,7 +26,7 @@
 | P8 Diagnostics, supportability & privacy | 0 | 14 | 14 |
 | P9 UI/UX, accessibility & human safety | 0 | 18 | 18 |
 | P10 AI consumer, authority & data egress | 0 | 18 | 18 |
-| P11 Compatibility corpus & certification | 0 | 14 | 14 |
+| P11 Compatibility corpus & certification | 10 | 4 | 14 |
 | P12 Product security engineering | 2 | 18 | 20 |
 | P13 Build, supply chain & publication | 0 | 20 | 20 |
 | P14 Release, update, migration & rollback | 0 | 18 | 18 |
@@ -37,7 +37,7 @@
 
 ## Immediate implementation gaps confirmed during reconciliation
 
-- Real-repository compatibility corpus and release compatibility report are not present as a frozen campaign.
+- The real-repository corpus is now frozen and machine-verified; broader repository execution, repeated-browser progression and release compatibility certification remain open.
 - 4/8 GiB reference-device campaign, 8-hour plateau and cross-browser release matrix remain open.
 - Release trust chain (SBOM/provenance/publication/rollback) and license/FTO closure remain open.
 
@@ -51,6 +51,12 @@
 - **P15-12** now has CI execution of that repository example; published-package sample testing remains open.
 
 - **P1-13 / P1-16 / P15-04** now have an executable hosting self-check and exact header diagnostics, plus published secure-hosting guidance. Production CDN/reverse-proxy validation remains open.
+
+- **P11-01 / 02 / 03 / 04 / 06 / 09 / 10** now meet their integration-level minimum closure: the 13-repository corpus is frozen before tuning, required case classes/package strata and unsupported classes are CI-enforced, six compatibility axes are reported separately, a machine-readable baseline is generated from the tested corpus, and adapter semantics are explicit.
+- **P11-05** remains partial: commits, lockfiles, licenses and selected source blobs are pinned; supported npm lockfiles verified 219 + 8 graph nodes with zero missing integrity entries, but package-tarball digest coverage is not closed for every corpus class.
+- **P11-07** remains partial despite the first real-repository Chrome pass: primitive -> package -> framework -> real repository is evidenced, but repeated-browser progression is still open.
+- **P11-14** remains partial: known limitations are published with the baseline, but "every release compatibility report" cannot close before release certification exists.
+- Pinned `sindresorhus/yoctocolors@a85b98a90e5731914567d8c209e7ec45ac2d24e2` executed through Workspace VFS -> native ESM publication -> bounded `node:tty` -> isolated Dedicated Worker in CI #286.
 
 ## Update discipline
 

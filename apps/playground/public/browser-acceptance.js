@@ -180,6 +180,64 @@ async function run() {
   workerB.close();
   bridgeB.close();
 
+  stage('real-repo-yoctocolors-start');
+  const [yoctoIndexResponse, yoctoBaseResponse] = await Promise.all([
+    fetch('/__compat__/yoctocolors/index.js', { cache: 'no-store' }),
+    fetch('/__compat__/yoctocolors/base.js', { cache: 'no-store' })
+  ]);
+  assert(yoctoIndexResponse.ok && yoctoBaseResponse.ok, 'pinned yoctocolors source proxy failed');
+  assert(yoctoIndexResponse.headers.get('x-opencontainer-compat-commit') === 'a85b98a90e5731914567d8c209e7ec45ac2d24e2', 'yoctocolors commit pin drifted');
+  assert(yoctoBaseResponse.headers.get('x-opencontainer-compat-repository') === 'sindresorhus/yoctocolors', 'yoctocolors repository identity drifted');
+
+  const [yoctoIndexSource, yoctoBaseSource] = await Promise.all([
+    yoctoIndexResponse.text(),
+    yoctoBaseResponse.text()
+  ]);
+  runtime.fs.beginTransaction()
+    .writeFile('compat/yoctocolors/index.js', yoctoIndexSource)
+    .writeFile('compat/yoctocolors/base.js', yoctoBaseSource)
+    .writeFile('compat/yoctocolors/probe.mjs', [
+      "import { red, bold } from './index.js';",
+      "export const redResult = red('opencontainer');",
+      "export const boldResult = bold('opencontainer');",
+      "export const moduleUrl = import.meta.url;"
+    ].join('\n'))
+    .commit();
+
+  const yoctoPublication = runtime.packages.createNativeEsmPublication({
+    baseURL,
+    session: 'compat-yoctocolors-a85b98a',
+    builtinSource: nodeCompat.builtinSource
+  });
+  const yoctoBridge = new BrowserEsmServiceWorkerBridge({ publication: yoctoPublication });
+  await yoctoBridge.start();
+  const yoctoEntry = yoctoPublication.moduleURL('./probe.mjs', '/workspace/compat/yoctocolors/entry.mjs').href;
+  const yoctoWorker = new BrowserGuestWorkerAuthority({
+    publication: yoctoPublication,
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: nodeCompat.syncRequestHandler
+  });
+  yoctoWorker.start();
+  const yoctoReceipt = await yoctoWorker.execute(yoctoEntry, {
+    exportNames: ['redResult', 'boldResult', 'moduleUrl']
+  });
+  assert(yoctoReceipt.exports.redResult === 'opencontainer', 'yoctocolors red() disagreed with bounded browser tty semantics');
+  assert(yoctoReceipt.exports.boldResult === 'opencontainer', 'yoctocolors bold() disagreed with bounded browser tty semantics');
+  assert(yoctoReceipt.workerCrossOriginIsolated === true, 'real repository execution lost browser isolation');
+  assert(yoctoReceipt.exports.moduleUrl.includes('compat-yoctocolors-a85b98a'), 'real repository publication session identity drifted');
+  yoctoWorker.close();
+  yoctoBridge.close();
+  stage('real-repo-yoctocolors-pass', {
+    repository: 'sindresorhus/yoctocolors',
+    commit: 'a85b98a90e5731914567d8c209e7ec45ac2d24e2',
+    sourceMode: 'pinned-upstream-through-exact-allowlist',
+    execution: 'dedicated-worker-native-esm',
+    ttySemantics: 'bounded-hasColors-false',
+    redResult: yoctoReceipt.exports.redResult,
+    boldResult: yoctoReceipt.exports.boldResult,
+    workerCrossOriginIsolated: yoctoReceipt.workerCrossOriginIsolated
+  });
+
   stage('guest-isolation-start');
   const guestWorkerResponse = await fetch('/opencontainer-guest-worker.mjs', { cache: 'no-store' });
   assert(guestWorkerResponse.ok, 'strict guest Worker bootstrap response is unavailable');

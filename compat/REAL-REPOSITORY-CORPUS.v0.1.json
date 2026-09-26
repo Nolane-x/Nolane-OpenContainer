@@ -1,0 +1,413 @@
+{
+  "schema": "opencontainer.compatibility-corpus.v0.1",
+  "frozenAt": "2026-09-26",
+  "selectionRule": "Frozen before compatibility tuning. Unsupported and unexecuted classes remain in the corpus; entries are not removed because they fail.",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P11",
+  "axes": [
+    "fs",
+    "module",
+    "process",
+    "http",
+    "package",
+    "watch"
+  ],
+  "requiredCaseClasses": [
+    "tiny-vite-react",
+    "medium-vite-react",
+    "esm-only",
+    "cjs-heavy",
+    "exports-heavy",
+    "watcher-heavy",
+    "dependency-heavy",
+    "monorepo"
+  ],
+  "requiredPackageStrata": [
+    "pure-js",
+    "dual-package",
+    "streams",
+    "crypto",
+    "zlib",
+    "http",
+    "cli",
+    "postinstall",
+    "native-addon",
+    "optional-native"
+  ],
+  "cases": [
+    {
+      "id": "vite-react-tiny",
+      "repository": "SafdarJamal/vite-template-react",
+      "commit": "480dc9128ee90bf7c8c817e52ec063953243b240",
+      "license": {
+        "spdx": "MIT",
+        "path": "LICENSE",
+        "blobSha": "53f0b2b3a0b9c27615b213fb0b8e7efe15e2baa1"
+      },
+      "classes": [
+        "tiny-vite-react"
+      ],
+      "strata": [
+        "pure-js"
+      ],
+      "lockfile": {
+        "kind": "npm-package-lock-v3",
+        "path": "package-lock.json",
+        "blobSha": "228f6568d791e1741ccc07fc0c8f8fcf978044bf",
+        "runtimeParser": "supported"
+      },
+      "packageProfile": {
+        "type": "module",
+        "toolchain": "vite@^6.2.1"
+      },
+      "expectedBoundaries": [
+        "RETAINED_VITE_PROFILE_IS_8_3_0_EXACT",
+        "REAL_REPOSITORY_BUILD_NOT_YET_PROMOTED"
+      ]
+    },
+    {
+      "id": "vite-react-medium",
+      "repository": "RicardoValdovinos/vite-react-boilerplate",
+      "commit": "e086793a11203600e109da4db437b140c3255c83",
+      "license": {
+        "spdx": "MIT",
+        "path": "LICENSE",
+        "blobSha": "a1037af6a63c498d9b1da424b8737b5e960e8cf1"
+      },
+      "classes": [
+        "medium-vite-react",
+        "dependency-heavy"
+      ],
+      "strata": [
+        "postinstall"
+      ],
+      "lockfile": {
+        "kind": "pnpm-lock",
+        "path": "pnpm-lock.yaml",
+        "blobSha": "6e641d7c4882a11a45cd6ffbbce248b535fd85dd",
+        "runtimeParser": "unsupported"
+      },
+      "packageProfile": {
+        "type": "module",
+        "toolchain": "vite@8.0.16"
+      },
+      "expectedBoundaries": [
+        "PNPM_LOCKFILE_UNSUPPORTED",
+        "SETUP_REQUIRES_HOST_TOOLING",
+        "RETAINED_VITE_PROFILE_IS_8_3_0_EXACT"
+      ]
+    },
+    {
+      "id": "yoctocolors-esm",
+      "repository": "sindresorhus/yoctocolors",
+      "commit": "a85b98a90e5731914567d8c209e7ec45ac2d24e2",
+      "license": {
+        "spdx": "MIT",
+        "path": "license",
+        "blobSha": "fa7ceba3eb4a9657a9db7f3ffca4e4e97a9019de"
+      },
+      "classes": [
+        "esm-only"
+      ],
+      "strata": [
+        "pure-js",
+        "cli"
+      ],
+      "lockfile": null,
+      "packageProfile": {
+        "type": "module",
+        "exports": true
+      },
+      "pinnedSources": [
+        {
+          "path": "index.js",
+          "blobSha": "4ba092badf9fc530f8f1cf59eb1c62a712b55b1f"
+        },
+        {
+          "path": "base.js",
+          "blobSha": "10f0fd7f1bdde380ee6385f93b815a4b7a042810"
+        }
+      ],
+      "expectedBoundaries": [
+        "NODE_TTY_IS_BOUNDED_BROWSER_ADAPTER"
+      ],
+      "browserCourt": {
+        "enabled": true,
+        "entry": "index.js",
+        "probe": "red('opencontainer') and bold('opencontainer')"
+      }
+    },
+    {
+      "id": "express-cjs-http",
+      "repository": "expressjs/express",
+      "commit": "9a34acf03cb818ff3f8bc40e44176e277a25cbb9",
+      "license": {
+        "spdx": "MIT",
+        "path": "LICENSE",
+        "blobSha": "aa927e44e31d486f807634887662efa39256bf84"
+      },
+      "classes": [
+        "cjs-heavy"
+      ],
+      "strata": [
+        "http"
+      ],
+      "lockfile": null,
+      "packageProfile": {
+        "type": "commonjs"
+      },
+      "expectedBoundaries": [
+        "DEPENDENCY_GRAPH_NOT_PINNED_IN_REPOSITORY",
+        "RAW_NODE_HTTP_SERVER_IS_NOT_BROWSER_HOST_TCP"
+      ]
+    },
+    {
+      "id": "chokidar-watch",
+      "repository": "paulmillr/chokidar",
+      "commit": "0bc7bed37d6b018e5b11afcce329bbf797d6441f",
+      "license": {
+        "spdx": "MIT",
+        "path": "LICENSE",
+        "blobSha": "8c27184e967ba358f021395738d20dfd8d0eb39e"
+      },
+      "classes": [
+        "watcher-heavy"
+      ],
+      "strata": [
+        "pure-js"
+      ],
+      "lockfile": {
+        "kind": "npm-package-lock-v3",
+        "path": "package-lock.json",
+        "blobSha": "c170347d75382e290f32b3b7702f9a6acac1478f",
+        "runtimeParser": "supported"
+      },
+      "packageProfile": {
+        "type": "module",
+        "exports": true
+      },
+      "expectedBoundaries": [
+        "GENERIC_NODE_FS_WATCH_COMPATIBILITY_NOT_PROMOTED"
+      ]
+    },
+    {
+      "id": "clsx-exports-dual",
+      "repository": "lukeed/clsx",
+      "commit": "925494cf31bcd97d3337aacd34e659e80cae7fe2",
+      "license": {
+        "spdx": "MIT",
+        "path": "license",
+        "blobSha": "fa6089faba3cf381229744c9f21ed3ae9ed5014a"
+      },
+      "classes": [
+        "exports-heavy"
+      ],
+      "strata": [
+        "dual-package",
+        "pure-js"
+      ],
+      "lockfile": null,
+      "packageProfile": {
+        "type": "dual",
+        "exports": true
+      },
+      "expectedBoundaries": [
+        "PUBLISHED_DIST_IS_BUILD_OUTPUT_NOT_PRESENT_AT_REPOSITORY_COMMIT"
+      ]
+    },
+    {
+      "id": "vitest-monorepo",
+      "repository": "vitest-dev/vitest",
+      "commit": "428e2e5043c64635b6b157358bde2fdeaa7b6b3a",
+      "license": {
+        "spdx": "MIT",
+        "path": "LICENSE",
+        "blobSha": "0e5771dddf4e96ebc77c349f53fc763b910e63c0"
+      },
+      "classes": [
+        "monorepo",
+        "dependency-heavy",
+        "watcher-heavy"
+      ],
+      "strata": [
+        "cli"
+      ],
+      "lockfile": {
+        "kind": "pnpm-lock",
+        "path": "pnpm-lock.yaml",
+        "blobSha": "fa47ac10450967772d083e266d8bb24087d930d9",
+        "runtimeParser": "unsupported"
+      },
+      "packageProfile": {
+        "packageManager": "pnpm@11.24.0",
+        "type": "module"
+      },
+      "expectedBoundaries": [
+        "PNPM_LOCKFILE_UNSUPPORTED",
+        "MONOREPO_WORKSPACE_INSTALL_NOT_PROMOTED"
+      ]
+    },
+    {
+      "id": "t3-turbo-monorepo",
+      "repository": "t3-oss/create-t3-turbo",
+      "commit": "8f945b7bb3bfb3ca8358d48b1ff0214079bc11ee",
+      "license": {
+        "spdx": "MIT",
+        "path": "LICENSE",
+        "blobSha": "435503eb660b7215b94afe1273973b9c55f58f87"
+      },
+      "classes": [
+        "monorepo",
+        "dependency-heavy"
+      ],
+      "strata": [
+        "postinstall",
+        "cli"
+      ],
+      "lockfile": {
+        "kind": "pnpm-lock",
+        "path": "pnpm-lock.yaml",
+        "blobSha": "4aff66ee0bc9100bb8c09c52c1fe83c768d91f18",
+        "runtimeParser": "unsupported"
+      },
+      "packageProfile": {
+        "packageManager": "pnpm@10.19.0"
+      },
+      "expectedBoundaries": [
+        "PNPM_LOCKFILE_UNSUPPORTED",
+        "POSTINSTALL_DENIED_BY_DEFAULT",
+        "MONOREPO_WORKSPACE_INSTALL_NOT_PROMOTED"
+      ]
+    },
+    {
+      "id": "better-sqlite3-native",
+      "repository": "WiseLibs/better-sqlite3",
+      "commit": "f8e2d541208281368129929a96f70f937c0735ef",
+      "license": {
+        "spdx": "MIT",
+        "path": "LICENSE",
+        "blobSha": "228f29b4f768cda5e982949bd93c0032d0440c9b"
+      },
+      "classes": [
+        "exports-heavy"
+      ],
+      "strata": [
+        "native-addon"
+      ],
+      "lockfile": null,
+      "packageProfile": {
+        "type": "commonjs",
+        "exports": true
+      },
+      "expectedBoundaries": [
+        "NATIVE_NODE_ADDON_UNSUPPORTED"
+      ]
+    },
+    {
+      "id": "esbuild-native-cli",
+      "repository": "evanw/esbuild",
+      "commit": "f6058f8364fe7ab91ca57a83e02577ed74c9cae4",
+      "license": {
+        "spdx": "MIT",
+        "path": "LICENSE.md",
+        "blobSha": "2027e8dcf3787f5aac9fcd835e2b80cb75a39211"
+      },
+      "classes": [
+        "dependency-heavy"
+      ],
+      "strata": [
+        "cli",
+        "postinstall",
+        "optional-native"
+      ],
+      "lockfile": {
+        "kind": "multi-nested",
+        "path": "scripts/package-lock.json",
+        "blobSha": "317b61d933dad4a2f3a745da835b08e153bb4bca",
+        "runtimeParser": "not-root-authority"
+      },
+      "packageProfile": {
+        "publishedPackagePath": "npm/esbuild/package.json",
+        "postinstall": "node install.js",
+        "optionalNative": true
+      },
+      "expectedBoundaries": [
+        "POSTINSTALL_DENIED_BY_DEFAULT",
+        "NATIVE_BINARY_SELECTION_UNSUPPORTED",
+        "ROOT_DEPENDENCY_GRAPH_NOT_PACKAGE_LOCK_AUTHORITY"
+      ],
+      "packageJsonPath": "npm/esbuild/package.json"
+    },
+    {
+      "id": "readable-stream",
+      "repository": "nodejs/readable-stream",
+      "commit": "88df21041dc26c210fab3e074ab6bb681a604b8e",
+      "license": {
+        "spdx": "NOASSERTION",
+        "path": "LICENSE",
+        "blobSha": "2873b3b2e595072e66330369d83e8af46655970c"
+      },
+      "classes": [
+        "cjs-heavy"
+      ],
+      "strata": [
+        "streams"
+      ],
+      "lockfile": null,
+      "packageProfile": {
+        "type": "commonjs"
+      },
+      "expectedBoundaries": [
+        "DEPENDENCY_GRAPH_NOT_PINNED_IN_REPOSITORY",
+        "STREAM_COMPATIBILITY_CORPUS_NOT_YET_PROMOTED"
+      ]
+    },
+    {
+      "id": "crypto-browserify",
+      "repository": "browserify/crypto-browserify",
+      "commit": "55476aca92a99c81fcc438519a4d55817fb455fc",
+      "license": {
+        "spdx": "MIT",
+        "path": "LICENSE",
+        "blobSha": "8abb57d65b8bdea9e4a465b0b68c4b51da134674"
+      },
+      "classes": [
+        "cjs-heavy"
+      ],
+      "strata": [
+        "crypto"
+      ],
+      "lockfile": null,
+      "packageProfile": {
+        "type": "commonjs"
+      },
+      "expectedBoundaries": [
+        "DEPENDENCY_GRAPH_NOT_PINNED_IN_REPOSITORY",
+        "CRYPTO_PACKAGE_CORPUS_NOT_YET_PROMOTED"
+      ]
+    },
+    {
+      "id": "browserify-zlib",
+      "repository": "browserify/browserify-zlib",
+      "commit": "8b3f0a862f6bb49833c4ab0bcaeaee8fd524c917",
+      "license": {
+        "spdx": "NOASSERTION",
+        "path": "LICENSE",
+        "blobSha": "81c6c0c6f2769bee090b8a5bdc647dfc6962ab87"
+      },
+      "classes": [
+        "cjs-heavy"
+      ],
+      "strata": [
+        "zlib"
+      ],
+      "lockfile": null,
+      "packageProfile": {
+        "type": "commonjs"
+      },
+      "expectedBoundaries": [
+        "DEPENDENCY_GRAPH_NOT_PINNED_IN_REPOSITORY",
+        "ZLIB_PACKAGE_CORPUS_NOT_YET_PROMOTED"
+      ]
+    }
+  ]
+}
