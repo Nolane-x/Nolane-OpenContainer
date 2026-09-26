@@ -490,6 +490,89 @@ async function run() {
     }
   }
 
+  stage('browser-package-corpus-start');
+  const corpusLockResponse = await fetch('/package-lock.json', { cache: 'no-store' });
+  assert(corpusLockResponse.ok, 'failed to load frozen package corpus lockfile');
+  const corpusLock = await corpusLockResponse.json();
+  runtime.packages.compile(corpusLock);
+  const lexerClosure = runtime.packages.selectDependencyClosure({ roots: ['es-module-lexer'] });
+  assert(lexerClosure.locations.length === 1 && lexerClosure.locations[0] === 'node_modules/es-module-lexer', 'es-module-lexer corpus closure was not minimal');
+
+  runtime.net.allow({
+    origin: 'https://registry.npmjs.org',
+    methods: ['GET'],
+    paths: ['/']
+  });
+  const corpusArtifactAuthority = new PackageArtifactAuthority({
+    fs: runtime.fs,
+    network: runtime.net,
+    maxArtifactBytes: 8 * 1024 * 1024,
+    maxUnpackedBytes: 32 * 1024 * 1024
+  });
+  const corpusInstaller = runtime.packages.createFrozenInstaller();
+  const corpusInstall = await corpusInstaller.installAll({
+    artifactAuthority: corpusArtifactAuthority,
+    locations: lexerClosure.locations,
+    concurrency: 2
+  });
+  const corpusMounted = corpusInstaller.mountFrozenGraph({ locations: lexerClosure.locations });
+  const lexerPackageJson = JSON.parse(runtime.packages.nodeModules.readFile('/workspace/node_modules/es-module-lexer/package.json'));
+  assert(lexerPackageJson.name === 'es-module-lexer', 'package corpus mounted the wrong lexer package');
+  assert(lexerPackageJson.version === '3.0.2', 'package corpus mounted the wrong lexer version');
+  assert(corpusInstall.lifecycleScriptsSkipped.length === 0, 'package corpus silently skipped lifecycle scripts');
+
+  runtime.fs.beginTransaction().writeFile('src/package-corpus-probe.mjs', [
+    "import { init, parse } from 'es-module-lexer';",
+    'await init;',
+    "const [imports, exports, facade, hasModuleSyntax] = parse('import value from \\"dep\\"; export const marker = value;');",
+    'export const importCount = imports.length;',
+    'export const exportCount = exports.length;',
+    "export const firstImport = imports[0]?.n ?? '';",
+    'export const facadeModule = facade;',
+    'export const moduleSyntax = hasModuleSyntax;'
+  ].join('\n')).commit();
+
+  const corpusCompat = runtime.packages.createBrowserNodeCompat({ cwd: '/workspace' });
+  const corpusPublication = runtime.packages.createNativeEsmPublication({
+    baseURL,
+    session: 'browser-package-corpus',
+    builtinSource: corpusCompat.builtinSource
+  });
+  const corpusBridge = new BrowserEsmServiceWorkerBridge({ publication: corpusPublication });
+  await corpusBridge.start();
+  const corpusWorker = new BrowserGuestWorkerAuthority({
+    publication: corpusPublication,
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: corpusCompat.syncRequestHandler,
+    requestTimeoutMs: 30000
+  });
+  corpusWorker.start();
+  const corpusEntry = corpusPublication.moduleURL('./package-corpus-probe.mjs', '/workspace/src/entry.mjs').href;
+  const corpusExecution = await corpusWorker.execute(corpusEntry, {
+    exportNames: ['importCount', 'exportCount', 'firstImport', 'facadeModule', 'moduleSyntax']
+  });
+  assert(corpusExecution.exports.importCount === 1, 'es-module-lexer corpus execution returned wrong import count');
+  assert(corpusExecution.exports.exportCount === 1, 'es-module-lexer corpus execution returned wrong export count');
+  assert(corpusExecution.exports.firstImport === 'dep', 'es-module-lexer corpus execution lost import specifier');
+  assert(corpusExecution.exports.moduleSyntax === true, 'es-module-lexer corpus execution did not detect module syntax');
+  assert(corpusExecution.workerCrossOriginIsolated === true, 'package corpus worker is not cross-origin isolated');
+  corpusWorker.close();
+  corpusBridge.close();
+
+  stage('browser-package-corpus-pass', {
+    package: lexerPackageJson.name,
+    version: lexerPackageJson.version,
+    locations: lexerClosure.locations.length,
+    fetchedContents: corpusInstall.fetchedContents,
+    bytes: corpusInstall.bytes,
+    mountedPackages: corpusMounted.packageCount,
+    importCount: corpusExecution.exports.importCount,
+    exportCount: corpusExecution.exports.exportCount,
+    firstImport: corpusExecution.exports.firstImport,
+    moduleSyntax: corpusExecution.exports.moduleSyntax,
+    workerCrossOriginIsolated: corpusExecution.workerCrossOriginIsolated
+  });
+
   stage('vite-closure-install-start');
   const lockResponse = await fetch('/package-lock.json', { cache: 'no-store' });
   assert(lockResponse.ok, 'failed to load frozen Vite C1 package-lock');
