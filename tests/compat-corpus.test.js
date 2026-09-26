@@ -43,6 +43,6 @@ test('adapter substitutions name semantic strength per surface',async()=>{
 });
 
 test('Git blob SHA helper matches canonical git object hashing',()=>{
-  const bytes=new TextEncoder().encode('hello\\n');
+  const bytes=new TextEncoder().encode('hello\n');
   assert.equal(gitBlobSha(bytes),'ce013625030ba8dba906f756967f9e9ca394464a');
 });
