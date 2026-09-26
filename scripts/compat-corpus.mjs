@@ -139,6 +139,26 @@ async function fetchPinned(repository,commit,path){
   return new Uint8Array(await response.arrayBuffer());
 }
 
+async function inspectRegistryPackage(name,version){
+  if(typeof name!=='string'||!name||typeof version!=='string'||!version)return {published:false,reason:'missing-name-or-version'};
+  const encodedName=name.startsWith('@')?'@'+name.slice(1).split('/').map(encodeURIComponent).join('%2F'):encodeURIComponent(name);
+  const response=await fetch('https://registry.npmjs.org/'+encodedName+'/'+encodeURIComponent(version),{
+    headers:{'user-agent':'opencontainer-compat-corpus-v0.1'}
+  });
+  if(response.status===404)return {published:false,reason:'registry-404'};
+  if(!response.ok)throw new Error('npm registry '+name+'@'+version+' returned HTTP '+response.status);
+  const metadata=await response.json();
+  const dist=metadata?.dist??{};
+  return {
+    published:true,
+    name:metadata?.name??name,
+    version:metadata?.version??version,
+    integrity:dist.integrity??null,
+    shasum:dist.shasum??null,
+    tarball:dist.tarball??null
+  };
+}
+
 export async function verifyCorpusOnline(corpus){
   const results=[];
   for(const entry of corpus.cases){
@@ -150,6 +170,9 @@ export async function verifyCorpusOnline(corpus){
       try{packageJson=JSON.parse(Buffer.from(packageBytes).toString('utf8'));}
       catch(error){throw new Error('package.json is invalid JSON: '+error.message);}
       result.checks.push({kind:'package-json',path:packageJsonPath,bytes:packageBytes.byteLength,name:packageJson.name??null,version:packageJson.version??null});
+
+      const registry=await inspectRegistryPackage(packageJson.name,packageJson.version);
+      result.checks.push({kind:'registry-package',...registry});
 
       const licenseBytes=await fetchPinned(entry.repository,entry.commit,entry.license.path);
       const licenseSha=gitBlobSha(licenseBytes);
