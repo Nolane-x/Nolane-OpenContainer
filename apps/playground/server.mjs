@@ -58,6 +58,12 @@ const server = createServer(async (request, response) => {
     }
 
     if (url.pathname === '/opencontainer-sw.js') response.setHeader('Service-Worker-Allowed', '/');
+    if (url.pathname === '/opencontainer-guest-worker.mjs') {
+      response.setHeader(
+        'Content-Security-Policy',
+        "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; worker-src 'self'; child-src 'self'"
+      );
+    }
     response.setHeader('Content-Type', contentType(target));
     response.end(await readFile(target));
   } catch (error) {
