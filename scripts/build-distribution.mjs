@@ -88,6 +88,9 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
   await mkdir(output,{recursive:true});
 
   const sourceManifest=JSON.parse(await readFile(join(repoRoot,'package.json'),'utf8'));
+  const publicSdkContract=JSON.parse(await readFile(join(repoRoot,'docs/api/PUBLIC-SDK.v0.1.json'),'utf8'));
+  if(publicSdkContract.package!=='@nolane/opencontainer')throw new Error('public SDK contract package identity drifted');
+  if(publicSdkContract.version!==sourceManifest.version)throw new Error('public SDK contract version drifted from package version');
   const packageManifest={
     name:'@nolane/opencontainer',
     version:sourceManifest.version,
@@ -95,11 +98,7 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
     type:'module',
     license:'UNLICENSED',
     engines:{...sourceManifest.engines},
-    exports:{
-      '.':'./packages/sdk/src/index.js',
-      './profile':'./packages/sdk/src/profile.js',
-      './package.json':'./package.json'
-    },
+    exports:{...publicSdkContract.exportMap},
     bin:{
       'opencontainer-hosting-self-check':'./scripts/hosting-self-check.mjs'
     },
@@ -124,6 +123,8 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
       'docs/production',
       'docs/compatibility',
       'docs/guides',
+      'docs/api',
+      'docs/decisions',
       'examples',
       'scripts/browser-acceptance.mjs',
       'scripts/hosting-self-check.mjs',
@@ -145,6 +146,8 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
     'docs/production',
     'docs/compatibility',
     'docs/guides',
+    'docs/api',
+    'docs/decisions',
     'examples',
     'README.md',
     'scripts/browser-acceptance.mjs',
@@ -180,7 +183,12 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
     'package/toolchain/vendor/lightningcss-wasm-1.33.0.tgz',
     'package/toolchain/vendor/rolldown-browser-1.2.9.tgz',
     'package/metadata/source-package-lock.json',
-    'package/docs/production/PRODUCTION-PROFILE.json'
+    'package/docs/production/PRODUCTION-PROFILE.json',
+    'package/docs/api/PUBLIC-SDK.v0.1.json',
+    'package/docs/api/ERROR-CATALOG.v0.1.json',
+    'package/docs/api/API-REFERENCE.md',
+    'package/docs/api/ERROR-REFERENCE.md',
+    'package/docs/decisions/ADR-003-evidence-boundaries.md'
   ];
   const packedFiles=new Set((receipt.files??[]).map((item)=>'package/'+item.path.replace(/^package\//,'')));
   const missing=required.filter((path)=>!packedFiles.has(path));
