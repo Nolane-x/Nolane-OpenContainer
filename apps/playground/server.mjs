@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, extname, join, resolve, sep } from 'node:path';
@@ -8,6 +9,9 @@ const repoRoot = resolve(here, '../..');
 const publicRoot = join(here, 'public');
 const port = Number(process.env.PORT || 4173);
 const lexerPath = fileURLToPath(import.meta.resolve('es-module-lexer/minimal/js'));
+const sourcePackageLockPath = existsSync(join(repoRoot, 'package-lock.json'))
+  ? join(repoRoot, 'package-lock.json')
+  : join(repoRoot, 'fixtures/source-package-lock.json');
 
 const compatibilityUpstream = new Map([
   ['/__compat__/yoctocolors/index.js', {
@@ -38,7 +42,7 @@ const publicAliases = new Map([
   ['/__deps__/es-module-lexer-minimal.js', lexerPath],
   ['/toolchain/vendor/lightningcss-wasm-1.33.0.tgz', join(repoRoot, 'toolchain/vendor/lightningcss-wasm-1.33.0.tgz')],
   ['/toolchain/vendor/rolldown-browser-1.2.9.tgz', join(repoRoot, 'toolchain/vendor/rolldown-browser-1.2.9.tgz')],
-  ['/package-lock.json', join(repoRoot, 'package-lock.json')],
+  ['/package-lock.json', sourcePackageLockPath],
   ['/docs/production/PRODUCTION-PROFILE.json', join(repoRoot, 'docs/production/PRODUCTION-PROFILE.json')]
 ]);
 
