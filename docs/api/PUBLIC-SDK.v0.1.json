@@ -96,6 +96,11 @@
       "signature": "runtime.status() -> RuntimeStatus"
     },
     {
+      "name": "supportBundle",
+      "kind": "method",
+      "signature": "runtime.supportBundle(error?) -> SupportBundle"
+    },
+    {
       "name": "persistWorkspace",
       "kind": "method",
       "signature": "runtime.persistWorkspace() -> Promise<CheckpointReceipt>"
