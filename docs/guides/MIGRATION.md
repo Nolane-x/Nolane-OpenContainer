@@ -49,6 +49,10 @@ Derived caches are rebuildable and receive versioned namespaces rather than bein
 
 Portable NDJSON format version is published in the production profile. A breaking portable format change requires a release migration note and an explicit importer/exporter compatibility plan.
 
+## Release-candidate enforcement
+
+Every reviewed release change must declare `breaking: true|false`. A breaking change is rejected by release preflight unless it also names a non-empty `migrationGuide`. Non-breaking changes must not claim a migration guide.
+
 ## Release checklist for a breaking change
 
 A breaking SDK/protocol/storage change is not ready until:
