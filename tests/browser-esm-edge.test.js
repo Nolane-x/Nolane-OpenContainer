@@ -43,7 +43,6 @@ class FakeWorker extends EventTarget {
         this.registration.waiting=null;
         this.registration.active=this;
         this.setState('activated');
-        this.container.claim(this);
         port.postMessage({ok:true,action:'activate',compatibilityId:this.compatibilityId});
       });
       return;
