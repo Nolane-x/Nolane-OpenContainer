@@ -56,21 +56,41 @@ export class OpfsCheckpointAuthority {
   #directory = null;
   #payloads = null;
   #current = null;
+  #lockManager;
+  #lockName;
 
-  constructor({ root, directoryName = 'opencontainer-workspace' } = {}) {
+  constructor({
+    root,
+    directoryName = 'opencontainer-workspace',
+    lockManager = globalThis.navigator?.locks ?? null,
+    lockName = null
+  } = {}) {
     assertOc(root && typeof root.getDirectoryHandle === 'function', ErrorCodes.INVALID_ARGUMENT, 'OPFS root directory handle is required');
+    if (lockManager !== null) {
+      assertOc(typeof lockManager?.request === 'function', ErrorCodes.INVALID_ARGUMENT, 'OPFS lock manager must expose request()');
+    }
     this.#root = root;
     this.#directoryName = directoryName;
+    this.#lockManager = lockManager;
+    this.#lockName = lockName ?? 'opencontainer:opfs-checkpoint:' + directoryName;
   }
 
   get current() {
     return this.#current;
   }
 
+  get crossContextLocking() {
+    return this.#lockManager !== null;
+  }
+
+  get lockName() {
+    return this.#lockName;
+  }
+
   async open() {
     this.#directory = await this.#root.getDirectoryHandle(this.#directoryName, { create: true });
     this.#payloads = await this.#directory.getDirectoryHandle(PAYLOAD_DIR, { create: true });
-    this.#current = await this.recover();
+    this.#current = await this.#withExclusiveLock(() => this.#recoverUnlocked());
     return this;
   }
 
@@ -79,48 +99,81 @@ export class OpfsCheckpointAuthority {
     const snapshot = typeof fsOrSnapshot?.snapshot === 'function' ? fsOrSnapshot.snapshot() : fsOrSnapshot;
     assertOc(snapshot?.version === 1 && Number.isInteger(snapshot.generation) && Array.isArray(snapshot.entries), ErrorCodes.INVALID_ARGUMENT, 'Invalid VFS checkpoint snapshot');
 
-    if (this.#current && snapshot.generation < this.#current.generation) {
-      throw ocError(ErrorCodes.STALE_GENERATION, 'OPFS checkpoint generation is stale', {
-        current: this.#current.generation,
-        incoming: snapshot.generation
-      });
-    }
+    return this.#withExclusiveLock(async () => {
+      // A different tab/worker may have published after this authority opened.
+      // Refresh the shared manifest state under the origin-wide Web Lock before
+      // deciding whether this writer is stale or selecting the next sequence.
+      await this.#recoverUnlocked();
 
-    const payloadText = JSON.stringify(snapshot);
-    const digest = await sha256Hex(payloadText);
+      if (this.#current && snapshot.generation < this.#current.generation) {
+        throw ocError(ErrorCodes.STALE_GENERATION, 'OPFS checkpoint generation is stale', {
+          current: this.#current.generation,
+          incoming: snapshot.generation
+        });
+      }
 
-    if (this.#current && snapshot.generation === this.#current.generation) {
-      if (digest === this.#current.sha256) return this.#current;
-      throw ocError(ErrorCodes.STALE_GENERATION, 'Same generation has different checkpoint content', {
-        generation: snapshot.generation
-      });
-    }
+      const payloadText = JSON.stringify(snapshot);
+      const digest = await sha256Hex(payloadText);
 
-    const sequence = (this.#current?.sequence ?? 0) + 1;
-    const payload = 'generation-' + snapshot.generation + '-' + digest.slice(0, 16) + '.json';
+      if (this.#current && snapshot.generation === this.#current.generation) {
+        if (digest === this.#current.sha256) return this.#current;
+        throw ocError(ErrorCodes.STALE_GENERATION, 'Same generation has different checkpoint content', {
+          generation: snapshot.generation
+        });
+      }
 
-    // Payload first. A crash here can only leave an unreachable orphan.
-    await writeText(this.#payloads, payload, payloadText);
+      const sequence = (this.#current?.sequence ?? 0) + 1;
+      const payload = 'generation-' + snapshot.generation + '-' + digest.slice(0, 16) + '.json';
 
-    const manifest = {
-      version: 1,
-      sequence,
-      generation: snapshot.generation,
-      payload,
-      sha256: digest
-    };
+      // Payload first. A crash here can only leave an unreachable orphan.
+      await writeText(this.#payloads, payload, payloadText);
 
-    // Alternate slots. The older valid slot remains a recovery point.
-    const slot = this.#current?.slot === 'a' ? 'b' : 'a';
-    await writeText(this.#directory, slot === 'a' ? MANIFEST_A : MANIFEST_B, JSON.stringify(manifest));
+      const manifest = {
+        version: 1,
+        sequence,
+        generation: snapshot.generation,
+        payload,
+        sha256: digest
+      };
 
-    this.#current = Object.freeze({ ...manifest, slot });
-    return this.#current;
+      // Alternate slots. The older valid slot remains a recovery point.
+      const slot = this.#current?.slot === 'a' ? 'b' : 'a';
+      await writeText(this.#directory, slot === 'a' ? MANIFEST_A : MANIFEST_B, JSON.stringify(manifest));
+
+      this.#current = Object.freeze({ ...manifest, slot });
+      return this.#current;
+    });
   }
 
   async recover() {
     this.#assertOpen();
+    return this.#withExclusiveLock(() => this.#recoverUnlocked());
+  }
 
+  async restoreInto(fs) {
+    this.#assertOpen();
+    return this.#withExclusiveLock(async () => {
+      // Restore observes the latest valid shared checkpoint, not merely the
+      // receipt cached by the authority when it first opened.
+      let current = await this.#recoverUnlocked();
+      if (!current) return null;
+
+      let text = await readText(this.#payloads, current.payload);
+      if (text === null || await sha256Hex(text) !== current.sha256) {
+        current = await this.#recoverUnlocked();
+        if (!current) throw ocError(ErrorCodes.IMPORT_INVALID, 'No valid OPFS checkpoint remains');
+        text = await readText(this.#payloads, current.payload);
+        if (text === null || await sha256Hex(text) !== current.sha256) {
+          throw ocError(ErrorCodes.IMPORT_INVALID, 'Recovered OPFS checkpoint payload is invalid');
+        }
+      }
+
+      const snapshot = JSON.parse(text);
+      return fs.restore(snapshot);
+    });
+  }
+
+  async #recoverUnlocked() {
     const candidates = [
       parseManifest(await readText(this.#directory, MANIFEST_A), 'a'),
       parseManifest(await readText(this.#directory, MANIFEST_B), 'b')
@@ -148,20 +201,9 @@ export class OpfsCheckpointAuthority {
     return null;
   }
 
-  async restoreInto(fs) {
-    this.#assertOpen();
-    const current = this.#current ?? await this.recover();
-    if (!current) return null;
-
-    const text = await readText(this.#payloads, current.payload);
-    if (text === null || await sha256Hex(text) !== current.sha256) {
-      this.#current = await this.recover();
-      if (!this.#current) throw ocError(ErrorCodes.IMPORT_INVALID, 'No valid OPFS checkpoint remains');
-      return this.restoreInto(fs);
-    }
-
-    const snapshot = JSON.parse(text);
-    return fs.restore(snapshot);
+  async #withExclusiveLock(callback) {
+    if (!this.#lockManager) return callback();
+    return this.#lockManager.request(this.#lockName, { mode: 'exclusive' }, callback);
   }
 
   #assertOpen() {
