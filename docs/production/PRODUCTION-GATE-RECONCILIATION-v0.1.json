@@ -252,6 +252,10 @@
     "critical-flake-campaign": {
       "ref": "CI #356 / tested pull-request merge checkout",
       "note": "independent zero-tolerance flake evidence: 5/5 critical contract iterations over 12 files (60 executions) + 2/2 full installed-distribution Chrome product-path iterations; zero explained/unexplained failures; separate 90-day archived receipts; stable preflight requires fresh commit-matched receipts"
+    },
+    "p15-developer-contracts": {
+      "ref": "CI #368 / d75449a0df9a33ea8f422526b74d29c8dfe7d1f4",
+      "note": "docs-as-contract + installed distribution evidence: public SDK/export privacy contract, generated API/error refs, 44 stable error outcomes, limitations/storage/security/AI/migration/troubleshooting guides, happy+failure examples, installed hosting self-check, privacy-minimized support bundle; 2/2 full installed-distribution Chrome paths passed with zero unexplained failures"
     }
   },
   "overrides": [
@@ -922,50 +926,106 @@
     {
       "id": "P15-01",
       "domain": "P15",
-      "state": "PARTIAL",
-      "promotion": "IMPLEMENTED",
-      "evidence": "sdk",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p15-developer-contracts",
+      "closure_met": true
+    },
+    {
+      "id": "P15-02",
+      "domain": "P15",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p15-developer-contracts",
+      "closure_met": true
+    },
+    {
+      "id": "P15-03",
+      "domain": "P15",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p15-developer-contracts",
+      "closure_met": true
     },
     {
       "id": "P15-04",
       "domain": "P15",
-      "state": "PARTIAL",
-      "promotion": "PASS-LOCAL",
-      "evidence": "hosting-self-check",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p15-developer-contracts",
+      "closure_met": true
+    },
+    {
+      "id": "P15-06",
+      "domain": "P15",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p15-developer-contracts",
+      "closure_met": true
     },
     {
       "id": "P15-07",
       "domain": "P15",
-      "state": "PARTIAL",
-      "promotion": "IMPLEMENTED",
-      "evidence": "sdk-s7",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p15-developer-contracts",
+      "closure_met": true
+    },
+    {
+      "id": "P15-08",
+      "domain": "P15",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p15-developer-contracts",
+      "closure_met": true
+    },
+    {
+      "id": "P15-09",
+      "domain": "P15",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p15-developer-contracts",
+      "closure_met": true
+    },
+    {
+      "id": "P15-10",
+      "domain": "P15",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p15-developer-contracts",
+      "closure_met": true
     },
     {
       "id": "P15-11",
       "domain": "P15",
-      "state": "PARTIAL",
-      "promotion": "PASS-LOCAL",
-      "evidence": "sdk-s7",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p15-developer-contracts",
+      "closure_met": true
     },
     {
       "id": "P15-12",
       "domain": "P15",
       "state": "PARTIAL",
       "promotion": "PASS-INTEGRATION",
-      "evidence": "distribution-certification",
+      "evidence": "p15-developer-contracts",
       "closure_met": false
     },
     {
       "id": "P15-13",
       "domain": "P15",
-      "state": "PARTIAL",
-      "promotion": "IMPLEMENTED",
-      "evidence": "adr",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p15-developer-contracts",
+      "closure_met": true
+    },
+    {
+      "id": "P15-14",
+      "domain": "P15",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p15-developer-contracts",
+      "closure_met": true
     }
   ]
 }
