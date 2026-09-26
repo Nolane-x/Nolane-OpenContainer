@@ -1,0 +1,64 @@
+function deepFreeze(value){
+  if(!value||typeof value!=='object'||Object.isFrozen(value))return value;
+  for(const item of Object.values(value))deepFreeze(item);
+  return Object.freeze(value);
+}
+
+export const OpenContainerProductionProfile=deepFreeze({
+  schema:'opencontainer.production-profile.v0.1',
+  profileId:'opencontainer-alpha-chromium-node24-v1',
+  productionClosed:false,
+  runtime:{
+    package:'@nolane/opencontainer',
+    version:'0.1.0-alpha.1',
+    coreSurfaces:9
+  },
+  oracle:{
+    node:'24.21.0',
+    npm:'11.19.0'
+  },
+  filesystem:{
+    logicalProfile:'workspace-vfs-v1',
+    snapshotSchemaVersion:1,
+    opfsCheckpointProfile:'dual-slot-web-lock-v1',
+    opfsManifestVersion:1
+  },
+  network:{
+    capabilityProfile:'deny-by-default-http-v1',
+    externalProtocols:Object.freeze(['http:','https:']),
+    rawTcpUdp:false
+  },
+  snapshot:{
+    portableFormat:'opencontainer-ndjson',
+    portableFormatVersion:1
+  },
+  protocol:{
+    package:'@nolane/opencontainer-protocol',
+    packageVersion:'0.1.0-alpha.1',
+    workerRpcEnvelopeVersion:1,
+    syncRpcMailboxProfile:'sab-mailbox-v1'
+  },
+  browser:{
+    referenceProfile:'desktop-chromium-ci-alpha',
+    crossOriginIsolationRequired:true,
+    crossBrowserReleaseMatrixClosed:false
+  },
+  toolchain:{
+    vite:'8.3.0',
+    rolldown:'1.2.9',
+    rolldownBinding:'1.2.9',
+    lightningCss:'1.33.0'
+  },
+  closure:{
+    gateSource:'OPENCONTAINER-PRODUCTION-GATES-v0.9.json',
+    gateSourceSha256:'b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146',
+    gateCount:304,
+    domainCount:19
+  }
+});
+
+export function productionProfile(){
+  return OpenContainerProductionProfile;
+}
+
+export default OpenContainerProductionProfile;
