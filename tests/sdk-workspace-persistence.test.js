@@ -110,7 +110,7 @@ test('SDK OPFS workspace profile reopens at persisted generation and continues c
 
   const gc=await reopened.collectWorkspaceGarbage();
   assert.deepEqual(gc.removed,[firstReceipt.payload]);
-  assert.deepEqual(gc.retained.sort(),[secondReceipt.payload,thirdReceipt.payload].sort());
+  assert.deepEqual([...gc.retained].sort(),[secondReceipt.payload,thirdReceipt.payload].sort());
   await reopened.terminate();
 
   const finalRuntime=await OpenContainer.boot({workspacePersistence:profile});
