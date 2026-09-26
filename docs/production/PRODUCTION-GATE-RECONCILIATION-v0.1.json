@@ -19,94 +19,545 @@
     "aggregate percentages never override any critical open gate."
   ],
   "domains": [
-    {"domain":"P0 Product scope & production profile","gate_count":12},
-    {"domain":"P1 Browser deployment, origin & lifecycle","gate_count":16},
-    {"domain":"P2 Kernel, RPC, process & stream semantics","gate_count":14},
-    {"domain":"P3 VFS, OPFS, persistence & data safety","gate_count":20},
-    {"domain":"P4 Packages, resolver, archive & installer","gate_count":18},
-    {"domain":"P5 Network, secrets & preview edge","gate_count":18},
-    {"domain":"P6 Toolchain, BCR, Vite & framework integration","gate_count":16},
-    {"domain":"P7 Resources, performance & weak-device behavior","gate_count":14},
-    {"domain":"P8 Diagnostics, supportability & privacy","gate_count":14},
-    {"domain":"P9 UI/UX, accessibility & human safety","gate_count":18},
-    {"domain":"P10 AI consumer, authority & data egress","gate_count":18},
-    {"domain":"P11 Compatibility corpus & certification","gate_count":14},
-    {"domain":"P12 Product security engineering","gate_count":20},
-    {"domain":"P13 Build, supply chain & publication","gate_count":20},
-    {"domain":"P14 Release, update, migration & rollback","gate_count":18},
-    {"domain":"P15 SDK, API, documentation & developer experience","gate_count":14},
-    {"domain":"P16 License, FTO, governance & contribution policy","gate_count":14},
-    {"domain":"P17 Operations, vulnerability response & long-term maintenance","gate_count":14},
-    {"domain":"P18 Evidence, assurance & research integrity","gate_count":12}
+    {
+      "domain": "P0 Product scope & production profile",
+      "gate_count": 12
+    },
+    {
+      "domain": "P1 Browser deployment, origin & lifecycle",
+      "gate_count": 16
+    },
+    {
+      "domain": "P2 Kernel, RPC, process & stream semantics",
+      "gate_count": 14
+    },
+    {
+      "domain": "P3 VFS, OPFS, persistence & data safety",
+      "gate_count": 20
+    },
+    {
+      "domain": "P4 Packages, resolver, archive & installer",
+      "gate_count": 18
+    },
+    {
+      "domain": "P5 Network, secrets & preview edge",
+      "gate_count": 18
+    },
+    {
+      "domain": "P6 Toolchain, BCR, Vite & framework integration",
+      "gate_count": 16
+    },
+    {
+      "domain": "P7 Resources, performance & weak-device behavior",
+      "gate_count": 14
+    },
+    {
+      "domain": "P8 Diagnostics, supportability & privacy",
+      "gate_count": 14
+    },
+    {
+      "domain": "P9 UI/UX, accessibility & human safety",
+      "gate_count": 18
+    },
+    {
+      "domain": "P10 AI consumer, authority & data egress",
+      "gate_count": 18
+    },
+    {
+      "domain": "P11 Compatibility corpus & certification",
+      "gate_count": 14
+    },
+    {
+      "domain": "P12 Product security engineering",
+      "gate_count": 20
+    },
+    {
+      "domain": "P13 Build, supply chain & publication",
+      "gate_count": 20
+    },
+    {
+      "domain": "P14 Release, update, migration & rollback",
+      "gate_count": 18
+    },
+    {
+      "domain": "P15 SDK, API, documentation & developer experience",
+      "gate_count": 14
+    },
+    {
+      "domain": "P16 License, FTO, governance & contribution policy",
+      "gate_count": 14
+    },
+    {
+      "domain": "P17 Operations, vulnerability response & long-term maintenance",
+      "gate_count": 14
+    },
+    {
+      "domain": "P18 Evidence, assurance & research integrity",
+      "gate_count": 12
+    }
   ],
   "evidence_catalog": {
-    "oracle":{"ref":"package.json","note":"Node 24.21.0 / npm 11.19.0 pinned; release freeze still open"},
-    "chrome":{"ref":"docs/implementation/STATUS.md","note":"clean Chrome browser-product-path evidence"},
-    "c1":{"ref":"CI #197 / C1 merge 47f089e020b5b412f6a4f0880718b8b64963410a","note":"Vite 8.3 production build court"},
-    "c2":{"ref":"CI #197 / C2 merge 118c84660aa5bae7a7d8d991559cad9ce07a068b","note":"Vite dev/HMR/restart/SW/dep-opt court"},
-    "opfs-locks":{"ref":"CI #201 / c45ce8e57cb3d5b20c5e78f1dd65aaf57469037a","note":"cross-context Web Locks + stale writer rejection"},
-    "opfs-gc":{"ref":"CI #203 / PR #5","note":"two-slot-aware unreachable payload GC"},
-    "storage":{"ref":"CI #205/#207","note":"storage telemetry, quota preflight, GC retry, fail-closed pressure"},
-    "workspace-sdk":{"ref":"CI #233 / PR #13","note":"public SDK OPFS workspace persistence profile"},
-    "workspace-corrupt":{"ref":"CI #239 / PR #15","note":"corrupt-newest fallback, republish and reopen"},
-    "package-corpus":{"ref":"CI #225/#241/#242","note":"browser npm package corpus: es-module-lexer + nanoid conditional exports"},
-    "package-policy":{"ref":"CI #220","note":"peer/optional/lifecycle policy"},
-    "package-integrity":{"ref":"packages/package-env","note":"SRI/content authority has no default install-anyway path"},
-    "archive-security":{"ref":"tests/package*.test.js","note":"hostile archive/path/link/integrity cases; release fuzz review still open"},
-    "node24":{"ref":"tests/node24-resolver-differential.test.js","note":"selected exact Node 24.21.0 resolver differential"},
-    "node-boundary":{"ref":"packages/package-env/src/browser-node-compat.js","note":"explicit unsupported browser/native boundaries"},
-    "toolchain":{"ref":"docs/implementation/STATUS.md","note":"exact Rolldown/LightningCSS browser artifact path promoted"},
-    "toolchain-profile":{"ref":"toolchain coherence contract + implementation","note":"exact profile / no silent skew"},
-    "process":{"ref":"tests runtime/process suites","note":"selected terminal/race semantics; release campaign incomplete"},
-    "errors":{"ref":"packages/protocol","note":"stable machine errors implemented"},
-    "recovery":{"ref":"research + implementation tests","note":"no-silent-empty recovery rule partially reconciled"},
-    "guest-isolation":{"ref":"CI #244 / PR #17","note":"deny-by-default guest browser capability membrane"},
-    "guest-timeout":{"ref":"CI #248 / PR #18","note":"runaway guest hard timeout termination"},
-    "worker-budget":{"ref":"CI #251 / PR #19","note":"ResourceGovernor worker lease enforcement"},
-    "guest-output":{"ref":"CI #268 / PR #22","note":"bounded guest-to-host result transfer; heap isolation still open"},
-    "sdk":{"ref":"packages/sdk/src/index.js","note":"small SDK implemented; release freeze/types/examples incomplete"},
-    "adr":{"ref":"docs/decisions","note":"initial ADR set exists; coverage incomplete"}
+    "oracle": {
+      "ref": "package.json",
+      "note": "Node 24.21.0 / npm 11.19.0 pinned; release freeze still open"
+    },
+    "chrome": {
+      "ref": "docs/implementation/STATUS.md",
+      "note": "clean Chrome browser-product-path evidence"
+    },
+    "c1": {
+      "ref": "CI #197 / C1 merge 47f089e020b5b412f6a4f0880718b8b64963410a",
+      "note": "Vite 8.3 production build court"
+    },
+    "c2": {
+      "ref": "CI #197 / C2 merge 118c84660aa5bae7a7d8d991559cad9ce07a068b",
+      "note": "Vite dev/HMR/restart/SW/dep-opt court"
+    },
+    "opfs-locks": {
+      "ref": "CI #201 / c45ce8e57cb3d5b20c5e78f1dd65aaf57469037a",
+      "note": "cross-context Web Locks + stale writer rejection"
+    },
+    "opfs-gc": {
+      "ref": "CI #203 / PR #5",
+      "note": "two-slot-aware unreachable payload GC"
+    },
+    "storage": {
+      "ref": "CI #205/#207",
+      "note": "storage telemetry, quota preflight, GC retry, fail-closed pressure"
+    },
+    "workspace-sdk": {
+      "ref": "CI #233 / PR #13",
+      "note": "public SDK OPFS workspace persistence profile"
+    },
+    "workspace-corrupt": {
+      "ref": "CI #239 / PR #15",
+      "note": "corrupt-newest fallback, republish and reopen"
+    },
+    "package-corpus": {
+      "ref": "CI #225/#241/#242",
+      "note": "browser npm package corpus: es-module-lexer + nanoid conditional exports"
+    },
+    "package-policy": {
+      "ref": "CI #220",
+      "note": "peer/optional/lifecycle policy"
+    },
+    "package-integrity": {
+      "ref": "packages/package-env",
+      "note": "SRI/content authority has no default install-anyway path"
+    },
+    "archive-security": {
+      "ref": "tests/package*.test.js",
+      "note": "hostile archive/path/link/integrity cases; release fuzz review still open"
+    },
+    "node24": {
+      "ref": "tests/node24-resolver-differential.test.js",
+      "note": "selected exact Node 24.21.0 resolver differential"
+    },
+    "node-boundary": {
+      "ref": "packages/package-env/src/browser-node-compat.js",
+      "note": "explicit unsupported browser/native boundaries"
+    },
+    "toolchain": {
+      "ref": "docs/implementation/STATUS.md",
+      "note": "exact Rolldown/LightningCSS browser artifact path promoted"
+    },
+    "toolchain-profile": {
+      "ref": "toolchain coherence contract + implementation",
+      "note": "exact profile / no silent skew"
+    },
+    "process": {
+      "ref": "tests runtime/process suites",
+      "note": "selected terminal/race semantics; release campaign incomplete"
+    },
+    "errors": {
+      "ref": "packages/protocol",
+      "note": "stable machine errors implemented"
+    },
+    "recovery": {
+      "ref": "research + implementation tests",
+      "note": "no-silent-empty recovery rule partially reconciled"
+    },
+    "guest-isolation": {
+      "ref": "CI #244 / PR #17",
+      "note": "deny-by-default guest browser capability membrane"
+    },
+    "guest-timeout": {
+      "ref": "CI #248 / PR #18",
+      "note": "runaway guest hard timeout termination"
+    },
+    "worker-budget": {
+      "ref": "CI #251 / PR #19",
+      "note": "ResourceGovernor worker lease enforcement"
+    },
+    "guest-output": {
+      "ref": "CI #268 / PR #22",
+      "note": "bounded guest-to-host result transfer; heap isolation still open"
+    },
+    "sdk": {
+      "ref": "packages/sdk/src/index.js",
+      "note": "small SDK implemented; release freeze/types/examples incomplete"
+    },
+    "adr": {
+      "ref": "docs/decisions",
+      "note": "initial ADR set exists; coverage incomplete"
+    },
+    "sdk-s7": {
+      "ref": "CI #270 / ce5b2bf496700a1f91971a665eb69ed5efdbac9e",
+      "note": "public SDK snapshot/restore + pinned streaming export/import + teardown passed Chrome product path"
+    }
   },
   "overrides": [
-    {"id":"P0-03","domain":"P0","state":"PARTIAL","promotion":"IMPLEMENTED","evidence":"oracle","closure_met":false},
-    {"id":"P1-01","domain":"P1","state":"EVIDENCE","promotion":"PASS-BROWSER","evidence":"chrome","closure_met":false},
-    {"id":"P1-02","domain":"P1","state":"EVIDENCE","promotion":"PASS-BROWSER","evidence":"chrome","closure_met":false},
-    {"id":"P1-07","domain":"P1","state":"EVIDENCE","promotion":"PASS-BROWSER","evidence":"chrome","closure_met":false},
-    {"id":"P1-10","domain":"P1","state":"PARTIAL","promotion":"PASS-BROWSER","evidence":"opfs-locks","closure_met":false},
-    {"id":"P1-11","domain":"P1","state":"PARTIAL","promotion":"PASS-BROWSER","evidence":"storage","closure_met":false},
-    {"id":"P2-01","domain":"P2","state":"EVIDENCE","promotion":"PASS-BROWSER","evidence":"chrome","closure_met":false},
-    {"id":"P2-05","domain":"P2","state":"PARTIAL","promotion":"PASS-LOCAL","evidence":"process","closure_met":false},
-    {"id":"P2-06","domain":"P2","state":"PARTIAL","promotion":"PASS-BROWSER","evidence":"guest-timeout","closure_met":false},
-    {"id":"P2-10","domain":"P2","state":"PARTIAL","promotion":"PASS-BROWSER","evidence":"guest-output","closure_met":false},
-    {"id":"P2-11","domain":"P2","state":"EVIDENCE","promotion":"PASS-BROWSER","evidence":"c2","closure_met":false},
-    {"id":"P2-14","domain":"P2","state":"EVIDENCE","promotion":"PASS-LOCAL","evidence":"errors","closure_met":false},
-    {"id":"P3-01","domain":"P3","state":"EVIDENCE","promotion":"PASS-BROWSER","evidence":"workspace-sdk","closure_met":false},
-    {"id":"P3-02","domain":"P3","state":"EVIDENCE","promotion":"PASS-BROWSER","evidence":"opfs-locks","closure_met":false},
-    {"id":"P3-03","domain":"P3","state":"EVIDENCE","promotion":"PASS-BROWSER","evidence":"opfs-locks","closure_met":false},
-    {"id":"P3-05","domain":"P3","state":"EVIDENCE","promotion":"PASS-BROWSER","evidence":"workspace-corrupt","closure_met":false},
-    {"id":"P3-08","domain":"P3","state":"EVIDENCE","promotion":"PASS-BROWSER","evidence":"storage","closure_met":false},
-    {"id":"P3-13","domain":"P3","state":"PARTIAL","promotion":"PASS-BROWSER","evidence":"workspace-corrupt","closure_met":false},
-    {"id":"P3-14","domain":"P3","state":"PARTIAL","promotion":"PASS-BROWSER","evidence":"opfs-gc","closure_met":false},
-    {"id":"P3-19","domain":"P3","state":"PARTIAL","promotion":"PASS-LOCAL","evidence":"recovery","closure_met":false},
-    {"id":"P4-01","domain":"P4","state":"PARTIAL","promotion":"PASS-LOCAL","evidence":"node24","closure_met":false},
-    {"id":"P4-05","domain":"P4","state":"PARTIAL","promotion":"PASS-BROWSER","evidence":"package-corpus","closure_met":false},
-    {"id":"P4-09","domain":"P4","state":"PARTIAL","promotion":"PASS-LOCAL","evidence":"archive-security","closure_met":false},
-    {"id":"P4-12","domain":"P4","state":"PARTIAL","promotion":"IMPLEMENTED","evidence":"package-integrity","closure_met":false},
-    {"id":"P4-13","domain":"P4","state":"PARTIAL","promotion":"PASS-BROWSER","evidence":"package-policy","closure_met":false},
-    {"id":"P4-18","domain":"P4","state":"PARTIAL","promotion":"IMPLEMENTED","evidence":"node-boundary","closure_met":false},
-    {"id":"P6-01","domain":"P6","state":"EVIDENCE","promotion":"PASS-BROWSER","evidence":"toolchain","closure_met":false},
-    {"id":"P6-02","domain":"P6","state":"EVIDENCE","promotion":"PASS-BROWSER","evidence":"toolchain","closure_met":false},
-    {"id":"P6-07","domain":"P6","state":"EVIDENCE","promotion":"PASS-BROWSER","evidence":"c1","closure_met":false},
-    {"id":"P6-08","domain":"P6","state":"EVIDENCE","promotion":"PASS-BROWSER","evidence":"c2","closure_met":false},
-    {"id":"P6-09","domain":"P6","state":"EVIDENCE","promotion":"PASS-BROWSER","evidence":"c2","closure_met":false},
-    {"id":"P6-13","domain":"P6","state":"EVIDENCE","promotion":"PASS-BROWSER","evidence":"c1","closure_met":false},
-    {"id":"P6-15","domain":"P6","state":"EVIDENCE","promotion":"PASS-LOCAL","evidence":"toolchain-profile","closure_met":false},
-    {"id":"P6-16","domain":"P6","state":"EVIDENCE","promotion":"PASS-LOCAL","evidence":"toolchain-profile","closure_met":false},
-    {"id":"P7-07","domain":"P7","state":"PARTIAL","promotion":"IMPLEMENTED","evidence":"worker-budget","closure_met":false},
-    {"id":"P7-08","domain":"P7","state":"PARTIAL","promotion":"PASS-BROWSER","evidence":"guest-output","closure_met":false},
-    {"id":"P12-04","domain":"P12","state":"PARTIAL","promotion":"PASS-BROWSER","evidence":"guest-isolation","closure_met":false},
-    {"id":"P12-07","domain":"P12","state":"PARTIAL","promotion":"PASS-BROWSER","evidence":"guest-output","closure_met":false},
-    {"id":"P15-01","domain":"P15","state":"PARTIAL","promotion":"IMPLEMENTED","evidence":"sdk","closure_met":false},
-    {"id":"P15-13","domain":"P15","state":"PARTIAL","promotion":"IMPLEMENTED","evidence":"adr","closure_met":false}
+    {
+      "id": "P0-03",
+      "domain": "P0",
+      "state": "PARTIAL",
+      "promotion": "IMPLEMENTED",
+      "evidence": "oracle",
+      "closure_met": false
+    },
+    {
+      "id": "P1-01",
+      "domain": "P1",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "chrome",
+      "closure_met": false
+    },
+    {
+      "id": "P1-02",
+      "domain": "P1",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "chrome",
+      "closure_met": false
+    },
+    {
+      "id": "P1-07",
+      "domain": "P1",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "chrome",
+      "closure_met": false
+    },
+    {
+      "id": "P1-10",
+      "domain": "P1",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "evidence": "opfs-locks",
+      "closure_met": false
+    },
+    {
+      "id": "P1-11",
+      "domain": "P1",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "evidence": "storage",
+      "closure_met": false
+    },
+    {
+      "id": "P2-01",
+      "domain": "P2",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "chrome",
+      "closure_met": false
+    },
+    {
+      "id": "P2-05",
+      "domain": "P2",
+      "state": "PARTIAL",
+      "promotion": "PASS-LOCAL",
+      "evidence": "process",
+      "closure_met": false
+    },
+    {
+      "id": "P2-06",
+      "domain": "P2",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "evidence": "guest-timeout",
+      "closure_met": false
+    },
+    {
+      "id": "P2-10",
+      "domain": "P2",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "evidence": "guest-output",
+      "closure_met": false
+    },
+    {
+      "id": "P2-11",
+      "domain": "P2",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "c2",
+      "closure_met": false
+    },
+    {
+      "id": "P2-14",
+      "domain": "P2",
+      "state": "EVIDENCE",
+      "promotion": "PASS-LOCAL",
+      "evidence": "errors",
+      "closure_met": false
+    },
+    {
+      "id": "P3-01",
+      "domain": "P3",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "workspace-sdk",
+      "closure_met": false
+    },
+    {
+      "id": "P3-02",
+      "domain": "P3",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "opfs-locks",
+      "closure_met": false
+    },
+    {
+      "id": "P3-03",
+      "domain": "P3",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "opfs-locks",
+      "closure_met": false
+    },
+    {
+      "id": "P3-05",
+      "domain": "P3",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "workspace-corrupt",
+      "closure_met": false
+    },
+    {
+      "id": "P3-08",
+      "domain": "P3",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "storage",
+      "closure_met": false
+    },
+    {
+      "id": "P3-13",
+      "domain": "P3",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "evidence": "workspace-corrupt",
+      "closure_met": false
+    },
+    {
+      "id": "P3-14",
+      "domain": "P3",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "evidence": "opfs-gc",
+      "closure_met": false
+    },
+    {
+      "id": "P3-16",
+      "domain": "P3",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "sdk-s7",
+      "closure_met": false
+    },
+    {
+      "id": "P3-19",
+      "domain": "P3",
+      "state": "PARTIAL",
+      "promotion": "PASS-LOCAL",
+      "evidence": "recovery",
+      "closure_met": false
+    },
+    {
+      "id": "P4-01",
+      "domain": "P4",
+      "state": "PARTIAL",
+      "promotion": "PASS-LOCAL",
+      "evidence": "node24",
+      "closure_met": false
+    },
+    {
+      "id": "P4-05",
+      "domain": "P4",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "evidence": "package-corpus",
+      "closure_met": false
+    },
+    {
+      "id": "P4-09",
+      "domain": "P4",
+      "state": "PARTIAL",
+      "promotion": "PASS-LOCAL",
+      "evidence": "archive-security",
+      "closure_met": false
+    },
+    {
+      "id": "P4-12",
+      "domain": "P4",
+      "state": "PARTIAL",
+      "promotion": "IMPLEMENTED",
+      "evidence": "package-integrity",
+      "closure_met": false
+    },
+    {
+      "id": "P4-13",
+      "domain": "P4",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "evidence": "package-policy",
+      "closure_met": false
+    },
+    {
+      "id": "P4-18",
+      "domain": "P4",
+      "state": "PARTIAL",
+      "promotion": "IMPLEMENTED",
+      "evidence": "node-boundary",
+      "closure_met": false
+    },
+    {
+      "id": "P6-01",
+      "domain": "P6",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "toolchain",
+      "closure_met": false
+    },
+    {
+      "id": "P6-02",
+      "domain": "P6",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "toolchain",
+      "closure_met": false
+    },
+    {
+      "id": "P6-07",
+      "domain": "P6",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "c1",
+      "closure_met": false
+    },
+    {
+      "id": "P6-08",
+      "domain": "P6",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "c2",
+      "closure_met": false
+    },
+    {
+      "id": "P6-09",
+      "domain": "P6",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "c2",
+      "closure_met": false
+    },
+    {
+      "id": "P6-13",
+      "domain": "P6",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "c1",
+      "closure_met": false
+    },
+    {
+      "id": "P6-15",
+      "domain": "P6",
+      "state": "EVIDENCE",
+      "promotion": "PASS-LOCAL",
+      "evidence": "toolchain-profile",
+      "closure_met": false
+    },
+    {
+      "id": "P6-16",
+      "domain": "P6",
+      "state": "EVIDENCE",
+      "promotion": "PASS-LOCAL",
+      "evidence": "toolchain-profile",
+      "closure_met": false
+    },
+    {
+      "id": "P7-07",
+      "domain": "P7",
+      "state": "PARTIAL",
+      "promotion": "IMPLEMENTED",
+      "evidence": "worker-budget",
+      "closure_met": false
+    },
+    {
+      "id": "P7-08",
+      "domain": "P7",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "evidence": "guest-output",
+      "closure_met": false
+    },
+    {
+      "id": "P12-04",
+      "domain": "P12",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "evidence": "guest-isolation",
+      "closure_met": false
+    },
+    {
+      "id": "P12-07",
+      "domain": "P12",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "evidence": "guest-output",
+      "closure_met": false
+    },
+    {
+      "id": "P15-01",
+      "domain": "P15",
+      "state": "PARTIAL",
+      "promotion": "IMPLEMENTED",
+      "evidence": "sdk",
+      "closure_met": false
+    },
+    {
+      "id": "P15-07",
+      "domain": "P15",
+      "state": "PARTIAL",
+      "promotion": "IMPLEMENTED",
+      "evidence": "sdk-s7",
+      "closure_met": false
+    },
+    {
+      "id": "P15-11",
+      "domain": "P15",
+      "state": "PARTIAL",
+      "promotion": "PASS-LOCAL",
+      "evidence": "sdk-s7",
+      "closure_met": false
+    },
+    {
+      "id": "P15-12",
+      "domain": "P15",
+      "state": "PARTIAL",
+      "promotion": "PASS-LOCAL",
+      "evidence": "sdk-s7",
+      "closure_met": false
+    },
+    {
+      "id": "P15-13",
+      "domain": "P15",
+      "state": "PARTIAL",
+      "promotion": "IMPLEMENTED",
+      "evidence": "adr",
+      "closure_met": false
+    }
   ]
 }
