@@ -942,7 +942,7 @@ async function run() {
             "  };",
             "  return handle;",
             "};"
-          ].join('\\n')
+          ].join('\n')
         : '',
     moduleEpilogue: (path) =>
       path === '/workspace/node_modules/lightningcss/index.mjs'
