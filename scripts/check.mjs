@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 const required=[
   'packages/sdk/src/index.js','packages/kernel/src/index.js','packages/vfs/src/index.js','packages/process/src/index.js',
   'packages/process/src/sync-rpc.js',
+  'packages/protocol/src/service-worker-compatibility.js',
   'packages/package-env/src/index.js',
   'packages/package-env/src/browser-node-compat.js',
   'packages/package-env/src/resolver.js',
