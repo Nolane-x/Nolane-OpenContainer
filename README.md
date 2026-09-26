@@ -61,7 +61,7 @@ Internal protocol/toolchain packages do not create extra product surfaces.
 - deny-by-default external networking with canonical URL authorization;
 - authority-epoch preview routing with stale-route rejection;
 - committed-generation snapshots and streaming export prototype;
-- stable machine-readable errors, secret redaction and bounded resource governance;
+- public snapshot/restore plus pinned streaming NDJSON export/import through the SDK;\n- stable machine-readable errors, secret redaction and bounded resource governance;
 - exact toolchain profile checks that reject silent Rolldown binding skew;
 - a verified WasmArtifactManager that gates bytes, digest and compiled module shape;
 - retained exact `lightningcss-wasm@1.33.0` npm tarball with CI-reverified inner WASM identity;
@@ -97,7 +97,7 @@ The major remaining gates are broader Node compatibility/isolation, deeper OPFS 
 See:
 
 - [`docs/architecture/CORE-SURFACES.md`](docs/architecture/CORE-SURFACES.md)
-- [`docs/implementation/STATUS.md`](docs/implementation/STATUS.md)
+- [`docs/implementation/STATUS.md`](docs/implementation/STATUS.md)\n- [`docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.md`](docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.md)\n- [`docs/guides/SDK-QUICKSTART.md`](docs/guides/SDK-QUICKSTART.md)\n- [`docs/guides/STORAGE-AND-EXPORT.md`](docs/guides/STORAGE-AND-EXPORT.md)
 - [`research/reference/W5-HANDOFF-v1.33.md`](research/reference/W5-HANDOFF-v1.33.md)
 
 ## License

@@ -28,6 +28,36 @@ async function run() {
   const runtime = await OpenContainer.boot({ network: { allowLocal: true } });
   acceptanceRuntime = runtime;
   stage('runtime-ready', { crossOriginIsolated: globalThis.crossOriginIsolated });
+
+  stage('sdk-s7-start');
+  const s7Runtime = await OpenContainer.boot();
+  s7Runtime.mount({ 's7-state.txt': 'one' });
+  const s7Snapshot = s7Runtime.snapshot('browser-s7');
+  s7Runtime.fs.beginTransaction().writeFile('s7-state.txt', 'two').commit();
+  s7Runtime.restore(s7Snapshot);
+  assert(s7Runtime.fs.readFile('s7-state.txt') === 'one', 'public SDK snapshot restore returned wrong content');
+
+  const s7PinnedGeneration = s7Runtime.fs.generation;
+  const s7Export = s7Runtime.export();
+  s7Runtime.fs.beginTransaction().writeFile('s7-state.txt', 'after-export').commit();
+
+  const s7Imported = await OpenContainer.boot();
+  await s7Imported.import(s7Export);
+  assert(s7Imported.fs.readFile('s7-state.txt') === 'one', 'public SDK streaming import did not restore pinned export content');
+  assert(s7Imported.fs.generation === s7PinnedGeneration, 'public SDK export mixed a later generation');
+  const s7Status = s7Runtime.status();
+  assert(s7Status.state === 'READY' && s7Status.generation === s7Runtime.fs.generation, 'public SDK status receipt drifted');
+
+  await s7Imported.teardown();
+  await s7Runtime.teardown();
+  assert(s7Runtime.state === 'TERMINATED', 'public SDK teardown did not terminate runtime');
+  stage('sdk-s7-pass', {
+    snapshotId: s7Snapshot.id,
+    pinnedGeneration: s7PinnedGeneration,
+    importedGeneration: s7Imported.fs.generation,
+    streamingExport: true,
+    teardown: true
+  });
   const toolchainBridgeResponse = await fetch('/packages/toolchain/src/browser-vfs-bridge.js', { cache: 'no-store' });
   assert(toolchainBridgeResponse.ok, 'failed to load production browser toolchain VFS bridge');
   const toolchainBridgeSource = await toolchainBridgeResponse.text();

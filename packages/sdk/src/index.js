@@ -47,6 +47,32 @@ export class OpenContainer {
   spawn(command,args=[],options={}){this._kernel.assertReady();return this.process.spawn(command,args,options);}
   listen(port,handler,{owner='runtime'}={}){this._kernel.assertReady();return this.preview.publish({port,owner,handler});}
   installPackageCommands(options={}){this._kernel.assertReady();return this.packages.bindCommands(this.process,options);}
+  snapshot(label='snapshot'){this._kernel.assertReady();return this.snapshots.create(label);}
+  restore(ref){
+    this._kernel.assertReady();
+    const id=typeof ref==='string'?ref:ref?.id;
+    assertOc(typeof id==='string'&&id.length>0,ErrorCodes.INVALID_ARGUMENT,'Snapshot reference is required');
+    return this.snapshots.restore(id);
+  }
+  export(ref=null){
+    this._kernel.assertReady();
+    const id=ref===null?null:typeof ref==='string'?ref:ref?.id;
+    assertOc(ref===null||(typeof id==='string'&&id.length>0),ErrorCodes.INVALID_ARGUMENT,'Snapshot reference is invalid');
+    return this.snapshots.exportStream(id);
+  }
+  async import(source){
+    this._kernel.assertReady();
+    return this.snapshots.importStream(source);
+  }
+  status(){
+    return Object.freeze({
+      state:this.state,
+      health:this.health,
+      generation:this.fs.generation,
+      workspacePersistence:this.workspacePersistence?Object.freeze({sequence:this.workspacePersistence.current?.sequence??null,crossContextLocking:this.workspacePersistence.crossContextLocking}):null,
+      packagePersistence:this.packageContentStore?Object.freeze({hydratedCount:this.packageContentStore.hydratedCount??0,crossContextLocking:this.packageContentStore.crossContextLocking}):null
+    });
+  }
   async persistWorkspace(){
     this._kernel.assertReady();
     assertOc(this.workspacePersistence,ErrorCodes.INVALID_STATE,'Workspace OPFS persistence is not configured');
@@ -57,6 +83,7 @@ export class OpenContainer {
     assertOc(this.workspacePersistence,ErrorCodes.INVALID_STATE,'Workspace OPFS persistence is not configured');
     return this.workspacePersistence.collectGarbage(options);
   }
+  async teardown(){await this.terminate();}
   async terminate(){await this._kernel.terminate();}
 }
 
