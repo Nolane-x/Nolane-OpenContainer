@@ -1,4 +1,5 @@
 import { ErrorCodes, assertOc, ocError } from '../../protocol/src/index.js';
+import { ensureCompatibleServiceWorker } from '../../protocol/src/service-worker-compatibility.js';
 
 function waitForController(container, timeoutMs) {
   if (container.controller) return Promise.resolve(container.controller);
@@ -109,9 +110,18 @@ export class BrowserPreviewServiceWorkerBridge {
       this.#container.addEventListener('message', this.#listener);
     }
     this.#registration = await this.#container.register(this.#scriptURL, { scope: this.#scope, updateViaCache: 'none' });
-    await waitForRegistrationActive(this.#registration, this.#timeoutMs);
-    const controller = await waitForController(this.#container, this.#timeoutMs);
-    return Object.freeze({ scope: this.#registration.scope, controllerURL: controller.scriptURL });
+    const lifecycle = await ensureCompatibleServiceWorker({
+      container: this.#container,
+      registration: this.#registration,
+      timeoutMs: this.#timeoutMs
+    });
+    const controller = lifecycle.controller;
+    return Object.freeze({
+      scope: this.#registration.scope,
+      controllerURL: controller.scriptURL,
+      serviceWorkerCompatibilityId: lifecycle.compatibilityId,
+      serviceWorkerActivation: lifecycle.activation
+    });
   }
 
   url(receipt, path = '/') {
