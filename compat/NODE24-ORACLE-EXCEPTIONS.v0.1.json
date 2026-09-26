@@ -1,0 +1,38 @@
+{
+  "schema": "opencontainer.node-oracle-exceptions.v0.1",
+  "oracle": {
+    "executable": "Node.js",
+    "version": "24.21.0",
+    "npm": "11.19.0",
+    "authority": "Executable behavior is the primary differential oracle for selected cases. Documentation discrepancies must be retained here rather than normalized away."
+  },
+  "policy": {
+    "unlistedMismatch": "FAIL",
+    "staleException": "FAIL",
+    "requiredFields": [
+      "id",
+      "surface",
+      "executableBehavior",
+      "documentedBehavior",
+      "reason",
+      "status"
+    ],
+    "statuses": [
+      "active",
+      "resolved"
+    ]
+  },
+  "selectedDifferentialCases": [
+    "resolver.cjs.relative-extension",
+    "resolver.cjs.conditional-require",
+    "resolver.cjs.root-dependency",
+    "resolver.cjs.nested-dependency",
+    "resolver.cjs.symlink-default-realpath",
+    "resolver.esm.dual",
+    "resolver.esm.pattern-condition",
+    "resolver.esm.package-imports",
+    "resolver.esm.self-reference",
+    "resolver.esm.query-preservation"
+  ],
+  "exceptions": []
+}

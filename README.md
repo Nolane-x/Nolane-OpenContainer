@@ -101,6 +101,7 @@ See:
 - [`docs/guides/HOSTING-HEADERS.md`](docs/guides/HOSTING-HEADERS.md)
 - [`docs/compatibility/REAL-REPOSITORY-CORPUS.md`](docs/compatibility/REAL-REPOSITORY-CORPUS.md)
 - [`docs/compatibility/COMPATIBILITY-BASELINE.v0.1.json`](docs/compatibility/COMPATIBILITY-BASELINE.v0.1.json)
+- [`docs/compatibility/PROMOTION-GOVERNANCE.md`](docs/compatibility/PROMOTION-GOVERNANCE.md)
 - [`research/reference/W5-HANDOFF-v1.33.md`](research/reference/W5-HANDOFF-v1.33.md)
 
 ## License

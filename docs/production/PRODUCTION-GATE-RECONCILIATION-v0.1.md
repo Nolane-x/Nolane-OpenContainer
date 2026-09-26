@@ -8,7 +8,7 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **59**
+- Seed-reconciled against implementation evidence: **61**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -26,7 +26,7 @@
 | P8 Diagnostics, supportability & privacy | 0 | 14 | 14 |
 | P9 UI/UX, accessibility & human safety | 0 | 18 | 18 |
 | P10 AI consumer, authority & data egress | 0 | 18 | 18 |
-| P11 Compatibility corpus & certification | 11 | 3 | 14 |
+| P11 Compatibility corpus & certification | 13 | 1 | 14 |
 | P12 Product security engineering | 2 | 18 | 20 |
 | P13 Build, supply chain & publication | 0 | 20 | 20 |
 | P14 Release, update, migration & rollback | 0 | 18 | 18 |
@@ -58,6 +58,9 @@
 - **P11-12** is now partial: exact npm-published `clsx@2.1.1` passes SRI -> FrozenInstaller -> VNFS -> package exports resolution -> native ESM -> isolated Worker. The gate cannot close until the actual published OpenContainer package/bundle is used for every supported feature rather than source checkout.
 - **P11-14** remains partial: known limitations are published with the baseline, but "every release compatibility report" cannot close before release certification exists.
 - CI #300 promoted repeated real-repository progression: exact `yoctocolors@a85b98a...` and `clsx@925494c...` each execute twice on fresh isolated realms; a separate published-package court fetches and executes the exact npm `clsx@2.1.1` tarball.
+
+- **P11-08** now meets minimum closure: selected Node 24.21.0 differential cases have stable IDs and a fail-closed exception registry; unlisted mismatches and stale exceptions fail CI. The current selected court has zero active hidden discrepancies.
+- **P11-11** now meets minimum closure: Alpha/Beta/RC/1.0 thresholds are frozen against the measured baseline before final tuning. CI #309 computes the current level as **Alpha** and refuses to qualify Beta while P11-12/P11-14 remain open/partial.
 
 ## Update discipline
 

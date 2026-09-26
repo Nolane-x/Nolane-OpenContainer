@@ -5,9 +5,25 @@ import { tmpdir } from 'node:os';
 import { join, dirname, relative, sep } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { OpenContainer } from '../packages/sdk/src/index.js';
 
 const EXACT_ORACLE = process.version === 'v24.21.0';
+const ORACLE_POLICY = JSON.parse(readFileSync('compat/NODE24-ORACLE-EXCEPTIONS.v0.1.json','utf8'));
+const ACTIVE_ORACLE_EXCEPTIONS = new Map(
+  ORACLE_POLICY.exceptions.filter((item)=>item.status==='active').map((item)=>[item.id,item])
+);
+
+function assertOracleMatch(id, actual, expected) {
+  const exception = ACTIVE_ORACLE_EXCEPTIONS.get(id);
+  if (actual === expected) {
+    assert.equal(exception, undefined, id + ' has a stale active oracle exception');
+    return;
+  }
+  assert.ok(exception, id + ' disagreed with Node executable without an explicit oracle exception: ' + JSON.stringify({ actual, expected }));
+  assert.equal(exception.executableBehavior, expected, id + ' exception executable behavior drifted');
+  assert.equal(exception.openContainerBehavior, actual, id + ' exception OpenContainer behavior drifted');
+}
 
 function write(root, relativePath, content) {
   const file = join(root, relativePath);
@@ -132,29 +148,29 @@ test('OpenContainer resolver matches selected exact Node 24.21.0 oracle cases', 
     const requireFromA = createRequire(pathToFileURL(join(root, 'node_modules/a/index.js')));
 
     const cjsCases = [
-      ['relative extension', requireFromApp.resolve('./local'), runtime.packages.resolve('./local', '/workspace/src/app.cjs', { mode: 'cjs' }).path],
-      ['conditional require', requireFromApp.resolve('dual'), runtime.packages.resolve('dual', '/workspace/src/app.cjs', { mode: 'cjs' }).path],
-      ['root dependency', requireFromApp.resolve('b'), runtime.packages.resolve('b', '/workspace/src/app.cjs', { mode: 'cjs' }).path],
-      ['nested dependency', requireFromA.resolve('b'), runtime.packages.resolve('b', '/workspace/node_modules/a/index.js', { mode: 'cjs' }).path],
-      ['symlink default realpath', requireFromApp.resolve('ws'), runtime.packages.resolve('ws', '/workspace/src/app.cjs', { mode: 'cjs' }).path]
+      ['resolver.cjs.relative-extension', requireFromApp.resolve('./local'), runtime.packages.resolve('./local', '/workspace/src/app.cjs', { mode: 'cjs' }).path],
+      ['resolver.cjs.conditional-require', requireFromApp.resolve('dual'), runtime.packages.resolve('dual', '/workspace/src/app.cjs', { mode: 'cjs' }).path],
+      ['resolver.cjs.root-dependency', requireFromApp.resolve('b'), runtime.packages.resolve('b', '/workspace/src/app.cjs', { mode: 'cjs' }).path],
+      ['resolver.cjs.nested-dependency', requireFromA.resolve('b'), runtime.packages.resolve('b', '/workspace/node_modules/a/index.js', { mode: 'cjs' }).path],
+      ['resolver.cjs.symlink-default-realpath', requireFromApp.resolve('ws'), runtime.packages.resolve('ws', '/workspace/src/app.cjs', { mode: 'cjs' }).path]
     ];
 
-    for (const [name, nodeResolved, openResolved] of cjsCases) {
-      assert.equal(openResolved, logicalPath(root, nodeResolved), name);
+    for (const [id, nodeResolved, openResolved] of cjsCases) {
+      assertOracleMatch(id, openResolved, logicalPath(root, nodeResolved));
     }
 
     const stdout = execFileSync(process.execPath, [join(root, 'src/oracle.mjs')], { encoding: 'utf8' }).trim();
     const esmOracle = JSON.parse(stdout);
     const esmCases = [
-      ['dual', runtime.packages.resolve('dual', '/workspace/src/app.mjs', { mode: 'esm' }).url],
-      ['dual/feature/x', runtime.packages.resolve('dual/feature/x', '/workspace/src/app.mjs', { mode: 'esm' }).url],
-      ['#internal', runtime.packages.resolve('#internal', '/workspace/src/app.mjs', { mode: 'esm' }).url],
-      ['app/self', runtime.packages.resolve('app/self', '/workspace/src/app.mjs', { mode: 'esm' }).url],
-      ['./internal.js?x=1', runtime.packages.resolve('./internal.js?x=1', '/workspace/src/app.mjs', { mode: 'esm' }).url]
+      ['resolver.esm.dual', 'dual', runtime.packages.resolve('dual', '/workspace/src/app.mjs', { mode: 'esm' }).url],
+      ['resolver.esm.pattern-condition', 'dual/feature/x', runtime.packages.resolve('dual/feature/x', '/workspace/src/app.mjs', { mode: 'esm' }).url],
+      ['resolver.esm.package-imports', '#internal', runtime.packages.resolve('#internal', '/workspace/src/app.mjs', { mode: 'esm' }).url],
+      ['resolver.esm.self-reference', 'app/self', runtime.packages.resolve('app/self', '/workspace/src/app.mjs', { mode: 'esm' }).url],
+      ['resolver.esm.query-preservation', './internal.js?x=1', runtime.packages.resolve('./internal.js?x=1', '/workspace/src/app.mjs', { mode: 'esm' }).url]
     ];
 
-    for (const [specifier, openUrl] of esmCases) {
-      assert.equal(openUrl, logicalUrl(root, esmOracle[specifier]), specifier);
+    for (const [id, specifier, openUrl] of esmCases) {
+      assertOracleMatch(id, openUrl, logicalUrl(root, esmOracle[specifier]));
     }
   } finally {
     await runtime.terminate();

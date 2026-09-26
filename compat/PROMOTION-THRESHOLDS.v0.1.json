@@ -1,0 +1,94 @@
+{
+  "schema": "opencontainer.compatibility-promotion-thresholds.v0.1",
+  "frozenAt": "2026-09-26",
+  "frozenAgainst": {
+    "compatibilityBaseline": "docs/compatibility/COMPATIBILITY-BASELINE.v0.1.json",
+    "compatibilityBaselineGitBlob": "59e43edd0c4c17c04c89f268b03e8b205b52b2f9",
+    "gateLedger": "docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.json",
+    "gateSourceSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146"
+  },
+  "rule": "Thresholds are monotonic. A level is qualified only when every requirement at that level and every lower level is satisfied. Tuning may not lower a frozen threshold.",
+  "levels": [
+    {
+      "id": "alpha",
+      "order": 1,
+      "requiredClosedGates": [
+        "P11-01",
+        "P11-02",
+        "P11-03",
+        "P11-04",
+        "P11-05",
+        "P11-06",
+        "P11-07",
+        "P11-08",
+        "P11-09",
+        "P11-10",
+        "P11-11"
+      ],
+      "requirements": {
+        "frozenCorpus": true,
+        "minimumRealRepositories": 2,
+        "minimumFreshBrowserSessionsPerEnabledCase": 2,
+        "machineReadableCompatibilityReport": true,
+        "adapterSemanticsDeclared": true,
+        "oracleExceptionsFailClosed": true,
+        "publishedThirdPartyPackageCourt": true,
+        "knownLimitationsPublished": true
+      }
+    },
+    {
+      "id": "beta",
+      "order": 2,
+      "requiredClosedGates": [
+        "P11-12",
+        "P11-14"
+      ],
+      "requirements": {
+        "actualOpenContainerDistributionCertified": true,
+        "publishedSamplesRunAgainstDistribution": true,
+        "releaseCompatibilityReportPublished": true
+      }
+    },
+    {
+      "id": "rc",
+      "order": 3,
+      "requiredClosedGates": [
+        "P11-13"
+      ],
+      "requirements": {
+        "browserMinimumsFrozenFromRealMatrix": true,
+        "noCriticalOpenGateInDomains": [
+          "P0",
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5",
+          "P6",
+          "P7",
+          "P8",
+          "P9",
+          "P10",
+          "P11",
+          "P12",
+          "P13",
+          "P14",
+          "P15"
+        ],
+        "releaseRollbackDrill": true
+      }
+    },
+    {
+      "id": "1.0",
+      "order": 4,
+      "requiredClosedGates": [],
+      "requirements": {
+        "productionClosed": true,
+        "allCriticalProductionGatesClosed": true,
+        "releaseVerified": true,
+        "legalFtoClosed": true,
+        "operationsHandoffClosed": true
+      }
+    }
+  ]
+}
