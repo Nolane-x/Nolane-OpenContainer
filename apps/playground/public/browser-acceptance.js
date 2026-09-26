@@ -5,6 +5,7 @@ import { BrowserGuestWorkerAuthority } from '/packages/process/src/browser-guest
 import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority } from '/packages/vfs/src/index.js';
 import { BrowserPreviewServiceWorkerBridge } from '/packages/preview/src/index.js';
 import { ResourceGovernor } from '/packages/resources/src/index.js';
+import { OpfsReleaseStorageAuthority } from '/packages/persistence/src/index.js';
 
 const resultNode = document.getElementById('result');
 const stages = [];
@@ -50,6 +51,141 @@ async function run() {
     snapshotFormatVersion: runtime.productionProfile.snapshot.portableFormatVersion,
     gateCount: runtime.productionProfile.closure.gateCount,
     productionClosed: runtime.productionProfile.productionClosed
+  });
+
+  stage('release-storage-migration-start');
+  assert(typeof navigator.storage?.getDirectory === 'function', 'OPFS root is required for release storage migration court');
+  const releaseRoot = await navigator.storage.getDirectory();
+  const releaseBase = 'opencontainer-release-migration-' + Date.now();
+  const capacityProvider = {
+    async availableBytes() {
+      const estimate = await navigator.storage.estimate();
+      return Math.max(0, (estimate.quota ?? 0) - (estimate.usage ?? 0));
+    }
+  };
+  const migrationStore = await new OpfsReleaseStorageAuthority({
+    root: releaseRoot,
+    directoryName: releaseBase + '-main',
+    lockManager: navigator.locks,
+    capacityProvider,
+    safetyReserveBytes: 1024
+  }).open();
+  await migrationStore.seed({
+    storageVersion: 1,
+    runtimeVersion: '0.1.0-alpha.1',
+    data: { marker: 'v1', workspaceGeneration: runtime.fs.generation }
+  });
+  const migrationDryRun = await migrationStore.dryRun({
+    fromVersion: 1,
+    toVersion: 2,
+    runtimeVersion: '0.2.0-beta.1',
+    transform: (data) => ({ ...data, marker: 'v2', migrated: true }),
+    validate: (candidate) => candidate.data.migrated === true
+  });
+  assert(migrationDryRun.ok === true, 'release storage migration dry-run rejected browser capacity');
+  assert(migrationDryRun.canonicalUnchanged === true, 'release storage dry-run changed canonical identity');
+  assert((await migrationStore.readCanonical()).storageVersion === 1, 'release storage dry-run published target prematurely');
+  assert(migrationDryRun.derivedCache.strategy === 'lazy-rebuild', 'derived cache migration became eager');
+  assert(migrationDryRun.derivedCache.criticalOpenPath === false, 'derived cache migration entered critical open path');
+  assert(migrationDryRun.derivedCache.migrateBytes === 0, 'derived cache bytes were migrated eagerly');
+  assert(migrationDryRun.derivedCache.sourceNamespace !== migrationDryRun.derivedCache.targetNamespace, 'cache namespace was reused across storage versions');
+
+  const migrationReceipt = await migrationStore.migrate({
+    fromVersion: 1,
+    toVersion: 2,
+    runtimeVersion: '0.2.0-beta.1',
+    transform: (data) => ({ ...data, marker: 'v2', migrated: true }),
+    validate: (candidate) => candidate.data.migrated === true
+  });
+  const migratedCanonical = await migrationStore.readCanonical();
+  const migrationRoots = await migrationStore.recoveryRoots();
+  assert(migrationReceipt.destructiveDowngrade === false, 'migration receipt allowed destructive downgrade');
+  assert(migratedCanonical.storageVersion === 2 && migratedCanonical.data.marker === 'v2', 'release storage migration did not publish v2');
+  assert(migrationRoots.filter((item) => item.valid).length === 2, 'release storage migration did not retain two valid recovery roots');
+  assert(JSON.stringify(migrationRoots.map((item) => item.storageVersion).sort()) === JSON.stringify([1, 2]), 'release storage recovery roots do not preserve adjacent versions');
+
+  const rollbackFs = new MemoryVFS();
+  rollbackFs.mount({ 'rollback.txt': 'stable' });
+  const rollback = await migrationStore.rollbackPolicy({
+    runtimeStorageVersion: 1,
+    readableStorageVersions: [1, 2]
+  });
+  assert(rollback.strategy === 'reuse-newer-storage-read-only', 'rollback attempted a destructive storage downgrade');
+  assert(rollback.destructiveStorageDowngrade === false, 'rollback marked destructive storage downgrade as required');
+  const rollbackApplied = await migrationStore.applyCompatibility(rollbackFs, {
+    runtimeStorageVersion: 1,
+    readableStorageVersions: [1, 2]
+  });
+  assert(rollbackApplied.mode === 'read-only' && rollbackFs.readOnly === true, 'rolled-back runtime did not enter read-only mode');
+  let rollbackWriteCode = null;
+  try {
+    rollbackFs.beginTransaction().writeFile('rollback.txt', 'forbidden').commit();
+  } catch (error) {
+    rollbackWriteCode = error?.code ?? null;
+  }
+  assert(rollbackWriteCode === 'OC_STORAGE_READ_ONLY', 'read-only rollback did not fail writes with OC_STORAGE_READ_ONLY');
+  assert(rollbackFs.readFile('rollback.txt') === 'stable', 'read-only rollback mutated canonical workspace');
+
+  const crashResults = [];
+  for (const phase of ['after-preflight', 'after-payload', 'after-verify', 'after-publish']) {
+    const directoryName = releaseBase + '-crash-' + phase;
+    const crashing = await new OpfsReleaseStorageAuthority({
+      root: releaseRoot,
+      directoryName,
+      lockManager: navigator.locks,
+      capacityProvider,
+      safetyReserveBytes: 1024
+    }).open();
+    await crashing.seed({
+      storageVersion: 1,
+      runtimeVersion: '0.1.0-alpha.1',
+      data: { phase, marker: 'old' }
+    });
+    let crashCode = null;
+    try {
+      await crashing.migrate({
+        fromVersion: 1,
+        toVersion: 2,
+        runtimeVersion: '0.2.0-beta.1',
+        transform: (data) => ({ ...data, marker: 'new' }),
+        crashAt: phase
+      });
+    } catch (error) {
+      crashCode = error?.code ?? null;
+    }
+    assert(crashCode === 'OC_STORAGE_MIGRATION_INVALID', 'crash injection did not stop migration at ' + phase);
+    const reopened = await new OpfsReleaseStorageAuthority({
+      root: releaseRoot,
+      directoryName,
+      lockManager: navigator.locks,
+      capacityProvider,
+      safetyReserveBytes: 1024
+    }).open();
+    const canonical = await reopened.readCanonical();
+    const roots = await reopened.recoveryRoots();
+    assert(canonical !== null, 'crash phase lost all canonical storage: ' + phase);
+    assert(roots.some((item) => item.valid), 'crash phase lost all valid recovery roots: ' + phase);
+    if (phase === 'after-publish') {
+      assert(canonical.storageVersion === 2, 'post-publish crash did not recover new canonical version');
+      assert(roots.filter((item) => item.valid).length === 2, 'post-publish crash lost previous recovery root');
+    } else {
+      assert(canonical.storageVersion === 1, 'pre-publish crash changed canonical storage');
+    }
+    crashResults.push({ phase, storageVersion: canonical.storageVersion, validRoots: roots.filter((item) => item.valid).length });
+    await releaseRoot.removeEntry(directoryName, { recursive: true });
+  }
+
+  await releaseRoot.removeEntry(releaseBase + '-main', { recursive: true });
+  stage('release-storage-migration-pass', {
+    dryRunRequiredBytes: migrationDryRun.requiredBytes,
+    sourceCacheNamespace: migrationDryRun.derivedCache.sourceNamespace,
+    targetCacheNamespace: migrationDryRun.derivedCache.targetNamespace,
+    migratedStorageVersion: migratedCanonical.storageVersion,
+    recoveryRoots: migrationRoots.filter((item) => item.valid).length,
+    rollbackMode: rollbackApplied.mode,
+    destructiveStorageDowngrade: rollback.destructiveStorageDowngrade,
+    rollbackWriteCode,
+    crashResults
   });
 
   stage('sdk-s7-start');
