@@ -17,7 +17,8 @@
     "test": "node --test tests/*.test.js",
     "ci": "npm run check && npm test",
     "playground": "node apps/playground/server.mjs",
-    "browser:acceptance": "node scripts/browser-acceptance.mjs"
+    "browser:acceptance": "node scripts/browser-acceptance.mjs",
+    "hosting:self-check": "node scripts/hosting-self-check.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",

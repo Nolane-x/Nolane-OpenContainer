@@ -27,6 +27,7 @@ Promoted in the clean Chrome product/browser path:
 - guest-to-host execution results now carry a bounded export budget before `postMessage`: selected exports are cloned and size-accounted inside the Worker, oversized strings/buffers/collections fail with `OC_OUTPUT_LIMIT`, and successful receipts report their bounded export byte usage; the default tracks the ResourceGovernor output budget when present.
 - S7 persistence is now exposed through the public SDK: `snapshot()` / `restore()` plus pinned-generation streaming `export()` / stream-capable `import()`, `status()` and `teardown()`; Chrome proves a live workspace can mutate after export invocation without contaminating the exported generation.
 - the SDK now publishes one canonical machine-readable production profile identity covering runtime version, Node/npm oracle, filesystem/OPFS snapshot versions, network capability profile, protocol envelope version, browser evidence scope and exact toolchain identity; the public JSON is drift-tested against the SDK and explicitly keeps `productionClosed=false`.
+- hosting/header setup now has an executable self-check: it validates COOP/COEP/CORP, strict/toolchain Worker CSP profiles, Service Worker scope and the public production-profile identity, and returns exact per-header diagnostics rather than a generic deployment failure.
 
 Evidence anchors:
 
@@ -50,6 +51,7 @@ Evidence anchors:
 - guest export-budget court `fafd4e43b66d74ebcb3898451b647a6c4ac313bb` passed contract + Chrome browser-product-path in CI run #267: a 64 KiB authority rejected both a 256 KiB text export and a 96 KiB typed-array export with `OC_OUTPUT_LIMIT`, then returned a 23-byte bounded export on the same live realm; all CSP/runaway/quota, persistence/package and Vite C1/C2 courts remained green.
 - public S7 SDK court `ce5b2bf496700a1f91971a665eb69ed5efdbac9e` passed contract + Chrome browser-product-path in CI run #270: snapshot/restore stayed exact, streaming export pinned generation 3 before a later live edit, a second runtime imported generation 3 unchanged, and public teardown completed while every prior browser court remained green.
 - production-profile identity court `aca2d12ddb729b90bd196731aebb8e54a8a68dbb` passed contract + Chrome browser-product-path in CI run #277: profile `opencontainer-alpha-chromium-node24-v1` exposed runtime `0.1.0-alpha.1`, Worker RPC envelope v1, snapshot format v1 and the 304-gate closure source while retaining `productionClosed=false`; browser-fetched JSON matched the SDK object exactly.
+- hosting self-check court `09abff58f289758f06c7b75842cdb1331dc2a28a` passed contract + Chrome regression in CI run #281: the checker accepted the promoted playground topology, retained profile `opencontainer-alpha-chromium-node24-v1`, and a deliberately misconfigured server produced explicit missing-header diagnostics for COOP and Service Worker scope instead of a generic failure.
 
 Still required before production closure:
 

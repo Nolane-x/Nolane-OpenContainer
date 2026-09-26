@@ -98,6 +98,7 @@ See:
 
 - [`docs/architecture/CORE-SURFACES.md`](docs/architecture/CORE-SURFACES.md)
 - [`docs/implementation/STATUS.md`](docs/implementation/STATUS.md)\n- [`docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.md`](docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.md)\n- [`docs/guides/SDK-QUICKSTART.md`](docs/guides/SDK-QUICKSTART.md)\n- [`docs/guides/STORAGE-AND-EXPORT.md`](docs/guides/STORAGE-AND-EXPORT.md)
+- [`docs/guides/HOSTING-HEADERS.md`](docs/guides/HOSTING-HEADERS.md)
 - [`research/reference/W5-HANDOFF-v1.33.md`](research/reference/W5-HANDOFF-v1.33.md)
 
 ## License
