@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { OpenContainer } from '../packages/sdk/src/index.js';
-import { OpfsPackageContentStore } from '../packages/package-env/src/index.js';
+import { OpfsPackageContentStore, PackageContentStore } from '../packages/package-env/src/index.js';
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -316,4 +316,66 @@ test('OPFS package cache cannot self-authorize a replaced artifact and manifest'
   assert.equal(hydrated, false);
   assert.equal(reopened.size, 0);
   assert.equal(reopened.corruptCount, 1);
+});
+
+
+test('SDK package persistence profile binds the default frozen installer store across reopen', async () => {
+  const root = new FakeDirectoryHandle();
+  const locks = new FakeLockManager();
+  const bytes = packageTar('sdk-persisted', '1.0.0');
+  const integrity = sri(bytes);
+  const profile = { root, directoryName: 'sdk-package-product', lockManager: locks };
+  const lockfile = {
+    name: 'app',
+    version: '1',
+    lockfileVersion: 3,
+    packages: {
+      '': { name: 'app', version: '1' },
+      'node_modules/sdk-persisted': {
+        name: 'sdk-persisted',
+        version: '1.0.0',
+        resolved: 'https://registry.example/sdk-persisted.tgz',
+        integrity
+      }
+    }
+  };
+
+  const firstRuntime = await OpenContainer.boot({ packagePersistence: profile });
+  firstRuntime.packages.compile(lockfile);
+  const firstInstaller = firstRuntime.packages.createFrozenInstaller();
+  assert.equal(firstInstaller.contentStore, firstRuntime.packageContentStore);
+  assert.equal(firstRuntime.packageContentStore.crossContextLocking, true);
+  const firstReceipt = await firstInstaller.ingestLocation('node_modules/sdk-persisted', bytes);
+  assert.equal(firstReceipt.persisted, true);
+  await firstRuntime.terminate();
+
+  const reopenedRuntime = await OpenContainer.boot({ packagePersistence: profile });
+  reopenedRuntime.packages.compile(lockfile);
+  const reopenedInstaller = reopenedRuntime.packages.createFrozenInstaller();
+  assert.equal(reopenedInstaller.contentStore, reopenedRuntime.packageContentStore);
+  let networkCalls = 0;
+  const reopenedReceipt = await reopenedInstaller.installAll({
+    artifactAuthority: {
+      async fetchArtifact() {
+        networkCalls++;
+        throw new Error('SDK persistent package store unexpectedly reached the network');
+      }
+    }
+  });
+  assert.equal(networkCalls, 0);
+  assert.equal(reopenedReceipt.requestedContents, 0);
+  assert.equal(reopenedRuntime.packageContentStore.hydratedCount, 1);
+  const mounted = reopenedInstaller.mountFrozenGraph();
+  assert.equal(mounted.packageCount, 1);
+
+  const loader = reopenedRuntime.packages.createCommonJsLoader({ allowDynamicCode: true });
+  assert.deepEqual(
+    loader.require('sdk-persisted', '/workspace/src/app.cjs'),
+    { name: 'sdk-persisted', persisted: true }
+  );
+
+  const overrideStore = new PackageContentStore();
+  const overrideInstaller = reopenedRuntime.packages.createFrozenInstaller({ contentStore: overrideStore });
+  assert.equal(overrideInstaller.contentStore, overrideStore);
+  await reopenedRuntime.terminate();
 });
