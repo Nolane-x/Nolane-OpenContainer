@@ -1675,7 +1675,6 @@ async function run() {
       "import * as nodeFs from 'node:fs';",
       "import * as nodePath from 'node:path';",
       "import { createRequire } from 'node:module';",
-      "import { init as lexerInit, parse as lexerParse } from 'es-module-lexer';",
       "import { createBrowserToolchainVfsBridge } from './browser-toolchain-vfs-bridge.mjs';",
       "const { existsSync, readFileSync } = nodeFs;",
       "const { dirname, resolve: pathResolve } = nodePath;",
@@ -1738,8 +1737,6 @@ async function run() {
       "let depMetadataHash = '';",
       "let depCacheDir = '';",
       "let depOptimizerClosed = false;",
-      "let depDirectTransformCode = '';",
-      "let depLexerImports = [];",
       "let server;",
       "try {",
       "  server = await createServer({",
@@ -1763,11 +1760,6 @@ async function run() {
       "    const manual = await environment.pluginContainer.resolveId('nanoid', '/workspace/c1-app/src/dep-opt.ts');",
       "    depManualResolvedId = manual?.id ?? '';",
       "  } catch (error) { depManualResolveError = error?.stack ?? String(error); }",
-      "  const directSource = readFileSync('/workspace/c1-app/src/dep-opt.ts', 'utf8');",
-      "  const directTransform = await transformWithOxc(directSource, '/workspace/c1-app/src/dep-opt.ts');",
-      "  depDirectTransformCode = directTransform.code ?? '';",
-      "  await lexerInit;",
-      "  depLexerImports = lexerParse(depDirectTransformCode)[0].map((entry) => ({ s: entry.s, e: entry.e, d: entry.d, n: entry.n ?? null, a: entry.a, ss: entry.ss, se: entry.se }));",
       "  const optimizer = environment?.depsOptimizer;",
       "  depOptimizerPresent = !!optimizer;",
       "  if (!optimizer) throw new Error('Vite C2 dependency optimizer was not created');",
@@ -2269,9 +2261,7 @@ async function run() {
       'depTransformUsesOptimizedPath',
       'depMetadataHash',
       'depCacheDir',
-      'depOptimizerClosed',
-      'depDirectTransformCode',
-      'depLexerImports'
+      'depOptimizerClosed'
     ],
     observeNestedWorkers: true
   });
@@ -2291,9 +2281,7 @@ async function run() {
     usesOptimizedPath: viteDepOptExecution.exports.depTransformUsesOptimizedPath,
     metadataHash: viteDepOptExecution.exports.depMetadataHash,
     cacheDir: viteDepOptExecution.exports.depCacheDir,
-    closed: viteDepOptExecution.exports.depOptimizerClosed,
-    directTransformPrefix: String(viteDepOptExecution.exports.depDirectTransformCode ?? '').slice(0, 300),
-    lexerImports: viteDepOptExecution.exports.depLexerImports
+    closed: viteDepOptExecution.exports.depOptimizerClosed
   });
   assert(!viteDepOptExecution.exports.depError, 'Vite C2 dependency optimizer failed: ' + viteDepOptExecution.exports.depError);
   assert(viteDepOptExecution.exports.viteVersion === '8.3.0', 'Vite C2 dependency optimizer used the wrong Vite version');
