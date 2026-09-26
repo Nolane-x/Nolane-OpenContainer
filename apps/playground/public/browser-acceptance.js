@@ -137,12 +137,22 @@ async function run() {
 
   stage('guest-isolation-start');
   const guestWorkerResponse = await fetch('/opencontainer-guest-worker.mjs', { cache: 'no-store' });
-  assert(guestWorkerResponse.ok, 'guest Worker bootstrap response is unavailable');
+  assert(guestWorkerResponse.ok, 'strict guest Worker bootstrap response is unavailable');
   const guestWorkerCsp = guestWorkerResponse.headers.get('content-security-policy') ?? '';
+  assert(guestWorkerResponse.headers.get('x-opencontainer-worker-profile') === 'strict', 'strict guest Worker response lost profile identity');
   assert(guestWorkerCsp.includes("default-src 'none'"), 'guest Worker CSP is missing default deny');
-  assert(guestWorkerCsp.includes("script-src 'self' 'wasm-unsafe-eval'"), 'guest Worker CSP does not preserve only self modules + WASM compilation');
+  assert(guestWorkerCsp.includes("script-src 'self' 'wasm-unsafe-eval'"), 'guest Worker CSP does not preserve self modules + WASM compilation');
   assert(guestWorkerCsp.includes("connect-src 'self'"), 'guest Worker CSP does not restrict connect authority to self');
-  assert(!guestWorkerCsp.includes("'unsafe-eval'"), 'guest Worker CSP accidentally permits JavaScript eval');
+  assert(!guestWorkerCsp.includes("'unsafe-eval'"), 'strict guest Worker CSP accidentally permits JavaScript eval');
+
+  const toolchainWorkerResponse = await fetch('/opencontainer-toolchain-worker.mjs', { cache: 'no-store' });
+  assert(toolchainWorkerResponse.ok, 'toolchain Worker bootstrap response is unavailable');
+  const toolchainWorkerCsp = toolchainWorkerResponse.headers.get('content-security-policy') ?? '';
+  assert(toolchainWorkerResponse.headers.get('x-opencontainer-worker-profile') === 'toolchain', 'toolchain Worker response lost profile identity');
+  assert(toolchainWorkerCsp.includes("default-src 'none'"), 'toolchain Worker CSP is missing default deny');
+  assert(toolchainWorkerCsp.includes("'wasm-unsafe-eval'"), 'toolchain Worker CSP lost WASM compilation');
+  assert(toolchainWorkerCsp.includes("'unsafe-eval'"), 'toolchain Worker CSP did not opt in to Vite dynamic code generation');
+  assert(toolchainWorkerCsp.includes("connect-src 'self'"), 'toolchain Worker CSP widened network authority beyond self');
 
   runtime.fs.beginTransaction().writeFile('src/guest-isolation.mjs', [
     "import { spawn } from 'node:child_process';",
@@ -252,9 +262,11 @@ async function run() {
   assert(isolation.exports.functionCtorCode === 'EvalError', 'guest CSP did not block Function constructor: ' + isolation.exports.functionCtorCode);
   assert(isolation.workerCrossOriginIsolated === true, 'security court guest lost cross-origin isolation');
   stage('guest-csp-pass', {
-    policy: guestWorkerCsp,
-    eval: isolation.exports.evalCode,
-    functionConstructor: isolation.exports.functionCtorCode
+    strictPolicy: guestWorkerCsp,
+    toolchainPolicy: toolchainWorkerCsp,
+    strictEval: isolation.exports.evalCode,
+    strictFunctionConstructor: isolation.exports.functionCtorCode,
+    profilesSeparated: true
   });
 
   stage('guest-runaway-timeout-start');
@@ -1943,6 +1955,7 @@ async function run() {
   stage('vite-module-execution-start');
   const viteWorker = new BrowserGuestWorkerAuthority({
     publication: vitePublication,
+    profile: 'toolchain',
     diagnostics: runtime.diagnostics,
     syncRequestHandler: viteNodeCompat.syncRequestHandler,
     requestTimeoutMs: 60000
