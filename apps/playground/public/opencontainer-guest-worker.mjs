@@ -235,8 +235,8 @@ function exportLimitError(limit, estimatedBytes) {
   return error;
 }
 
-function estimateCloneBytes(value, limit) {
-  let total = 0;
+function estimateCloneBytes(value, limit, initialBytes = 0) {
+  let total = initialBytes;
   const seen = new WeakSet();
   const add = (bytes) => {
     total += Math.max(0, Number(bytes) || 0);
@@ -315,8 +315,7 @@ function cloneExports(namespace, exportNames, maxExportBytes) {
     const cloned = structuredClone(value);
     bytes += 8 + exportSizeEncoder.encode(String(name)).byteLength;
     if (bytes > maxExportBytes) throw exportLimitError(maxExportBytes, bytes);
-    bytes += estimateCloneBytes(cloned, maxExportBytes - bytes);
-    if (bytes > maxExportBytes) throw exportLimitError(maxExportBytes, bytes);
+    bytes = estimateCloneBytes(cloned, maxExportBytes, bytes);
     out[name] = cloned;
   }
   return { exports: out, bytes };
