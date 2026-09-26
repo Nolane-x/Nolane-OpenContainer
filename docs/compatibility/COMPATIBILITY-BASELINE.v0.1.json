@@ -132,17 +132,17 @@
     "primitive": "promoted-selected",
     "package": "promoted-selected",
     "framework": "vite-8.3.0-c1-c2-promoted",
-    "realRepository": "two-repositories-repeated-court-pending-final-ci",
-    "repeatedBrowser": "pending-final-ci"
+    "realRepository": "yoctocolors+clsx-pass-ci-300",
+    "repeatedBrowser": "2x-fresh-sessions-per-enabled-case-pass-ci-300"
   },
   "surfaceEvidence": {
     "fs": {
       "state": "PASS-BROWSER-BOUNDED",
-      "evidence": "Workspace VFS + OPFS courts; pinned real repository sources mounted through VFS"
+      "evidence": "Workspace VFS + OPFS courts; pinned yoctocolors/clsx sources mounted and repeated in CI #300"
     },
     "module": {
       "state": "PASS-BROWSER-BOUNDED",
-      "evidence": "native ESM/CJS courts + pinned yoctocolors/clsx ESM execution"
+      "evidence": "native ESM/CJS courts + repeated yoctocolors/clsx ESM execution + published clsx package execution in CI #300"
     },
     "process": {
       "state": "PASS-BROWSER-BOUNDED",
@@ -154,7 +154,7 @@
     },
     "package": {
       "state": "PASS-BROWSER-SELECTED",
-      "evidence": "npm package-lock v2/v3 frozen installer + package corpus; published corpus tarballs are digest-pinned"
+      "evidence": "9 published corpus tarballs are SHA-512/SHA-1 byte-verified; exact clsx@2.1.1 npm tarball installed/resolved/executed in CI #300"
     },
     "watch": {
       "state": "PARTIAL",
