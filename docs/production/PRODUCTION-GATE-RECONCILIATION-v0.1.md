@@ -8,7 +8,7 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **87**
+- Seed-reconciled against implementation evidence: **89**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -29,7 +29,7 @@
 | P11 Compatibility corpus & certification | 13 | 1 | 14 |
 | P12 Product security engineering | 2 | 18 | 20 |
 | P13 Build, supply chain & publication | 13 | 7 | 20 |
-| P14 Release, update, migration & rollback | 13 | 5 | 18 |
+| P14 Release, update, migration & rollback | 15 | 3 | 18 |
 | P15 SDK, API, documentation & developer experience | 6 | 8 | 14 |
 | P16 License, FTO, governance & contribution policy | 0 | 14 | 14 |
 | P17 Operations, vulnerability response & long-term maintenance | 0 | 14 | 14 |
@@ -77,7 +77,7 @@
 - **P14-01** now has a frozen machine-readable `canary → beta → rc → stable` promotion chain with exact evidence requirements and mandatory prior GO receipts for higher channels. CI #338 evaluated the current alpha candidate as canary-only GO; the evaluator does not lower later-channel requirements.
 - **P14-02** now meets release-ready version identity requirements: SemVer is checked across the root package, public SDK, protocol package and production profile, while WorkspaceFS, OPFS, snapshot, RPC and Service Worker compatibility profiles must all expose explicit version identities.
 - **P14-03** now generates a deterministic changelog from the reviewed release-candidate manifest; every reviewed change must carry API, storage and security implications before preflight can succeed.
-- **P14-15** is now fail-closed in implementation but remains partial: the stable path rejects any non-zero unexplained critical flakiness, yet the current flakiness value still comes from the reviewed candidate manifest rather than an independent release campaign.
+- **P14-15** now meets release-ready evidence: stable promotion consumes two independent commit-bound receipts rather than candidate self-report. CI #356 passed 5/5 frozen critical contract iterations over 12 files (60 test-file executions) and 2/2 full installed-distribution Chrome product-path iterations with zero explained failures, zero unexplained failures and no exception allowlist entries. Missing, stale, commit-skewed or incomplete receipts force `REDESIGN`.
 - **P14-18** now retains an archived machine-readable release decision record with exactly `GO`, `REDESIGN` or `KILL`, plus unresolved risks and generated-changelog digest. CI #338 archived both decision and changelog for the current canary GO.
 - CI #338 on `522f6501cd355e96c5642dfe8f1544ec46e98fac` passed contract + release-evidence + release-preflight + installed-distribution Chrome path. The canary receipt reported `versionProfileCoherent=true`, `reviewedChangesComplete=true`, `channelEvidenceSatisfied=true`, `priorPromotionChainSatisfied=true`, and changelog SHA-256 `41e85619ebe27a8f16bb903e8e08f362ea2525878d841341c4cd710f14aaf310`.
 
@@ -89,6 +89,9 @@
 - **P14-10** now meets release-ready evidence: rollback policy never performs destructive storage downgrade. A rolled-back runtime either reuses readable newer storage read-only or refuses open.
 - **P14-11** now meets release-ready evidence: the VFS itself enforces emergency read-only mode and direct public filesystem transactions fail with stable `OC_STORAGE_READ_ONLY`, preventing SDK bypass of the rollback boundary.
 - CI #345 on `11ee7759ca055a8ccddebd0957f2946979ffc084` passed contract + full installed-distribution Chrome path with real OPFS. Chrome recorded dry-run 1,515 bytes, distinct v1/v2 cache namespaces, storage v2 publication with two recovery roots, rollback `read-only`, `destructiveStorageDowngrade=false`, blocked writes via `OC_STORAGE_READ_ONLY`, and valid recovery across all four crash phases.
+- **P14-16** now meets release-ready governance evidence: hotfix urgency cannot bypass artifact rebuild/provenance, distribution/browser/release courts or storage migration discipline; storage-impacting hotfixes require dry-run + four crash phases + non-destructive rollback, security hotfixes require an incident trail, and stable hotfixes are patch-only. CI #353 keeps this policy executable in `release:governance`.
+- **P14-17** now meets release-ready governance evidence: normal public API/adapter removal requires at least two stable-release windows and 90 calendar days plus notice, replacement/rationale, migration guidance and release-note entry; immediate security disablement is allowed only for high/critical incidents with incident ID, warning, recovery/alternative and post-incident review. CI #353 enforces both normal and emergency paths.
+- CI #356 closes the independent critical-flake campaign: contract receipt 5/5 PASS across 60 frozen test-file executions; browser receipt 2/2 PASS across full installed-distribution Chrome product paths; both reported 0 explained and 0 unexplained failures and were archived for 90 days. Future promoted releases must generate fresh receipts for their exact tested source commit.
 
 
 
