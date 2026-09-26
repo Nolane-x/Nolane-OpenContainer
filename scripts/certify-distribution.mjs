@@ -74,6 +74,11 @@ runtime.restore(snapshot);
 const exported=runtime.export(snapshot);
 const imported=await OpenContainer.boot();
 await imported.import(exported);
+const supportSecret='distribution-support-secret-12345678901234567890';
+runtime.diagnostics.record('custom-'+supportSecret,{token:supportSecret,workspaceText:supportSecret});
+const supportError=Object.assign(new Error('hidden '+supportSecret),{code:'OC_INVALID_STATE',details:{supportSecret}});
+const supportBundle=runtime.supportBundle(supportError);
+const supportSerialized=JSON.stringify(supportBundle);
 const resolved=import.meta.resolve('@nolane/opencontainer');
 const receipt={
   schema:'opencontainer.distribution-node-certification.v0.1',
@@ -87,7 +92,16 @@ const receipt={
   previewText,
   restored:runtime.fs.readFile('state.txt'),
   imported:imported.fs.readFile('state.txt'),
-  importedGeneration:imported.fs.generation
+  importedGeneration:imported.fs.generation,
+  supportBundle:{
+    schema:supportBundle.schema,
+    errorCode:supportBundle.error?.code??null,
+    customDiagnosticRedacted:supportBundle.diagnostics.some((entry)=>entry.type==='[custom]'),
+    workspaceContentsIncluded:supportBundle.privacy.workspaceContentsIncluded,
+    diagnosticDetailsIncluded:supportBundle.privacy.diagnosticDetailsIncluded,
+    secretsIncluded:supportBundle.privacy.secretsIncluded,
+    leakedSecret:supportSerialized.includes(supportSecret)
+  }
 };
 await imported.teardown();
 await runtime.teardown();
@@ -102,6 +116,15 @@ console.log(JSON.stringify(receipt));
   if(receipt.productionClosed!==false)throw new Error('distribution incorrectly claims production closure');
   if(receipt.state!=='READY'||receipt.exitCode!==0||receipt.stdout!=='distribution ok')throw new Error('distribution SDK/process court failed: '+JSON.stringify(receipt));
   if(receipt.previewText!=='distribution-preview'||receipt.restored!=='one'||receipt.imported!=='one')throw new Error('distribution preview/persistence court failed: '+JSON.stringify(receipt));
+  if(
+    receipt.supportBundle?.schema!=='opencontainer.support-bundle.v0.1'||
+    receipt.supportBundle?.errorCode!=='OC_INVALID_STATE'||
+    receipt.supportBundle?.customDiagnosticRedacted!==true||
+    receipt.supportBundle?.workspaceContentsIncluded!==false||
+    receipt.supportBundle?.diagnosticDetailsIncluded!==false||
+    receipt.supportBundle?.secretsIncluded!==false||
+    receipt.supportBundle?.leakedSecret!==false
+  )throw new Error('installed distribution support bundle privacy court failed: '+JSON.stringify(receipt.supportBundle));
 
   const installedRoot=join(consumer,'node_modules','@nolane','opencontainer');
   const installedManifest=JSON.parse(await readFile(join(installedRoot,'package.json'),'utf8'));
