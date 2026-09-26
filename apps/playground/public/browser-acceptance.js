@@ -1,6 +1,6 @@
 import { OpenContainer } from '/packages/sdk/src/index.js';
 import { BrowserEsmServiceWorkerBridge } from '/packages/package-env/src/browser-esm-edge.js';
-import { PackageArtifactAuthority } from '/packages/package-env/src/index.js';
+import { OpfsPackageContentStore, PackageArtifactAuthority } from '/packages/package-env/src/index.js';
 import { BrowserGuestWorkerAuthority } from '/packages/process/src/browser-guest-worker.js';
 import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority } from '/packages/vfs/src/index.js';
 import { BrowserPreviewServiceWorkerBridge } from '/packages/preview/src/index.js';
@@ -369,31 +369,74 @@ async function run() {
     maxArtifactBytes: 8 * 1024 * 1024,
     maxUnpackedBytes: 64 * 1024 * 1024
   });
-  const frozenInstaller = runtime.packages.createFrozenInstaller();
-  const installReceipt = await frozenInstaller.installAll({
-    artifactAuthority,
-    concurrency: 2
-  });
-  assert(installReceipt.redirects === 0, 'same-origin retained package unexpectedly redirected');
-  const mountedPackages = frozenInstaller.mountFrozenGraph();
-  const resolvedLightning = runtime.packages.resolve(
-    'lightningcss-wasm',
-    '/workspace/src/package-consumer.mjs',
-    { mode: 'esm' }
-  );
-  const lightningPackageJson = JSON.parse(
-    runtime.packages.nodeModules.readFile('/workspace/node_modules/lightningcss-wasm/package.json')
-  );
-  assert(lightningPackageJson.name === 'lightningcss-wasm', 'browser-installed package name mismatch');
-  assert(lightningPackageJson.version === '1.33.0', 'browser-installed package version mismatch');
-  assert(resolvedLightning.path.includes('/workspace/node_modules/lightningcss-wasm/'), 'browser resolver did not target installed immutable package');
-  stage('browser-package-install-pass', {
-    bytes: installReceipt.bytes,
-    fetchedContents: installReceipt.fetchedContents,
-    packageInstances: installReceipt.packageInstances,
-    contentCount: mountedPackages.contentCount,
-    resolved: resolvedLightning.path
-  });
+  const packageCacheDirectory = 'opencontainer-package-cache-' + crypto.randomUUID();
+  try {
+    const persistentContent = await new OpfsPackageContentStore({
+      root: opfsRoot,
+      directoryName: packageCacheDirectory,
+      lockManager: navigator.locks
+    }).open();
+    const frozenInstaller = runtime.packages.createFrozenInstaller({ contentStore: persistentContent });
+    const installReceipt = await frozenInstaller.installAll({
+      artifactAuthority,
+      concurrency: 2
+    });
+    assert(installReceipt.redirects === 0, 'same-origin retained package unexpectedly redirected');
+    const mountedPackages = frozenInstaller.mountFrozenGraph();
+    const resolvedLightning = runtime.packages.resolve(
+      'lightningcss-wasm',
+      '/workspace/src/package-consumer.mjs',
+      { mode: 'esm' }
+    );
+    const lightningPackageJson = JSON.parse(
+      runtime.packages.nodeModules.readFile('/workspace/node_modules/lightningcss-wasm/package.json')
+    );
+    assert(lightningPackageJson.name === 'lightningcss-wasm', 'browser-installed package name mismatch');
+    assert(lightningPackageJson.version === '1.33.0', 'browser-installed package version mismatch');
+    assert(resolvedLightning.path.includes('/workspace/node_modules/lightningcss-wasm/'), 'browser resolver did not target installed immutable package');
+
+    const reopenedContent = await new OpfsPackageContentStore({
+      root: opfsRoot,
+      directoryName: packageCacheDirectory,
+      lockManager: navigator.locks
+    }).open();
+    assert(reopenedContent.hydratedCount === 1, 'OPFS package cache did not hydrate the verified retained package');
+    assert(reopenedContent.corruptCount === 0, 'OPFS package cache unexpectedly reported corruption');
+    let secondNetworkFetches = 0;
+    const reopenedInstaller = runtime.packages.createFrozenInstaller({ contentStore: reopenedContent });
+    const reopenedReceipt = await reopenedInstaller.installAll({
+      artifactAuthority: {
+        async fetchArtifact() {
+          secondNetworkFetches++;
+          throw new Error('OPFS package cache unexpectedly required a second network fetch');
+        }
+      },
+      concurrency: 2
+    });
+    assert(reopenedReceipt.requestedContents === 0, 'OPFS package cache did not satisfy frozen install from persisted content');
+    assert(reopenedReceipt.fetchedContents === 0, 'OPFS package cache performed a second content fetch');
+    assert(secondNetworkFetches === 0, 'OPFS package cache reached the network after reopen');
+    const reopenedMounted = reopenedInstaller.mountFrozenGraph();
+    const reopenedPackageJson = JSON.parse(
+      runtime.packages.nodeModules.readFile('/workspace/node_modules/lightningcss-wasm/package.json')
+    );
+    assert(reopenedPackageJson.name === 'lightningcss-wasm' && reopenedPackageJson.version === '1.33.0', 'reopened OPFS package content lost package identity');
+
+    stage('browser-package-install-pass', {
+      bytes: installReceipt.bytes,
+      fetchedContents: installReceipt.fetchedContents,
+      packageInstances: installReceipt.packageInstances,
+      contentCount: mountedPackages.contentCount,
+      resolved: resolvedLightning.path,
+      persistentHydrated: reopenedContent.hydratedCount,
+      persistentCorrupt: reopenedContent.corruptCount,
+      persistentNetworkRefetches: secondNetworkFetches,
+      persistentMountedPackages: reopenedMounted.packageCount,
+      crossContextLocking: reopenedContent.crossContextLocking
+    });
+  } finally {
+    await opfsRoot.removeEntry(packageCacheDirectory, { recursive: true });
+  }
 
   stage('vite-closure-install-start');
   const lockResponse = await fetch('/package-lock.json', { cache: 'no-store' });
