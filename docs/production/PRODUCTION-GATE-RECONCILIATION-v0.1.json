@@ -208,6 +208,10 @@
     "production-profile": {
       "ref": "CI #277 / aca2d12ddb729b90bd196731aebb8e54a8a68dbb",
       "note": "canonical SDK production profile equals published JSON in Chrome; productionClosed remains false"
+    },
+    "hosting-self-check": {
+      "ref": "CI #281 / 09abff58f289758f06c7b75842cdb1331dc2a28a",
+      "note": "executable hosting/header self-check passed promoted playground topology and emitted exact failures against a deliberately broken server"
     }
   },
   "overrides": [
@@ -265,6 +269,22 @@
       "state": "PARTIAL",
       "promotion": "PASS-BROWSER",
       "evidence": "storage",
+      "closure_met": false
+    },
+    {
+      "id": "P1-13",
+      "domain": "P1",
+      "state": "PARTIAL",
+      "promotion": "PASS-LOCAL",
+      "evidence": "hosting-self-check",
+      "closure_met": false
+    },
+    {
+      "id": "P1-16",
+      "domain": "P1",
+      "state": "PARTIAL",
+      "promotion": "PASS-LOCAL",
+      "evidence": "hosting-self-check",
       "closure_met": false
     },
     {
@@ -537,6 +557,14 @@
       "state": "PARTIAL",
       "promotion": "IMPLEMENTED",
       "evidence": "sdk",
+      "closure_met": false
+    },
+    {
+      "id": "P15-04",
+      "domain": "P15",
+      "state": "PARTIAL",
+      "promotion": "PASS-LOCAL",
+      "evidence": "hosting-self-check",
       "closure_met": false
     },
     {
