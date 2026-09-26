@@ -193,6 +193,7 @@ export { NodeResolver, NODE_BUILTINS } from './resolver.js';
 export { CommonJsLoader } from './commonjs-loader.js';
 
 export { FrozenInstallAuthority, PackageContentStore } from './frozen-install.js';
+export { OpfsPackageContentStore } from './opfs-package-content-store.js';
 
 export { createCoreBuiltinRegistry } from './builtins/registry.js';
 export { createPosixPath } from './builtins/path.js';
