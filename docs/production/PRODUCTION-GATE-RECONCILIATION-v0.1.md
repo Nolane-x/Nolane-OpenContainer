@@ -8,7 +8,7 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **75**
+- Seed-reconciled against implementation evidence: **80**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -29,7 +29,7 @@
 | P11 Compatibility corpus & certification | 13 | 1 | 14 |
 | P12 Product security engineering | 2 | 18 | 20 |
 | P13 Build, supply chain & publication | 13 | 7 | 20 |
-| P14 Release, update, migration & rollback | 1 | 17 | 18 |
+| P14 Release, update, migration & rollback | 6 | 12 | 18 |
 | P15 SDK, API, documentation & developer experience | 6 | 8 | 14 |
 | P16 License, FTO, governance & contribution policy | 0 | 14 | 14 |
 | P17 Operations, vulnerability response & long-term maintenance | 0 | 14 | 14 |
@@ -73,6 +73,14 @@
 - CI #319 verified a 7,766,106-byte artifact with SHA-256 `47675569cf0b5c2dd69fdd295ce4dc5ad2df54e87b5f98dfb39941efd5190c7a`, 38 SPDX packages / 37 runtime components, reproducibility=true and zero content-policy violations; the complete installed-distribution Chrome product path remained green.
 
 - **P14-08** now meets its RELEASE-READY evidence requirement for Service Worker activation discipline: a new worker remains waiting until a client verifies the versioned compatibility profile, explicitly authorizes activation, re-verifies the activated worker, explicitly authorizes claim and observes the resulting controller. CI #331 proves this in real Chrome from the installed distribution; incompatible workers fail closed and unconditional `skipWaiting()` / `clients.claim()` are absent.
+
+- **P14-01** now has a frozen machine-readable `canary → beta → rc → stable` promotion chain with exact evidence requirements and mandatory prior GO receipts for higher channels. CI #338 evaluated the current alpha candidate as canary-only GO; the evaluator does not lower later-channel requirements.
+- **P14-02** now meets release-ready version identity requirements: SemVer is checked across the root package, public SDK, protocol package and production profile, while WorkspaceFS, OPFS, snapshot, RPC and Service Worker compatibility profiles must all expose explicit version identities.
+- **P14-03** now generates a deterministic changelog from the reviewed release-candidate manifest; every reviewed change must carry API, storage and security implications before preflight can succeed.
+- **P14-15** is now fail-closed in implementation but remains partial: the stable path rejects any non-zero unexplained critical flakiness, yet the current flakiness value still comes from the reviewed candidate manifest rather than an independent release campaign.
+- **P14-18** now retains an archived machine-readable release decision record with exactly `GO`, `REDESIGN` or `KILL`, plus unresolved risks and generated-changelog digest. CI #338 archived both decision and changelog for the current canary GO.
+- CI #338 on `522f6501cd355e96c5642dfe8f1544ec46e98fac` passed contract + release-evidence + release-preflight + installed-distribution Chrome path. The canary receipt reported `versionProfileCoherent=true`, `reviewedChangesComplete=true`, `channelEvidenceSatisfied=true`, `priorPromotionChainSatisfied=true`, and changelog SHA-256 `41e85619ebe27a8f16bb903e8e08f362ea2525878d841341c4cd710f14aaf310`.
+
 
 ## Update discipline
 
