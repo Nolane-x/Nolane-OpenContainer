@@ -1,4 +1,4 @@
-import { ErrorCodes, assertOc } from '../../protocol/src/index.js';
+import { ErrorCodes, assertOc, ocError } from '../../protocol/src/index.js';
 import { PackageContentStore } from './frozen-install.js';
 
 const MANIFEST = 'manifest.json';
@@ -74,8 +74,8 @@ export class OpfsPackageContentStore {
   #memory = new PackageContentStore();
   #lockManager;
   #lockPrefix;
-  #hydratedCount = 0;
-  #corruptCount = 0;
+  #hydrated = new Set();
+  #corrupt = new Set();
 
   constructor({
     root,
@@ -94,25 +94,69 @@ export class OpfsPackageContentStore {
   }
 
   get size() { return this.#memory.size; }
-  get hydratedCount() { return this.#hydratedCount; }
-  get corruptCount() { return this.#corruptCount; }
+  get hydratedCount() { return this.#hydrated.size; }
+  get corruptCount() { return this.#corrupt.size; }
   get crossContextLocking() { return this.#lockManager !== null; }
   has(contentId) { return this.#memory.has(contentId); }
   get(contentId) { return this.#memory.get(contentId); }
 
   async open() {
     this.#directory = await this.#root.getDirectoryHandle(this.#directoryName, { create: true });
-    this.#hydratedCount = 0;
-    this.#corruptCount = 0;
-
-    assertOc(typeof this.#directory.entries === 'function', ErrorCodes.INVALID_STATE, 'OPFS package cache directory does not support enumeration');
-    for await (const [name, handle] of this.#directory.entries()) {
-      if (handle?.kind && handle.kind !== 'directory') continue;
-      const result = await this.#hydrateDirectory(String(name));
-      if (result === 'hydrated') this.#hydratedCount++;
-      else if (result === 'corrupt') this.#corruptCount++;
-    }
+    this.#memory = new PackageContentStore();
+    this.#hydrated.clear();
+    this.#corrupt.clear();
     return this;
+  }
+
+  async hydrate({
+    contentId,
+    integrity,
+    expectedName = null,
+    expectedVersion = null
+  }) {
+    this.#assertOpen();
+    assertOc(typeof contentId === 'string' && contentId.length > 0, ErrorCodes.INVALID_ARGUMENT, 'contentId is required');
+    assertOc(typeof integrity === 'string' && integrity.length > 0, ErrorCodes.INVALID_ARGUMENT, 'integrity is required');
+
+    const existing = this.#memory.get(contentId);
+    if (existing) {
+      if (existing.integrity !== integrity) {
+        throw ocError(ErrorCodes.ARTIFACT_INTEGRITY, 'Hydrated content identity disagrees with lockfile integrity', { contentId });
+      }
+      return true;
+    }
+
+    return this.#withContentLock(contentId, async () => {
+      const lockedExisting = this.#memory.get(contentId);
+      if (lockedExisting) {
+        if (lockedExisting.integrity !== integrity) {
+          throw ocError(ErrorCodes.ARTIFACT_INTEGRITY, 'Hydrated content identity disagrees with lockfile integrity', { contentId });
+        }
+        return true;
+      }
+
+      const cached = await this.#readVerifiedPersisted(contentId, {
+        expectedIntegrity: integrity,
+        expectedName,
+        expectedVersion
+      });
+      if (cached.status === 'missing') return false;
+      if (cached.status !== 'verified') {
+        this.#corrupt.add(contentId);
+        return false;
+      }
+
+      await this.#memory.ingest({
+        contentId,
+        integrity,
+        bytes: cached.bytes,
+        expectedName,
+        expectedVersion
+      });
+      this.#hydrated.add(contentId);
+      this.#corrupt.delete(contentId);
+      return true;
+    });
   }
 
   async ingest({ contentId, integrity, bytes, expectedName = null, expectedVersion = null }) {
@@ -134,7 +178,8 @@ export class OpfsPackageContentStore {
         expectedName,
         expectedVersion
       });
-      if (cached) {
+      if (cached.status === 'verified') {
+        this.#corrupt.delete(contentId);
         return Object.freeze({
           ...verified,
           reused: true,
@@ -142,6 +187,7 @@ export class OpfsPackageContentStore {
           persistentReused: true
         });
       }
+      if (cached.status === 'corrupt') this.#corrupt.add(contentId);
 
       const contentDirectory = await this.#directory.getDirectoryHandle(safeDirectoryName(contentId), { create: true });
       const record = this.#memory.get(contentId);
@@ -157,10 +203,11 @@ export class OpfsPackageContentStore {
       });
 
       // Artifact first, manifest last. An interrupted write is never trusted
-      // on reopen because hydration requires a valid manifest plus verified
-      // artifact bytes.
+      // because hydration requires lockfile-authoritative integrity plus a
+      // valid manifest and a freshly verified artifact.
       await writeValue(contentDirectory, ARTIFACT, bytes);
       await writeValue(contentDirectory, MANIFEST, JSON.stringify(manifest));
+      this.#corrupt.delete(contentId);
 
       return Object.freeze({
         ...verified,
@@ -168,35 +215,6 @@ export class OpfsPackageContentStore {
         persistentReused: false
       });
     });
-  }
-
-  async #hydrateDirectory(directoryName) {
-    let directory;
-    try {
-      directory = await this.#directory.getDirectoryHandle(directoryName);
-    } catch (error) {
-      if (error?.name === 'NotFoundError') return 'missing';
-      throw error;
-    }
-
-    const manifest = parseManifest(await readText(directory, MANIFEST), directoryName);
-    if (!manifest) return 'corrupt';
-
-    const bytes = await readBytes(directory, ARTIFACT);
-    if (!bytes || bytes.byteLength !== manifest.byteLength) return 'corrupt';
-
-    try {
-      await this.#memory.ingest({
-        contentId: manifest.contentId,
-        integrity: manifest.integrity,
-        bytes,
-        expectedName: manifest.packageName,
-        expectedVersion: manifest.packageVersion
-      });
-      return 'hydrated';
-    } catch {
-      return 'corrupt';
-    }
   }
 
   async #readVerifiedPersisted(contentId, {
@@ -209,16 +227,22 @@ export class OpfsPackageContentStore {
     try {
       directory = await this.#directory.getDirectoryHandle(directoryName);
     } catch (error) {
-      if (error?.name === 'NotFoundError') return null;
+      if (error?.name === 'NotFoundError') return Object.freeze({ status: 'missing' });
       throw error;
     }
 
     const manifest = parseManifest(await readText(directory, MANIFEST), directoryName);
-    if (!manifest || manifest.contentId !== contentId || manifest.integrity !== expectedIntegrity) return null;
+    if (
+      !manifest ||
+      manifest.contentId !== contentId ||
+      manifest.integrity !== expectedIntegrity
+    ) return Object.freeze({ status: 'corrupt' });
 
     const bytes = await readBytes(directory, ARTIFACT);
-    if (!bytes || bytes.byteLength !== manifest.byteLength) return null;
+    if (!bytes || bytes.byteLength !== manifest.byteLength) return Object.freeze({ status: 'corrupt' });
 
+    // The manifest is cache metadata, never the trust root. Verification is
+    // always anchored to integrity/name/version supplied by the frozen graph.
     const verifier = new PackageContentStore();
     try {
       await verifier.ingest({
@@ -229,9 +253,10 @@ export class OpfsPackageContentStore {
         expectedVersion: expectedVersion ?? manifest.packageVersion
       });
     } catch {
-      return null;
+      return Object.freeze({ status: 'corrupt' });
     }
-    return Object.freeze({ manifest, bytes });
+
+    return Object.freeze({ status: 'verified', manifest, bytes });
   }
 
   async #withContentLock(contentId, callback) {
