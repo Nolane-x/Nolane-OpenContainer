@@ -75,11 +75,14 @@ export class PackageContentStore {
 export class FrozenInstallAuthority {
   #packages;
   #store;
+  #lifecycleScripts;
 
-  constructor({ packages, contentStore = new PackageContentStore() } = {}) {
+  constructor({ packages, contentStore = new PackageContentStore(), lifecycleScripts = 'deny' } = {}) {
     assertOc(packages && typeof packages.mountCatalog === 'function', ErrorCodes.INVALID_ARGUMENT, 'PackageGraphAuthority is required');
+    assertOc(['deny', 'skip'].includes(lifecycleScripts), ErrorCodes.INVALID_ARGUMENT, 'Unsupported lifecycle script policy', { lifecycleScripts });
     this.#packages = packages;
     this.#store = contentStore;
+    this.#lifecycleScripts = lifecycleScripts;
   }
 
   get contentStore() { return this.#store; }
@@ -100,9 +103,16 @@ export class FrozenInstallAuthority {
     const unique = new Map();
     let packageInstances = 0;
     let embeddedInstances = 0;
+    const lifecycleScriptsSkipped = [];
     for (const node of graph.nodes) {
       if (selected && !selected.has(node.location)) continue;
       if (node.link) continue;
+      if (node.hasInstallScript) {
+        if (this.#lifecycleScripts === 'deny') {
+          throw ocError(ErrorCodes.INVALID_PACKAGE_CONFIG, 'Package lifecycle scripts are disabled by policy', { location: node.location, name: node.name });
+        }
+        lifecycleScriptsSkipped.push(node.location);
+      }
       if (node.inBundle) { embeddedInstances++; continue; }
       packageInstances++;
       assertOc(node.resolved, ErrorCodes.INVALID_PACKAGE_CONFIG, 'Frozen package is missing resolved artifact URL', { location: node.location });
@@ -172,7 +182,8 @@ export class FrozenInstallAuthority {
       fetchedContents,
       contentCount: this.#store.size,
       bytes,
-      redirects
+      redirects,
+      lifecycleScriptsSkipped: Object.freeze([...lifecycleScriptsSkipped].sort())
     });
   }
 
@@ -201,8 +212,15 @@ export class FrozenInstallAuthority {
     const packages = [];
     const symlinks = [];
     let embeddedCount = 0;
+    const lifecycleScriptsSkipped = [];
     for (const node of graph.nodes) {
       if (selected && !selected.has(node.location)) continue;
+      if (node.hasInstallScript) {
+        if (this.#lifecycleScripts === 'deny') {
+          throw ocError(ErrorCodes.INVALID_PACKAGE_CONFIG, 'Package lifecycle scripts are disabled by policy', { location: node.location, name: node.name });
+        }
+        lifecycleScriptsSkipped.push(node.location);
+      }
       if (node.inBundle) { embeddedCount++; continue; }
       if (node.link) {
         assertOc(typeof node.resolved === 'string' && node.resolved.length > 0, ErrorCodes.INVALID_PACKAGE_CONFIG, 'Linked package is missing resolved workspace path', { location: node.location });
@@ -216,6 +234,6 @@ export class FrozenInstallAuthority {
     }
 
     const mounted = this.#packages.mountCatalog({ packages, symlinks });
-    return Object.freeze({ ...mounted, packageCount: packages.length, linkCount: symlinks.length, embeddedCount, contentCount: this.#store.size });
+    return Object.freeze({ ...mounted, packageCount: packages.length, linkCount: symlinks.length, embeddedCount, contentCount: this.#store.size, lifecycleScriptsSkipped: Object.freeze([...lifecycleScriptsSkipped].sort()) });
   }
 }
