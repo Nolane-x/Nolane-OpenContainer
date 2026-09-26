@@ -10,6 +10,24 @@ import { MemoryPersistenceAuthority } from '../../persistence/src/index.js';
 import { OpenContainerKernel } from '../../kernel/src/index.js';
 import { OpenContainerProductionProfile } from './profile.js';
 
+const SUPPORT_DIAGNOSTIC_TYPES=new Set([
+  'runtime.state',
+  'process.error',
+  'process.exit',
+  'worker.session',
+  'worker.timeout',
+  'browser-worker.guest-diagnostic',
+  'browser-worker.error',
+  'esm-edge.binary-response',
+  'esm-edge.fetch-failure',
+  'preview-edge.response',
+  'preview-edge.failure'
+]);
+
+function supportDiagnosticType(value){
+  return SUPPORT_DIAGNOSTIC_TYPES.has(value)?value:'[custom]';
+}
+
 export class OpenContainer {
   static get productionProfile(){return OpenContainerProductionProfile;}
   constructor(options={}){
@@ -74,6 +92,33 @@ export class OpenContainer {
       generation:this.fs.generation,
       workspacePersistence:this.workspacePersistence?Object.freeze({sequence:this.workspacePersistence.current?.sequence??null,crossContextLocking:this.workspacePersistence.crossContextLocking}):null,
       packagePersistence:this.packageContentStore?Object.freeze({hydratedCount:this.packageContentStore.hydratedCount??0,crossContextLocking:this.packageContentStore.crossContextLocking}):null
+    });
+  }
+  supportBundle(error=null){
+    const diagnostics=this.diagnostics.list().map((entry)=>Object.freeze({seq:entry.seq,type:supportDiagnosticType(entry.type)}));
+    const errorReceipt=error?Object.freeze({
+      name:typeof error?.name==='string'?error.name:'Error',
+      code:typeof error?.code==='string'?error.code:'OC_INTERNAL'
+    }):null;
+    return Object.freeze({
+      schema:'opencontainer.support-bundle.v0.1',
+      profile:Object.freeze({
+        profileId:OpenContainerProductionProfile.profileId,
+        runtimeVersion:OpenContainerProductionProfile.runtime.version,
+        productionClosed:OpenContainerProductionProfile.productionClosed
+      }),
+      status:this.status(),
+      resources:Object.freeze({
+        limits:this.resources.limits,
+        usage:this.resources.usage
+      }),
+      error:errorReceipt,
+      diagnostics:Object.freeze(diagnostics),
+      privacy:Object.freeze({
+        workspaceContentsIncluded:false,
+        diagnosticDetailsIncluded:false,
+        secretsIncluded:false
+      })
     });
   }
   async persistWorkspace(){

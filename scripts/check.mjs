@@ -4,6 +4,10 @@ import { resolve } from 'node:path';
 const required=[
   'packages/sdk/src/index.js','packages/kernel/src/index.js','packages/vfs/src/index.js','packages/process/src/index.js',
   'packages/process/src/sync-rpc.js',
+  'docs/api/PUBLIC-SDK.v0.1.json','docs/api/ERROR-CATALOG.v0.1.json','docs/api/API-REFERENCE.md','docs/api/ERROR-REFERENCE.md',
+  'scripts/generate-developer-docs.mjs','tests/developer-docs.test.js','examples/sdk-failure-paths.mjs',
+  'docs/guides/LIMITATIONS.md','docs/guides/SECURITY-MODEL.md','docs/guides/AI-CONSUMERS.md','docs/guides/MIGRATION.md','docs/guides/TROUBLESHOOTING.md',
+  'docs/decisions/ADR-004-guest-capability-membrane.md','docs/decisions/ADR-005-service-worker-compatible-promotion.md','docs/decisions/ADR-006-release-storage-publication.md','docs/decisions/ADR-007-release-evidence-and-promotion.md',
   'release/CRITICAL-FLAKE-POLICY.v0.1.json','scripts/run-critical-flake-campaign.mjs','scripts/run-browser-flake-campaign.mjs',
   'packages/persistence/src/release-storage.js','tests/release-storage-migration.test.js',
   'release/RELEASE-POLICY.v0.1.json','release/RELEASE-CANDIDATE.v0.1.json','scripts/evaluate-release-preflight.mjs','tests/release-preflight.test.js',

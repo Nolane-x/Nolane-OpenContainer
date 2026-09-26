@@ -61,7 +61,8 @@ Internal protocol/toolchain packages do not create extra product surfaces.
 - deny-by-default external networking with canonical URL authorization;
 - authority-epoch preview routing with stale-route rejection;
 - committed-generation snapshots and streaming export prototype;
-- public snapshot/restore plus pinned streaming NDJSON export/import through the SDK;\n- stable machine-readable errors, secret redaction and bounded resource governance;
+- public snapshot/restore plus pinned streaming NDJSON export/import through the SDK;
+- stable machine-readable errors, secret redaction and bounded resource governance;
 - exact toolchain profile checks that reject silent Rolldown binding skew;
 - a verified WasmArtifactManager that gates bytes, digest and compiled module shape;
 - retained exact `lightningcss-wasm@1.33.0` npm tarball with CI-reverified inner WASM identity;
@@ -97,8 +98,18 @@ The major remaining gates are broader Node compatibility/isolation, deeper OPFS 
 See:
 
 - [`docs/architecture/CORE-SURFACES.md`](docs/architecture/CORE-SURFACES.md)
-- [`docs/implementation/STATUS.md`](docs/implementation/STATUS.md)\n- [`docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.md`](docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.md)\n- [`docs/guides/SDK-QUICKSTART.md`](docs/guides/SDK-QUICKSTART.md)\n- [`docs/guides/STORAGE-AND-EXPORT.md`](docs/guides/STORAGE-AND-EXPORT.md)
+- [`docs/implementation/STATUS.md`](docs/implementation/STATUS.md)
+- [`docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.md`](docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.md)
+- [`docs/guides/SDK-QUICKSTART.md`](docs/guides/SDK-QUICKSTART.md)
+- [`docs/guides/STORAGE-AND-EXPORT.md`](docs/guides/STORAGE-AND-EXPORT.md)
 - [`docs/guides/HOSTING-HEADERS.md`](docs/guides/HOSTING-HEADERS.md)
+- [`docs/api/API-REFERENCE.md`](docs/api/API-REFERENCE.md)
+- [`docs/api/ERROR-REFERENCE.md`](docs/api/ERROR-REFERENCE.md)
+- [`docs/guides/LIMITATIONS.md`](docs/guides/LIMITATIONS.md)
+- [`docs/guides/SECURITY-MODEL.md`](docs/guides/SECURITY-MODEL.md)
+- [`docs/guides/AI-CONSUMERS.md`](docs/guides/AI-CONSUMERS.md)
+- [`docs/guides/MIGRATION.md`](docs/guides/MIGRATION.md)
+- [`docs/guides/TROUBLESHOOTING.md`](docs/guides/TROUBLESHOOTING.md)
 - [`docs/compatibility/REAL-REPOSITORY-CORPUS.md`](docs/compatibility/REAL-REPOSITORY-CORPUS.md)
 - [`docs/compatibility/COMPATIBILITY-BASELINE.v0.1.json`](docs/compatibility/COMPATIBILITY-BASELINE.v0.1.json)
 - [`docs/compatibility/PROMOTION-GOVERNANCE.md`](docs/compatibility/PROMOTION-GOVERNANCE.md)

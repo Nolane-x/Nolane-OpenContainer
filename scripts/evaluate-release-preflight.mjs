@@ -103,6 +103,13 @@ export function reviewedChangeFailures(candidate,policy){
     if(typeof change?.ref!=='string'||!change.ref.trim())failures.push(prefix+' has no review reference');
     if(typeof change?.title!=='string'||!change.title.trim())failures.push(prefix+' has no title');
     if(!/^[0-9a-f]{40}$/.test(String(change?.mergeCommit??'')))failures.push(prefix+' mergeCommit is not a full Git commit');
+    if(typeof change?.breaking!=='boolean')failures.push(prefix+' must declare breaking as boolean');
+    if(change?.breaking===true&&(typeof change?.migrationGuide!=='string'||!change.migrationGuide.trim())){
+      failures.push(prefix+' breaking change has no migrationGuide');
+    }
+    if(change?.breaking===false&&change?.migrationGuide!==null&&change?.migrationGuide!==undefined){
+      failures.push(prefix+' non-breaking change must not claim a migrationGuide');
+    }
     for(const key of policy?.implications??[]){
       const value=change?.implications?.[key];
       if(typeof value!=='string'||!value.trim())failures.push(prefix+' has no '+key+' implication');

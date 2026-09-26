@@ -12,7 +12,9 @@
         "api": "none",
         "storage": "none",
         "security": "Adds reproducible checksums, SPDX SBOM, in-toto/SLSA provenance, dependency/license inventory and distribution content-policy evidence."
-      }
+      },
+      "breaking": false,
+      "migrationGuide": null
     },
     {
       "ref": "PR #31",
@@ -22,7 +24,9 @@
         "api": "No public SDK shape change; browser edge startup receipts now expose Service Worker compatibility identity and activation mode.",
         "storage": "none",
         "security": "Removes unconditional Service Worker promotion and requires query, explicit activation, post-activation revalidation and explicit claim."
-      }
+      },
+      "breaking": false,
+      "migrationGuide": null
     }
   ],
   "unresolvedRisks": [

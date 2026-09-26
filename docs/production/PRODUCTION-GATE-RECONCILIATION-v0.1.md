@@ -8,7 +8,7 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **89**
+- Seed-reconciled against implementation evidence: **96**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -30,7 +30,7 @@
 | P12 Product security engineering | 2 | 18 | 20 |
 | P13 Build, supply chain & publication | 13 | 7 | 20 |
 | P14 Release, update, migration & rollback | 15 | 3 | 18 |
-| P15 SDK, API, documentation & developer experience | 6 | 8 | 14 |
+| P15 SDK, API, documentation & developer experience | 13 | 1 | 14 |
 | P16 License, FTO, governance & contribution policy | 0 | 14 | 14 |
 | P17 Operations, vulnerability response & long-term maintenance | 0 | 14 | 14 |
 | P18 Evidence, assurance & research integrity | 0 | 12 | 12 |
@@ -46,11 +46,22 @@
 - **P0-02** now has a canonical machine-readable runtime/filesystem/network/snapshot/protocol identity, with a public JSON artifact drift-checked against the SDK and verified in Chrome. Its required `RELEASE-READY` closure is still open.
 
 - **P3-16** now has Chrome evidence that public SDK export pins one committed generation; minimum production closure is still not claimed.
-- **P15-07** now has explicit storage/checkpoint/export semantics documentation.
-- **P15-11** now has a minimal public SDK lifecycle example covering mount/spawn/preview/snapshot/export/teardown.
-- **P15-12** now executes the bundled SDK lifecycle example from an installed OpenContainer tarball in a clean consumer. It remains partial until the example is tied to an externally published release package.
+- **P15-01** now meets release-ready evidence: the public package surface is frozen by `PUBLIC-SDK.v0.1.json`, the distribution export map is derived from that contract, CI introspects the actual module/class surface, and the installed tarball exposes only `.`, `./profile` and `./package.json` while 12 internal worker/kernel/authority subpaths remain private.
+- **P15-02** now meets release-ready evidence: API/error Markdown is generated from machine contracts and `docs:verify` fails on byte drift.
+- **P15-03** now meets release-ready evidence: 43 exported ErrorCodes plus stable fallback `OC_INTERNAL` are catalogued with cause, consequence, recovery and compatibility class, and CI requires exact code coverage.
+- **P15-04** now meets release-ready evidence for the guide/self-check requirement: the hosting/header guide ships with the distribution and CI #368 runs the installed `hosting-self-check.mjs` against the installed playground with zero failures. Production CDN topology remains a separate P1/P14 environment gate.
+- **P15-06** now meets release-ready evidence: package/native-addon/network/socket/process/watch limitations are published with safe alternatives and enforced by the developer-doc contract test.
+- **P15-07** now meets release-ready evidence: storage durability, quota/eviction, checkpoints, portable export, release migration and non-destructive rollback semantics are explicit without claiming impossible browser durability.
+- **P15-08** now meets release-ready evidence: consumer security/secret guidance documents guest authority, network policy, persistence, Service Worker updates and the rule that long-lived secrets must not be placed in browser/guest/workspace/support-bundle surfaces.
+- **P15-09** now meets release-ready evidence: AI consumer guidance is explicitly separate from Core and forbids AI/provider requirements from redefining runtime guarantees or bypassing capability checks.
+- **P15-10** now meets release-ready evidence for migration-document governance: reviewed release changes must declare `breaking: true|false`; release preflight KILLs a breaking change with no `migrationGuide`, while the migration guide publishes SDK/protocol/storage/deprecation/rollback rules.
+- **P15-11** now meets release-ready evidence: the installed tarball runs both the lifecycle example and a failure-path example covering mount/spawn/preview/snapshot/export/teardown; the latter returns exact stable codes `OC_PATH_ESCAPE`, `OC_COMMAND_NOT_FOUND`, `OC_INVALID_ARGUMENT`, `OC_NOT_FOUND`, `OC_NOT_FOUND`, `OC_INVALID_STATE`.
+- **P15-12** remains partial: CI executes documentation examples from a clean installed publish-equivalent tarball, but external npm/GitHub Release publication identity is still absent.
+- **P15-13** now meets release-ready evidence: ADR-004 through ADR-007 record accepted security-critical choices for guest capability isolation, Service Worker promotion, release-storage migration and evidence-based release promotion.
+- **P15-14** now meets release-ready evidence: troubleshooting starts from stable `error.code` and a public privacy-minimized `supportBundle()`; source + installed-package courts inject fake secrets and prove workspace contents, diagnostic details, custom diagnostic labels and secret values are excluded.
+- **P15-05** remains unreconciled/open because a per-release browser/OS/profile matrix beyond CI Chrome does not yet exist.
+- CI #368 on `d75449a0df9a33ea8f422526b74d29c8dfe7d1f4` passed contract + installed-distribution + 2/2 full Chrome product paths. The certified tarball contained 114 files / 7,801,724 bytes with SHA-256 `550ba2ee18781758f93b0dbf338d03499b945b7be7950333a642e0342578805b`; developer docs had zero drift, support-bundle `leakedSecret=false`, hosting self-check had zero failures, and the browser campaign reported zero unexplained failures.
 
-- **P1-13 / P1-16 / P15-04** now have an executable hosting self-check and exact header diagnostics, plus published secure-hosting guidance. Production CDN/reverse-proxy validation remains open.
 
 - **P11-01 / 02 / 03 / 04 / 06 / 09 / 10** now meet their integration-level minimum closure: the 13-repository corpus is frozen before tuning, required case classes/package strata and unsupported classes are CI-enforced, six compatibility axes are reported separately, a machine-readable baseline is generated from the tested corpus, and adapter semantics are explicit.
 - **P11-05** now meets its integration-level minimum closure: every corpus repository retains commit/license/lockfile identity where applicable; all 9 npm-published frozen package cases pin exact registry tarball URL + SHA-512 + SHA-1, and CI #300 re-downloads every tarball and verifies the bytes. The remaining 4 repository-only cases explicitly record no publication at their frozen root version or a versionless root.
