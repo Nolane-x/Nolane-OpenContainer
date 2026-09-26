@@ -70,7 +70,7 @@ test('developer guides preserve required compatibility and safety boundaries',as
 
   for(const term of ['.node','Raw TCP/UDP','package-lock','fs.watch','runtime.registerCommand'])assert.ok(limitations.includes(term),term);
   for(const term of ['quota','evicted','portable escape hatch','not a browser-durable backup'])assert.ok(storage.includes(term),term);
-  for(const term of ['Do not place long-lived secrets','trusted server','deny','Service Worker'])assert.ok(security.includes(term),term);
+  for(const term of ['Do not place long-lived secrets','trusted server','denied','Service Worker'])assert.ok(security.includes(term),term);
   assert.ok(ai.includes('AI is an optional consumer'));
   assert.ok(ai.includes('must not redefine Core guarantees'));
   for(const term of ['DEPRECATIONS.v0.1.json','adjacent-version','read-only','Service Worker'])assert.ok(migration.includes(term),term);
