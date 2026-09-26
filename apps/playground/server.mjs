@@ -20,7 +20,8 @@ const publicAliases = new Map([
   ['/__deps__/es-module-lexer-minimal.js', lexerPath],
   ['/toolchain/vendor/lightningcss-wasm-1.33.0.tgz', join(repoRoot, 'toolchain/vendor/lightningcss-wasm-1.33.0.tgz')],
   ['/toolchain/vendor/rolldown-browser-1.2.9.tgz', join(repoRoot, 'toolchain/vendor/rolldown-browser-1.2.9.tgz')],
-  ['/package-lock.json', join(repoRoot, 'package-lock.json')]
+  ['/package-lock.json', join(repoRoot, 'package-lock.json')],
+  ['/docs/production/PRODUCTION-PROFILE.json', join(repoRoot, 'docs/production/PRODUCTION-PROFILE.json')]
 ]);
 
 function contentType(path) {

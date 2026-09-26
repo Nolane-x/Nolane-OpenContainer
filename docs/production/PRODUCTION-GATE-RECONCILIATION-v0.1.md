@@ -8,14 +8,14 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **44**
+- Seed-reconciled against implementation evidence: **45**
 - Production closed: **false**
 
 ## Domain reconciliation state
 
 | Domain | Seed evidence/partial | Unreconciled | Total |
 |---|---:|---:|---:|
-| P0 Product scope & production profile | 1 | 11 | 12 |
+| P0 Product scope & production profile | 2 | 10 | 12 |
 | P1 Browser deployment, origin & lifecycle | 5 | 11 | 16 |
 | P2 Kernel, RPC, process & stream semantics | 6 | 8 | 14 |
 | P3 VFS, OPFS, persistence & data safety | 9 | 11 | 20 |
@@ -42,6 +42,8 @@
 - Release trust chain (SBOM/provenance/publication/rollback) and license/FTO closure remain open.
 
 ## Newly reconciled in this wave
+
+- **P0-02** now has a canonical machine-readable runtime/filesystem/network/snapshot/protocol identity, with a public JSON artifact drift-checked against the SDK and verified in Chrome. Its required `RELEASE-READY` closure is still open.
 
 - **P3-16** now has Chrome evidence that public SDK export pins one committed generation; minimum production closure is still not claimed.
 - **P15-07** now has explicit storage/checkpoint/export semantics documentation.

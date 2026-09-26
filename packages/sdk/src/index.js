@@ -8,8 +8,10 @@ import { NetworkAuthority } from '../../network/src/index.js';
 import { PreviewAuthority } from '../../preview/src/index.js';
 import { MemoryPersistenceAuthority } from '../../persistence/src/index.js';
 import { OpenContainerKernel } from '../../kernel/src/index.js';
+import { OpenContainerProductionProfile } from './profile.js';
 
 export class OpenContainer {
+  static get productionProfile(){return OpenContainerProductionProfile;}
   constructor(options={}){
     const diagnostics=new DiagnosticJournal(options.diagnostics);
     const resources=new ResourceGovernor(options.resources);
@@ -42,6 +44,7 @@ export class OpenContainer {
   }
   get state(){return this._kernel.state;}
   get health(){return this._kernel.health;}
+  get productionProfile(){return OpenContainerProductionProfile;}
   mount(files){this._kernel.assertReady();return this.fs.mount(files);}
   registerCommand(name,handler){this._kernel.assertReady();return this.process.register(name,handler);}
   spawn(command,args=[],options={}){this._kernel.assertReady();return this.process.spawn(command,args,options);}
@@ -88,3 +91,5 @@ export class OpenContainer {
 }
 
 export default OpenContainer;
+
+export { OpenContainerProductionProfile } from './profile.js';
