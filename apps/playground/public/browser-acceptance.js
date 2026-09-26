@@ -29,6 +29,21 @@ async function run() {
   acceptanceRuntime = runtime;
   stage('runtime-ready', { crossOriginIsolated: globalThis.crossOriginIsolated });
 
+  const productionProfileResponse = await fetch('/docs/production/PRODUCTION-PROFILE.json', { cache: 'no-store' });
+  assert(productionProfileResponse.ok, 'machine-readable production profile is not publicly loadable');
+  const publishedProductionProfile = await productionProfileResponse.json();
+  assert(JSON.stringify(publishedProductionProfile) === JSON.stringify(runtime.productionProfile), 'browser SDK production profile drifted from published JSON');
+  assert(runtime.productionProfile.productionClosed === false, 'production profile incorrectly claims closure');
+  assert(runtime.productionProfile.oracle.node === '24.21.0' && runtime.productionProfile.oracle.npm === '11.19.0', 'production profile oracle drifted');
+  stage('production-profile-pass', {
+    profileId: runtime.productionProfile.profileId,
+    runtimeVersion: runtime.productionProfile.runtime.version,
+    workerRpcEnvelopeVersion: runtime.productionProfile.protocol.workerRpcEnvelopeVersion,
+    snapshotFormatVersion: runtime.productionProfile.snapshot.portableFormatVersion,
+    gateCount: runtime.productionProfile.closure.gateCount,
+    productionClosed: runtime.productionProfile.productionClosed
+  });
+
   stage('sdk-s7-start');
   const s7Runtime = await OpenContainer.boot();
   s7Runtime.mount({ 's7-state.txt': 'one' });
