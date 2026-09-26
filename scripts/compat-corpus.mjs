@@ -136,11 +136,12 @@ export async function verifyCorpusOnline(corpus){
   for(const entry of corpus.cases){
     const result={id:entry.id,repository:entry.repository,commit:entry.commit,ok:true,checks:[]};
     try{
-      const packageBytes=await fetchPinned(entry.repository,entry.commit,'package.json');
+      const packageJsonPath=entry.packageJsonPath??'package.json';
+      const packageBytes=await fetchPinned(entry.repository,entry.commit,packageJsonPath);
       let packageJson=null;
       try{packageJson=JSON.parse(Buffer.from(packageBytes).toString('utf8'));}
       catch(error){throw new Error('package.json is invalid JSON: '+error.message);}
-      result.checks.push({kind:'package-json',bytes:packageBytes.byteLength,name:packageJson.name??null,version:packageJson.version??null});
+      result.checks.push({kind:'package-json',path:packageJsonPath,bytes:packageBytes.byteLength,name:packageJson.name??null,version:packageJson.version??null});
 
       const licenseBytes=await fetchPinned(entry.repository,entry.commit,entry.license.path);
       const licenseSha=gitBlobSha(licenseBytes);
