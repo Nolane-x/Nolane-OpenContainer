@@ -61,7 +61,7 @@ const server = createServer(async (request, response) => {
     if (url.pathname === '/opencontainer-guest-worker.mjs') {
       response.setHeader(
         'Content-Security-Policy',
-        "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; worker-src 'self'; child-src 'self'"
+        "default-src 'none'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval'; connect-src 'self'; worker-src 'self'; child-src 'self'"
       );
     }
     response.setHeader('Content-Type', contentType(target));
