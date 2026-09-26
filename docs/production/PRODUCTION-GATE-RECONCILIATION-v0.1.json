@@ -236,6 +236,10 @@
     "service-worker-release-compatibility": {
       "ref": "CI #331 / 7f5f28395c3d533e2b9df2f70edd6cb693106ef0",
       "note": "real Chrome installed-distribution court proved compatibility query -> explicit activate -> activated re-query -> explicit claim; first bridge compatibility-authorized, second bridge existing-compatible; no unconditional skipWaiting/clients.claim"
+    },
+    "release-preflight": {
+      "ref": "CI #338 / 522f6501cd355e96c5642dfe8f1544ec46e98fac",
+      "note": "machine-readable canary→beta→rc→stable policy; SemVer/profile coherence; reviewed-change API/storage/security changelog generation; exact GO/REDESIGN/KILL decision; current canary GO; stable fail-closed unit court; decision/changelog archived 90 days; installed-distribution Chrome path remains green"
     }
   },
   "overrides": [
@@ -784,11 +788,51 @@
       "closure_met": false
     },
     {
+      "id": "P14-01",
+      "domain": "P14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "release-preflight",
+      "closure_met": true
+    },
+    {
+      "id": "P14-02",
+      "domain": "P14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "release-preflight",
+      "closure_met": true
+    },
+    {
+      "id": "P14-03",
+      "domain": "P14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "release-preflight",
+      "closure_met": true
+    },
+    {
       "id": "P14-08",
       "domain": "P14",
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "service-worker-release-compatibility",
+      "closure_met": true
+    },
+    {
+      "id": "P14-15",
+      "domain": "P14",
+      "state": "PARTIAL",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "release-preflight",
+      "closure_met": false
+    },
+    {
+      "id": "P14-18",
+      "domain": "P14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "release-preflight",
       "closure_met": true
     },
     {
