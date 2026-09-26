@@ -25,6 +25,7 @@ Promoted in the clean Chrome product/browser path:
 - browser guest concurrency is now governed by `ResourceGovernor.workers`: each Dedicated Worker holds one lease, over-budget spawns fail with `OC_RESOURCE_EXHAUSTED`, and close/timeout destruction returns the lease for reuse.
 - guest Worker CSP now uses explicit privilege profiles instead of globally enabling dynamic code generation: the default `strict` profile keeps JavaScript `eval`/Function blocked while permitting self modules + WASM compilation, and the opt-in `toolchain` profile admits `unsafe-eval` only for the Vite 8 execution authority that requires it; both profiles retain the capability membrane, execution deadlines and Worker resource leases.
 - guest-to-host execution results now carry a bounded export budget before `postMessage`: selected exports are cloned and size-accounted inside the Worker, oversized strings/buffers/collections fail with `OC_OUTPUT_LIMIT`, and successful receipts report their bounded export byte usage; the default tracks the ResourceGovernor output budget when present.
+- S7 persistence is now exposed through the public SDK: `snapshot()` / `restore()` plus pinned-generation streaming `export()` / stream-capable `import()`, `status()` and `teardown()`; Chrome proves a live workspace can mutate after export invocation without contaminating the exported generation.
 
 Evidence anchors:
 
@@ -46,6 +47,7 @@ Evidence anchors:
 - browser guest worker-budget court `71d52b90c8e169b94cdca90c67b3f02755a4c12f` passed contract + Chrome browser-product-path in CI run #250: worker limit 1 admitted the first realm, rejected the second with `OC_RESOURCE_EXHAUSTED`, released usage to zero on close, then allowed the waiting authority to acquire the returned lease and execute successfully.
 - guest CSP profile court `766baf790775a2511fef8e334600b35997de3eda` passed contract + Chrome browser-product-path in CI run #263: strict profile returned `EvalError` for both direct eval and Function construction; the toolchain profile remained self/connect/worker scoped while explicitly admitting Vite's required dynamic codegen; Vite 8.3 C1/C2 and dependency optimization returned green. A separate non-merged diagnostic CI #257 proved the same dependency-optimizer court fails without JavaScript `unsafe-eval` and passes when it is admitted, motivating the isolated profile rather than weakening all guests.
 - guest export-budget court `fafd4e43b66d74ebcb3898451b647a6c4ac313bb` passed contract + Chrome browser-product-path in CI run #267: a 64 KiB authority rejected both a 256 KiB text export and a 96 KiB typed-array export with `OC_OUTPUT_LIMIT`, then returned a 23-byte bounded export on the same live realm; all CSP/runaway/quota, persistence/package and Vite C1/C2 courts remained green.
+- public S7 SDK court `ce5b2bf496700a1f91971a665eb69ed5efdbac9e` passed contract + Chrome browser-product-path in CI run #270: snapshot/restore stayed exact, streaming export pinned generation 3 before a later live edit, a second runtime imported generation 3 unchanged, and public teardown completed while every prior browser court remained green.
 
 Still required before production closure:
 
@@ -69,7 +71,7 @@ Implemented:
 - S4 frozen package-lock v2/v3 compiler into content/instance/location identities and command index.
 - S5 deny-by-default direct-CORS capability evaluator with canonical URL checks and local/loopback gates.
 - S6 virtual HTTP/preview route authority with owner/epoch stale-route rejection.
-- S7 snapshot/restore plus streaming OpenContainer NDJSON export/import prototype.
+- S7 public snapshot/restore plus pinned streaming OpenContainer NDJSON export/import.
 - S8 bounded resource governor.
 - S9 stable runtime error envelopes, redaction, diagnostic journal.
 - Internal protocol and frozen toolchain identity contracts.
