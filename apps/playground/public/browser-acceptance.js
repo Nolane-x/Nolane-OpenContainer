@@ -310,7 +310,7 @@ async function run() {
 
   stage('published-package-clsx-start');
   const publishedRuntime = await OpenContainer.boot({ network: { allowLocal: true } });
-  publishedRuntime.net.grant({
+  publishedRuntime.net.allow({
     id: 'published-clsx-registry',
     origin: 'https://registry.npmjs.org',
     methods: ['GET'],
