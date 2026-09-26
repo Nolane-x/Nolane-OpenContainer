@@ -1,4 +1,6 @@
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { createServer } from 'node:http';
+import { once } from 'node:events';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,6 +12,34 @@ function run(command,args,options={}){
   const result=spawnSync(command,args,{encoding:'utf8',...options});
   if(result.status!==0)throw new Error(command+' '+args.join(' ')+' failed\n'+(result.stdout??'')+'\n'+(result.stderr??''));
   return result;
+}
+
+async function freePort(){
+  const server=createServer();
+  server.listen(0,'127.0.0.1');
+  await once(server,'listening');
+  const port=server.address().port;
+  await new Promise((resolve,reject)=>server.close(error=>error?reject(error):resolve()));
+  return port;
+}
+
+async function waitForPlayground(child){
+  let output='';
+  const ready=new Promise((resolve,reject)=>{
+    child.stdout.on('data',(chunk)=>{
+      output+=chunk;
+      if(output.includes('OpenContainer playground:'))resolve();
+    });
+    child.stderr.on('data',(chunk)=>{output+=chunk;});
+    child.once('error',reject);
+    child.once('exit',(code)=>{
+      if(!output.includes('OpenContainer playground:'))reject(new Error('installed playground exited before ready: '+code+' '+output));
+    });
+  });
+  await Promise.race([
+    ready,
+    new Promise((_,reject)=>setTimeout(()=>reject(new Error('installed playground startup timeout: '+output)),5000))
+  ]);
 }
 
 const build=await buildDistribution();
@@ -83,6 +113,45 @@ console.log(JSON.stringify(receipt));
     throw new Error('installed distribution SDK example persistence drifted: '+JSON.stringify(exampleReceipt));
   }
 
+  const failureExampleResult=run(process.execPath,[join(installedRoot,'examples','sdk-failure-paths.mjs')],{cwd:installedRoot});
+  const failureExampleReceipt=JSON.parse(failureExampleResult.stdout.trim());
+  const expectedFailureCodes={
+    mount:'OC_PATH_ESCAPE',
+    spawn:'OC_COMMAND_NOT_FOUND',
+    preview:'OC_INVALID_ARGUMENT',
+    snapshot:'OC_NOT_FOUND',
+    export:'OC_NOT_FOUND',
+    teardown:'OC_INVALID_STATE'
+  };
+  if(JSON.stringify(failureExampleReceipt.codes)!==JSON.stringify(expectedFailureCodes)){
+    throw new Error('installed distribution SDK failure example drifted: '+JSON.stringify(failureExampleReceipt));
+  }
+
+  const hostingPort=await freePort();
+  const hostingChild=spawn(process.execPath,['apps/playground/server.mjs'],{
+    cwd:installedRoot,
+    env:{...process.env,PORT:String(hostingPort)},
+    stdio:['ignore','pipe','pipe']
+  });
+  let hostingReceipt;
+  try{
+    await waitForPlayground(hostingChild);
+    const hostingResult=run(process.execPath,[
+      join(installedRoot,'scripts','hosting-self-check.mjs'),
+      'http://127.0.0.1:'+hostingPort+'/'
+    ],{cwd:installedRoot});
+    hostingReceipt=JSON.parse(hostingResult.stdout.trim());
+    if(hostingReceipt.ok!==true||hostingReceipt.failures?.length!==0){
+      throw new Error('installed hosting self-check failed: '+JSON.stringify(hostingReceipt));
+    }
+  }finally{
+    hostingChild.kill('SIGTERM');
+    await Promise.race([
+      once(hostingChild,'exit'),
+      new Promise(resolve=>setTimeout(resolve,1000))
+    ]);
+  }
+
   console.log(JSON.stringify({
     schema:'opencontainer.distribution-certification.v0.1',
     build,
@@ -90,6 +159,14 @@ console.log(JSON.stringify(receipt));
     publishedExample:{
       source:'node_modules/@nolane/opencontainer/examples/sdk-lifecycle.mjs',
       receipt:exampleReceipt
+    },
+    publishedFailureExample:{
+      source:'node_modules/@nolane/opencontainer/examples/sdk-failure-paths.mjs',
+      receipt:failureExampleReceipt
+    },
+    installedHostingSelfCheck:{
+      source:'node_modules/@nolane/opencontainer/scripts/hosting-self-check.mjs',
+      receipt:hostingReceipt
     }
   },null,2));
 }finally{
