@@ -435,6 +435,70 @@ async function run() {
     assert(capturedPackageArtifact instanceof Uint8Array && capturedPackageArtifact.byteLength > 0, 'browser package install did not retain verified artifact bytes for dedupe court');
     const lightningNode = runtime.packages.graph.nodes.find((node) => node.location === 'node_modules/lightningcss-wasm');
     assert(lightningNode?.contentId, 'browser package graph did not expose immutable content identity');
+
+    const packageCacheRoot = await opfsRoot.getDirectoryHandle(packageCacheDirectory);
+    await packageCacheRoot.removeEntry(encodeURIComponent(lightningNode.contentId), { recursive: true });
+
+    const evictedContent = await new OpfsPackageContentStore({
+      root: opfsRoot,
+      directoryName: packageCacheDirectory,
+      lockManager: navigator.locks
+    }).open();
+    let evictionNetworkFetches = 0;
+    const evictedInstaller = runtime.packages.createFrozenInstaller({ contentStore: evictedContent });
+    const evictedReceipt = await evictedInstaller.installAll({
+      artifactAuthority: {
+        async fetchArtifact(options) {
+          evictionNetworkFetches++;
+          return artifactAuthority.fetchArtifact(options);
+        }
+      },
+      concurrency: 2
+    });
+    assert(evictionNetworkFetches === 1, 'forced package cache eviction did not refetch exactly once');
+    assert(evictedReceipt.requestedContents === 1 && evictedReceipt.fetchedContents === 1, 'forced package cache eviction did not repopulate one immutable content artifact');
+    const evictedMounted = evictedInstaller.mountFrozenGraph();
+    const evictedPackageJson = JSON.parse(
+      runtime.packages.nodeModules.readFile('/workspace/node_modules/lightningcss-wasm/package.json')
+    );
+    assert(evictedPackageJson.name === 'lightningcss-wasm' && evictedPackageJson.version === '1.33.0', 'forced package cache eviction recovery lost package identity');
+
+    const recoveredContent = await new OpfsPackageContentStore({
+      root: opfsRoot,
+      directoryName: packageCacheDirectory,
+      lockManager: navigator.locks
+    }).open();
+    let recoveredNetworkFetches = 0;
+    const recoveredInstaller = runtime.packages.createFrozenInstaller({ contentStore: recoveredContent });
+    const recoveredReceipt = await recoveredInstaller.installAll({
+      artifactAuthority: {
+        async fetchArtifact() {
+          recoveredNetworkFetches++;
+          throw new Error('recovered package cache unexpectedly required another network fetch');
+        }
+      },
+      concurrency: 2
+    });
+    assert(recoveredReceipt.requestedContents === 0 && recoveredReceipt.fetchedContents === 0, 'repopulated package cache did not satisfy the next reopen');
+    assert(recoveredNetworkFetches === 0, 'repopulated package cache reached the network on the next reopen');
+    assert(recoveredContent.hydratedCount === 1 && recoveredContent.corruptCount === 0, 'repopulated package cache did not hydrate cleanly after eviction');
+    const recoveredMounted = recoveredInstaller.mountFrozenGraph();
+    const recoveredPackageJson = JSON.parse(
+      runtime.packages.nodeModules.readFile('/workspace/node_modules/lightningcss-wasm/package.json')
+    );
+    assert(recoveredPackageJson.name === 'lightningcss-wasm' && recoveredPackageJson.version === '1.33.0', 'post-eviction zero-network reopen lost package identity');
+
+    stage('browser-package-eviction-recovery-pass', {
+      contentId: lightningNode.contentId,
+      evictedNetworkFetches: evictionNetworkFetches,
+      evictedFetchedContents: evictedReceipt.fetchedContents,
+      evictedMountedPackages: evictedMounted.packageCount,
+      recoveredNetworkFetches,
+      recoveredHydrated: recoveredContent.hydratedCount,
+      recoveredMountedPackages: recoveredMounted.packageCount,
+      crossContextLocking: evictedContent.crossContextLocking && recoveredContent.crossContextLocking
+    });
+
     const dedupeA = await new OpfsPackageContentStore({
       root: opfsRoot,
       directoryName: packageDedupeDirectory,
@@ -481,6 +545,9 @@ async function run() {
       persistentCorrupt: reopenedContent.corruptCount,
       persistentNetworkRefetches: secondNetworkFetches,
       persistentMountedPackages: reopenedMounted.packageCount,
+      forcedEvictionRefetches: evictionNetworkFetches,
+      postEvictionNetworkRefetches: recoveredNetworkFetches,
+      postEvictionHydrated: recoveredContent.hydratedCount,
       crossContextLocking: reopenedContent.crossContextLocking
     });
   } finally {
