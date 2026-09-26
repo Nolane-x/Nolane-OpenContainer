@@ -19,6 +19,7 @@ Promoted in the clean Chrome product/browser path:
 - persistent PackageContent now has a public SDK OPFS product profile: `OpenContainer.boot({ packagePersistence })` opens `OpfsPackageContentStore`, binds it as the default package content authority, and lets `createFrozenInstaller()` hydrate frozen-lockfile-authorized content after reopen without manual store wiring while preserving explicit per-installer overrides.
 - browser package policy now resolves required peers into the frozen closure, keeps optional peers explicit, rejects missing required peers, and denies lifecycle install scripts by default; explicit skip/ignore policies remain auditable and never execute host lifecycle scripts.
 - the browser package corpus now also includes an independent `es-module-lexer@3.0.2` court: frozen-lockfile fetch/SRI, immutable install, VNFS mount, native ESM publication and real `init()` + `parse()` execution in a cross-origin-isolated Dedicated Worker.
+- the browser package corpus now also exercises exact `nanoid@3.3.19` conditional exports: the same frozen install resolves `nanoid/non-secure` to distinct ESM/CJS targets and executes the ESM subpath in a cross-origin-isolated Dedicated Worker.
 
 Evidence anchors:
 
@@ -34,12 +35,13 @@ Evidence anchors:
 - SDK WorkspaceFS persistence court `e08e61383dad7a53f573b79ada3fef799099e7e8` passed contract + Chrome browser-product-path in CI run #232: sequence 1 -> 2 -> reopen -> 3, restored generation remained 3, cross-context Web Locks stayed enabled, GC removed 1 superseded payload while retaining both recovery roots, and all existing C1/C2/package courts remained green.
 - SDK PackageContent persistence court `4584eed9b7da6f8a437af3f2dc1890544fc853d1` passed contract + Chrome browser-product-path in CI run #235: default installer hydration after reopen required 0 network fetches and 0 requested contents, hydrated 1 persisted content, mounted 1 exact package, preserved cross-context Web Locks, and left all existing workspace/package/C1/C2 courts green.
 - SDK WorkspaceFS corruption-recovery court `78e2435a975bd5d758012237e59c31528a0dd08b` passed contract + Chrome browser-product-path in CI run #238: corrupting sequence 3 forced fallback to sequence/generation 2, the recovered runtime safely republished sequence/generation 3 with a new payload identity, GC collected the corrupt payload, and the republished state survived another reopen.
+- conditional package corpus court `9391f61ef6602fcfe059605c0b8ac4c2f3abf3ac` passed contract + Chrome browser-product-path in CI run #241: exact `nanoid@3.3.19` fetched 5,694 bytes, ESM resolved to `/workspace/node_modules/nanoid/non-secure/index.js`, CJS resolved to `/workspace/node_modules/nanoid/non-secure/index.cjs`, and the ESM subpath generated valid IDs inside an isolated worker.
 
 Still required before production closure:
 
 1. Broader guest-isolation hardening and Node 24 compatibility beyond the promoted synchronous/builtin/toolchain court.
 2. Extended WorkspaceFS/PackageFS durability campaigns beyond the promoted public SDK persistence profiles; WorkspaceFS restore/checkpoint/GC plus corrupt-newest fallback-and-continuation, persistent PackageContent hydration/forced-eviction recovery, policy/GC/quota preflight and multi-tab/Web Locks are promoted.
-3. Broader browser package-install corpus beyond the promoted Vite/Rolldown/Lightning CSS + standalone `es-module-lexer` courts; peer/optional/script policy, persistent immutable PackageContent, lockfile-authoritative hydration and concurrent cache dedupe are promoted.
+3. Broader browser package-install corpus beyond the promoted Vite/Rolldown/Lightning CSS + standalone `es-module-lexer` and conditional-export `nanoid` courts; peer/optional/script policy, persistent immutable PackageContent, lockfile-authoritative hydration and concurrent cache dedupe are promoted.
 4. PC-A/PC-B target-device and browser matrix beyond CI Chrome.
 5. Weak-device/resource-budget, long-run/plateau, fault/security and release-packaging campaigns.
 6. Dependency/test-corpus licensing plus FTO/legal closure before a commercial production claim.
