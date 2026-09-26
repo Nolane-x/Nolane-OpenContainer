@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MemoryVFS, OpfsCheckpointAuthority } from '../packages/vfs/src/index.js';
+import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority } from '../packages/vfs/src/index.js';
 import { ErrorCodes } from '../packages/protocol/src/index.js';
 
 class FakeNotFoundError extends Error {
@@ -319,4 +319,106 @@ test('OPFS normalizes browser quota exhaustion into resource exhausted', async (
       return true;
     }
   );
+});
+
+
+test('OPFS retries a projected quota rejection after collecting unreachable payloads', async () => {
+  const root = new FakeDirectoryHandle();
+  const locks = new FakeLockManager();
+  let pressured = false;
+  let pressureChecks = 0;
+  const storagePolicy = new BrowserStoragePolicy({
+    storageManager: {
+      async estimate() {
+        if (!pressured) return { usage: 100, quota: 10_000 };
+        pressureChecks++;
+        return pressureChecks === 1
+          ? { usage: 9990, quota: 10_000 }
+          : { usage: 100, quota: 10_000 };
+      },
+      async persisted() { return true; }
+    },
+    criticalRatio: 0.95
+  });
+
+  const fs = new MemoryVFS();
+  const authority = await new OpfsCheckpointAuthority({
+    root,
+    lockManager: locks,
+    storagePolicy
+  }).open();
+
+  fs.mount({ 'value.txt': 'one' });
+  const first = await authority.checkpoint(fs);
+
+  const workspace = root.dirs.get('opencontainer-workspace');
+  const generations = workspace.dirs.get('generations');
+  const orphanName = 'generation-quota-retry-orphan.json';
+  const orphan = await generations.getFileHandle(orphanName, { create: true });
+  orphan.data = '{"orphan":true}';
+
+  fs.beginTransaction().writeFile('value.txt', 'two').commit();
+  pressured = true;
+  const second = await authority.checkpoint(fs);
+
+  assert.equal(second.sequence, first.sequence + 1);
+  assert.equal(pressureChecks, 2);
+  assert.equal(authority.lastStorageGuard.gcAttempted, true);
+  assert.deepEqual(authority.lastStorageGuard.gcRemoved, [orphanName]);
+  assert.equal(generations.files.has(orphanName), false);
+});
+
+test('OPFS persistent quota pressure rejects before publication and preserves the committed generation', async () => {
+  const root = new FakeDirectoryHandle();
+  const locks = new FakeLockManager();
+  let pressured = false;
+  const storagePolicy = new BrowserStoragePolicy({
+    storageManager: {
+      async estimate() {
+        return pressured
+          ? { usage: 9990, quota: 10_000 }
+          : { usage: 100, quota: 10_000 };
+      },
+      async persisted() { return true; }
+    },
+    criticalRatio: 0.95
+  });
+
+  const fs = new MemoryVFS();
+  const authority = await new OpfsCheckpointAuthority({
+    root,
+    lockManager: locks,
+    storagePolicy
+  }).open();
+
+  fs.mount({ 'value.txt': 'stable' });
+  const stable = await authority.checkpoint(fs);
+  const workspace = root.dirs.get('opencontainer-workspace');
+  const generations = workspace.dirs.get('generations');
+  const payloadsBefore = [...generations.files.keys()].sort();
+
+  fs.beginTransaction().writeFile('value.txt', 'blocked').commit();
+  pressured = true;
+
+  await assert.rejects(
+    () => authority.checkpoint(fs),
+    (error) => {
+      assert.equal(error.code, ErrorCodes.RESOURCE_EXHAUSTED);
+      assert.equal(error.details.additionalBytes > 0, true);
+      assert.deepEqual(error.details.gcRemoved, []);
+      return true;
+    }
+  );
+
+  assert.equal(authority.current.sequence, stable.sequence);
+  assert.equal(authority.current.generation, stable.generation);
+  assert.equal(authority.lastStorageGuard.gcAttempted, true);
+  assert.equal(authority.lastStorageGuard.rejected, true);
+  assert.deepEqual([...generations.files.keys()].sort(), payloadsBefore);
+
+  const reopened = await new OpfsCheckpointAuthority({ root, lockManager: locks }).open();
+  assert.equal(reopened.current.sequence, stable.sequence);
+  const restored = new MemoryVFS();
+  await reopened.restoreInto(restored);
+  assert.equal(restored.readFile('value.txt'), 'stable');
 });
