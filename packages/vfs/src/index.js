@@ -166,3 +166,5 @@ class VFSTransaction {
 export { WORKSPACE };
 
 export { OpfsCheckpointAuthority } from './opfs-authority.js';
+
+export { BrowserStoragePolicy } from './browser-storage-policy.js';
