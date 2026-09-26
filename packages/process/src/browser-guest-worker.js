@@ -93,12 +93,27 @@ export class BrowserGuestWorkerAuthority {
   async execute(entryURL, { exportNames = null, observeNestedWorkers = false } = {}) {
     if (!this.#worker) this.start();
     assertOc(typeof entryURL === 'string' && entryURL.length > 0, ErrorCodes.INVALID_ARGUMENT, 'Guest module entry URL is required');
-    return this.#rpc.request('execute-module', {
-      entryURL,
-      exportNames: Array.isArray(exportNames) ? [...exportNames] : null,
-      publicationSession: this.#publication.session,
-      observeNestedWorkers: observeNestedWorkers === true
-    });
+    try {
+      return await this.#rpc.request('execute-module', {
+        entryURL,
+        exportNames: Array.isArray(exportNames) ? [...exportNames] : null,
+        publicationSession: this.#publication.session,
+        observeNestedWorkers: observeNestedWorkers === true
+      });
+    } catch (error) {
+      if (error?.code === ErrorCodes.WORKER_TIMEOUT) {
+        // A timed-out Dedicated Worker may still be executing hostile or runaway
+        // guest code. Rejecting the RPC alone is not a resource boundary: hard
+        // termination is required so CPU/memory abuse cannot survive the deadline.
+        this.#diagnostics?.record('browser-worker.timeout-terminated', {
+          entryURL,
+          publicationSession: this.#publication.session,
+          timeoutMs: this.requestTimeoutMs
+        });
+        this.#destroyWorker();
+      }
+      throw error;
+    }
   }
 
   restart() {
