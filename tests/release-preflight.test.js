@@ -88,6 +88,16 @@ test('release changelog is generated from reviewed changes with compatibility im
   assert.ok(changelog.includes('## Unresolved risks'));
 });
 
+test('breaking reviewed change cannot pass release preflight without a migration guide',async()=>{
+  const inputs=clone(await loadReleaseInputs());
+  inputs.candidate.reviewedChanges[0].breaking=true;
+  inputs.candidate.reviewedChanges[0].migrationGuide=null;
+  const receipt=evaluateReleasePreflight(inputs,{sourceCommit:'f'.repeat(40)});
+  assert.equal(receipt.decision,'KILL');
+  assert.equal(receipt.eligible,false);
+  assert.ok(receipt.failures.fatal.some((item)=>item.includes('breaking change has no migrationGuide')));
+});
+
 test('version or profile drift is a KILL decision rather than a promotion downgrade',async()=>{
   const inputs=clone(await loadReleaseInputs());
   inputs.sdkPackage.version='0.1.0-alpha.2';
