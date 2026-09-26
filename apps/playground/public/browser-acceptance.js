@@ -4,6 +4,7 @@ import { OpfsPackageContentStore, PackageArtifactAuthority } from '/packages/pac
 import { BrowserGuestWorkerAuthority } from '/packages/process/src/browser-guest-worker.js';
 import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority } from '/packages/vfs/src/index.js';
 import { BrowserPreviewServiceWorkerBridge } from '/packages/preview/src/index.js';
+import { ResourceGovernor } from '/packages/resources/src/index.js';
 
 const resultNode = document.getElementById('result');
 const stages = [];
@@ -264,6 +265,49 @@ async function run() {
     timeoutCode: runawayCode,
     hardTerminated: true,
     recoveredOnFreshRealm: recoveredAfterRunaway.exports.pageRealmHidden === true
+  });
+
+  stage('guest-worker-quota-start');
+  const workerQuota = new ResourceGovernor({ workers: 1 });
+  const quotaWorkerA = new BrowserGuestWorkerAuthority({
+    publication: securityPublication,
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: nodeCompat.syncRequestHandler,
+    requestTimeoutMs: 30000,
+    resources: workerQuota
+  });
+  const quotaWorkerB = new BrowserGuestWorkerAuthority({
+    publication: securityPublication,
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: nodeCompat.syncRequestHandler,
+    requestTimeoutMs: 30000,
+    resources: workerQuota
+  });
+  quotaWorkerA.start();
+  assert(workerQuota.usage.workers === 1, 'first guest Worker did not reserve resource quota');
+  let quotaRejectCode = 'ALLOWED';
+  try {
+    quotaWorkerB.start();
+  } catch (error) {
+    quotaRejectCode = error?.code ?? error?.name ?? 'ERROR';
+  }
+  assert(quotaRejectCode === 'OC_RESOURCE_EXHAUSTED', 'second guest Worker bypassed worker quota: ' + quotaRejectCode);
+  assert(workerQuota.usage.workers === 1, 'failed guest Worker spawn corrupted quota usage');
+
+  quotaWorkerA.close();
+  assert(workerQuota.usage.workers === 0, 'closing guest Worker did not release worker quota');
+  quotaWorkerB.start();
+  assert(workerQuota.usage.workers === 1, 'released worker quota could not be reacquired');
+  const quotaRecovered = await quotaWorkerB.execute(securityEntry, { exportNames: ['pageRealmHidden'] });
+  assert(quotaRecovered.exports.pageRealmHidden === true, 'quota-recovered guest Worker did not execute in isolated realm');
+  quotaWorkerB.close();
+  assert(workerQuota.usage.workers === 0, 'final guest Worker close leaked worker quota');
+
+  stage('guest-worker-quota-pass', {
+    limit: workerQuota.limits.workers,
+    rejectedCode: quotaRejectCode,
+    releasedAfterClose: workerQuota.usage.workers === 0,
+    recoveredAfterRelease: quotaRecovered.exports.pageRealmHidden === true
   });
 
   securityWorker.close();
