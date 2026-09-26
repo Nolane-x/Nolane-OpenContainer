@@ -308,6 +308,98 @@ async function run() {
     staleSessionsFailClosed: [...yoctoRuns, ...clsxRuns].every((run) => run.staleStatus === 504)
   });
 
+  stage('published-package-clsx-start');
+  const publishedRuntime = await OpenContainer.boot({ network: { allowLocal: true } });
+  publishedRuntime.net.grant({
+    id: 'published-clsx-registry',
+    origin: 'https://registry.npmjs.org',
+    methods: ['GET'],
+    paths: ['/']
+  });
+  publishedRuntime.packages.compile({
+    name: 'published-clsx-court',
+    version: '1.0.0',
+    lockfileVersion: 3,
+    packages: {
+      '': { name: 'published-clsx-court', version: '1.0.0' },
+      'node_modules/clsx': {
+        name: 'clsx',
+        version: '2.1.1',
+        resolved: 'https://registry.npmjs.org/clsx/-/clsx-2.1.1.tgz',
+        integrity: 'sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA=='
+      }
+    }
+  });
+  const publishedArtifactAuthority = new PackageArtifactAuthority({
+    fs: publishedRuntime.fs,
+    network: publishedRuntime.net,
+    maxArtifactBytes: 1024 * 1024,
+    maxUnpackedBytes: 4 * 1024 * 1024
+  });
+  const publishedInstaller = publishedRuntime.packages.createFrozenInstaller();
+  const publishedInstallReceipt = await publishedInstaller.installAll({
+    artifactAuthority: publishedArtifactAuthority,
+    concurrency: 1
+  });
+  const publishedMountReceipt = publishedInstaller.mountFrozenGraph();
+  const publishedClsxPackageJson = JSON.parse(
+    publishedRuntime.packages.nodeModules.readFile('/workspace/node_modules/clsx/package.json')
+  );
+  assert(publishedClsxPackageJson.name === 'clsx' && publishedClsxPackageJson.version === '2.1.1', 'published clsx tarball mounted wrong package identity');
+
+  const publishedClsxResolution = publishedRuntime.packages.resolve(
+    'clsx',
+    '/workspace/src/published-clsx-probe.mjs',
+    { mode: 'esm' }
+  );
+  assert(publishedClsxResolution.path.endsWith('/node_modules/clsx/dist/clsx.mjs'), 'published clsx exports resolver selected wrong ESM target');
+
+  publishedRuntime.fs.beginTransaction().writeFile('src/published-clsx-probe.mjs', [
+    "import clsxDefault, { clsx as clsxNamed } from 'clsx';",
+    "export const defaultResult = clsxDefault('p', { q: true, r: false }, ['s']);",
+    "export const namedResult = clsxNamed('u', { v: 1, w: 0 });",
+    "export const moduleUrl = import.meta.url;"
+  ].join('\n')).commit();
+
+  const publishedCompat = publishedRuntime.packages.createBrowserNodeCompat({ cwd: '/workspace' });
+  const publishedPublication = publishedRuntime.packages.createNativeEsmPublication({
+    baseURL,
+    session: 'published-clsx-2-1-1',
+    builtinSource: publishedCompat.builtinSource
+  });
+  const publishedBridge = new BrowserEsmServiceWorkerBridge({ publication: publishedPublication });
+  await publishedBridge.start();
+  const publishedEntry = publishedPublication.moduleURL('./published-clsx-probe.mjs', '/workspace/src/entry.mjs').href;
+  const publishedWorker = new BrowserGuestWorkerAuthority({
+    publication: publishedPublication,
+    diagnostics: publishedRuntime.diagnostics,
+    syncRequestHandler: publishedCompat.syncRequestHandler
+  });
+  publishedWorker.start();
+  const publishedExecution = await publishedWorker.execute(publishedEntry, {
+    exportNames: ['defaultResult', 'namedResult', 'moduleUrl']
+  });
+  assert(publishedExecution.exports.defaultResult === 'p q s', 'published clsx default export execution mismatch');
+  assert(publishedExecution.exports.namedResult === 'u v', 'published clsx named export execution mismatch');
+  assert(publishedExecution.workerCrossOriginIsolated === true, 'published package Worker lost browser isolation');
+  publishedWorker.close();
+  publishedBridge.close();
+  await publishedRuntime.terminate();
+
+  stage('published-package-clsx-pass', {
+    package: publishedClsxPackageJson.name,
+    version: publishedClsxPackageJson.version,
+    source: 'npm-published-tarball',
+    integrity: 'sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==',
+    fetchedContents: publishedInstallReceipt.fetchedContents,
+    bytes: publishedInstallReceipt.bytes,
+    mountedPackages: publishedMountReceipt.packageCount,
+    resolvedEsmTarget: publishedClsxResolution.path,
+    defaultResult: publishedExecution.exports.defaultResult,
+    namedResult: publishedExecution.exports.namedResult,
+    workerCrossOriginIsolated: publishedExecution.workerCrossOriginIsolated
+  });
+
   stage('guest-isolation-start');
   const guestWorkerResponse = await fetch('/opencontainer-guest-worker.mjs', { cache: 'no-store' });
   assert(guestWorkerResponse.ok, 'strict guest Worker bootstrap response is unavailable');
