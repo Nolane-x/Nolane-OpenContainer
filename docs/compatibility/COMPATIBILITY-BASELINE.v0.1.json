@@ -1,0 +1,29 @@
+{
+  "schema": "opencontainer.compatibility-baseline.v0.1",
+  "corpus": "compat/REAL-REPOSITORY-CORPUS.v0.1.json",
+  "generatedFromCorpusSchema": "opencontainer.compatibility-corpus.v0.1",
+  "productionClosed": false,
+  "axes": [
+    "fs",
+    "module",
+    "process",
+    "http",
+    "package",
+    "watch"
+  ],
+  "reportingRule": "No synthetic Node compatibility percentage. Each surface is reported independently.",
+  "evidence": {
+    "primitive": "promoted-selected",
+    "package": "promoted-selected",
+    "framework": "vite-8.3.0-c1-c2-promoted",
+    "realRepository": "pending-first-browser-court",
+    "repeatedBrowser": "not-closed"
+  },
+  "limitations": [
+    "pnpm and yarn lockfiles are not accepted by the promoted frozen package graph parser",
+    "native .node addons and arbitrary node-gyp/native binary execution are unsupported",
+    "generic fs.watch/chokidar parity is not promoted",
+    "raw guest TCP/UDP and arbitrary host process creation are unsupported",
+    "minimum cross-browser versions are intentionally not frozen before browser matrix evidence"
+  ]
+}
