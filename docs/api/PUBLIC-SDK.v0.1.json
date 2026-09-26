@@ -1,0 +1,148 @@
+{
+  "schema": "opencontainer.public-sdk.v0.1",
+  "package": "@nolane/opencontainer",
+  "version": "0.1.0-alpha.1",
+  "exportMap": {
+    ".": "./packages/sdk/src/index.js",
+    "./profile": "./packages/sdk/src/profile.js",
+    "./package.json": "./package.json"
+  },
+  "rootExports": [
+    "default",
+    "OpenContainer",
+    "OpenContainerProductionProfile"
+  ],
+  "staticMembers": [
+    {
+      "name": "boot",
+      "kind": "method",
+      "signature": "OpenContainer.boot(options?) -> Promise<OpenContainer>"
+    },
+    {
+      "name": "productionProfile",
+      "kind": "getter",
+      "signature": "OpenContainer.productionProfile -> OpenContainerProductionProfile"
+    }
+  ],
+  "instanceMembers": [
+    {
+      "name": "boot",
+      "kind": "method",
+      "signature": "runtime.boot() -> Promise<OpenContainer>"
+    },
+    {
+      "name": "state",
+      "kind": "getter",
+      "signature": "runtime.state -> string"
+    },
+    {
+      "name": "health",
+      "kind": "getter",
+      "signature": "runtime.health -> object"
+    },
+    {
+      "name": "productionProfile",
+      "kind": "getter",
+      "signature": "runtime.productionProfile -> OpenContainerProductionProfile"
+    },
+    {
+      "name": "mount",
+      "kind": "method",
+      "signature": "runtime.mount(files) -> generation"
+    },
+    {
+      "name": "registerCommand",
+      "kind": "method",
+      "signature": "runtime.registerCommand(name, handler) -> unregister()"
+    },
+    {
+      "name": "spawn",
+      "kind": "method",
+      "signature": "runtime.spawn(command, args?, options?) -> VirtualProcess"
+    },
+    {
+      "name": "listen",
+      "kind": "method",
+      "signature": "runtime.listen(port, handler, options?) -> PreviewReceipt"
+    },
+    {
+      "name": "installPackageCommands",
+      "kind": "method",
+      "signature": "runtime.installPackageCommands(options?) -> receipt"
+    },
+    {
+      "name": "snapshot",
+      "kind": "method",
+      "signature": "runtime.snapshot(label?) -> Snapshot"
+    },
+    {
+      "name": "restore",
+      "kind": "method",
+      "signature": "runtime.restore(snapshotRef) -> generation"
+    },
+    {
+      "name": "export",
+      "kind": "method",
+      "signature": "runtime.export(snapshotRef?) -> ReadableStream<Uint8Array>"
+    },
+    {
+      "name": "import",
+      "kind": "method",
+      "signature": "runtime.import(source) -> Promise<generation>"
+    },
+    {
+      "name": "status",
+      "kind": "method",
+      "signature": "runtime.status() -> RuntimeStatus"
+    },
+    {
+      "name": "persistWorkspace",
+      "kind": "method",
+      "signature": "runtime.persistWorkspace() -> Promise<CheckpointReceipt>"
+    },
+    {
+      "name": "collectWorkspaceGarbage",
+      "kind": "method",
+      "signature": "runtime.collectWorkspaceGarbage(options?) -> Promise<GCReceipt>"
+    },
+    {
+      "name": "teardown",
+      "kind": "method",
+      "signature": "runtime.teardown() -> Promise<void>"
+    },
+    {
+      "name": "terminate",
+      "kind": "method",
+      "signature": "runtime.terminate() -> Promise<void>"
+    }
+  ],
+  "advancedRuntimeFacets": [
+    "fs",
+    "process",
+    "packages",
+    "net",
+    "preview",
+    "snapshots",
+    "resources",
+    "diagnostics",
+    "workspacePersistence",
+    "packageContentStore"
+  ],
+  "privacyBoundary": {
+    "noPublicPackageSubpaths": [
+      "./worker",
+      "./workers",
+      "./kernel",
+      "./process",
+      "./package-env",
+      "./network",
+      "./preview",
+      "./persistence",
+      "./resources",
+      "./diagnostics",
+      "./protocol",
+      "./toolchain"
+    ],
+    "statement": "Worker bootstraps, kernel internals, authority implementation classes and transport topology are not public package exports. Core runtime facets exposed on an OpenContainer instance are advanced runtime surfaces, not package subpath contracts."
+  }
+}
