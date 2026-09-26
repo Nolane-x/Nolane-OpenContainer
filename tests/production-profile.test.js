@@ -25,7 +25,12 @@ test('production profile identity is immutable and exposed by SDK',async()=>{
 
 test('Service Worker compatibility identity cannot drift from the canonical production profile',()=>{
   const source=readFileSync('apps/playground/public/opencontainer-sw.js','utf8');
-  assert.match(source,new RegExp(OpenContainerProductionProfile.browser.serviceWorkerCompatibilityId.replace(/[.*+?^${}()|[\]\\]/g,'\\test('published production profile JSON cannot drift from canonical SDK identity',()=>{')));
+  assert.equal(source.includes(OpenContainerProductionProfile.browser.serviceWorkerCompatibilityId),true);
+  assert.doesNotMatch(source,/addEventListener\('install'[\s\S]{0,180}skipWaiting\(/);
+  assert.doesNotMatch(source,/addEventListener\('activate'[\s\S]{0,180}clients\.claim\(/);
+});
+
+test('published production profile JSON cannot drift from canonical SDK identity',()=>{')));
   assert.doesNotMatch(source,/addEventListener\('install'[\s\S]{0,180}skipWaiting\(/);
   assert.doesNotMatch(source,/addEventListener\('activate'[\s\S]{0,180}clients\.claim\(/);
 });
