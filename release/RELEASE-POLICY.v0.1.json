@@ -1,0 +1,101 @@
+{
+  "schema": "opencontainer.release-promotion-policy.v0.1",
+  "frozenAt": "2026-09-26",
+  "rule": "Promotion is monotonic. A channel is eligible only when its version class, exact evidence requirements, reviewed-change metadata and every lower channel condition are satisfied. Stable never lowers requirements to accommodate current evidence.",
+  "promotionRank": {
+    "IMPLEMENTED": 1,
+    "PASS-UNIT": 2,
+    "PASS-INTEGRATION": 3,
+    "PASS-BROWSER": 4,
+    "RELEASE-VERIFIED": 5
+  },
+  "decisionValues": [
+    "GO",
+    "REDESIGN",
+    "KILL"
+  ],
+  "implications": [
+    "api",
+    "storage",
+    "security"
+  ],
+  "channels": [
+    {
+      "id": "canary",
+      "order": 1,
+      "versionClass": "prerelease",
+      "allowedPrereleaseLabels": [
+        "alpha",
+        "canary",
+        "dev"
+      ],
+      "allowUnresolvedRisks": true,
+      "requiredEvidence": [
+        {
+          "gate": "P11-12",
+          "minimumPromotion": "PASS-INTEGRATION"
+        },
+        {
+          "gate": "P13-14",
+          "minimumPromotion": "PASS-INTEGRATION"
+        },
+        {
+          "gate": "P13-15",
+          "minimumPromotion": "PASS-INTEGRATION"
+        },
+        {
+          "gate": "P14-08",
+          "closureMet": true
+        }
+      ]
+    },
+    {
+      "id": "beta",
+      "order": 2,
+      "versionClass": "prerelease",
+      "allowedPrereleaseLabels": [
+        "beta"
+      ],
+      "allowUnresolvedRisks": true,
+      "requiredClosedGates": [
+        "P11-12",
+        "P11-14",
+        "P15-12"
+      ]
+    },
+    {
+      "id": "rc",
+      "order": 3,
+      "versionClass": "prerelease",
+      "allowedPrereleaseLabels": [
+        "rc"
+      ],
+      "allowUnresolvedRisks": false,
+      "requiredClosedGates": [
+        "P11-13",
+        "P14-10",
+        "P14-13",
+        "P14-14",
+        "P14-15"
+      ]
+    },
+    {
+      "id": "stable",
+      "order": 4,
+      "versionClass": "stable",
+      "allowUnresolvedRisks": false,
+      "requireProductionClosed": true,
+      "requireReleaseVerified": true,
+      "requireZeroUnexplainedCriticalFlakes": true,
+      "requiredClosedGates": [
+        "P13-03",
+        "P14-10",
+        "P14-12",
+        "P14-13",
+        "P14-14",
+        "P14-15",
+        "P14-18"
+      ]
+    }
+  ]
+}
