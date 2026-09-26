@@ -73,10 +73,24 @@ console.log(JSON.stringify(receipt));
   if(receipt.state!=='READY'||receipt.exitCode!==0||receipt.stdout!=='distribution ok')throw new Error('distribution SDK/process court failed: '+JSON.stringify(receipt));
   if(receipt.previewText!=='distribution-preview'||receipt.restored!=='one'||receipt.imported!=='one')throw new Error('distribution preview/persistence court failed: '+JSON.stringify(receipt));
 
+  const installedRoot=join(consumer,'node_modules','@nolane','opencontainer');
+  const exampleResult=run(process.execPath,[join(installedRoot,'examples','sdk-lifecycle.mjs')],{cwd:installedRoot});
+  const exampleReceipt=JSON.parse(exampleResult.stdout.trim());
+  if(exampleReceipt.exitCode!==0||exampleReceipt.stdout!=='hello opencontainer'||exampleReceipt.previewText!=='preview-ok'){
+    throw new Error('installed distribution SDK example failed: '+JSON.stringify(exampleReceipt));
+  }
+  if(exampleReceipt.restoredSource!=='export const answer = 42;'||exampleReceipt.importedSource!=='export const answer = 42;'){
+    throw new Error('installed distribution SDK example persistence drifted: '+JSON.stringify(exampleReceipt));
+  }
+
   console.log(JSON.stringify({
     schema:'opencontainer.distribution-certification.v0.1',
     build,
-    consumer:receipt
+    consumer:receipt,
+    publishedExample:{
+      source:'node_modules/@nolane/opencontainer/examples/sdk-lifecycle.mjs',
+      receipt:exampleReceipt
+    }
   },null,2));
 }finally{
   await rm(consumer,{recursive:true,force:true,maxRetries:8,retryDelay:100});
