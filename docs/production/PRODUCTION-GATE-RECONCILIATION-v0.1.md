@@ -8,7 +8,7 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **45**
+- Seed-reconciled against implementation evidence: **48**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -16,7 +16,7 @@
 | Domain | Seed evidence/partial | Unreconciled | Total |
 |---|---:|---:|---:|
 | P0 Product scope & production profile | 2 | 10 | 12 |
-| P1 Browser deployment, origin & lifecycle | 5 | 11 | 16 |
+| P1 Browser deployment, origin & lifecycle | 7 | 9 | 16 |
 | P2 Kernel, RPC, process & stream semantics | 6 | 8 | 14 |
 | P3 VFS, OPFS, persistence & data safety | 9 | 11 | 20 |
 | P4 Packages, resolver, archive & installer | 6 | 12 | 18 |
@@ -30,7 +30,7 @@
 | P12 Product security engineering | 2 | 18 | 20 |
 | P13 Build, supply chain & publication | 0 | 20 | 20 |
 | P14 Release, update, migration & rollback | 0 | 18 | 18 |
-| P15 SDK, API, documentation & developer experience | 5 | 9 | 14 |
+| P15 SDK, API, documentation & developer experience | 6 | 8 | 14 |
 | P16 License, FTO, governance & contribution policy | 0 | 14 | 14 |
 | P17 Operations, vulnerability response & long-term maintenance | 0 | 14 | 14 |
 | P18 Evidence, assurance & research integrity | 0 | 12 | 12 |
@@ -49,6 +49,8 @@
 - **P15-07** now has explicit storage/checkpoint/export semantics documentation.
 - **P15-11** now has a minimal public SDK lifecycle example covering mount/spawn/preview/snapshot/export/teardown.
 - **P15-12** now has CI execution of that repository example; published-package sample testing remains open.
+
+- **P1-13 / P1-16 / P15-04** now have an executable hosting self-check and exact header diagnostics, plus published secure-hosting guidance. Production CDN/reverse-proxy validation remains open.
 
 ## Update discipline
 
