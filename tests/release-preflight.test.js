@@ -116,7 +116,7 @@ test('beta cannot skip prior promotion receipts or required closure',async()=>{
 test('stable uses independent flake receipts rather than candidate self-report',async()=>{
   const inputs=clone(await loadReleaseInputs());
   const sourceCommit=configureStableCandidate(inputs);
-  inputs.candidate.criticalTestFlakiness.unexplained=999;
+  inputs.candidate.criticalTestFlakiness={unexplained:999};
   const receipt=evaluateReleasePreflight(inputs,{sourceCommit});
   assert.equal(receipt.decision,'REDESIGN');
   assert.equal(receipt.checks.independentCriticalFlakeCampaign,true);
