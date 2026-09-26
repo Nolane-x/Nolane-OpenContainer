@@ -244,6 +244,10 @@
     "release-storage-migration": {
       "ref": "CI #345 / 11ee7759ca055a8ccddebd0957f2946979ffc084",
       "note": "real Chrome OPFS dry-run + adjacent migration + four crash phases + dual recovery roots + lazy versioned derived-cache namespaces + non-destructive rollback + VFS-enforced emergency read-only mode"
+    },
+    "hotfix-deprecation-governance": {
+      "ref": "CI #352 / 11bbf821b04ee87ca150d2d3c51abdc4c72af6a6",
+      "note": "machine-enforced hotfix provenance/migration discipline plus 2-stable-release/90-day deprecation windows and audited high/critical security emergency exception; full installed-distribution Chrome regression remained green"
     }
   },
   "overrides": [
@@ -886,6 +890,22 @@
       "promotion": "PASS-INTEGRATION",
       "evidence": "release-preflight",
       "closure_met": false
+    },
+    {
+      "id": "P14-16",
+      "domain": "P14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "hotfix-deprecation-governance",
+      "closure_met": true
+    },
+    {
+      "id": "P14-17",
+      "domain": "P14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "hotfix-deprecation-governance",
+      "closure_met": true
     },
     {
       "id": "P14-18",
