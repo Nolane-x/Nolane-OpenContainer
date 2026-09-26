@@ -128,15 +128,15 @@ export function buildCompatibilityBaseline(corpus,adapters){
       primitive:'promoted-selected',
       package:'promoted-selected',
       framework:'vite-8.3.0-c1-c2-promoted',
-      realRepository:'yoctocolors-pass-ci-286',
-      repeatedBrowser:'not-closed'
+      realRepository:'two-repositories-repeated-court-pending-final-ci',
+      repeatedBrowser:'pending-final-ci'
     },
     surfaceEvidence:{
-      fs:{state:'PASS-BROWSER-BOUNDED',evidence:'Workspace VFS + OPFS courts; real repo source mounted in CI #286'},
-      module:{state:'PASS-BROWSER-BOUNDED',evidence:'native ESM/CJS courts + pinned yoctocolors Native ESM execution in CI #286'},
+      fs:{state:'PASS-BROWSER-BOUNDED',evidence:'Workspace VFS + OPFS courts; pinned real repository sources mounted through VFS'},
+      module:{state:'PASS-BROWSER-BOUNDED',evidence:'native ESM/CJS courts + pinned yoctocolors/clsx ESM execution'},
       process:{state:'PASS-BROWSER-BOUNDED',evidence:'virtual process/Worker authority; arbitrary host child process remains denied'},
       http:{state:'PASS-BROWSER-BOUNDED',evidence:'PreviewAuthority virtual HTTP + Vite C2 virtual HTTP; raw host TCP listen is not claimed'},
-      package:{state:'PASS-BROWSER-SELECTED',evidence:'npm package-lock v2/v3 frozen installer + package corpus; pnpm/yarn remain unsupported'},
+      package:{state:'PASS-BROWSER-SELECTED',evidence:'npm package-lock v2/v3 frozen installer + package corpus; published corpus tarballs are digest-pinned'},
       watch:{state:'PARTIAL',evidence:'Vite HMR is promoted; generic fs.watch/chokidar parity remains open'}
     },
     adapters:adapters.adapters.map(({surface,semantics,nodeSurface})=>({surface,semantics,nodeSurface})),
