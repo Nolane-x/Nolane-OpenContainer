@@ -33,11 +33,12 @@ Evidence anchors:
 - PackageContent forced-eviction court `901b027962cf84e47d6e586baca6dd20d5c94572` passed contract + Chrome browser-product-path in CI run #228: deleting the persisted Lightning CSS content entry forced exactly 1 refetch/1 republish, the next reopen hydrated 1 entry with 0 network fetches, package identity remained intact, and C1/C2 stayed green.
 - SDK WorkspaceFS persistence court `e08e61383dad7a53f573b79ada3fef799099e7e8` passed contract + Chrome browser-product-path in CI run #232: sequence 1 -> 2 -> reopen -> 3, restored generation remained 3, cross-context Web Locks stayed enabled, GC removed 1 superseded payload while retaining both recovery roots, and all existing C1/C2/package courts remained green.
 - SDK PackageContent persistence court `4584eed9b7da6f8a437af3f2dc1890544fc853d1` passed contract + Chrome browser-product-path in CI run #235: default installer hydration after reopen required 0 network fetches and 0 requested contents, hydrated 1 persisted content, mounted 1 exact package, preserved cross-context Web Locks, and left all existing workspace/package/C1/C2 courts green.
+- SDK WorkspaceFS corruption-recovery court `78e2435a975bd5d758012237e59c31528a0dd08b` passed contract + Chrome browser-product-path in CI run #238: corrupting sequence 3 forced fallback to sequence/generation 2, the recovered runtime safely republished sequence/generation 3 with a new payload identity, GC collected the corrupt payload, and the republished state survived another reopen.
 
 Still required before production closure:
 
 1. Broader guest-isolation hardening and Node 24 compatibility beyond the promoted synchronous/builtin/toolchain court.
-2. Extended WorkspaceFS/PackageFS durability campaigns beyond the promoted public SDK persistence profiles; WorkspaceFS restore/checkpoint/GC, persistent PackageContent hydration/forced-eviction recovery, policy/GC/quota preflight and multi-tab/Web Locks are promoted.
+2. Extended WorkspaceFS/PackageFS durability campaigns beyond the promoted public SDK persistence profiles; WorkspaceFS restore/checkpoint/GC plus corrupt-newest fallback-and-continuation, persistent PackageContent hydration/forced-eviction recovery, policy/GC/quota preflight and multi-tab/Web Locks are promoted.
 3. Broader browser package-install corpus beyond the promoted Vite/Rolldown/Lightning CSS + standalone `es-module-lexer` courts; peer/optional/script policy, persistent immutable PackageContent, lockfile-authoritative hydration and concurrent cache dedupe are promoted.
 4. PC-A/PC-B target-device and browser matrix beyond CI Chrome.
 5. Weak-device/resource-budget, long-run/plateau, fault/security and release-packaging campaigns.
