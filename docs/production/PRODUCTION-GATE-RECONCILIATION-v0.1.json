@@ -204,9 +204,21 @@
     "sdk-s7": {
       "ref": "CI #270 / ce5b2bf496700a1f91971a665eb69ed5efdbac9e",
       "note": "public SDK snapshot/restore + pinned streaming export/import + teardown passed Chrome product path"
+    },
+    "production-profile": {
+      "ref": "CI #277 / aca2d12ddb729b90bd196731aebb8e54a8a68dbb",
+      "note": "canonical SDK production profile equals published JSON in Chrome; productionClosed remains false"
     }
   },
   "overrides": [
+    {
+      "id": "P0-02",
+      "domain": "P0",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "production-profile",
+      "closure_met": false
+    },
     {
       "id": "P0-03",
       "domain": "P0",
