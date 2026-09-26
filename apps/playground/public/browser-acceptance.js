@@ -790,7 +790,7 @@ async function run() {
       "      if (!hotPayloads.slice(reconnectPayloadStart).some(isJsUpdate)) throw new Error('Vite C2 reconnect did not emit js-update');",
       "    } catch (error) { devErrorPhase = 'hmr'; devErrorMessage = error?.stack ?? String(error); }",
       "  }",
-      "} finally {
+      "} finally {",
       "  await server.close();",
       "  closed = true;",
       "}",
