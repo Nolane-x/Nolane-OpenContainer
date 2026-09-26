@@ -173,9 +173,9 @@ test('OPFS package content reopens verified content and skips network fetch', as
   assert.equal(firstStore.size, 1);
 
   const reopenedStore = await new OpfsPackageContentStore({ root, lockManager: locks }).open();
-  assert.equal(reopenedStore.hydratedCount, 1);
+  assert.equal(reopenedStore.hydratedCount, 0);
   assert.equal(reopenedStore.corruptCount, 0);
-  assert.equal(reopenedStore.size, 1);
+  assert.equal(reopenedStore.size, 0);
 
   let networkCalls = 0;
   const reopenedInstaller = runtime.packages.createFrozenInstaller({ contentStore: reopenedStore });
@@ -191,6 +191,9 @@ test('OPFS package content reopens verified content and skips network fetch', as
   assert.equal(networkCalls, 0);
   assert.equal(installReceipt.requestedContents, 0);
   assert.equal(installReceipt.fetchedContents, 0);
+  assert.equal(reopenedStore.hydratedCount, 1);
+  assert.equal(reopenedStore.corruptCount, 0);
+  assert.equal(reopenedStore.size, 1);
   const mounted = reopenedInstaller.mountFrozenGraph();
   assert.equal(mounted.packageCount, 1);
 
@@ -241,6 +244,14 @@ test('OPFS package content ignores corrupt persisted bytes and repairs them on v
   const corrupted = await new OpfsPackageContentStore({ root, lockManager: locks }).open();
   assert.equal(corrupted.size, 0);
   assert.equal(corrupted.hydratedCount, 0);
+  assert.equal(corrupted.corruptCount, 0);
+  const hydrated = await corrupted.hydrate({
+    contentId,
+    integrity,
+    expectedName: 'repair',
+    expectedVersion: '1.0.0'
+  });
+  assert.equal(hydrated, false);
   assert.equal(corrupted.corruptCount, 1);
 
   const repaired = await corrupted.ingest({
@@ -253,7 +264,56 @@ test('OPFS package content ignores corrupt persisted bytes and repairs them on v
   assert.equal(repaired.persistentReused, false);
 
   const reopened = await new OpfsPackageContentStore({ root, lockManager: locks }).open();
+  assert.equal(await reopened.hydrate({
+    contentId,
+    integrity,
+    expectedName: 'repair',
+    expectedVersion: '1.0.0'
+  }), true);
   assert.equal(reopened.corruptCount, 0);
   assert.equal(reopened.hydratedCount, 1);
   assert.equal(reopened.get(contentId).packageJson.name, 'repair');
+});
+
+test('OPFS package cache cannot self-authorize a replaced artifact and manifest', async () => {
+  const root = new FakeDirectoryHandle();
+  const locks = new FakeLockManager();
+  const original = packageTar('trusted', '1.0.0');
+  const expectedIntegrity = sri(original);
+  const contentId = 'content:trusted';
+
+  const writer = await new OpfsPackageContentStore({ root, lockManager: locks }).open();
+  await writer.ingest({
+    contentId,
+    integrity: expectedIntegrity,
+    bytes: original,
+    expectedName: 'trusted',
+    expectedVersion: '1.0.0'
+  });
+
+  const attackerBytes = packageTar('attacker', '9.9.9');
+  const attackerIntegrity = sri(attackerBytes);
+  const cache = root.dirs.get('opencontainer-package-content');
+  const directory = cache.dirs.get(encodeURIComponent(contentId));
+  directory.files.get('artifact.tgz').data = new Uint8Array(attackerBytes);
+  directory.files.get('manifest.json').data = JSON.stringify({
+    version: 1,
+    contentId,
+    integrity: attackerIntegrity,
+    byteLength: attackerBytes.byteLength,
+    packageName: 'attacker',
+    packageVersion: '9.9.9'
+  });
+
+  const reopened = await new OpfsPackageContentStore({ root, lockManager: locks }).open();
+  const hydrated = await reopened.hydrate({
+    contentId,
+    integrity: expectedIntegrity,
+    expectedName: 'trusted',
+    expectedVersion: '1.0.0'
+  });
+
+  assert.equal(hydrated, false);
+  assert.equal(reopened.size, 0);
+  assert.equal(reopened.corruptCount, 1);
 });
