@@ -51,6 +51,28 @@ test('stable error catalog exactly covers protocol ErrorCodes with actionable me
   }
 });
 
+test('support bundle is privacy-minimized and excludes workspace, details and custom diagnostic labels',async()=>{
+  const runtime=await OpenContainer.boot();
+  const secret='super-secret-workspace-value-123456789';
+  runtime.mount({'private.txt':secret});
+  runtime.diagnostics.record('token-'+secret,{authorization:'Bearer '+secret,workspaceText:secret});
+  const error=Object.assign(new Error('failed with '+secret),{code:'OC_INVALID_STATE',details:{secret}});
+  const bundle=runtime.supportBundle(error);
+  const serialized=JSON.stringify(bundle);
+
+  assert.equal(bundle.schema,'opencontainer.support-bundle.v0.1');
+  assert.equal(bundle.privacy.workspaceContentsIncluded,false);
+  assert.equal(bundle.privacy.diagnosticDetailsIncluded,false);
+  assert.equal(bundle.privacy.secretsIncluded,false);
+  assert.equal(bundle.error.code,'OC_INVALID_STATE');
+  assert.equal(bundle.diagnostics.some((entry)=>entry.type==='[custom]'),true);
+  assert.equal(serialized.includes(secret),false);
+  assert.equal(serialized.includes('private.txt'),false);
+  assert.equal(serialized.includes('authorization'),false);
+  assert.equal(serialized.includes('workspaceText'),false);
+  await runtime.teardown();
+});
+
 test('generated API and error references cannot drift from machine contracts',async()=>{
   const receipt=await generateDeveloperDocs();
   assert.equal(receipt.ok,true,JSON.stringify(receipt.drift));
