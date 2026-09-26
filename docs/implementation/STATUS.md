@@ -14,6 +14,7 @@ Promoted in the clean Chrome product/browser path:
 - Vite C2 dev/HMR court, including transformed index/TypeScript/`/@vite/client`, virtual HTTP, HMR update/failure/reconnect/recovery, same-port epoch restart, Service Worker preview rehydration and explicit dependency optimization;
 - dependency optimization materializes an actual `.vite/deps` artifact through the Rolldown browser memfs ↔ OpenContainer VFS bridge rather than faking metadata.
 - OPFS persistence safety now includes dual-slot fallback, origin-wide Web Locks, unreachable-payload GC, browser quota/persistence telemetry, projected-write preflight, one lock-coordinated GC retry under storage pressure, and fail-closed quota rejection before publication.
+- immutable PackageContent can now persist in OPFS as verified source tarballs, hydrate only against frozen-lockfile authority, reopen with zero network refetch, reject self-authorized cache replacement, and collapse concurrent publication through per-content Web Locks.
 
 Evidence anchors:
 
@@ -22,12 +23,13 @@ Evidence anchors:
 - final C2 head browser court `f4fed415405dde5434a99f9f5f425290c3a335e2` passed both contract and browser-product-path in CI run #197.
 - browser storage policy merged to `main` at `5f3e12aa536e15e6dfc5ae8e8bf874fe2ef740e4` after CI run #205;
 - OPFS quota-GC retry court `74bdbab8270e6928f31834fbc9ca453b9bfaf3f0` passed contract + Chrome browser-product-path in CI run #207, including GC-assisted retry, persistent-pressure rejection without manifest advance, and fallback recovery.
+- immutable PackageContent court `6800b6742378fecc1152978471b300a0d28c7d04` passed contract + Chrome browser-product-path in CI run #216: 3,826,518-byte Lightning CSS artifact persisted, reopened with `persistentHydrated=1`, `persistentNetworkRefetches=0`, concurrent publication produced exactly one persistent reuse, and C1/C2 remained green.
 
 Still required before production closure:
 
 1. Broader guest-isolation hardening and Node 24 compatibility beyond the promoted synchronous/builtin/toolchain court.
 2. OPFS-backed WorkspaceFS/PackageFS product integration, forced eviction/reopen evidence and extended durability campaigns; policy/GC/quota preflight and multi-tab/Web Locks are promoted.
-3. Broader browser package-install corpus, peer/optional/script policy, persistent immutable PackageContent and concurrent cache-dedupe evidence.
+3. Broader browser package-install corpus plus peer/optional/script policy; persistent immutable PackageContent, lockfile-authoritative hydration and concurrent cache dedupe are promoted.
 4. PC-A/PC-B target-device and browser matrix beyond CI Chrome.
 5. Weak-device/resource-budget, long-run/plateau, fault/security and release-packaging campaigns.
 6. Dependency/test-corpus licensing plus FTO/legal closure before a commercial production claim.
