@@ -225,3 +225,83 @@ test('installAll skips inBundle nodes because parent artifact owns their bytes',
   assert.equal(calls,1);
   assert.equal(receipt.embeddedInstances,1);
 });
+
+
+test('dependency closure includes required peers and excludes absent optional peers by default',async()=>{
+  const runtime=await OpenContainer.boot();
+  runtime.packages.compile({lockfileVersion:3,packages:{
+    '':{name:'app',version:'1'},
+    'node_modules/plugin':{
+      name:'plugin',version:'1.0.0',
+      peerDependencies:{host:'^2.0.0',optionalHost:'^1.0.0'},
+      peerDependenciesMeta:{optionalHost:{optional:true}}
+    },
+    'node_modules/host':{name:'host',version:'2.1.0'}
+  }});
+  const closure=runtime.packages.selectDependencyClosure({roots:['plugin']});
+  assert.ok(closure.locations.includes('node_modules/plugin'));
+  assert.ok(closure.locations.includes('node_modules/host'));
+  assert.ok(closure.peersIncluded.includes('node_modules/plugin -> node_modules/host'));
+  assert.ok(closure.peerOptionalSkipped.includes('node_modules/plugin -> optionalHost'));
+});
+
+test('dependency closure fails closed when a required peer is absent',async()=>{
+  const runtime=await OpenContainer.boot();
+  runtime.packages.compile({lockfileVersion:3,packages:{
+    'node_modules/plugin':{name:'plugin',version:'1.0.0',peerDependencies:{host:'^2.0.0'}}
+  }});
+  assert.throws(
+    ()=>runtime.packages.selectDependencyClosure({roots:['plugin']}),
+    error=>error.code===ErrorCodes.INVALID_PACKAGE_CONFIG&&/peer dependency/.test(error.message)
+  );
+});
+
+test('peer policy can explicitly ignore required peers with an audit receipt',async()=>{
+  const runtime=await OpenContainer.boot();
+  runtime.packages.compile({lockfileVersion:3,packages:{
+    'node_modules/plugin':{name:'plugin',version:'1.0.0',peerDependencies:{host:'^2.0.0'}}
+  }});
+  const closure=runtime.packages.selectDependencyClosure({roots:['plugin'],peerPolicy:'ignore'});
+  assert.deepEqual(closure.locations,['node_modules/plugin']);
+  assert.deepEqual(closure.peerRequiredIgnored,['node_modules/plugin -> host']);
+});
+
+test('frozen installer denies lifecycle scripts unless skip policy is explicit',async()=>{
+  const runtime=await OpenContainer.boot();
+  const bytes=packageTar('native-ish','1.0.0'),integrity=sri(bytes);
+  runtime.packages.compile({lockfileVersion:3,packages:{
+    'node_modules/native-ish':{
+      name:'native-ish',version:'1.0.0',
+      resolved:'https://registry.example/native-ish.tgz',
+      integrity,
+      hasInstallScript:true
+    }
+  }});
+
+  const denied=runtime.packages.createFrozenInstaller();
+  await assert.rejects(
+    ()=>denied.installAll({artifactAuthority:{async fetchArtifact(){throw new Error('policy must reject before fetch');}}}),
+    error=>error.code===ErrorCodes.INVALID_PACKAGE_CONFIG&&/lifecycle scripts/.test(error.message)
+  );
+
+  const skipped=runtime.packages.createFrozenInstaller({lifecycleScripts:'skip'});
+  const receipt=await skipped.installAll({
+    artifactAuthority:{async fetchArtifact(){return {bytes,redirects:0};}}
+  });
+  assert.deepEqual(receipt.lifecycleScriptsSkipped,['node_modules/native-ish']);
+  const mounted=skipped.mountFrozenGraph();
+  assert.deepEqual(mounted.lifecycleScriptsSkipped,['node_modules/native-ish']);
+  assert.equal(mounted.packageCount,1);
+});
+
+test('Vite browser closure remains lifecycle-script clean with optional native packages excluded',async()=>{
+  const {readFile}=await import('node:fs/promises');
+  const lock=JSON.parse(await readFile(new URL('../package-lock.json',import.meta.url),'utf8'));
+  const runtime=await OpenContainer.boot();
+  runtime.packages.compile(lock);
+  const closure=runtime.packages.selectDependencyClosure({roots:['vite']});
+  const selected=new Set(closure.locations);
+  const scripted=runtime.packages.graph.nodes.filter(node=>selected.has(node.location)&&node.hasInstallScript);
+  assert.deepEqual(scripted,[]);
+  assert.ok(closure.optionalSkipped.includes('node_modules/fsevents'));
+});

@@ -513,6 +513,12 @@ async function run() {
   assert(viteClosure.locations.includes(rolldownBrowserLocation), 'Exact Rolldown browser package missing from selected closure');
   assert(viteClosure.locations.includes('node_modules/lightningcss'), 'Lightning CSS missing from selected closure');
   assert(!viteClosure.locations.some((location) => location.includes('@rolldown/binding-')), 'optional native Rolldown binding leaked into browser closure');
+  assert(viteClosure.peerRequiredIgnored.length === 0, 'Vite browser closure ignored a required peer dependency');
+  assert(viteClosure.peerOptionalSkipped.some((entry) => entry.includes('node_modules/vite -> @types/node')), 'Vite optional peer policy did not record skipped optional peers');
+  const viteScriptedLocations = runtime.packages.graph.nodes
+    .filter((node) => viteClosure.locations.includes(node.location) && node.hasInstallScript)
+    .map((node) => node.location);
+  assert(viteScriptedLocations.length === 0, 'Vite browser closure selected a package requiring lifecycle script execution');
 
   runtime.net.allow({
     origin: 'https://registry.npmjs.org',
@@ -542,12 +548,17 @@ async function run() {
   assert(vitePackage.version === '8.3.0', 'browser-installed Vite version mismatch');
   assert(viteResolved.path.startsWith('/workspace/node_modules/vite/'), 'Vite resolver did not target frozen browser graph');
   assert(c1Install.fetchedContents >= 10, 'Vite browser closure unexpectedly small');
+  assert(c1Install.lifecycleScriptsSkipped.length === 0, 'Vite browser install silently skipped lifecycle scripts');
+  assert(c1Mounted.lifecycleScriptsSkipped.length === 0, 'Vite browser mount silently skipped lifecycle scripts');
   stage('vite-closure-install-pass', {
     locations: viteClosure.locations.length,
     fetchedContents: c1Install.fetchedContents,
     embeddedInstances: c1Install.embeddedInstances,
     bytes: c1Install.bytes,
     mountedPackages: c1Mounted.packageCount,
+    peerEdges: viteClosure.peersIncluded.length,
+    optionalPeersSkipped: viteClosure.peerOptionalSkipped.length,
+    lifecycleScriptsSkipped: c1Install.lifecycleScriptsSkipped.length,
     vite: viteResolved.path,
     progress: c1Progress
   });

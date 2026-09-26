@@ -54,6 +54,7 @@ export class PackageGraphAuthority {
         optionalDependencies:frozenRecord(meta.optionalDependencies),
         peerDependencies:frozenRecord(meta.peerDependencies),
         peerDependenciesMeta:frozenRecord(meta.peerDependenciesMeta),
+        hasInstallScript:!!meta.hasInstallScript,
         dev:!!meta.dev,optional:!!meta.optional
       }));
       if(meta.bin){
@@ -90,7 +91,7 @@ export class PackageGraphAuthority {
     return this.#resolver.resolve(specifier,issuer,options);
   }
 
-  selectDependencyClosure({roots=[],includeOptional=false}={}){
+  selectDependencyClosure({roots=[],includeOptional=false,includeOptionalPeers=false,peerPolicy='require'}={}){
     assertOc(this.#graph,ErrorCodes.INVALID_STATE,'Compile a lockfile before selecting dependency closure');
     const rootNames=roots.length?[...roots]:Object.keys({...this.#graph.rootDependencies,...this.#graph.rootDevDependencies});
     const byLocation=new Map(this.#graph.nodes.map(node=>[node.location,node]));
@@ -101,8 +102,12 @@ export class PackageGraphAuthority {
       queue.push(location);
     }
 
+    assertOc(['require','ignore'].includes(peerPolicy),ErrorCodes.INVALID_ARGUMENT,'Unsupported peer dependency policy',{peerPolicy});
     const selected=new Set();
     const optionalSkipped=new Set();
+    const peersIncluded=new Set();
+    const peerOptionalSkipped=new Set();
+    const peerRequiredIgnored=new Set();
     while(queue.length){
       const location=queue.shift();
       if(selected.has(location))continue;
@@ -121,12 +126,31 @@ export class PackageGraphAuthority {
         if(includeOptional){if(!selected.has(target))queue.push(target);}
         else optionalSkipped.add(target);
       }
+      for(const name of Object.keys(node.peerDependencies??{})){
+        const optionalPeer=node.peerDependenciesMeta?.[name]?.optional===true;
+        const target=dependencyLocation(byLocation,location,name);
+        if(peerPolicy==='ignore'){
+          if(optionalPeer)peerOptionalSkipped.add(location+' -> '+name);
+          else peerRequiredIgnored.add(location+' -> '+name);
+          continue;
+        }
+        if(!target){
+          if(optionalPeer){peerOptionalSkipped.add(location+' -> '+name);continue;}
+          assertOc(false,ErrorCodes.INVALID_PACKAGE_CONFIG,'Required peer dependency cannot be resolved',{issuer:location,dependency:name});
+        }
+        if(optionalPeer&&!includeOptionalPeers){peerOptionalSkipped.add(target);continue;}
+        peersIncluded.add(location+' -> '+target);
+        if(!selected.has(target))queue.push(target);
+      }
     }
 
     return Object.freeze({
       roots:Object.freeze(rootNames),
       locations:Object.freeze([...selected].sort()),
-      optionalSkipped:Object.freeze([...optionalSkipped].sort())
+      optionalSkipped:Object.freeze([...optionalSkipped].sort()),
+      peersIncluded:Object.freeze([...peersIncluded].sort()),
+      peerOptionalSkipped:Object.freeze([...peerOptionalSkipped].sort()),
+      peerRequiredIgnored:Object.freeze([...peerRequiredIgnored].sort())
     });
   }
 
