@@ -16,6 +16,7 @@ const publicAliases = new Map([
   ['/browser-acceptance.js', join(publicRoot, 'browser-acceptance.js')],
   ['/opencontainer-sw.js', join(publicRoot, 'opencontainer-sw.js')],
   ['/opencontainer-guest-worker.mjs', join(publicRoot, 'opencontainer-guest-worker.mjs')],
+  ['/opencontainer-toolchain-worker.mjs', join(publicRoot, 'opencontainer-toolchain-worker.mjs')],
   ['/__deps__/es-module-lexer-minimal.js', lexerPath],
   ['/toolchain/vendor/lightningcss-wasm-1.33.0.tgz', join(repoRoot, 'toolchain/vendor/lightningcss-wasm-1.33.0.tgz')],
   ['/toolchain/vendor/rolldown-browser-1.2.9.tgz', join(repoRoot, 'toolchain/vendor/rolldown-browser-1.2.9.tgz')],
