@@ -36,4 +36,4 @@ jobs:
       - run: npm ci
       - run: |
           google-chrome-stable --version || google-chrome --version || chromium --version
-      - run: npm run browser:acceptance
+      - run: npm run distribution:browser
