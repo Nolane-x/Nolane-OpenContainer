@@ -2,10 +2,16 @@ import { ErrorCodes, assertOc, ocError } from '../../protocol/src/index.js';
 import { WorkerRpcAuthority } from './worker-authority.js';
 import { settleSyncRpcMailbox } from './sync-rpc.js';
 
+const WORKER_PROFILE_URLS = Object.freeze({
+  strict: '/opencontainer-guest-worker.mjs',
+  toolchain: '/opencontainer-toolchain-worker.mjs'
+});
+
 export class BrowserGuestWorkerAuthority {
   #publication;
   #Worker;
   #workerURL;
+  #profile;
   #diagnostics;
   #maxPending;
   #worker = null;
@@ -20,7 +26,8 @@ export class BrowserGuestWorkerAuthority {
   constructor({
     publication,
     WorkerImpl = globalThis.Worker,
-    workerURL = '/opencontainer-guest-worker.mjs',
+    profile = 'strict',
+    workerURL = null,
     diagnostics,
     maxPending = 64,
     requestTimeoutMs = 5000,
@@ -30,9 +37,22 @@ export class BrowserGuestWorkerAuthority {
   } = {}) {
     assertOc(publication && typeof publication.resolveDynamic === 'function', ErrorCodes.INVALID_ARGUMENT, 'Native ESM publication authority is required');
     assertOc(typeof WorkerImpl === 'function', ErrorCodes.ESM_EDGE_UNAVAILABLE, 'Dedicated Worker API is unavailable');
+    assertOc(
+      Object.prototype.hasOwnProperty.call(WORKER_PROFILE_URLS, profile),
+      ErrorCodes.INVALID_ARGUMENT,
+      'Browser guest Worker profile must be strict or toolchain',
+      { profile }
+    );
+    assertOc(
+      workerURL === null || (typeof workerURL === 'string' && workerURL.length > 0),
+      ErrorCodes.INVALID_ARGUMENT,
+      'Browser guest Worker URL override must be a non-empty string',
+      { workerURL }
+    );
     this.#publication = publication;
     this.#Worker = WorkerImpl;
-    this.#workerURL = workerURL;
+    this.#profile = profile;
+    this.#workerURL = workerURL ?? WORKER_PROFILE_URLS[profile];
     this.#diagnostics = diagnostics;
     this.#maxPending = maxPending;
     this.requestTimeoutMs = Math.max(1, Number(requestTimeoutMs) || 5000);
@@ -42,6 +62,7 @@ export class BrowserGuestWorkerAuthority {
   }
 
   get identity() { return this.#rpc?.identity ?? null; }
+  get profile() { return this.#profile; }
 
   start() {
     if (this.#closed) throw ocError(ErrorCodes.WORKER_CLOSED, 'Browser guest worker authority is closed');
@@ -51,7 +72,7 @@ export class BrowserGuestWorkerAuthority {
     try {
       this.#worker = new this.#Worker(this.#workerURL, {
         type: 'module',
-        name: 'opencontainer-guest-' + this.#publication.session
+        name: 'opencontainer-' + this.#profile + '-' + this.#publication.session
       });
       this.#workerLease = lease;
     } catch (error) {

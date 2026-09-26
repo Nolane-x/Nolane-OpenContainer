@@ -136,6 +136,24 @@ async function run() {
   bridgeB.close();
 
   stage('guest-isolation-start');
+  const guestWorkerResponse = await fetch('/opencontainer-guest-worker.mjs', { cache: 'no-store' });
+  assert(guestWorkerResponse.ok, 'strict guest Worker bootstrap response is unavailable');
+  const guestWorkerCsp = guestWorkerResponse.headers.get('content-security-policy') ?? '';
+  assert(guestWorkerResponse.headers.get('x-opencontainer-worker-profile') === 'strict', 'strict guest Worker response lost profile identity');
+  assert(guestWorkerCsp.includes("default-src 'none'"), 'guest Worker CSP is missing default deny');
+  assert(guestWorkerCsp.includes("script-src 'self' 'wasm-unsafe-eval'"), 'guest Worker CSP does not preserve self modules + WASM compilation');
+  assert(guestWorkerCsp.includes("connect-src 'self'"), 'guest Worker CSP does not restrict connect authority to self');
+  assert(!guestWorkerCsp.includes("'unsafe-eval'"), 'strict guest Worker CSP accidentally permits JavaScript eval');
+
+  const toolchainWorkerResponse = await fetch('/opencontainer-toolchain-worker.mjs', { cache: 'no-store' });
+  assert(toolchainWorkerResponse.ok, 'toolchain Worker bootstrap response is unavailable');
+  const toolchainWorkerCsp = toolchainWorkerResponse.headers.get('content-security-policy') ?? '';
+  assert(toolchainWorkerResponse.headers.get('x-opencontainer-worker-profile') === 'toolchain', 'toolchain Worker response lost profile identity');
+  assert(toolchainWorkerCsp.includes("default-src 'none'"), 'toolchain Worker CSP is missing default deny');
+  assert(toolchainWorkerCsp.includes("'wasm-unsafe-eval'"), 'toolchain Worker CSP lost WASM compilation');
+  assert(toolchainWorkerCsp.includes("'unsafe-eval'"), 'toolchain Worker CSP did not opt in to Vite dynamic code generation');
+  assert(toolchainWorkerCsp.includes("connect-src 'self'"), 'toolchain Worker CSP widened network authority beyond self');
+
   runtime.fs.beginTransaction().writeFile('src/guest-isolation.mjs', [
     "import { spawn } from 'node:child_process';",
     "import net from 'node:net';",
@@ -161,7 +179,9 @@ async function run() {
     "export const opfsCode = navigator.storage?.getDirectory ? await asyncCodeOf(() => navigator.storage.getDirectory()) : 'ABSENT';",
     "export const locksCode = navigator.locks?.request ? await asyncCodeOf(() => navigator.locks.request('guest-escape', () => true)) : 'ABSENT';",
     "export const indexedDbCode = typeof indexedDB !== 'undefined' ? codeOf(() => indexedDB.open('guest-escape')) : 'ABSENT';",
-    "export const cacheStorageCode = typeof caches !== 'undefined' ? await asyncCodeOf(() => caches.open('guest-escape')) : 'ABSENT';"
+    "export const cacheStorageCode = typeof caches !== 'undefined' ? await asyncCodeOf(() => caches.open('guest-escape')) : 'ABSENT';",
+    "export const evalCode = codeOf(() => eval('1 + 1'));",
+    "export const functionCtorCode = codeOf(() => Function('return 1')());"
   ].join('\n')).commit();
 
   runtime.fs.beginTransaction().writeFile(
@@ -203,7 +223,9 @@ async function run() {
       'opfsCode',
       'locksCode',
       'indexedDbCode',
-      'cacheStorageCode'
+      'cacheStorageCode',
+      'evalCode',
+      'functionCtorCode'
     ]
   });
 
@@ -236,7 +258,16 @@ async function run() {
   );
   assert(isolation.exports.internalFetchStatus === 200, 'guest membrane blocked its own authoritative publication resource');
   assert(isolation.exports.internalFetchEdge === 'service-worker', 'guest internal fetch escaped the publication service-worker edge');
+  assert(isolation.exports.evalCode === 'EvalError', 'guest CSP did not block direct eval: ' + isolation.exports.evalCode);
+  assert(isolation.exports.functionCtorCode === 'EvalError', 'guest CSP did not block Function constructor: ' + isolation.exports.functionCtorCode);
   assert(isolation.workerCrossOriginIsolated === true, 'security court guest lost cross-origin isolation');
+  stage('guest-csp-pass', {
+    strictPolicy: guestWorkerCsp,
+    toolchainPolicy: toolchainWorkerCsp,
+    strictEval: isolation.exports.evalCode,
+    strictFunctionConstructor: isolation.exports.functionCtorCode,
+    profilesSeparated: true
+  });
 
   stage('guest-runaway-timeout-start');
   const runawayWorker = new BrowserGuestWorkerAuthority({
@@ -328,6 +359,8 @@ async function run() {
     webLocks: isolation.exports.locksCode,
     indexedDb: isolation.exports.indexedDbCode,
     cacheStorage: isolation.exports.cacheStorageCode,
+    eval: isolation.exports.evalCode,
+    functionConstructor: isolation.exports.functionCtorCode,
     unknownHostRpc: isolation.exports.unknownHostCode,
     internalPublicationFetch: isolation.exports.internalFetchStatus,
     workerCrossOriginIsolated: isolation.workerCrossOriginIsolated
@@ -1744,7 +1777,6 @@ async function run() {
       "  if (!optimizer) throw new Error('Vite C2 dependency optimizer was not created');",
       "  await optimizer.init();",
       "  if (optimizer.scanProcessing) await optimizer.scanProcessing;",
-      "  depTransformCode = (await server.transformRequest('/c1-app/src/dep-opt.ts'))?.code ?? '';",
       "  const pendingBefore = optimizer.metadata?.depInfoList?.map((info) => info?.processing).filter(Boolean) ?? [];",
       "  if (pendingBefore.length) await Promise.allSettled(pendingBefore);",
       "  const metadata = optimizer.metadata ?? {};",
@@ -1752,6 +1784,7 @@ async function run() {
       "  depDiscoveredKeys = Object.keys(metadata.discovered ?? {});",
       "  const info = metadata.optimized?.nanoid ?? metadata.discovered?.nanoid ?? null;",
       "  if (info?.processing) await info.processing;",
+      "  depTransformCode = (await server.transformRequest('/c1-app/src/dep-opt.ts'))?.code ?? '';",
       "  const finalMetadata = optimizer.metadata ?? metadata;",
       "  const finalInfo = finalMetadata.optimized?.nanoid ?? finalMetadata.discovered?.nanoid ?? info;",
       "  depOptimizedKeys = Object.keys(finalMetadata.optimized ?? {});",
@@ -1922,6 +1955,7 @@ async function run() {
   stage('vite-module-execution-start');
   const viteWorker = new BrowserGuestWorkerAuthority({
     publication: vitePublication,
+    profile: 'toolchain',
     diagnostics: runtime.diagnostics,
     syncRequestHandler: viteNodeCompat.syncRequestHandler,
     requestTimeoutMs: 60000

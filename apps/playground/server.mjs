@@ -16,6 +16,7 @@ const publicAliases = new Map([
   ['/browser-acceptance.js', join(publicRoot, 'browser-acceptance.js')],
   ['/opencontainer-sw.js', join(publicRoot, 'opencontainer-sw.js')],
   ['/opencontainer-guest-worker.mjs', join(publicRoot, 'opencontainer-guest-worker.mjs')],
+  ['/opencontainer-toolchain-worker.mjs', join(publicRoot, 'opencontainer-toolchain-worker.mjs')],
   ['/__deps__/es-module-lexer-minimal.js', lexerPath],
   ['/toolchain/vendor/lightningcss-wasm-1.33.0.tgz', join(repoRoot, 'toolchain/vendor/lightningcss-wasm-1.33.0.tgz')],
   ['/toolchain/vendor/rolldown-browser-1.2.9.tgz', join(repoRoot, 'toolchain/vendor/rolldown-browser-1.2.9.tgz')],
@@ -58,6 +59,20 @@ const server = createServer(async (request, response) => {
     }
 
     if (url.pathname === '/opencontainer-sw.js') response.setHeader('Service-Worker-Allowed', '/');
+    if (url.pathname === '/opencontainer-guest-worker.mjs') {
+      response.setHeader(
+        'Content-Security-Policy',
+        "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; worker-src 'self'; child-src 'self'"
+      );
+      response.setHeader('X-OpenContainer-Worker-Profile', 'strict');
+    }
+    if (url.pathname === '/opencontainer-toolchain-worker.mjs') {
+      response.setHeader(
+        'Content-Security-Policy',
+        "default-src 'none'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval'; connect-src 'self'; worker-src 'self'; child-src 'self'"
+      );
+      response.setHeader('X-OpenContainer-Worker-Profile', 'toolchain');
+    }
     response.setHeader('Content-Type', contentType(target));
     response.end(await readFile(target));
   } catch (error) {

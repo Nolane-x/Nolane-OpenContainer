@@ -110,3 +110,35 @@ test('browser guest workers reserve and release ResourceGovernor worker leases',
   second.close();
   assert.equal(resources.usage.workers,0);
 });
+
+
+test('browser guest Worker profiles select explicit bootstrap authorities',()=>{
+  FakeWorker.instances=[];
+  const publication={
+    session:'worker-profile-court',
+    resolveDynamic(){throw new Error('unused');}
+  };
+
+  const strict=new BrowserGuestWorkerAuthority({publication,WorkerImpl:FakeWorker});
+  strict.start();
+  assert.equal(strict.profile,'strict');
+  assert.equal(FakeWorker.instances.at(-1).url,'/opencontainer-guest-worker.mjs');
+  assert.equal(FakeWorker.instances.at(-1).options.name,'opencontainer-strict-worker-profile-court');
+  strict.close();
+
+  const toolchain=new BrowserGuestWorkerAuthority({
+    publication,
+    WorkerImpl:FakeWorker,
+    profile:'toolchain'
+  });
+  toolchain.start();
+  assert.equal(toolchain.profile,'toolchain');
+  assert.equal(FakeWorker.instances.at(-1).url,'/opencontainer-toolchain-worker.mjs');
+  assert.equal(FakeWorker.instances.at(-1).options.name,'opencontainer-toolchain-worker-profile-court');
+  toolchain.close();
+
+  assert.throws(
+    ()=>new BrowserGuestWorkerAuthority({publication,WorkerImpl:FakeWorker,profile:'unconfined'}),
+    (error)=>error.code===ErrorCodes.INVALID_ARGUMENT
+  );
+});
