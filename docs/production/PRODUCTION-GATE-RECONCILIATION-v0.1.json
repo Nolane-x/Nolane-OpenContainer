@@ -222,8 +222,8 @@
       "note": "9 published corpus tarballs byte-verified against pinned SHA-512/SHA-1; yoctocolors+clsx each executed twice on fresh browser publication/Worker realms with stale-session rejection; exact npm-published clsx@2.1.1 tarball passed SRI -> install -> exports resolve -> isolated Worker execution"
     },
     "compat-governance": {
-      "ref": "PR #28 / compat governance artifacts",
-      "note": "fail-closed Node 24 oracle exception registry + frozen Alpha/Beta/RC/1.0 promotion thresholds + machine evaluator"
+      "ref": "CI #309 / ba352ff4b1588d06130afe2d06f4dc834334ef8f",
+      "note": "fail-closed Node 24 oracle exception registry + frozen Alpha/Beta/RC/1.0 thresholds + machine evaluator; current level Alpha; Chrome regressions green"
     }
   },
   "overrides": [
