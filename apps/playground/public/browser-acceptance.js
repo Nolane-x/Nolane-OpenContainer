@@ -408,8 +408,8 @@ async function run() {
       directoryName: packageCacheDirectory,
       lockManager: navigator.locks
     }).open();
-    assert(reopenedContent.hydratedCount === 1, 'OPFS package cache did not hydrate the verified retained package');
-    assert(reopenedContent.corruptCount === 0, 'OPFS package cache unexpectedly reported corruption');
+    assert(reopenedContent.hydratedCount === 0, 'OPFS package cache hydrated before frozen graph authority was supplied');
+    assert(reopenedContent.corruptCount === 0, 'OPFS package cache unexpectedly reported corruption before hydration');
     let secondNetworkFetches = 0;
     const reopenedInstaller = runtime.packages.createFrozenInstaller({ contentStore: reopenedContent });
     const reopenedReceipt = await reopenedInstaller.installAll({
@@ -424,6 +424,8 @@ async function run() {
     assert(reopenedReceipt.requestedContents === 0, 'OPFS package cache did not satisfy frozen install from persisted content');
     assert(reopenedReceipt.fetchedContents === 0, 'OPFS package cache performed a second content fetch');
     assert(secondNetworkFetches === 0, 'OPFS package cache reached the network after reopen');
+    assert(reopenedContent.hydratedCount === 1, 'frozen graph authority did not hydrate the persisted package');
+    assert(reopenedContent.corruptCount === 0, 'lockfile-authoritative package cache hydration reported corruption');
     const reopenedMounted = reopenedInstaller.mountFrozenGraph();
     const reopenedPackageJson = JSON.parse(
       runtime.packages.nodeModules.readFile('/workspace/node_modules/lightningcss-wasm/package.json')
