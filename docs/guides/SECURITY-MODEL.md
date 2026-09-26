@@ -4,7 +4,7 @@ OpenContainer assumes guest/application code may be buggy or untrusted relative 
 
 ## Authority model
 
-Guest execution runs in isolated Workers and receives only capabilities explicitly exposed by the active runtime/publication. The default guest path denies direct access to arbitrary external fetch, raw sockets, origin-wide OPFS/storage, Web Locks, IndexedDB, CacheStorage and unrelated communication channels.
+Guest execution runs in isolated Workers and receives only capabilities explicitly exposed by the active runtime/publication. Arbitrary external fetch, raw sockets, origin-wide OPFS/storage, Web Locks, IndexedDB, CacheStorage and unrelated communication channels are denied by default on the guest path.
 
 Toolchain Workers are a separate, broader profile because retained browser toolchains may require capabilities such as dynamic code generation. Do not reuse the toolchain profile for ordinary guest code.
 
