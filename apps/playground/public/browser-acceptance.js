@@ -189,6 +189,12 @@ async function run() {
     "while (true) {}\nexport const unreachable = true;"
   ).commit();
 
+  runtime.fs.beginTransaction().writeFile('src/guest-export-budget.mjs', [
+    "export const oversizedText = 'x'.repeat(256 * 1024);",
+    "export const oversizedBytes = new Uint8Array(96 * 1024);",
+    "export const small = 'ok';"
+  ].join('\n')).commit();
+
   const securityPublication = runtime.packages.createNativeEsmPublication({
     baseURL,
     session: 'browser-security-isolation',
@@ -339,6 +345,47 @@ async function run() {
     rejectedCode: quotaRejectCode,
     releasedAfterClose: workerQuota.usage.workers === 0,
     recoveredAfterRelease: quotaRecovered.exports.pageRealmHidden === true
+  });
+
+  stage('guest-export-budget-start');
+  const exportBudgetWorker = new BrowserGuestWorkerAuthority({
+    publication: securityPublication,
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: nodeCompat.syncRequestHandler,
+    requestTimeoutMs: 30000,
+    maxExportBytes: 64 * 1024
+  });
+  const exportBudgetEntry = securityPublication.moduleURL('./guest-export-budget.mjs', '/workspace/src/entry.mjs').href;
+
+  const exportFailureCodes = [];
+  for (const exportName of ['oversizedText', 'oversizedBytes']) {
+    try {
+      await exportBudgetWorker.execute(exportBudgetEntry, { exportNames: [exportName] });
+      exportFailureCodes.push('ALLOWED');
+    } catch (error) {
+      exportFailureCodes.push(error?.code ?? error?.name ?? 'ERROR');
+    }
+  }
+  assert(
+    exportFailureCodes.every((code) => code === 'OC_OUTPUT_LIMIT'),
+    'oversized guest export escaped output budget: ' + exportFailureCodes.join(',')
+  );
+  assert(exportBudgetWorker.identity !== null, 'output-limit rejection unnecessarily destroyed the bounded guest realm');
+
+  const smallExport = await exportBudgetWorker.execute(exportBudgetEntry, { exportNames: ['small'] });
+  assert(smallExport.exports.small === 'ok', 'guest export budget blocked a bounded response');
+  assert(
+    Number.isFinite(smallExport.exportBytes) && smallExport.exportBytes > 0 && smallExport.exportBytes < exportBudgetWorker.maxExportBytes,
+    'guest export receipt did not report bounded byte usage'
+  );
+  exportBudgetWorker.close();
+
+  stage('guest-export-budget-pass', {
+    limit: 64 * 1024,
+    oversizedText: exportFailureCodes[0],
+    oversizedBytes: exportFailureCodes[1],
+    boundedExportBytes: smallExport.exportBytes,
+    boundedExportRecovered: smallExport.exports.small === 'ok'
   });
 
   securityWorker.close();
