@@ -128,15 +128,15 @@ export function buildCompatibilityBaseline(corpus,adapters){
       primitive:'promoted-selected',
       package:'promoted-selected',
       framework:'vite-8.3.0-c1-c2-promoted',
-      realRepository:'two-repositories-repeated-court-pending-final-ci',
-      repeatedBrowser:'pending-final-ci'
+      realRepository:'yoctocolors+clsx-pass-ci-300',
+      repeatedBrowser:'2x-fresh-sessions-per-enabled-case-pass-ci-300'
     },
     surfaceEvidence:{
-      fs:{state:'PASS-BROWSER-BOUNDED',evidence:'Workspace VFS + OPFS courts; pinned real repository sources mounted through VFS'},
-      module:{state:'PASS-BROWSER-BOUNDED',evidence:'native ESM/CJS courts + pinned yoctocolors/clsx ESM execution'},
+      fs:{state:'PASS-BROWSER-BOUNDED',evidence:'Workspace VFS + OPFS courts; pinned yoctocolors/clsx sources mounted and repeated in CI #300'},
+      module:{state:'PASS-BROWSER-BOUNDED',evidence:'native ESM/CJS courts + repeated yoctocolors/clsx ESM execution + published clsx package execution in CI #300'},
       process:{state:'PASS-BROWSER-BOUNDED',evidence:'virtual process/Worker authority; arbitrary host child process remains denied'},
       http:{state:'PASS-BROWSER-BOUNDED',evidence:'PreviewAuthority virtual HTTP + Vite C2 virtual HTTP; raw host TCP listen is not claimed'},
-      package:{state:'PASS-BROWSER-SELECTED',evidence:'npm package-lock v2/v3 frozen installer + package corpus; published corpus tarballs are digest-pinned'},
+      package:{state:'PASS-BROWSER-SELECTED',evidence:'9 published corpus tarballs are SHA-512/SHA-1 byte-verified; exact clsx@2.1.1 npm tarball installed/resolved/executed in CI #300'},
       watch:{state:'PARTIAL',evidence:'Vite HMR is promoted; generic fs.watch/chokidar parity remains open'}
     },
     adapters:adapters.adapters.map(({surface,semantics,nodeSurface})=>({surface,semantics,nodeSurface})),
