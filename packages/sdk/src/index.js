@@ -10,6 +10,24 @@ import { MemoryPersistenceAuthority } from '../../persistence/src/index.js';
 import { OpenContainerKernel } from '../../kernel/src/index.js';
 import { OpenContainerProductionProfile } from './profile.js';
 
+const SUPPORT_DIAGNOSTIC_TYPES=new Set([
+  'runtime.state',
+  'process.error',
+  'process.exit',
+  'worker.session',
+  'worker.timeout',
+  'browser-worker.guest-diagnostic',
+  'browser-worker.error',
+  'esm-edge.binary-response',
+  'esm-edge.fetch-failure',
+  'preview-edge.response',
+  'preview-edge.failure'
+]);
+
+function supportDiagnosticType(value){
+  return SUPPORT_DIAGNOSTIC_TYPES.has(value)?value:'[custom]';
+}
+
 export class OpenContainer {
   static get productionProfile(){return OpenContainerProductionProfile;}
   constructor(options={}){
@@ -77,7 +95,7 @@ export class OpenContainer {
     });
   }
   supportBundle(error=null){
-    const diagnostics=this.diagnostics.list().map((entry)=>Object.freeze({seq:entry.seq,type:entry.type}));
+    const diagnostics=this.diagnostics.list().map((entry)=>Object.freeze({seq:entry.seq,type:supportDiagnosticType(entry.type)}));
     const errorReceipt=error?Object.freeze({
       name:typeof error?.name==='string'?error.name:'Error',
       code:typeof error?.code==='string'?error.code:'OC_INTERNAL'
