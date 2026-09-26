@@ -121,6 +121,44 @@ test('SDK OPFS workspace profile reopens at persisted generation and continues c
   assert.ok(locks.requests.every((request)=>request.mode==='exclusive'));
 });
 
+
+test('SDK workspace profile falls back from corrupt newest payload and can republish',async()=>{
+  const root=new FakeDirectoryHandle();
+  const locks=new FakeLockManager();
+  const directoryName='sdk-workspace-corrupt-recovery';
+  const profile={root,directoryName,lockManager:locks};
+
+  const first=await OpenContainer.boot({workspacePersistence:profile});
+  first.mount({'state.txt':'stable'});
+  const stable=await first.persistWorkspace();
+  first.fs.beginTransaction().writeFile('state.txt','newest').commit();
+  const newest=await first.persistWorkspace();
+  await first.terminate();
+
+  const generations=root.dirs.get(directoryName).dirs.get('generations');
+  generations.files.get(newest.payload).data='{"corrupt":true}';
+
+  const recovered=await OpenContainer.boot({workspacePersistence:profile});
+  assert.equal(recovered.fs.readFile('state.txt'),'stable');
+  assert.equal(recovered.fs.generation,stable.generation);
+  assert.equal(recovered.workspacePersistence.current.sequence,stable.sequence);
+
+  recovered.fs.beginTransaction().writeFile('state.txt','recovered').commit();
+  const republished=await recovered.persistWorkspace();
+  assert.equal(republished.sequence,stable.sequence+1);
+  assert.equal(republished.generation,stable.generation+1);
+  assert.notEqual(republished.payload,newest.payload);
+
+  const gc=await recovered.collectWorkspaceGarbage();
+  assert.ok(gc.removed.includes(newest.payload));
+  await recovered.terminate();
+
+  const finalRuntime=await OpenContainer.boot({workspacePersistence:profile});
+  assert.equal(finalRuntime.fs.readFile('state.txt'),'recovered');
+  assert.equal(finalRuntime.workspacePersistence.current.payload,republished.payload);
+  await finalRuntime.terminate();
+});
+
 test('SDK workspace persistence APIs fail closed when no OPFS profile is configured',async()=>{
   const runtime=await OpenContainer.boot();
   await assert.rejects(
