@@ -212,6 +212,10 @@
     "hosting-self-check": {
       "ref": "CI #281 / 09abff58f289758f06c7b75842cdb1331dc2a28a",
       "note": "executable hosting/header self-check passed promoted playground topology and emitted exact failures against a deliberately broken server"
+    },
+    "compat-corpus": {
+      "ref": "CI #286 / fd8474f3cafe636864253c50d4a9b863266b6d09",
+      "note": "13-repository frozen corpus; online commit/lockfile/license/source pin verification; npm lock v3 graph compile; first pinned real-repository Chrome execution (yoctocolors)"
     }
   },
   "overrides": [
@@ -533,6 +537,86 @@
       "state": "PARTIAL",
       "promotion": "PASS-BROWSER",
       "evidence": "guest-output",
+      "closure_met": false
+    },
+    {
+      "id": "P11-01",
+      "domain": "P11",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "compat-corpus",
+      "closure_met": true
+    },
+    {
+      "id": "P11-02",
+      "domain": "P11",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "compat-corpus",
+      "closure_met": true
+    },
+    {
+      "id": "P11-03",
+      "domain": "P11",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "compat-corpus",
+      "closure_met": true
+    },
+    {
+      "id": "P11-04",
+      "domain": "P11",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "compat-corpus",
+      "closure_met": true
+    },
+    {
+      "id": "P11-05",
+      "domain": "P11",
+      "state": "PARTIAL",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "compat-corpus",
+      "closure_met": false
+    },
+    {
+      "id": "P11-06",
+      "domain": "P11",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "compat-corpus",
+      "closure_met": true
+    },
+    {
+      "id": "P11-07",
+      "domain": "P11",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "evidence": "compat-corpus",
+      "closure_met": false
+    },
+    {
+      "id": "P11-09",
+      "domain": "P11",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "compat-corpus",
+      "closure_met": true
+    },
+    {
+      "id": "P11-10",
+      "domain": "P11",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "compat-corpus",
+      "closure_met": true
+    },
+    {
+      "id": "P11-14",
+      "domain": "P11",
+      "state": "PARTIAL",
+      "promotion": "IMPLEMENTED",
+      "evidence": "compat-corpus",
       "closure_met": false
     },
     {
