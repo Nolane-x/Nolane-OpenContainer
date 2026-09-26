@@ -76,6 +76,33 @@ export class OpenContainer {
       packagePersistence:this.packageContentStore?Object.freeze({hydratedCount:this.packageContentStore.hydratedCount??0,crossContextLocking:this.packageContentStore.crossContextLocking}):null
     });
   }
+  supportBundle(error=null){
+    const diagnostics=this.diagnostics.list().map((entry)=>Object.freeze({seq:entry.seq,type:entry.type}));
+    const errorReceipt=error?Object.freeze({
+      name:typeof error?.name==='string'?error.name:'Error',
+      code:typeof error?.code==='string'?error.code:'OC_INTERNAL'
+    }):null;
+    return Object.freeze({
+      schema:'opencontainer.support-bundle.v0.1',
+      profile:Object.freeze({
+        profileId:OpenContainerProductionProfile.profileId,
+        runtimeVersion:OpenContainerProductionProfile.runtime.version,
+        productionClosed:OpenContainerProductionProfile.productionClosed
+      }),
+      status:this.status(),
+      resources:Object.freeze({
+        limits:this.resources.limits,
+        usage:this.resources.usage
+      }),
+      error:errorReceipt,
+      diagnostics:Object.freeze(diagnostics),
+      privacy:Object.freeze({
+        workspaceContentsIncluded:false,
+        diagnosticDetailsIncluded:false,
+        secretsIncluded:false
+      })
+    });
+  }
   async persistWorkspace(){
     this._kernel.assertReady();
     assertOc(this.workspacePersistence,ErrorCodes.INVALID_STATE,'Workspace OPFS persistence is not configured');
