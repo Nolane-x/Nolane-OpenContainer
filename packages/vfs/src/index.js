@@ -107,7 +107,9 @@ export class MemoryVFS {
       else if(entry.type==='symlink')next.set(resolved,{type:'symlink',target:normalize(entry.target)});
       else throw ocError(ErrorCodes.IMPORT_INVALID,'Unknown snapshot entry type',{path:resolved,type:entry.type});
     }
-    this.#entries=next;this.#generation++;return this.#generation;
+    this.#entries=next;
+    this.#generation=Math.max(this.#generation+1,snapshot.generation);
+    return this.#generation;
   }
   #resolve(path,depth=0){
     if(depth>32)throw ocError(ErrorCodes.INVALID_ARGUMENT,'Symlink resolution depth exceeded');
