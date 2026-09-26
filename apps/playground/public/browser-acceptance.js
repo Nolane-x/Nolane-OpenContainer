@@ -775,6 +775,82 @@ async function run() {
     workerCrossOriginIsolated: corpusExecution.workerCrossOriginIsolated
   });
 
+  stage('browser-package-corpus-conditional-start');
+  const nanoidClosure = runtime.packages.selectDependencyClosure({ roots: ['nanoid'] });
+  assert(nanoidClosure.locations.length === 1 && nanoidClosure.locations[0] === 'node_modules/nanoid', 'nanoid corpus closure was not minimal');
+  const nanoidInstall = await corpusInstaller.installAll({
+    artifactAuthority: corpusArtifactAuthority,
+    locations: nanoidClosure.locations,
+    concurrency: 2
+  });
+  const nanoidMounted = corpusInstaller.mountFrozenGraph({ locations: nanoidClosure.locations });
+  const nanoidPackageJson = JSON.parse(runtime.packages.nodeModules.readFile('/workspace/node_modules/nanoid/package.json'));
+  assert(nanoidPackageJson.name === 'nanoid' && nanoidPackageJson.version === '3.3.19', 'conditional corpus mounted the wrong nanoid package');
+
+  const nanoidEsmResolution = runtime.packages.resolve(
+    'nanoid/non-secure',
+    '/workspace/src/package-corpus-nanoid.mjs',
+    { mode: 'esm' }
+  );
+  const nanoidCjsResolution = runtime.packages.resolve(
+    'nanoid/non-secure',
+    '/workspace/src/package-corpus-nanoid.cjs',
+    { mode: 'cjs' }
+  );
+  assert(nanoidEsmResolution.path.endsWith('/nanoid/non-secure/index.js'), 'nanoid ESM conditional export resolved to the wrong target');
+  assert(nanoidCjsResolution.path.endsWith('/nanoid/non-secure/index.cjs'), 'nanoid CJS conditional export resolved to the wrong target');
+  assert(nanoidEsmResolution.path !== nanoidCjsResolution.path, 'nanoid conditional exports collapsed ESM and CJS targets');
+
+  runtime.fs.beginTransaction().writeFile('src/package-corpus-nanoid.mjs', [
+    "import { nanoid, customAlphabet } from 'nanoid/non-secure';",
+    'const id = nanoid(13);',
+    "const custom = customAlphabet('abc', 9)();",
+    'export const idLength = id.length;',
+    'export const customLength = custom.length;',
+    "export const customAlphabetOnly = /^[abc]+$/.test(custom);"
+  ].join('\n')).commit();
+
+  const nanoidCompat = runtime.packages.createBrowserNodeCompat({ cwd: '/workspace' });
+  const nanoidPublication = runtime.packages.createNativeEsmPublication({
+    baseURL,
+    session: 'browser-package-corpus-nanoid',
+    builtinSource: nanoidCompat.builtinSource
+  });
+  const nanoidBridge = new BrowserEsmServiceWorkerBridge({ publication: nanoidPublication });
+  await nanoidBridge.start();
+  const nanoidWorker = new BrowserGuestWorkerAuthority({
+    publication: nanoidPublication,
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: nanoidCompat.syncRequestHandler,
+    requestTimeoutMs: 30000
+  });
+  nanoidWorker.start();
+  const nanoidEntry = nanoidPublication.moduleURL('./package-corpus-nanoid.mjs', '/workspace/src/entry.mjs').href;
+  const nanoidExecution = await nanoidWorker.execute(nanoidEntry, {
+    exportNames: ['idLength', 'customLength', 'customAlphabetOnly']
+  });
+  assert(nanoidExecution.exports.idLength === 13, 'nanoid non-secure corpus returned the wrong default ID length');
+  assert(nanoidExecution.exports.customLength === 9, 'nanoid customAlphabet corpus returned the wrong ID length');
+  assert(nanoidExecution.exports.customAlphabetOnly === true, 'nanoid customAlphabet corpus escaped its selected alphabet');
+  assert(nanoidExecution.workerCrossOriginIsolated === true, 'nanoid corpus worker is not cross-origin isolated');
+  nanoidWorker.close();
+  nanoidBridge.close();
+
+  stage('browser-package-corpus-conditional-pass', {
+    package: nanoidPackageJson.name,
+    version: nanoidPackageJson.version,
+    locations: nanoidClosure.locations.length,
+    fetchedContents: nanoidInstall.fetchedContents,
+    bytes: nanoidInstall.bytes,
+    mountedPackages: nanoidMounted.packageCount,
+    esmTarget: nanoidEsmResolution.path,
+    cjsTarget: nanoidCjsResolution.path,
+    idLength: nanoidExecution.exports.idLength,
+    customLength: nanoidExecution.exports.customLength,
+    customAlphabetOnly: nanoidExecution.exports.customAlphabetOnly,
+    workerCrossOriginIsolated: nanoidExecution.workerCrossOriginIsolated
+  });
+
   stage('vite-closure-install-start');
   const lockResponse = await fetch('/package-lock.json', { cache: 'no-store' });
   assert(lockResponse.ok, 'failed to load frozen Vite C1 package-lock');
