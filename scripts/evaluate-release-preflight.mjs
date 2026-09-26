@@ -173,6 +173,8 @@ function criticalFlakeFailures({
     }
     if(!Array.isArray(contract.testFiles)||contract.testFiles.length<(contractPolicy.minimumTestFiles??Infinity)){
       failures.push('critical contract flake campaign covered fewer than the frozen minimum test files');
+    }else if(JSON.stringify(contract.testFiles)!==JSON.stringify(contractPolicy.testFiles??[])){
+      failures.push('critical contract flake campaign test set does not match frozen policy');
     }
   }
 
@@ -187,6 +189,9 @@ function criticalFlakeFailures({
     }
     if(browser.fullProductPathPasses!==browser.iterations){
       failures.push('critical browser flake campaign did not pass the full installed-distribution product path on every iteration');
+    }
+    if(browser.profile!==browserPolicy.profile){
+      failures.push('critical browser flake campaign profile does not match frozen policy');
     }
   }
 
@@ -314,7 +319,9 @@ export function evaluateReleasePreflight(inputs,{sourceCommit='unknown'}={}){
       priorPromotionChainSatisfied:target?priorPromotionFailures(candidate,channels,target).length===0:false,
       versionClassSatisfied:target?versionClassFailures(candidate,target).length===0:false,
       independentCriticalFlakeCampaign:criticalFlakeFailures({criticalFlakePolicy,criticalContractFlakeReceipt,criticalBrowserFlakeReceipt,sourceCommit}).length===0,
-      unexplainedCriticalFlakes:(criticalContractFlakeReceipt?.unexplainedFailures??0)+(criticalBrowserFlakeReceipt?.unexplainedFailures??0),
+      unexplainedCriticalFlakes:criticalContractFlakeReceipt&&criticalBrowserFlakeReceipt
+        ?(criticalContractFlakeReceipt.unexplainedFailures??0)+(criticalBrowserFlakeReceipt.unexplainedFailures??0)
+        :null,
       criticalContractFlakeIterations:criticalContractFlakeReceipt?.iterations??null,
       criticalBrowserFlakeIterations:criticalBrowserFlakeReceipt?.iterations??null
     }),
