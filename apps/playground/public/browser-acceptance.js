@@ -180,19 +180,62 @@ async function run() {
   workerB.close();
   bridgeB.close();
 
-  stage('real-repo-yoctocolors-start');
-  const [yoctoIndexResponse, yoctoBaseResponse] = await Promise.all([
+  stage('real-repository-progression-start');
+
+  const runRealRepositorySession = async ({
+    session,
+    entryPath,
+    importerPath,
+    exportNames,
+    validate
+  }) => {
+    const publication = runtime.packages.createNativeEsmPublication({
+      baseURL,
+      session,
+      builtinSource: nodeCompat.builtinSource
+    });
+    const bridge = new BrowserEsmServiceWorkerBridge({ publication });
+    await bridge.start();
+    const entry = publication.moduleURL(entryPath, importerPath).href;
+    const worker = new BrowserGuestWorkerAuthority({
+      publication,
+      diagnostics: runtime.diagnostics,
+      syncRequestHandler: nodeCompat.syncRequestHandler
+    });
+    worker.start();
+    const receipt = await worker.execute(entry, { exportNames });
+    validate(receipt, entry);
+    worker.close();
+    bridge.close();
+
+    const staleResponse = await fetch(entry, { cache: 'no-store' });
+    assert(staleResponse.status === 504, 'closed real-repository session did not fail stale fetch: ' + session);
+    return {
+      session,
+      staleStatus: staleResponse.status,
+      workerCrossOriginIsolated: receipt.workerCrossOriginIsolated,
+      exports: receipt.exports
+    };
+  };
+
+  const [yoctoIndexResponse, yoctoBaseResponse, clsxSourceResponse] = await Promise.all([
     fetch('/__compat__/yoctocolors/index.js', { cache: 'no-store' }),
-    fetch('/__compat__/yoctocolors/base.js', { cache: 'no-store' })
+    fetch('/__compat__/yoctocolors/base.js', { cache: 'no-store' }),
+    fetch('/__compat__/clsx/src/index.js', { cache: 'no-store' })
   ]);
   assert(yoctoIndexResponse.ok && yoctoBaseResponse.ok, 'pinned yoctocolors source proxy failed');
+  assert(clsxSourceResponse.ok, 'pinned clsx source proxy failed');
   assert(yoctoIndexResponse.headers.get('x-opencontainer-compat-commit') === 'a85b98a90e5731914567d8c209e7ec45ac2d24e2', 'yoctocolors commit pin drifted');
   assert(yoctoBaseResponse.headers.get('x-opencontainer-compat-repository') === 'sindresorhus/yoctocolors', 'yoctocolors repository identity drifted');
+  assert(clsxSourceResponse.headers.get('x-opencontainer-compat-commit') === '925494cf31bcd97d3337aacd34e659e80cae7fe2', 'clsx commit pin drifted');
+  assert(clsxSourceResponse.headers.get('x-opencontainer-compat-repository') === 'lukeed/clsx', 'clsx repository identity drifted');
 
-  const [yoctoIndexSource, yoctoBaseSource] = await Promise.all([
+  const [yoctoIndexSource, yoctoBaseSource, clsxSource] = await Promise.all([
     yoctoIndexResponse.text(),
-    yoctoBaseResponse.text()
+    yoctoBaseResponse.text(),
+    clsxSourceResponse.text()
   ]);
+
   runtime.fs.beginTransaction()
     .writeFile('compat/yoctocolors/index.js', yoctoIndexSource)
     .writeFile('compat/yoctocolors/base.js', yoctoBaseSource)
@@ -202,40 +245,159 @@ async function run() {
       "export const boldResult = bold('opencontainer');",
       "export const moduleUrl = import.meta.url;"
     ].join('\n'))
+    .writeFile('compat/clsx/index.js', clsxSource)
+    .writeFile('compat/clsx/probe.mjs', [
+      "import clsxDefault, { clsx as clsxNamed } from './index.js';",
+      "export const defaultResult = clsxDefault('a', { b: true, c: false }, ['d']);",
+      "export const namedResult = clsxNamed('x', 0, { y: 1, z: 0 }, ['q']);",
+      "export const moduleUrl = import.meta.url;"
+    ].join('\n'))
     .commit();
 
-  const yoctoPublication = runtime.packages.createNativeEsmPublication({
+  const yoctoRuns = [];
+  for (const ordinal of [1, 2]) {
+    yoctoRuns.push(await runRealRepositorySession({
+      session: 'compat-yoctocolors-a85b98a-' + ordinal,
+      entryPath: './probe.mjs',
+      importerPath: '/workspace/compat/yoctocolors/entry.mjs',
+      exportNames: ['redResult', 'boldResult', 'moduleUrl'],
+      validate(receipt) {
+        assert(receipt.exports.redResult === 'opencontainer', 'yoctocolors red() disagreed with bounded browser tty semantics');
+        assert(receipt.exports.boldResult === 'opencontainer', 'yoctocolors bold() disagreed with bounded browser tty semantics');
+        assert(receipt.workerCrossOriginIsolated === true, 'yoctocolors execution lost browser isolation');
+        assert(receipt.exports.moduleUrl.includes('compat-yoctocolors-a85b98a-' + ordinal), 'yoctocolors publication session identity drifted');
+      }
+    }));
+  }
+
+  const clsxRuns = [];
+  for (const ordinal of [1, 2]) {
+    clsxRuns.push(await runRealRepositorySession({
+      session: 'compat-clsx-925494c-' + ordinal,
+      entryPath: './probe.mjs',
+      importerPath: '/workspace/compat/clsx/entry.mjs',
+      exportNames: ['defaultResult', 'namedResult', 'moduleUrl'],
+      validate(receipt) {
+        assert(receipt.exports.defaultResult === 'a b d', 'clsx default export returned wrong conditional class string');
+        assert(receipt.exports.namedResult === 'x y q', 'clsx named export returned wrong conditional class string');
+        assert(receipt.workerCrossOriginIsolated === true, 'clsx execution lost browser isolation');
+        assert(receipt.exports.moduleUrl.includes('compat-clsx-925494c-' + ordinal), 'clsx publication session identity drifted');
+      }
+    }));
+  }
+
+  stage('real-repository-progression-pass', {
+    repositories: [
+      {
+        repository: 'sindresorhus/yoctocolors',
+        commit: 'a85b98a90e5731914567d8c209e7ec45ac2d24e2',
+        runs: yoctoRuns.length,
+        ttySemantics: 'bounded-hasColors-false',
+        staleStatuses: yoctoRuns.map((run) => run.staleStatus)
+      },
+      {
+        repository: 'lukeed/clsx',
+        commit: '925494cf31bcd97d3337aacd34e659e80cae7fe2',
+        runs: clsxRuns.length,
+        semantics: 'pure-esm-source',
+        staleStatuses: clsxRuns.map((run) => run.staleStatus)
+      }
+    ],
+    freshPublicationSessions: yoctoRuns.length + clsxRuns.length,
+    allWorkersCrossOriginIsolated: [...yoctoRuns, ...clsxRuns].every((run) => run.workerCrossOriginIsolated),
+    staleSessionsFailClosed: [...yoctoRuns, ...clsxRuns].every((run) => run.staleStatus === 504)
+  });
+
+  stage('published-package-clsx-start');
+  const publishedRuntime = await OpenContainer.boot({ network: { allowLocal: true } });
+  publishedRuntime.net.allow({
+    id: 'published-clsx-registry',
+    origin: 'https://registry.npmjs.org',
+    methods: ['GET'],
+    paths: ['/']
+  });
+  publishedRuntime.packages.compile({
+    name: 'published-clsx-court',
+    version: '1.0.0',
+    lockfileVersion: 3,
+    packages: {
+      '': { name: 'published-clsx-court', version: '1.0.0' },
+      'node_modules/clsx': {
+        name: 'clsx',
+        version: '2.1.1',
+        resolved: 'https://registry.npmjs.org/clsx/-/clsx-2.1.1.tgz',
+        integrity: 'sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA=='
+      }
+    }
+  });
+  const publishedArtifactAuthority = new PackageArtifactAuthority({
+    fs: publishedRuntime.fs,
+    network: publishedRuntime.net,
+    maxArtifactBytes: 1024 * 1024,
+    maxUnpackedBytes: 4 * 1024 * 1024
+  });
+  const publishedInstaller = publishedRuntime.packages.createFrozenInstaller();
+  const publishedInstallReceipt = await publishedInstaller.installAll({
+    artifactAuthority: publishedArtifactAuthority,
+    concurrency: 1
+  });
+  const publishedMountReceipt = publishedInstaller.mountFrozenGraph();
+  const publishedClsxPackageJson = JSON.parse(
+    publishedRuntime.packages.nodeModules.readFile('/workspace/node_modules/clsx/package.json')
+  );
+  assert(publishedClsxPackageJson.name === 'clsx' && publishedClsxPackageJson.version === '2.1.1', 'published clsx tarball mounted wrong package identity');
+
+  const publishedClsxResolution = publishedRuntime.packages.resolve(
+    'clsx',
+    '/workspace/src/published-clsx-probe.mjs',
+    { mode: 'esm' }
+  );
+  assert(publishedClsxResolution.path.endsWith('/node_modules/clsx/dist/clsx.mjs'), 'published clsx exports resolver selected wrong ESM target');
+
+  publishedRuntime.fs.beginTransaction().writeFile('src/published-clsx-probe.mjs', [
+    "import clsxDefault, { clsx as clsxNamed } from 'clsx';",
+    "export const defaultResult = clsxDefault('p', { q: true, r: false }, ['s']);",
+    "export const namedResult = clsxNamed('u', { v: 1, w: 0 });",
+    "export const moduleUrl = import.meta.url;"
+  ].join('\n')).commit();
+
+  const publishedCompat = publishedRuntime.packages.createBrowserNodeCompat({ cwd: '/workspace' });
+  const publishedPublication = publishedRuntime.packages.createNativeEsmPublication({
     baseURL,
-    session: 'compat-yoctocolors-a85b98a',
-    builtinSource: nodeCompat.builtinSource
+    session: 'published-clsx-2-1-1',
+    builtinSource: publishedCompat.builtinSource
   });
-  const yoctoBridge = new BrowserEsmServiceWorkerBridge({ publication: yoctoPublication });
-  await yoctoBridge.start();
-  const yoctoEntry = yoctoPublication.moduleURL('./probe.mjs', '/workspace/compat/yoctocolors/entry.mjs').href;
-  const yoctoWorker = new BrowserGuestWorkerAuthority({
-    publication: yoctoPublication,
-    diagnostics: runtime.diagnostics,
-    syncRequestHandler: nodeCompat.syncRequestHandler
+  const publishedBridge = new BrowserEsmServiceWorkerBridge({ publication: publishedPublication });
+  await publishedBridge.start();
+  const publishedEntry = publishedPublication.moduleURL('./published-clsx-probe.mjs', '/workspace/src/entry.mjs').href;
+  const publishedWorker = new BrowserGuestWorkerAuthority({
+    publication: publishedPublication,
+    diagnostics: publishedRuntime.diagnostics,
+    syncRequestHandler: publishedCompat.syncRequestHandler
   });
-  yoctoWorker.start();
-  const yoctoReceipt = await yoctoWorker.execute(yoctoEntry, {
-    exportNames: ['redResult', 'boldResult', 'moduleUrl']
+  publishedWorker.start();
+  const publishedExecution = await publishedWorker.execute(publishedEntry, {
+    exportNames: ['defaultResult', 'namedResult', 'moduleUrl']
   });
-  assert(yoctoReceipt.exports.redResult === 'opencontainer', 'yoctocolors red() disagreed with bounded browser tty semantics');
-  assert(yoctoReceipt.exports.boldResult === 'opencontainer', 'yoctocolors bold() disagreed with bounded browser tty semantics');
-  assert(yoctoReceipt.workerCrossOriginIsolated === true, 'real repository execution lost browser isolation');
-  assert(yoctoReceipt.exports.moduleUrl.includes('compat-yoctocolors-a85b98a'), 'real repository publication session identity drifted');
-  yoctoWorker.close();
-  yoctoBridge.close();
-  stage('real-repo-yoctocolors-pass', {
-    repository: 'sindresorhus/yoctocolors',
-    commit: 'a85b98a90e5731914567d8c209e7ec45ac2d24e2',
-    sourceMode: 'pinned-upstream-through-exact-allowlist',
-    execution: 'dedicated-worker-native-esm',
-    ttySemantics: 'bounded-hasColors-false',
-    redResult: yoctoReceipt.exports.redResult,
-    boldResult: yoctoReceipt.exports.boldResult,
-    workerCrossOriginIsolated: yoctoReceipt.workerCrossOriginIsolated
+  assert(publishedExecution.exports.defaultResult === 'p q s', 'published clsx default export execution mismatch');
+  assert(publishedExecution.exports.namedResult === 'u v', 'published clsx named export execution mismatch');
+  assert(publishedExecution.workerCrossOriginIsolated === true, 'published package Worker lost browser isolation');
+  publishedWorker.close();
+  publishedBridge.close();
+  await publishedRuntime.terminate();
+
+  stage('published-package-clsx-pass', {
+    package: publishedClsxPackageJson.name,
+    version: publishedClsxPackageJson.version,
+    source: 'npm-published-tarball',
+    integrity: 'sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==',
+    fetchedContents: publishedInstallReceipt.fetchedContents,
+    bytes: publishedInstallReceipt.bytes,
+    mountedPackages: publishedMountReceipt.packageCount,
+    resolvedEsmTarget: publishedClsxResolution.path,
+    defaultResult: publishedExecution.exports.defaultResult,
+    namedResult: publishedExecution.exports.namedResult,
+    workerCrossOriginIsolated: publishedExecution.workerCrossOriginIsolated
   });
 
   stage('guest-isolation-start');

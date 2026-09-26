@@ -216,6 +216,10 @@
     "compat-corpus": {
       "ref": "CI #286 / fd8474f3cafe636864253c50d4a9b863266b6d09",
       "note": "13-repository frozen corpus; online commit/lockfile/license/source pin verification; npm lock v3 graph compile; first pinned real-repository Chrome execution (yoctocolors)"
+    },
+    "compat-corpus-repeated": {
+      "ref": "CI #300 / a3dea9b9948eea49d077261ebaef1478a275ae6c",
+      "note": "9 published corpus tarballs byte-verified against pinned SHA-512/SHA-1; yoctocolors+clsx each executed twice on fresh browser publication/Worker realms with stale-session rejection; exact npm-published clsx@2.1.1 tarball passed SRI -> install -> exports resolve -> isolated Worker execution"
     }
   },
   "overrides": [
@@ -574,10 +578,10 @@
     {
       "id": "P11-05",
       "domain": "P11",
-      "state": "PARTIAL",
+      "state": "EVIDENCE",
       "promotion": "PASS-INTEGRATION",
-      "evidence": "compat-corpus",
-      "closure_met": false
+      "evidence": "compat-corpus-repeated",
+      "closure_met": true
     },
     {
       "id": "P11-06",
@@ -590,10 +594,10 @@
     {
       "id": "P11-07",
       "domain": "P11",
-      "state": "PARTIAL",
+      "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
-      "evidence": "compat-corpus",
-      "closure_met": false
+      "evidence": "compat-corpus-repeated",
+      "closure_met": true
     },
     {
       "id": "P11-09",
@@ -610,6 +614,14 @@
       "promotion": "PASS-INTEGRATION",
       "evidence": "compat-corpus",
       "closure_met": true
+    },
+    {
+      "id": "P11-12",
+      "domain": "P11",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "evidence": "compat-corpus-repeated",
+      "closure_met": false
     },
     {
       "id": "P11-14",

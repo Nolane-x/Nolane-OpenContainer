@@ -20,6 +20,12 @@ test('P11 compatibility corpus is frozen, representative and keeps unsupported c
   assert.ok(corpus.cases.some(entry=>entry.strata?.includes('streams')));
   assert.ok(corpus.cases.some(entry=>entry.strata?.includes('crypto')));
   assert.ok(corpus.cases.some(entry=>entry.strata?.includes('zlib')));
+  const published = corpus.cases.filter(entry=>entry.packageTarball?.status==='published');
+  assert.equal(published.length,9);
+  assert.ok(published.every(entry=>entry.packageTarball.integrity.startsWith('sha512-')));
+  assert.ok(published.every(entry=>/^[0-9a-f]{40}$/.test(entry.packageTarball.shasum)));
+  assert.equal(corpus.browserProgression.requiredFreshSessionsPerEnabledCase,2);
+  assert.equal(corpus.browserProgression.staleSessionMustFailClosed,true);
 });
 
 test('machine-readable compatibility baseline is generated from the same corpus used by tests',async()=>{
