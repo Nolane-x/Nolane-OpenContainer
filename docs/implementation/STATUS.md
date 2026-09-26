@@ -14,7 +14,7 @@ Promoted in the clean Chrome product/browser path:
 - Vite C2 dev/HMR court, including transformed index/TypeScript/`/@vite/client`, virtual HTTP, HMR update/failure/reconnect/recovery, same-port epoch restart, Service Worker preview rehydration and explicit dependency optimization;
 - dependency optimization materializes an actual `.vite/deps` artifact through the Rolldown browser memfs ↔ OpenContainer VFS bridge rather than faking metadata.
 - OPFS persistence safety now includes dual-slot fallback, origin-wide Web Locks, unreachable-payload GC, browser quota/persistence telemetry, projected-write preflight, one lock-coordinated GC retry under storage pressure, and fail-closed quota rejection before publication.
-- immutable PackageContent can now persist in OPFS as verified source tarballs, hydrate only against frozen-lockfile authority, reopen with zero network refetch, reject self-authorized cache replacement, and collapse concurrent publication through per-content Web Locks.
+- immutable PackageContent can now persist in OPFS as verified source tarballs, hydrate only against frozen-lockfile authority, reopen with zero network refetch, recover from a forced content-entry eviction via exactly one authoritative refetch and repersist, reject self-authorized cache replacement, and collapse concurrent publication through per-content Web Locks.
 - browser package policy now resolves required peers into the frozen closure, keeps optional peers explicit, rejects missing required peers, and denies lifecycle install scripts by default; explicit skip/ignore policies remain auditable and never execute host lifecycle scripts.
 - the browser package corpus now also includes an independent `es-module-lexer@3.0.2` court: frozen-lockfile fetch/SRI, immutable install, VNFS mount, native ESM publication and real `init()` + `parse()` execution in a cross-origin-isolated Dedicated Worker.
 
@@ -28,11 +28,12 @@ Evidence anchors:
 - immutable PackageContent court `6800b6742378fecc1152978471b300a0d28c7d04` passed contract + Chrome browser-product-path in CI run #216: 3,826,518-byte Lightning CSS artifact persisted, reopened with `persistentHydrated=1`, `persistentNetworkRefetches=0`, concurrent publication produced exactly one persistent reuse, and C1/C2 remained green.
 - package policy court `419a343845ca0c4ff5f41fb5530cf94cb3e73ce6` passed contract + Chrome browser-product-path in CI run #220: Vite closure selected 20 locations, resolved 2 peer edges, recorded 13 optional peer skips, selected no install-script packages, skipped 0 lifecycle scripts, and kept C1/C2 green.
 - standalone package corpus court `7bba2e88ef134e0eda815bf66a22d2c3948e5b27` passed contract + Chrome browser-product-path in CI run #225: exact `es-module-lexer@3.0.2` fetched 84,612 bytes, mounted as one package, parsed one static `dep` import plus one `marker` export in a cross-origin-isolated Dedicated Worker, and the following Vite C1/C2 courts remained green.
+- PackageContent forced-eviction court `901b027962cf84e47d6e586baca6dd20d5c94572` passed contract + Chrome browser-product-path in CI run #228: deleting the persisted Lightning CSS content entry forced exactly 1 refetch/1 republish, the next reopen hydrated 1 entry with 0 network fetches, package identity remained intact, and C1/C2 stayed green.
 
 Still required before production closure:
 
 1. Broader guest-isolation hardening and Node 24 compatibility beyond the promoted synchronous/builtin/toolchain court.
-2. OPFS-backed WorkspaceFS/PackageFS product integration, forced eviction/reopen evidence and extended durability campaigns; policy/GC/quota preflight and multi-tab/Web Locks are promoted.
+2. OPFS-backed WorkspaceFS/PackageFS product integration and extended durability campaigns; PackageContent forced eviction/reopen, policy/GC/quota preflight and multi-tab/Web Locks are promoted.
 3. Broader browser package-install corpus beyond the promoted Vite/Rolldown/Lightning CSS + standalone `es-module-lexer` courts; peer/optional/script policy, persistent immutable PackageContent, lockfile-authoritative hydration and concurrent cache dedupe are promoted.
 4. PC-A/PC-B target-device and browser matrix beyond CI Chrome.
 5. Weak-device/resource-budget, long-run/plateau, fault/security and release-packaging campaigns.
