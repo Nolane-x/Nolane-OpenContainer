@@ -150,6 +150,59 @@ export class OpfsCheckpointAuthority {
     return this.#withExclusiveLock(() => this.#recoverUnlocked());
   }
 
+  async collectGarbage({ dryRun = false } = {}) {
+    this.#assertOpen();
+    assertOc(typeof dryRun === 'boolean', ErrorCodes.INVALID_ARGUMENT, 'OPFS garbage collection dryRun must be boolean');
+
+    return this.#withExclusiveLock(async () => {
+      // Synchronize with any writer before examining reachability. The two
+      // manifest slots are the complete crash-recovery root set: keep every
+      // payload named by a structurally valid manifest, even if its payload is
+      // currently corrupt, so collection never weakens fallback semantics.
+      await this.#recoverUnlocked();
+
+      const manifests = [
+        parseManifest(await readText(this.#directory, MANIFEST_A), 'a'),
+        parseManifest(await readText(this.#directory, MANIFEST_B), 'b')
+      ].filter(Boolean);
+      const reachable = new Set(manifests.map((manifest) => manifest.payload));
+
+      assertOc(
+        typeof this.#payloads.entries === 'function' && typeof this.#payloads.removeEntry === 'function',
+        ErrorCodes.INVALID_STATE,
+        'OPFS generations directory does not support enumeration/removal'
+      );
+
+      const removed = [];
+      const retained = [];
+      const skipped = [];
+      for await (const [name, handle] of this.#payloads.entries()) {
+        if (handle?.kind && handle.kind !== 'file') {
+          skipped.push(String(name));
+          continue;
+        }
+        if (reachable.has(name)) {
+          retained.push(String(name));
+          continue;
+        }
+        removed.push(String(name));
+        if (!dryRun) await this.#payloads.removeEntry(name);
+      }
+
+      removed.sort();
+      retained.sort();
+      skipped.sort();
+      return Object.freeze({
+        dryRun,
+        removed: Object.freeze(removed),
+        retained: Object.freeze(retained),
+        skipped: Object.freeze(skipped),
+        currentSequence: this.#current?.sequence ?? null,
+        currentGeneration: this.#current?.generation ?? null
+      });
+    });
+  }
+
   async restoreInto(fs) {
     this.#assertOpen();
     return this.#withExclusiveLock(async () => {

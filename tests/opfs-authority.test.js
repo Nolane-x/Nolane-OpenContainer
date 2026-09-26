@@ -11,6 +11,7 @@ class FakeNotFoundError extends Error {
 }
 
 class FakeFileHandle {
+  kind = 'file';
   data = null;
 
   async getFile() {
@@ -29,6 +30,7 @@ class FakeFileHandle {
 }
 
 class FakeDirectoryHandle {
+  kind = 'directory';
   files = new Map();
   dirs = new Map();
 
@@ -46,6 +48,26 @@ class FakeDirectoryHandle {
       this.files.set(name, new FakeFileHandle());
     }
     return this.files.get(name);
+  }
+
+  async *entries() {
+    for (const entry of this.dirs) yield entry;
+    for (const entry of this.files) yield entry;
+  }
+
+  async removeEntry(name, { recursive = false } = {}) {
+    if (this.files.delete(name)) return;
+    if (this.dirs.has(name)) {
+      const directory = this.dirs.get(name);
+      if (!recursive && (directory.files.size || directory.dirs.size)) {
+        const error = new Error('Directory is not empty');
+        error.name = 'InvalidModificationError';
+        throw error;
+      }
+      this.dirs.delete(name);
+      return;
+    }
+    throw new FakeNotFoundError();
   }
 }
 
@@ -196,4 +218,44 @@ test('OPFS cross-context writers share a monotonic sequence and latest restore',
   await firstAuthority.restoreInto(restored);
   assert.equal(restored.readFile('value.txt'), 'two');
   assert.equal(firstAuthority.current.sequence, second.sequence);
+});
+
+test('OPFS garbage collection removes only payloads unreachable from both manifest slots', async () => {
+  const root = new FakeDirectoryHandle();
+  const locks = new FakeLockManager();
+  const fs = new MemoryVFS();
+  const authority = await new OpfsCheckpointAuthority({ root, lockManager: locks }).open();
+
+  fs.mount({ 'value.txt': 'one' });
+  const first = await authority.checkpoint(fs);
+  fs.beginTransaction().writeFile('value.txt', 'two').commit();
+  const second = await authority.checkpoint(fs);
+  fs.beginTransaction().writeFile('value.txt', 'three').commit();
+  const third = await authority.checkpoint(fs);
+
+  const workspace = root.dirs.get('opencontainer-workspace');
+  const generations = workspace.dirs.get('generations');
+  const orphan = await generations.getFileHandle('generation-crash-orphan.json', { create: true });
+  orphan.data = '{"orphan":true}';
+
+  const dryRun = await authority.collectGarbage({ dryRun: true });
+  assert.deepEqual(dryRun.removed, [first.payload, 'generation-crash-orphan.json'].sort());
+  assert.deepEqual(dryRun.retained, [second.payload, third.payload].sort());
+  assert.equal(generations.files.has(first.payload), true);
+  assert.equal(generations.files.has('generation-crash-orphan.json'), true);
+
+  const collected = await authority.collectGarbage();
+  assert.deepEqual(collected.removed, dryRun.removed);
+  assert.equal(generations.files.has(first.payload), false);
+  assert.equal(generations.files.has('generation-crash-orphan.json'), false);
+  assert.equal(generations.files.has(second.payload), true);
+  assert.equal(generations.files.has(third.payload), true);
+
+  generations.files.get(third.payload).data = '{"corrupt":true}';
+  const reopened = await new OpfsCheckpointAuthority({ root, lockManager: locks }).open();
+  assert.equal(reopened.current.sequence, second.sequence);
+
+  const restored = new MemoryVFS();
+  await reopened.restoreInto(restored);
+  assert.equal(restored.readFile('value.txt'), 'two');
 });

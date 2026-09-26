@@ -175,9 +175,45 @@ async function run() {
     assert(peerRestore.readFile('value.txt') === 'second', 'OPFS peer restore did not refresh to the latest shared checkpoint');
     assert(peer.current?.sequence === secondCheckpoint.sequence, 'OPFS peer receipt did not refresh after restore');
 
+    opfsFs.beginTransaction().writeFile('value.txt', 'third').commit();
+    const thirdCheckpoint = await opfs.checkpoint(opfsFs);
+    assert(thirdCheckpoint.sequence === secondCheckpoint.sequence + 1, 'OPFS third manifest sequence did not advance');
+
     const workspace = await opfsRoot.getDirectoryHandle(opfsDirectory);
     const generations = await workspace.getDirectoryHandle('generations');
-    const newestPayload = await generations.getFileHandle(secondCheckpoint.payload);
+    const orphanName = 'generation-crash-orphan.json';
+    const orphanHandle = await generations.getFileHandle(orphanName, { create: true });
+    const orphanWriter = await orphanHandle.createWritable();
+    await orphanWriter.write('{"orphan":true}');
+    await orphanWriter.close();
+
+    const gcDryRun = await opfs.collectGarbage({ dryRun: true });
+    assert(gcDryRun.removed.includes(firstCheckpoint.payload), 'OPFS GC dry run did not find superseded payload');
+    assert(gcDryRun.removed.includes(orphanName), 'OPFS GC dry run did not find crash orphan');
+    assert(gcDryRun.retained.includes(secondCheckpoint.payload), 'OPFS GC dry run did not preserve fallback payload');
+    assert(gcDryRun.retained.includes(thirdCheckpoint.payload), 'OPFS GC dry run did not preserve current payload');
+
+    const gcReceipt = await opfs.collectGarbage();
+    assert(gcReceipt.removed.includes(firstCheckpoint.payload), 'OPFS GC did not remove superseded payload');
+    assert(gcReceipt.removed.includes(orphanName), 'OPFS GC did not remove crash orphan');
+
+    let removedSuperseded = false;
+    try {
+      await generations.getFileHandle(firstCheckpoint.payload);
+    } catch (error) {
+      removedSuperseded = error?.name === 'NotFoundError';
+    }
+    assert(removedSuperseded, 'OPFS GC superseded payload is still reachable');
+
+    let removedOrphan = false;
+    try {
+      await generations.getFileHandle(orphanName);
+    } catch (error) {
+      removedOrphan = error?.name === 'NotFoundError';
+    }
+    assert(removedOrphan, 'OPFS GC crash orphan is still reachable');
+
+    const newestPayload = await generations.getFileHandle(thirdCheckpoint.payload);
     const corrupt = await newestPayload.createWritable();
     await corrupt.write('{"corrupt":true}');
     await corrupt.close();
@@ -186,19 +222,24 @@ async function run() {
       root: opfsRoot,
       directoryName: opfsDirectory
     }).open();
-    assert(reopened.current?.sequence === firstCheckpoint.sequence, 'OPFS did not fall back from corrupt newest payload');
+    assert(reopened.current?.sequence === secondCheckpoint.sequence, 'OPFS did not preserve fallback recovery root after GC');
 
     const restored = new MemoryVFS();
     await reopened.restoreInto(restored);
-    assert(restored.readFile('value.txt') === 'first', 'OPFS recovery restored the wrong generation');
+    assert(restored.readFile('value.txt') === 'second', 'OPFS recovery restored the wrong generation after GC');
 
     stage('opfs-real-pass', {
       firstSequence: firstCheckpoint.sequence,
       rejectedSequence: secondCheckpoint.sequence,
+      collectedSequence: thirdCheckpoint.sequence,
       recoveredSequence: reopened.current.sequence,
       crossContextLocking: true,
       stalePeerRejected,
-      peerRefreshSequence: peer.current.sequence
+      peerRefreshSequence: peer.current.sequence,
+      gcRemoved: gcReceipt.removed.length,
+      gcRetained: gcReceipt.retained.length,
+      gcSupersededRemoved: removedSuperseded,
+      gcOrphanRemoved: removedOrphan
     });
   } finally {
     await opfsRoot.removeEntry(opfsDirectory, { recursive: true });
