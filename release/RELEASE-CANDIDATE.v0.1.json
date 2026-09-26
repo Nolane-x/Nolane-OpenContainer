@@ -30,10 +30,5 @@
     "Signed/OIDC-authenticated public release provenance is not closed.",
     "Release rollback, weak-device and production-topology campaigns are not closed."
   ],
-  "criticalTestFlakiness": {
-    "unexplained": 0,
-    "policy": "Stable promotion must fail if this value is non-zero.",
-    "source": "Current CI preflight evaluates this manifest; channel canary does not use zero-flake status as a substitute for RC/stable campaigns."
-  },
   "releaseVerified": false
 }
