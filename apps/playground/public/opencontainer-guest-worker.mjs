@@ -226,16 +226,100 @@ function installNestedWorkerTelemetry() {
   });
 }
 
-function cloneExports(namespace, exportNames) {
+const exportSizeEncoder = new TextEncoder();
+
+function exportLimitError(limit, estimatedBytes) {
+  const error = new Error('Guest export payload exceeded OpenContainer output limit');
+  error.code = 'OC_OUTPUT_LIMIT';
+  error.details = { limit, estimatedBytes };
+  return error;
+}
+
+function estimateCloneBytes(value, limit) {
+  let total = 0;
+  const seen = new WeakSet();
+  const add = (bytes) => {
+    total += Math.max(0, Number(bytes) || 0);
+    if (total > limit) throw exportLimitError(limit, total);
+  };
+  const visit = (entry) => {
+    if (entry === null || entry === undefined) { add(4); return; }
+    const type = typeof entry;
+    if (type === 'string') { add(8 + exportSizeEncoder.encode(entry).byteLength); return; }
+    if (type === 'number') { add(8); return; }
+    if (type === 'bigint') { add(16); return; }
+    if (type === 'boolean') { add(4); return; }
+    if (type !== 'object') { add(8); return; }
+
+    if (seen.has(entry)) { add(8); return; }
+    seen.add(entry);
+
+    if (entry instanceof ArrayBuffer || (typeof SharedArrayBuffer !== 'undefined' && entry instanceof SharedArrayBuffer)) {
+      add(16 + entry.byteLength);
+      return;
+    }
+    if (ArrayBuffer.isView(entry)) {
+      add(32 + entry.byteLength);
+      return;
+    }
+    if (typeof Blob !== 'undefined' && entry instanceof Blob) {
+      add(64 + entry.size);
+      return;
+    }
+    if (entry instanceof Date) { add(16); return; }
+    if (entry instanceof RegExp) {
+      add(24 + exportSizeEncoder.encode(entry.source + entry.flags).byteLength);
+      return;
+    }
+    if (entry instanceof Error) {
+      add(48);
+      visit(entry.name);
+      visit(entry.message);
+      if (entry.stack) visit(entry.stack);
+      return;
+    }
+    if (entry instanceof Map) {
+      add(32);
+      for (const [key, mapValue] of entry) { visit(key); visit(mapValue); }
+      return;
+    }
+    if (entry instanceof Set) {
+      add(24);
+      for (const setValue of entry) visit(setValue);
+      return;
+    }
+    if (Array.isArray(entry)) {
+      add(24 + entry.length * 4);
+      for (const item of entry) visit(item);
+      return;
+    }
+
+    add(32);
+    for (const key of Object.keys(entry)) {
+      add(8 + exportSizeEncoder.encode(key).byteLength);
+      visit(entry[key]);
+    }
+  };
+  visit(value);
+  return total;
+}
+
+function cloneExports(namespace, exportNames, maxExportBytes) {
   const names = exportNames ?? Object.keys(namespace);
   const out = {};
+  let bytes = 0;
   for (const name of names) {
     if (!(name in namespace)) continue;
     const value = namespace[name];
     if (typeof value === 'function' || typeof value === 'symbol') continue;
-    out[name] = structuredClone(value);
+    const cloned = structuredClone(value);
+    bytes += 8 + exportSizeEncoder.encode(String(name)).byteLength;
+    if (bytes > maxExportBytes) throw exportLimitError(maxExportBytes, bytes);
+    bytes += estimateCloneBytes(cloned, maxExportBytes - bytes);
+    if (bytes > maxExportBytes) throw exportLimitError(maxExportBytes, bytes);
+    out[name] = cloned;
   }
-  return out;
+  return { exports: out, bytes };
 }
 
 self.addEventListener('message', async (event) => {
@@ -272,11 +356,20 @@ self.addEventListener('message', async (event) => {
       epoch: message.epoch,
       id: message.id,
       ok: true,
-      value: {
-        exports: cloneExports(namespace, message.payload.exportNames),
-        workerCrossOriginIsolated: globalThis.crossOriginIsolated === true,
-        publicationSession: message.payload.publicationSession
-      }
+      value: (() => {
+        const cloned = cloneExports(
+          namespace,
+          message.payload.exportNames,
+          Math.max(1, Number(message.payload.maxExportBytes) || 1)
+        );
+        return {
+          exports: cloned.exports,
+          exportBytes: cloned.bytes,
+          maxExportBytes: message.payload.maxExportBytes,
+          workerCrossOriginIsolated: globalThis.crossOriginIsolated === true,
+          publicationSession: message.payload.publicationSession
+        };
+      })()
     };
   } catch (error) {
     response = {
