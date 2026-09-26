@@ -395,6 +395,21 @@ test('browser guest worker installs Node global alias in the isolated guest real
 });
 
 
+test('browser guest bootstrap denies direct network and origin-wide state bypasses',async()=>{
+  const source=await import('node:fs/promises').then(fs=>fs.readFile(new URL('../apps/playground/public/opencontainer-guest-worker.mjs',import.meta.url),'utf8'));
+  assert.match(source,/activePublicationSession/);
+  assert.match(source,/openContainerGuestFetch/);
+  assert.match(source,/OC_NETWORK_DENIED/);
+  assert.match(source,/wasi-worker-browser\.mjs/);
+  assert.match(source,/\['WebSocket', 'EventSource', 'WebTransport', 'XMLHttpRequest', 'SharedWorker', 'BroadcastChannel'\]/);
+  assert.match(source,/guestNavigator\?\.storage/);
+  assert.match(source,/guestNavigator\?\.locks/);
+  assert.match(source,/globalThis\.indexedDB/);
+  assert.match(source,/globalThis\.caches/);
+  assert.match(source,/publicationUrl\(message\.payload\.entryURL, 'execute-module'\)/);
+});
+
+
 test('browser node:stream provides in-memory Transform and PassThrough semantics',async()=>{
   const {bridge}=fixture();
   const source=await bridge.builtinSource('node:stream');
