@@ -928,6 +928,22 @@ async function run() {
         path === '/workspace/node_modules/lightningcss/lightningcss_node.wasm'
       ),
     nodeGlobalAllow: (path) => path.startsWith('/workspace/node_modules/vite/dist/node/'),
+    modulePrelude: (path) =>
+      path === '/workspace/node_modules/vite/dist/node/chunks/node.js'
+        ? [
+            "const __ocBrowserSetTimeout=globalThis.setTimeout.bind(globalThis);",
+            "const setTimeout=(callback,delay,...args)=>{",
+            "  const id=__ocBrowserSetTimeout(callback,delay,...args);",
+            "  const handle={",
+            "    ref(){return handle;},",
+            "    unref(){return handle;},",
+            "    hasRef(){return false;},",
+            "    [Symbol.toPrimitive](){return id;}",
+            "  };",
+            "  return handle;",
+            "};"
+          ].join('\\n')
+        : '',
     moduleEpilogue: (path) =>
       path === '/workspace/node_modules/lightningcss/index.mjs'
         ? 'await init();'

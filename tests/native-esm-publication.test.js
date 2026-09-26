@@ -471,6 +471,39 @@ test('native ESM publication can append an explicit bootstrap epilogue without m
   }
 });
 
+test('module prelude injects lexical compatibility without mutating retained source or host globals', async () => {
+  const runtime = await createRuntime();
+  runtime.mount({
+    'src/prelude-entry.mjs': [
+      "export const timerType = typeof setTimeout;",
+      "export const hostTimerType = typeof globalThis.setTimeout;",
+      "export const isolated = setTimeout !== globalThis.setTimeout;"
+    ].join('\n')
+  });
+
+  const root = mkdtempSync(join(tmpdir(), 'oc-native-module-prelude-'));
+  try {
+    const authority = runtime.packages.createNativeEsmPublication({
+      baseURL: pathToFileURL(root + '/').href,
+      session: 'module-prelude',
+      modulePrelude: (path) => path === '/workspace/src/prelude-entry.mjs'
+        ? "const setTimeout=(...args)=>globalThis.setTimeout(...args);"
+        : ''
+    });
+    const entryURL = authority.moduleURL('./prelude-entry.mjs', '/workspace/src/bootstrap.mjs');
+    const served = await authority.serve(entryURL);
+    assert.match(served.source, /^const setTimeout=/);
+    assert.equal(runtime.fs.readFile('/workspace/src/prelude-entry.mjs').startsWith('const setTimeout='), false);
+    await materializeGraph(await authority.graph(entryURL));
+    const namespace = await import(entryURL.href + '?oracle=' + Date.now());
+    assert.equal(namespace.timerType, 'function');
+    assert.equal(namespace.hostTimerType, 'function');
+    assert.equal(namespace.isolated, true);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('node-targeted publication can inject a lexical logical process without changing the host global', async () => {
   const runtime = await createRuntime();
   runtime.mount({

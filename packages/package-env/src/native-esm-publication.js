@@ -173,6 +173,7 @@ export class NativeEsmPublicationAuthority {
   #resolveOptions;
   #assetAllow;
   #nodeGlobalAllow;
+  #modulePrelude;
   #moduleEpilogue;
   #cache = new Map();
   #ready;
@@ -186,6 +187,7 @@ export class NativeEsmPublicationAuthority {
     resolveOptions = {},
     assetAllow = null,
     nodeGlobalAllow = null,
+    modulePrelude = null,
     moduleEpilogue = null
   } = {}) {
     assertOc(fs && typeof fs.readFile === 'function', ErrorCodes.INVALID_ARGUMENT, 'ESM publication filesystem is required');
@@ -201,6 +203,7 @@ export class NativeEsmPublicationAuthority {
     this.#builtinSource = builtinSource;
     this.#assetAllow = typeof assetAllow === 'function' ? assetAllow : null;
     this.#nodeGlobalAllow = typeof nodeGlobalAllow === 'function' ? nodeGlobalAllow : null;
+    this.#modulePrelude = typeof modulePrelude === 'function' ? modulePrelude : null;
     this.#moduleEpilogue = typeof moduleEpilogue === 'function' ? moduleEpilogue : null;
     this.#resolveOptions = Object.freeze({
       ...resolveOptions,
@@ -481,6 +484,21 @@ export class NativeEsmPublicationAuthority {
           transformed
         ].join('\n');
       }
+    }
+
+    // Caller-scoped compatibility shims may need lexical bindings without
+    // mutating the browser/WASI realm global. Prefix only the explicitly
+    // authorized module and leave the retained VFS bytes untouched.
+    const modulePrelude = this.#modulePrelude?.(publication.path, {
+      source,
+      url: publication.url.href,
+      generation: this.generation
+    });
+    if (modulePrelude !== undefined && modulePrelude !== null && modulePrelude !== '') {
+      assertOc(typeof modulePrelude === 'string', ErrorCodes.INVALID_ARGUMENT, 'ESM module prelude must be a string', {
+        path: publication.path
+      });
+      transformed = modulePrelude + '\n' + transformed;
     }
 
     // Browser-adapted tool packages may require async bootstrap only after
