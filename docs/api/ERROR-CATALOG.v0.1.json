@@ -1,0 +1,322 @@
+{
+  "schema": "opencontainer.error-catalog.v0.1",
+  "version": "0.1.0-alpha.1",
+  "compatibilityClasses": [
+    "caller-state",
+    "caller-error",
+    "filesystem-boundary",
+    "security-boundary",
+    "stale-generation",
+    "resource-limit",
+    "unsupported-compatibility",
+    "artifact-integrity",
+    "package-resolution",
+    "deployment-runtime",
+    "storage-compatibility",
+    "worker-lifecycle",
+    "data-format"
+  ],
+  "errors": [
+    {
+      "code": "OC_INVALID_STATE",
+      "cause": "The requested operation is not valid in the runtime's current lifecycle or configuration state.",
+      "consequence": "The operation is rejected without changing the requested state.",
+      "recovery": "Check runtime state/configuration, complete required setup, then retry.",
+      "compatibilityClass": "caller-state"
+    },
+    {
+      "code": "OC_INVALID_ARGUMENT",
+      "cause": "A caller supplied an argument outside the accepted shape or range.",
+      "consequence": "The operation is rejected before applying the invalid request.",
+      "recovery": "Validate the documented argument contract and retry.",
+      "compatibilityClass": "caller-error"
+    },
+    {
+      "code": "OC_PATH_ESCAPE",
+      "cause": "A guest path would resolve outside /workspace.",
+      "consequence": "Filesystem access is denied; no escaped path is opened or created.",
+      "recovery": "Keep guest paths inside /workspace and avoid parent traversal outside the workspace.",
+      "compatibilityClass": "security-boundary"
+    },
+    {
+      "code": "OC_INTERNAL_PATH",
+      "cause": "Guest code attempted to access a trusted internal filesystem namespace.",
+      "consequence": "Access to the internal namespace is denied.",
+      "recovery": "Use public workspace paths or the documented SDK instead of internal paths.",
+      "compatibilityClass": "security-boundary"
+    },
+    {
+      "code": "OC_STALE_GENERATION",
+      "cause": "A transaction or receipt targets an older VFS/publication generation.",
+      "consequence": "The stale mutation or action is rejected to prevent overwriting newer state.",
+      "recovery": "Re-read current state, create a fresh transaction/receipt, and retry.",
+      "compatibilityClass": "stale-generation"
+    },
+    {
+      "code": "OC_NOT_FOUND",
+      "cause": "A requested path, snapshot, route, package object, or other named resource does not exist.",
+      "consequence": "The requested operation cannot continue against the missing resource.",
+      "recovery": "Verify the identifier/path or create/restore the resource first.",
+      "compatibilityClass": "caller-state"
+    },
+    {
+      "code": "OC_NOT_DIRECTORY",
+      "cause": "An operation requiring a directory encountered a non-directory entry.",
+      "consequence": "Directory traversal or mutation is rejected.",
+      "recovery": "Use a directory path or correct the workspace layout.",
+      "compatibilityClass": "filesystem-boundary"
+    },
+    {
+      "code": "OC_IS_DIRECTORY",
+      "cause": "A file operation targeted a directory.",
+      "consequence": "The file operation is rejected.",
+      "recovery": "Target a file path or use the corresponding directory operation.",
+      "compatibilityClass": "filesystem-boundary"
+    },
+    {
+      "code": "OC_RESOURCE_EXHAUSTED",
+      "cause": "A configured quota, lease, capacity preflight, or browser storage budget is exhausted.",
+      "consequence": "The resource-consuming operation fails closed; canonical state is not intentionally advanced.",
+      "recovery": "Release resources, reduce workload, export/GC data, or increase an applicable product budget before retrying.",
+      "compatibilityClass": "resource-limit"
+    },
+    {
+      "code": "OC_OUTPUT_LIMIT",
+      "cause": "A virtual process exceeded its bounded output budget.",
+      "consequence": "Further output is rejected and the process may exit with failure.",
+      "recovery": "Reduce output volume, stream/aggregate results, or configure a safe larger process output budget.",
+      "compatibilityClass": "resource-limit"
+    },
+    {
+      "code": "OC_COMMAND_NOT_FOUND",
+      "cause": "No registered virtual command matches the requested command name.",
+      "consequence": "No process handler is executed.",
+      "recovery": "Register/bind the command or use a supported package command.",
+      "compatibilityClass": "caller-state"
+    },
+    {
+      "code": "OC_NETWORK_DENIED",
+      "cause": "Guest code requested a network capability outside the authorized policy.",
+      "consequence": "The network request/socket/channel is denied.",
+      "recovery": "Use an explicitly authorized fetch/virtual HTTP route or redesign around supported browser network capabilities.",
+      "compatibilityClass": "security-boundary"
+    },
+    {
+      "code": "OC_PREVIEW_STALE",
+      "cause": "A preview request carries a stale epoch or owner proof.",
+      "consequence": "The stale preview route is rejected instead of reaching a newer owner.",
+      "recovery": "Refresh the preview receipt/URL from the current route publication.",
+      "compatibilityClass": "stale-generation"
+    },
+    {
+      "code": "OC_TOOLCHAIN_UNSUPPORTED",
+      "cause": "The requested toolchain/artifact/profile is outside the retained browser-native compatibility profile.",
+      "consequence": "Toolchain execution is refused.",
+      "recovery": "Use the pinned supported toolchain profile or add a separately evidenced profile.",
+      "compatibilityClass": "unsupported-compatibility"
+    },
+    {
+      "code": "OC_TOOLCHAIN_SKEW",
+      "cause": "Toolchain JS/binding/artifact versions do not match the frozen identity.",
+      "consequence": "Execution is blocked to avoid undefined mixed-version behavior.",
+      "recovery": "Install/use the exact coherent toolchain versions recorded by the production profile.",
+      "compatibilityClass": "artifact-integrity"
+    },
+    {
+      "code": "OC_DIGEST_MISMATCH",
+      "cause": "Fetched or persisted bytes do not match the expected cryptographic digest.",
+      "consequence": "The artifact/content is rejected and not trusted.",
+      "recovery": "Refetch from the authoritative source, verify lockfile/SRI metadata, or repair corrupted persistence.",
+      "compatibilityClass": "artifact-integrity"
+    },
+    {
+      "code": "OC_BUILTIN_UNAVAILABLE",
+      "cause": "A Node builtin surface has no supported browser adapter in the active profile.",
+      "consequence": "The builtin import/call cannot be provided.",
+      "recovery": "Use a supported adapter or redesign around browser-native/public OpenContainer capabilities.",
+      "compatibilityClass": "unsupported-compatibility"
+    },
+    {
+      "code": "OC_REQUIRE_ESM_UNSUPPORTED",
+      "cause": "CommonJS require() attempted to synchronously load an ESM-only target.",
+      "consequence": "The module is not synchronously executed.",
+      "recovery": "Use ESM import(), an import condition, or a package entry compatible with require().",
+      "compatibilityClass": "package-resolution"
+    },
+    {
+      "code": "OC_MODULE_EXECUTION_DISABLED",
+      "cause": "A module execution path is disabled by the active security or runtime profile.",
+      "consequence": "The module is resolved but not executed through that path.",
+      "recovery": "Use the allowed execution authority/profile or enable a separately reviewed capability.",
+      "compatibilityClass": "security-boundary"
+    },
+    {
+      "code": "OC_ESM_PUBLICATION_INVALID",
+      "cause": "A native-ESM publication request/session/module identity is invalid.",
+      "consequence": "The module is not published into the browser ESM edge.",
+      "recovery": "Recreate the publication with valid workspace paths/session identity and retry.",
+      "compatibilityClass": "deployment-runtime"
+    },
+    {
+      "code": "OC_ESM_IMPORT_PHASE_UNSUPPORTED",
+      "cause": "The module uses an import phase/syntax not supported by the current publication pipeline.",
+      "consequence": "Publication/execution stops rather than rewriting unsupported semantics.",
+      "recovery": "Refactor to supported ESM syntax or wait for a profile that explicitly supports that import phase.",
+      "compatibilityClass": "unsupported-compatibility"
+    },
+    {
+      "code": "OC_ESM_DYNAMIC_IMPORT_UNRESOLVED",
+      "cause": "A dynamic import cannot be resolved deterministically by the publication graph.",
+      "consequence": "The unresolved dynamic import is not published/executed.",
+      "recovery": "Use a resolvable literal/specifier pattern or explicitly include the target in the supported graph.",
+      "compatibilityClass": "package-resolution"
+    },
+    {
+      "code": "OC_ESM_EDGE_UNAVAILABLE",
+      "cause": "The browser Service Worker/module edge is unavailable, uncontrolled, or timed out.",
+      "consequence": "Native ESM browser execution cannot proceed safely.",
+      "recovery": "Check hosting headers/Service Worker lifecycle, reload a compatible controller, and rerun the browser self-check.",
+      "compatibilityClass": "deployment-runtime"
+    },
+    {
+      "code": "OC_SERVICE_WORKER_INCOMPATIBLE",
+      "cause": "The candidate/controller Service Worker compatibility profile differs from the runtime profile.",
+      "consequence": "Activation/claim/reuse is rejected.",
+      "recovery": "Serve the matching Service Worker/runtime release pair; do not force activation across incompatible profiles.",
+      "compatibilityClass": "storage-compatibility"
+    },
+    {
+      "code": "OC_STORAGE_MIGRATION_INVALID",
+      "cause": "A storage migration/rollback envelope, phase, version transition, validation, or payload is unsafe/invalid.",
+      "consequence": "Migration or writable open is refused; recovery roots remain authoritative.",
+      "recovery": "Use an adjacent supported migration, repair/restore valid storage, or open a supported read-only/export path.",
+      "compatibilityClass": "storage-compatibility"
+    },
+    {
+      "code": "OC_STORAGE_READ_ONLY",
+      "cause": "A rolled-back/compatibility runtime attempted to mutate storage that is intentionally read-only.",
+      "consequence": "The write is rejected while readable data remains available.",
+      "recovery": "Export data, upgrade to a compatible writer, or migrate with the supported release path before writing.",
+      "compatibilityClass": "storage-compatibility"
+    },
+    {
+      "code": "OC_GUEST_WORKER_FAILED",
+      "cause": "An isolated guest Worker failed during startup, RPC, import, execution, or termination.",
+      "consequence": "Guest execution fails without granting extra authority.",
+      "recovery": "Inspect the stable error/details and diagnostics; correct guest code/capabilities and retry in a fresh worker.",
+      "compatibilityClass": "worker-lifecycle"
+    },
+    {
+      "code": "OC_MODULE_NOT_FOUND",
+      "cause": "The module resolver cannot find the requested package/module from the importer graph.",
+      "consequence": "Module loading stops.",
+      "recovery": "Install/mount the dependency under the frozen package graph or correct the specifier/importer.",
+      "compatibilityClass": "package-resolution"
+    },
+    {
+      "code": "OC_INVALID_MODULE_SPECIFIER",
+      "cause": "A module specifier is syntactically invalid for the supported resolver.",
+      "consequence": "Resolution stops before loading a target.",
+      "recovery": "Use a valid relative, absolute-workspace, package, imports, or supported URL-like specifier.",
+      "compatibilityClass": "package-resolution"
+    },
+    {
+      "code": "OC_INVALID_PACKAGE_CONFIG",
+      "cause": "A package.json/package metadata shape used for resolution is invalid.",
+      "consequence": "Package resolution/loading for that package is refused.",
+      "recovery": "Fix the package metadata/exports/imports configuration and freeze it in the package graph.",
+      "compatibilityClass": "package-resolution"
+    },
+    {
+      "code": "OC_INVALID_PACKAGE_TARGET",
+      "cause": "An exports/imports target violates the supported package target rules.",
+      "consequence": "Resolution is rejected before escaping or loading an invalid target.",
+      "recovery": "Correct the package target to a valid in-package/supported target.",
+      "compatibilityClass": "security-boundary"
+    },
+    {
+      "code": "OC_PACKAGE_CONTENT_MISSING",
+      "cause": "Frozen package metadata references immutable content that is not available from persistence or authorized fetch.",
+      "consequence": "The package cannot be mounted/installed from missing bytes.",
+      "recovery": "Allow one authoritative refetch/repersist or restore the pinned content store.",
+      "compatibilityClass": "package-resolution"
+    },
+    {
+      "code": "OC_PACKAGE_PATH_NOT_EXPORTED",
+      "cause": "A consumer requested a package subpath not exposed by package exports.",
+      "consequence": "Resolution is denied according to package exports.",
+      "recovery": "Import an exported subpath or update the package's documented exports in a new package version.",
+      "compatibilityClass": "package-resolution"
+    },
+    {
+      "code": "OC_PACKAGE_IMPORT_NOT_DEFINED",
+      "cause": "A package #imports specifier is not defined for the current package/conditions.",
+      "consequence": "Resolution fails.",
+      "recovery": "Declare the imports mapping or use an existing public/internal package specifier.",
+      "compatibilityClass": "package-resolution"
+    },
+    {
+      "code": "OC_UNSUPPORTED_DIRECTORY_IMPORT",
+      "cause": "ESM resolution targeted a directory where directory import is not supported.",
+      "consequence": "Resolution stops instead of applying non-Node/browser-specific guessing.",
+      "recovery": "Import an explicit file or exported package entry.",
+      "compatibilityClass": "package-resolution"
+    },
+    {
+      "code": "OC_NATIVE_ADDON_UNSUPPORTED",
+      "cause": "A package/module requires a native .node addon or host-native execution.",
+      "consequence": "The native addon is not loaded in the browser runtime.",
+      "recovery": "Use a WASM/pure-JS/browser-native alternative or move that capability outside OpenContainer Core.",
+      "compatibilityClass": "unsupported-compatibility"
+    },
+    {
+      "code": "OC_ARTIFACT_INTEGRITY",
+      "cause": "A retained/downloaded artifact fails identity, integrity, or metadata validation.",
+      "consequence": "The artifact is rejected before execution.",
+      "recovery": "Restore the pinned artifact from its authoritative source and verify digest/version metadata.",
+      "compatibilityClass": "artifact-integrity"
+    },
+    {
+      "code": "OC_ARTIFACT_TOO_LARGE",
+      "cause": "An artifact/archive exceeds a configured safety size budget.",
+      "consequence": "Download/extraction/ingest is refused.",
+      "recovery": "Use a smaller artifact, split content, or change a reviewed resource budget.",
+      "compatibilityClass": "resource-limit"
+    },
+    {
+      "code": "OC_ARCHIVE_UNSAFE",
+      "cause": "An archive contains unsafe paths/entries or violates extraction policy.",
+      "consequence": "Extraction is aborted without intentionally writing unsafe content.",
+      "recovery": "Rebuild the archive without path traversal, unsafe links, or forbidden entries.",
+      "compatibilityClass": "security-boundary"
+    },
+    {
+      "code": "OC_WORKER_TIMEOUT",
+      "cause": "A Worker/RPC operation exceeded its bounded deadline.",
+      "consequence": "The operation fails and the Worker may be terminated/reclaimed.",
+      "recovery": "Reduce/blocking work, inspect deadlock/RPC state, or retry in a fresh worker within supported limits.",
+      "compatibilityClass": "worker-lifecycle"
+    },
+    {
+      "code": "OC_WORKER_STALE",
+      "cause": "A Worker message/result belongs to a stale epoch/session.",
+      "consequence": "The stale result is ignored/rejected.",
+      "recovery": "Use the current Worker/publication receipt and discard results from terminated/restarted sessions.",
+      "compatibilityClass": "stale-generation"
+    },
+    {
+      "code": "OC_WORKER_CLOSED",
+      "cause": "A caller used a Worker authority after it was closed/terminated.",
+      "consequence": "The request is rejected; the closed worker is not resurrected.",
+      "recovery": "Start a new Worker authority/session before executing more guest work.",
+      "compatibilityClass": "worker-lifecycle"
+    },
+    {
+      "code": "OC_IMPORT_INVALID",
+      "cause": "Portable snapshot/import bytes or rows do not match the supported format.",
+      "consequence": "Import is rejected rather than partially restoring invalid data.",
+      "recovery": "Use a valid OpenContainer NDJSON export for the supported format version or restore a known-good backup.",
+      "compatibilityClass": "data-format"
+    }
+  ]
+}
