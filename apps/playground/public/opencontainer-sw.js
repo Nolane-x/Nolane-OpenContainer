@@ -1,13 +1,71 @@
 const MODULE_PREFIX = '/__opencontainer__/esm/';
 const PREVIEW_PREFIX = '/__opencontainer__/preview/';
 const REQUEST_TIMEOUT_MS = 5000;
+const SERVICE_WORKER_COMPATIBILITY_ID = 'opencontainer-sw-edge-v1:rpc1:snapshot1:opfs1';
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(self.skipWaiting());
+self.addEventListener('install', () => {
+  // Deliberately remain waiting. A compatible client must authorize promotion.
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+self.addEventListener('activate', () => {
+  // Deliberately do not claim clients. The promoted worker must pass a second
+  // compatibility query and receive an explicit claim authorization.
+});
+
+self.addEventListener('message', (event) => {
+  const data = event.data;
+  const port = event.ports?.[0];
+  if (!data || !port) return;
+
+  if (data.type === 'opencontainer:sw-compatibility-query') {
+    port.postMessage({
+      ok: true,
+      compatibilityId: SERVICE_WORKER_COMPATIBILITY_ID,
+      state: self.registration?.active?.state ?? null
+    });
+    return;
+  }
+
+  if (data.type === 'opencontainer:sw-activate') {
+    if (data.expectedCompatibilityId !== SERVICE_WORKER_COMPATIBILITY_ID) {
+      port.postMessage({
+        ok: false,
+        code: 'OC_SERVICE_WORKER_INCOMPATIBLE',
+        message: 'Service Worker activation profile mismatch',
+        compatibilityId: SERVICE_WORKER_COMPATIBILITY_ID
+      });
+      return;
+    }
+    event.waitUntil((async () => {
+      await self.skipWaiting();
+      port.postMessage({
+        ok: true,
+        action: 'activate',
+        compatibilityId: SERVICE_WORKER_COMPATIBILITY_ID
+      });
+    })());
+    return;
+  }
+
+  if (data.type === 'opencontainer:sw-claim') {
+    if (data.expectedCompatibilityId !== SERVICE_WORKER_COMPATIBILITY_ID) {
+      port.postMessage({
+        ok: false,
+        code: 'OC_SERVICE_WORKER_INCOMPATIBLE',
+        message: 'Service Worker claim profile mismatch',
+        compatibilityId: SERVICE_WORKER_COMPATIBILITY_ID
+      });
+      return;
+    }
+    event.waitUntil((async () => {
+      await self.clients.claim();
+      port.postMessage({
+        ok: true,
+        action: 'claim',
+        compatibilityId: SERVICE_WORKER_COMPATIBILITY_ID
+      });
+    })());
+  }
 });
 
 self.addEventListener('fetch', (event) => {

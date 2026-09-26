@@ -232,6 +232,10 @@
     "release-evidence": {
       "ref": "CI #319 / 144299359225975dc8cf54a10c7704c992ff2215",
       "note": "immutable-action CI generated reproducible installed-distribution artifact plus independent checksums, SPDX 2.3 SBOM, in-toto/SLSA provenance, categorized dependency/license inventory and content-policy scan; 7 evidence files archived 90 days; unsigned and not release-published"
+    },
+    "service-worker-release-compatibility": {
+      "ref": "CI #331 / 7f5f28395c3d533e2b9df2f70edd6cb693106ef0",
+      "note": "real Chrome installed-distribution court proved compatibility query -> explicit activate -> activated re-query -> explicit claim; first bridge compatibility-authorized, second bridge existing-compatible; no unconditional skipWaiting/clients.claim"
     }
   },
   "overrides": [
@@ -778,6 +782,14 @@
       "promotion": "PASS-INTEGRATION",
       "evidence": "release-evidence",
       "closure_met": false
+    },
+    {
+      "id": "P14-08",
+      "domain": "P14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "service-worker-release-compatibility",
+      "closure_met": true
     },
     {
       "id": "P15-01",

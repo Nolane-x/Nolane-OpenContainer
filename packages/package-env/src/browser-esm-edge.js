@@ -1,4 +1,5 @@
 import { ErrorCodes, assertOc, ocError } from '../../protocol/src/index.js';
+import { ensureCompatibleServiceWorker } from '../../protocol/src/service-worker-compatibility.js';
 
 function waitForController(container, timeoutMs) {
   if (container.controller) return Promise.resolve(container.controller);
@@ -112,13 +113,19 @@ export class BrowserEsmServiceWorkerBridge {
     }
 
     this.#registration = await this.#container.register(this.#scriptURL, { scope: this.#scope, updateViaCache: 'none' });
-    await waitForRegistrationActive(this.#registration, this.#timeoutMs);
-    const controller = await waitForController(this.#container, this.#timeoutMs);
+    const lifecycle = await ensureCompatibleServiceWorker({
+      container: this.#container,
+      registration: this.#registration,
+      timeoutMs: this.#timeoutMs
+    });
+    const controller = lifecycle.controller;
 
     return Object.freeze({
       session: this.session,
       scope: this.#registration.scope,
-      controllerURL: controller.scriptURL
+      controllerURL: controller.scriptURL,
+      serviceWorkerCompatibilityId: lifecycle.compatibilityId,
+      serviceWorkerActivation: lifecycle.activation
     });
   }
 

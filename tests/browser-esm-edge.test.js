@@ -2,23 +2,92 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BrowserEsmServiceWorkerBridge } from '../packages/package-env/src/browser-esm-edge.js';
 import { ErrorCodes } from '../packages/protocol/src/index.js';
+import { SERVICE_WORKER_COMPATIBILITY_ID } from '../packages/protocol/src/service-worker-compatibility.js';
 
 class FakeWorker extends EventTarget {
-  constructor(state='installing'){ super(); this.state=state; this.scriptURL='https://example.test/opencontainer-sw.js'; }
-  setState(state){ this.state=state; this.dispatchEvent(new Event('statechange')); }
+  constructor(state='activated',compatibilityId=SERVICE_WORKER_COMPATIBILITY_ID){
+    super();
+    this.state=state;
+    this.compatibilityId=compatibilityId;
+    this.scriptURL='https://example.test/opencontainer-sw.js';
+    this.registration=null;
+    this.container=null;
+  }
+  bind(registration,container){
+    this.registration=registration;
+    this.container=container;
+  }
+  setState(state){
+    this.state=state;
+    this.dispatchEvent(new Event('statechange'));
+  }
+  postMessage(data,ports=[]){
+    const port=ports[0];
+    if(!port)return;
+    if(data?.type==='opencontainer:sw-compatibility-query'){
+      queueMicrotask(()=>port.postMessage({ok:true,compatibilityId:this.compatibilityId}));
+      return;
+    }
+    if(data?.type==='opencontainer:sw-activate'){
+      if(data.expectedCompatibilityId!==this.compatibilityId){
+        queueMicrotask(()=>port.postMessage({
+          ok:false,
+          code:'OC_SERVICE_WORKER_INCOMPATIBLE',
+          compatibilityId:this.compatibilityId,
+          message:'profile mismatch'
+        }));
+        return;
+      }
+      queueMicrotask(()=>{
+        this.registration.installing=null;
+        this.registration.waiting=null;
+        this.registration.active=this;
+        this.setState('activated');
+        port.postMessage({ok:true,action:'activate',compatibilityId:this.compatibilityId});
+      });
+      return;
+    }
+    if(data?.type==='opencontainer:sw-claim'){
+      if(data.expectedCompatibilityId!==this.compatibilityId){
+        queueMicrotask(()=>port.postMessage({
+          ok:false,
+          code:'OC_SERVICE_WORKER_INCOMPATIBLE',
+          compatibilityId:this.compatibilityId,
+          message:'profile mismatch'
+        }));
+        return;
+      }
+      queueMicrotask(()=>{
+        this.container.claim(this);
+        port.postMessage({ok:true,action:'claim',compatibilityId:this.compatibilityId});
+      });
+    }
+  }
 }
 
 class FakeRegistration extends EventTarget {
-  constructor(worker){ super(); this.scope='https://example.test/'; this.installing=worker; this.waiting=null; this.active=null; }
-  activate(){
-    this.installing.setState('activated');
-    this.active=this.installing;
+  constructor(worker,{waiting=false}={}){
+    super();
+    this.scope='https://example.test/';
     this.installing=null;
+    this.waiting=null;
+    this.active=null;
+    if(worker?.state==='activated')this.active=worker;
+    else if(waiting)this.waiting=worker;
+    else this.installing=worker;
   }
 }
 
 class FakeContainer extends EventTarget {
-  constructor(registration){ super(); this.registration=registration; this.controller=null; this.ready=new Promise(()=>{}); }
+  constructor(registration){
+    super();
+    this.registration=registration;
+    this.controller=null;
+    this.ready=new Promise(()=>{});
+    for(const worker of [registration.installing,registration.waiting,registration.active]){
+      worker?.bind(registration,this);
+    }
+  }
   async register(){ return this.registration; }
   claim(worker){
     this.controller=worker;
@@ -39,36 +108,50 @@ function publication(session, body='export default 1') {
   };
 }
 
-async function activate(registration, container, worker) {
-  queueMicrotask(()=>{
-    registration.activate();
-    container.claim(worker);
-  });
-}
-
-test('browser ESM bridge does not depend on navigator.serviceWorker.ready',async()=>{
-  const worker=new FakeWorker();
-  const registration=new FakeRegistration(worker);
+test('browser ESM bridge promotes a waiting worker only after compatibility handshake',async()=>{
+  const worker=new FakeWorker('installed');
+  const registration=new FakeRegistration(worker,{waiting:true});
   const container=new FakeContainer(registration);
   const bridge=new BrowserEsmServiceWorkerBridge({publication:publication('test-session'),serviceWorkerContainer:container,timeoutMs:100});
 
-  await activate(registration,container,worker);
   const receipt=await bridge.start();
   assert.equal(receipt.session,'test-session');
   assert.equal(receipt.controllerURL,worker.scriptURL);
+  assert.equal(receipt.serviceWorkerCompatibilityId,SERVICE_WORKER_COMPATIBILITY_ID);
+  assert.equal(receipt.serviceWorkerActivation,'compatibility-authorized');
+  assert.equal(container.controller,worker);
   bridge.close();
 });
 
 test('browser ESM bridge fails closed when registration never activates',async()=>{
-  const worker=new FakeWorker();
+  const worker=new FakeWorker('installing');
   const registration=new FakeRegistration(worker);
   const container=new FakeContainer(registration);
   const bridge=new BrowserEsmServiceWorkerBridge({publication:publication('test-session'),serviceWorkerContainer:container,timeoutMs:10});
 
   await assert.rejects(
     ()=>bridge.start(),
-    error=>error.code===ErrorCodes.ESM_EDGE_UNAVAILABLE && /activate/.test(error.message)
+    error=>error.code===ErrorCodes.ESM_EDGE_UNAVAILABLE && /lifecycle state/.test(error.message)
   );
+  bridge.close();
+});
+
+test('browser ESM bridge rejects a waiting Service Worker with an incompatible release profile',async()=>{
+  const worker=new FakeWorker('installed','opencontainer-sw-edge-v0:rpc0:snapshot0:opfs0');
+  const registration=new FakeRegistration(worker,{waiting:true});
+  const container=new FakeContainer(registration);
+  const bridge=new BrowserEsmServiceWorkerBridge({
+    publication:publication('test-session'),
+    serviceWorkerContainer:container,
+    timeoutMs:100
+  });
+
+  await assert.rejects(
+    ()=>bridge.start(),
+    error=>error.code===ErrorCodes.SERVICE_WORKER_INCOMPATIBLE &&
+      error.details?.expected===SERVICE_WORKER_COMPATIBILITY_ID
+  );
+  assert.equal(container.controller,null);
   bridge.close();
 });
 

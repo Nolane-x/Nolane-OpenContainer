@@ -8,7 +8,7 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **74**
+- Seed-reconciled against implementation evidence: **75**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -29,7 +29,7 @@
 | P11 Compatibility corpus & certification | 13 | 1 | 14 |
 | P12 Product security engineering | 2 | 18 | 20 |
 | P13 Build, supply chain & publication | 13 | 7 | 20 |
-| P14 Release, update, migration & rollback | 0 | 18 | 18 |
+| P14 Release, update, migration & rollback | 1 | 17 | 18 |
 | P15 SDK, API, documentation & developer experience | 6 | 8 | 14 |
 | P16 License, FTO, governance & contribution policy | 0 | 14 | 14 |
 | P17 Operations, vulnerability response & long-term maintenance | 0 | 14 | 14 |
@@ -71,6 +71,8 @@
 - **P13-15** now requires two independent distribution staging builds to be byte-identical before release evidence is accepted.
 - **P13-20** now archives seven release-evidence files as a CI artifact for 90 days. A long-term historical release archive policy remains open.
 - CI #319 verified a 7,766,106-byte artifact with SHA-256 `47675569cf0b5c2dd69fdd295ce4dc5ad2df54e87b5f98dfb39941efd5190c7a`, 38 SPDX packages / 37 runtime components, reproducibility=true and zero content-policy violations; the complete installed-distribution Chrome product path remained green.
+
+- **P14-08** now meets its RELEASE-READY evidence requirement for Service Worker activation discipline: a new worker remains waiting until a client verifies the versioned compatibility profile, explicitly authorizes activation, re-verifies the activated worker, explicitly authorizes claim and observes the resulting controller. CI #331 proves this in real Chrome from the installed distribution; incompatible workers fail closed and unconditional `skipWaiting()` / `clients.claim()` are absent.
 
 ## Update discipline
 

@@ -20,6 +20,14 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function canonicalJson(value) {
+  if (Array.isArray(value)) return value.map(canonicalJson);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.keys(value).sort().map((key) => [key, canonicalJson(value[key])])
+  );
+}
+
 async function run() {
   stage('boot');
   assert(globalThis.isSecureContext, 'browser acceptance requires a secure context');
@@ -32,7 +40,7 @@ async function run() {
   const productionProfileResponse = await fetch('/docs/production/PRODUCTION-PROFILE.json', { cache: 'no-store' });
   assert(productionProfileResponse.ok, 'machine-readable production profile is not publicly loadable');
   const publishedProductionProfile = await productionProfileResponse.json();
-  assert(JSON.stringify(publishedProductionProfile) === JSON.stringify(runtime.productionProfile), 'browser SDK production profile drifted from published JSON');
+  assert(JSON.stringify(canonicalJson(publishedProductionProfile)) === JSON.stringify(canonicalJson(runtime.productionProfile)), 'browser SDK production profile drifted from published JSON');
   assert(runtime.productionProfile.productionClosed === false, 'production profile incorrectly claims closure');
   assert(runtime.productionProfile.oracle.node === '24.21.0' && runtime.productionProfile.oracle.npm === '11.19.0', 'production profile oracle drifted');
   stage('production-profile-pass', {
@@ -113,8 +121,21 @@ async function run() {
   });
   const bridgeA = new BrowserEsmServiceWorkerBridge({ publication: publicationA });
   stage('bridge-a-starting');
-  await bridgeA.start();
-  stage('bridge-a-ready', { controlled: !!navigator.serviceWorker.controller });
+  const bridgeAReceipt = await bridgeA.start();
+  assert(
+    bridgeAReceipt.serviceWorkerCompatibilityId === runtime.productionProfile.browser.serviceWorkerCompatibilityId,
+    'first Service Worker compatibility handshake drifted from production profile'
+  );
+  assert(
+    bridgeAReceipt.serviceWorkerActivation === 'compatibility-authorized' ||
+      bridgeAReceipt.serviceWorkerActivation === 'existing-compatible',
+    'first Service Worker activation did not use compatibility authorization'
+  );
+  stage('bridge-a-ready', {
+    controlled: !!navigator.serviceWorker.controller,
+    serviceWorkerCompatibilityId: bridgeAReceipt.serviceWorkerCompatibilityId,
+    serviceWorkerActivation: bridgeAReceipt.serviceWorkerActivation
+  });
 
   const entryA = publicationA.moduleURL('./main.js', '/workspace/src/entry.mjs').href;
   const workerA = new BrowserGuestWorkerAuthority({
@@ -151,8 +172,19 @@ async function run() {
   });
   const bridgeB = new BrowserEsmServiceWorkerBridge({ publication: publicationB });
   stage('bridge-b-starting');
-  await bridgeB.start();
-  stage('bridge-b-ready');
+  const bridgeBReceipt = await bridgeB.start();
+  assert(
+    bridgeBReceipt.serviceWorkerCompatibilityId === runtime.productionProfile.browser.serviceWorkerCompatibilityId,
+    'reused Service Worker compatibility profile drifted'
+  );
+  assert(
+    bridgeBReceipt.serviceWorkerActivation === 'existing-compatible',
+    'second bridge unexpectedly promoted a new Service Worker'
+  );
+  stage('bridge-b-ready', {
+    serviceWorkerCompatibilityId: bridgeBReceipt.serviceWorkerCompatibilityId,
+    serviceWorkerActivation: bridgeBReceipt.serviceWorkerActivation
+  });
 
   const entryB = publicationB.moduleURL('./main.js', '/workspace/src/entry.mjs').href;
   const workerB = new BrowserGuestWorkerAuthority({
