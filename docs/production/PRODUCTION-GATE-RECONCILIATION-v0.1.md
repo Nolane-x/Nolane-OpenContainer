@@ -8,7 +8,7 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **80**
+- Seed-reconciled against implementation evidence: **87**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -29,7 +29,7 @@
 | P11 Compatibility corpus & certification | 13 | 1 | 14 |
 | P12 Product security engineering | 2 | 18 | 20 |
 | P13 Build, supply chain & publication | 13 | 7 | 20 |
-| P14 Release, update, migration & rollback | 6 | 12 | 18 |
+| P14 Release, update, migration & rollback | 13 | 5 | 18 |
 | P15 SDK, API, documentation & developer experience | 6 | 8 | 14 |
 | P16 License, FTO, governance & contribution policy | 0 | 14 | 14 |
 | P17 Operations, vulnerability response & long-term maintenance | 0 | 14 | 14 |
@@ -80,6 +80,16 @@
 - **P14-15** is now fail-closed in implementation but remains partial: the stable path rejects any non-zero unexplained critical flakiness, yet the current flakiness value still comes from the reviewed candidate manifest rather than an independent release campaign.
 - **P14-18** now retains an archived machine-readable release decision record with exactly `GO`, `REDESIGN` or `KILL`, plus unresolved risks and generated-changelog digest. CI #338 archived both decision and changelog for the current canary GO.
 - CI #338 on `522f6501cd355e96c5642dfe8f1544ec46e98fac` passed contract + release-evidence + release-preflight + installed-distribution Chrome path. The canary receipt reported `versionProfileCoherent=true`, `reviewedChangesComplete=true`, `channelEvidenceSatisfied=true`, `priorPromotionChainSatisfied=true`, and changelog SHA-256 `41e85619ebe27a8f16bb903e8e08f362ea2525878d841341c4cd710f14aaf310`.
+
+- **P14-04** is now partial rather than open: the adjacent-version migration harness executes forward migration and rolled-back-runtime compatibility against v1→v2 storage profiles in unit + real Chrome OPFS, but closure remains blocked until actual supported adjacent OpenContainer release artifacts are tested both backward and forward.
+- **P14-05** now meets release-ready evidence: migration dry-run validates source/target versions, transforms and validates a candidate, computes payload/manifest/storage-reserve bytes, checks available browser capacity, and proves canonical identity remains unchanged before publish.
+- **P14-06** now meets release-ready evidence: CI #345 crash-injects after preflight, payload write, payload verification and manifest publication. Real OPFS retains v1 as canonical before publish and v2 plus both valid recovery roots after publish.
+- **P14-07** now meets release-ready evidence: derived caches are explicitly `lazy-rebuild`, outside the critical open path, migrate zero bytes, and receive a new versioned namespace instead of being synchronously copied.
+- **P14-09** now meets release-ready evidence for the promoted storage/cache model: derived-cache namespaces include runtime, storage and cache-schema versions and differ across the v1/v2 migration, while rollback never rebinds the newer cache/storage identity into the older writable runtime.
+- **P14-10** now meets release-ready evidence: rollback policy never performs destructive storage downgrade. A rolled-back runtime either reuses readable newer storage read-only or refuses open.
+- **P14-11** now meets release-ready evidence: the VFS itself enforces emergency read-only mode and direct public filesystem transactions fail with stable `OC_STORAGE_READ_ONLY`, preventing SDK bypass of the rollback boundary.
+- CI #345 on `11ee7759ca055a8ccddebd0957f2946979ffc084` passed contract + full installed-distribution Chrome path with real OPFS. Chrome recorded dry-run 1,515 bytes, distinct v1/v2 cache namespaces, storage v2 publication with two recovery roots, rollback `read-only`, `destructiveStorageDowngrade=false`, blocked writes via `OC_STORAGE_READ_ONLY`, and valid recovery across all four crash phases.
+
 
 
 ## Update discipline

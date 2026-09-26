@@ -87,3 +87,5 @@ export class MemoryPersistenceAuthority {
   }
   async importStream(source){return this.import(await readImportSource(source));}
 }
+
+export { OpfsReleaseStorageAuthority, releaseCacheNamespace, assessReleaseStorageCompatibility, applyReleaseStorageCompatibility } from './release-storage.js';

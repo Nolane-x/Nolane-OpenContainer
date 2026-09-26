@@ -240,6 +240,10 @@
     "release-preflight": {
       "ref": "CI #338 / 522f6501cd355e96c5642dfe8f1544ec46e98fac",
       "note": "machine-readable canary→beta→rc→stable policy; SemVer/profile coherence; reviewed-change API/storage/security changelog generation; exact GO/REDESIGN/KILL decision; current canary GO; stable fail-closed unit court; decision/changelog archived 90 days; installed-distribution Chrome path remains green"
+    },
+    "release-storage-migration": {
+      "ref": "CI #345 / 11ee7759ca055a8ccddebd0957f2946979ffc084",
+      "note": "real Chrome OPFS dry-run + adjacent migration + four crash phases + dual recovery roots + lazy versioned derived-cache namespaces + non-destructive rollback + VFS-enforced emergency read-only mode"
     }
   },
   "overrides": [
@@ -812,11 +816,67 @@
       "closure_met": true
     },
     {
+      "id": "P14-04",
+      "domain": "P14",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "evidence": "release-storage-migration",
+      "closure_met": false
+    },
+    {
+      "id": "P14-05",
+      "domain": "P14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "release-storage-migration",
+      "closure_met": true
+    },
+    {
+      "id": "P14-06",
+      "domain": "P14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "release-storage-migration",
+      "closure_met": true
+    },
+    {
+      "id": "P14-07",
+      "domain": "P14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "release-storage-migration",
+      "closure_met": true
+    },
+    {
       "id": "P14-08",
       "domain": "P14",
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "service-worker-release-compatibility",
+      "closure_met": true
+    },
+    {
+      "id": "P14-09",
+      "domain": "P14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "release-storage-migration",
+      "closure_met": true
+    },
+    {
+      "id": "P14-10",
+      "domain": "P14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "release-storage-migration",
+      "closure_met": true
+    },
+    {
+      "id": "P14-11",
+      "domain": "P14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "release-storage-migration",
       "closure_met": true
     },
     {

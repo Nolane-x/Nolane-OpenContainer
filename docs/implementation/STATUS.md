@@ -34,6 +34,7 @@ Promoted in the clean Chrome product/browser path:
 - release-evidence generation now treats that packed artifact as a supply-chain subject: CI requires byte-for-byte reproducibility across two independent staging builds, emits independent SHA-256/SHA-512 checksums, an SPDX 2.3 SBOM, in-toto/SLSA provenance, categorized dependency/license inventory and a release manifest, verifies all bindings, rejects staged secret/test/local-path leakage, and archives the seven-file evidence bundle separately. Signing/OIDC/public release identity remain explicitly unpromoted.
 - Service Worker release promotion is now compatibility-gated rather than lifecycle-forced: a versioned profile is queried before waiting-worker activation, queried again after activation, and a separate compatibility-bound claim command controls the page; incompatible workers fail closed and the install/activate handlers no longer perform unconditional `skipWaiting()` / `clients.claim()`.
 - release promotion now has a fail-closed preflight court: a frozen canary→beta→rc→stable policy validates SemVer/profile coherence, reviewed-change API/storage/security implications, prior GO receipts, live gate-ledger evidence, unresolved risks and stable-only production/flakiness requirements; CI archives both the machine-readable decision and generated changelog.
+- release storage migration/rollback is now an executable OPFS product authority: adjacent migration must dry-run capacity/version validity before publication, payload-first dual-manifest publication preserves recovery roots across crash phases, derived caches use lazy versioned namespaces, and rolled-back runtimes never destructively downgrade storage—readable newer data becomes VFS-enforced read-only while incompatible data refuses open.
 
 Evidence anchors:
 
@@ -65,6 +66,7 @@ Evidence anchors:
 - release-evidence court `144299359225975dc8cf54a10c7704c992ff2215` passed contract + installed-distribution Chrome path in CI run #319: two independent builds produced identical SHA-256 `47675569cf0b5c2dd69fdd295ce4dc5ad2df54e87b5f98dfb39941efd5190c7a`; the verifier found 38 SPDX packages / 37 runtime components, zero content-policy violations, reproducibility=true, and GitHub Actions archived seven evidence files for 90 days.
 - Service Worker release-handshake court `7f5f28395c3d533e2b9df2f70edd6cb693106ef0` passed contract + installed-distribution Chrome path in CI run #331: first ESM bridge reported `compatibility-authorized` with `opencontainer-sw-edge-v1:rpc1:snapshot1:opfs1`, the second bridge reused the `existing-compatible` controller, and the full stale-session/OPFS/package/Vite C1/C2 browser court remained green.
 - release-promotion preflight court `522f6501cd355e96c5642dfe8f1544ec46e98fac` passed contract + installed-distribution Chrome path in CI run #338: current `0.1.0-alpha.1` received canary `GO`, version/profile coherence and reviewed-change completeness were true, channel/prior-chain evidence was satisfied, the decision/changelog were archived separately, and the generated changelog SHA-256 was `41e85619ebe27a8f16bb903e8e08f362ea2525878d841341c4cd710f14aaf310`.
+- release-storage migration/rollback court `11ee7759ca055a8ccddebd0957f2946979ffc084` passed contract + installed-distribution Chrome path in CI run #345: real OPFS dry-run required 1,515 bytes, v1/v2 cache namespaces were distinct, v2 publication retained two valid recovery roots, rollback mode was `read-only` with `destructiveStorageDowngrade=false`, direct writes failed with `OC_STORAGE_READ_ONLY`, and all four injected crash phases recovered a valid canonical generation.
 
 Still required before production closure:
 
@@ -72,7 +74,7 @@ Still required before production closure:
 2. Extended WorkspaceFS/PackageFS durability campaigns beyond the promoted public SDK persistence profiles; WorkspaceFS restore/checkpoint/GC plus corrupt-newest fallback-and-continuation, persistent PackageContent hydration/forced-eviction recovery, policy/GC/quota preflight and multi-tab/Web Locks are promoted.
 3. External release publication identity still remains beyond the promoted installed-tarball certification; pnpm/yarn, native-addon, generic watcher and public npm/GitHub Release traceability remain open.
 4. PC-A/PC-B target-device and browser matrix beyond CI Chrome.
-5. Weak-device/resource-budget campaigns beyond the promoted concurrent Worker lease limit, plus long-run/plateau, memory-pressure/fault-security and release-packaging campaigns.
+5. Weak-device/resource-budget campaigns beyond the promoted concurrent Worker lease limit, plus long-run/plateau, memory-pressure/fault-security and remaining release campaigns. Storage migration/rollback mechanisms are promoted, but real adjacent-release artifact certification is still open.
 6. Dependency/test-corpus licensing plus FTO/legal closure before a commercial production claim.
 
 `production_closed = false` until those remaining gates produce evidence.

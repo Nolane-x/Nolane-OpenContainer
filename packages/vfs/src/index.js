@@ -31,7 +31,7 @@ function parentOf(path){const index=path.lastIndexOf('/');return index<=0?'/':pa
 function cloneEntry(entry){return entry.type==='file'?{...entry,data:new Uint8Array(entry.data)}:{...entry};}
 
 export class MemoryVFS {
-  #entries=new Map(); #generation=0;
+  #entries=new Map(); #generation=0; #readOnly=false; #readOnlyReason=null;
   constructor(){
     this.#entries.set('/',{type:'dir'});
     this.#entries.set(WORKSPACE,{type:'dir'});
@@ -39,6 +39,14 @@ export class MemoryVFS {
     this.#entries.set(INTERNAL,{type:'dir'});
   }
   get generation(){return this.#generation;}
+  get readOnly(){return this.#readOnly;}
+  get readOnlyReason(){return this.#readOnlyReason;}
+  setReadOnly(value=true,reason='release-storage-compatibility'){
+    assertOc(typeof value==='boolean',ErrorCodes.INVALID_ARGUMENT,'Read-only flag must be boolean');
+    this.#readOnly=value;
+    this.#readOnlyReason=value?String(reason??'release-storage-compatibility'):null;
+    return Object.freeze({readOnly:this.#readOnly,reason:this.#readOnlyReason});
+  }
   normalize(path,options){return normalize(path,options);}
   beginTransaction(){return new VFSTransaction(this,this.#generation);}
   mount(files={}){
@@ -127,6 +135,7 @@ export class MemoryVFS {
     return resolved;
   }
   _commit(baseGeneration,operations){
+    if(this.#readOnly)throw ocError(ErrorCodes.STORAGE_READ_ONLY,'Workspace is read-only under release storage compatibility policy',{reason:this.#readOnlyReason,generation:this.#generation});
     if(baseGeneration!==this.#generation)throw ocError(ErrorCodes.STALE_GENERATION,'VFS transaction is stale',{baseGeneration,currentGeneration:this.#generation});
     const next=new Map([...this.#entries].map(([path,entry])=>[path,cloneEntry(entry)]));
     const ensureDir=(path)=>{
