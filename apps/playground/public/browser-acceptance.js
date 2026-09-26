@@ -2,7 +2,7 @@ import { OpenContainer } from '/packages/sdk/src/index.js';
 import { BrowserEsmServiceWorkerBridge } from '/packages/package-env/src/browser-esm-edge.js';
 import { PackageArtifactAuthority } from '/packages/package-env/src/index.js';
 import { BrowserGuestWorkerAuthority } from '/packages/process/src/browser-guest-worker.js';
-import { MemoryVFS, OpfsCheckpointAuthority } from '/packages/vfs/src/index.js';
+import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority } from '/packages/vfs/src/index.js';
 import { BrowserPreviewServiceWorkerBridge } from '/packages/preview/src/index.js';
 
 const resultNode = document.getElementById('result');
@@ -140,13 +140,22 @@ async function run() {
   const opfsDirectory = 'opencontainer-browser-acceptance-' + crypto.randomUUID();
   try {
     assert(navigator.locks?.request, 'Web Locks API is unavailable');
+    const storagePolicy = new BrowserStoragePolicy({ storageManager: navigator.storage });
+    const storageBefore = await storagePolicy.inspect();
+    assert(storageBefore.supported === true, 'browser storage policy did not bind StorageManager');
+    assert(Number.isFinite(storageBefore.usageBytes), 'browser storage usage estimate is unavailable');
+    assert(Number.isFinite(storageBefore.quotaBytes) && storageBefore.quotaBytes > 0, 'browser storage quota estimate is unavailable');
+    const persistenceReceipt = await storagePolicy.requestPersistence();
+    assert(typeof persistenceReceipt.granted === 'boolean', 'browser persistence request did not return a boolean receipt');
+
     const opfsFs = new MemoryVFS();
     opfsFs.mount({ 'value.txt': 'first' });
     const firstSnapshot = opfsFs.snapshot();
     const opfs = await new OpfsCheckpointAuthority({
       root: opfsRoot,
       directoryName: opfsDirectory,
-      lockManager: navigator.locks
+      lockManager: navigator.locks,
+      storagePolicy
     }).open();
     assert(opfs.crossContextLocking === true, 'OPFS authority did not enable cross-context locking');
     const firstCheckpoint = await opfs.checkpoint(opfsFs);
@@ -239,7 +248,13 @@ async function run() {
       gcRemoved: gcReceipt.removed.length,
       gcRetained: gcReceipt.retained.length,
       gcSupersededRemoved: removedSuperseded,
-      gcOrphanRemoved: removedOrphan
+      gcOrphanRemoved: removedOrphan,
+      storageUsageBytes: storageBefore.usageBytes,
+      storageQuotaBytes: storageBefore.quotaBytes,
+      storagePressure: storageBefore.pressure,
+      storagePersistedBefore: storageBefore.persisted,
+      storagePersistenceRequested: persistenceReceipt.requested,
+      storagePersistenceGranted: persistenceReceipt.granted
     });
   } finally {
     await opfsRoot.removeEntry(opfsDirectory, { recursive: true });

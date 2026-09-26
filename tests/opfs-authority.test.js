@@ -259,3 +259,64 @@ test('OPFS garbage collection removes only payloads unreachable from both manife
   await reopened.restoreInto(restored);
   assert.equal(restored.readFile('value.txt'), 'two');
 });
+
+test('OPFS checkpoint preflights payload plus manifest bytes through storage policy', async () => {
+  const root = new FakeDirectoryHandle();
+  const calls = [];
+  const storagePolicy = {
+    async inspect() { return { supported: true, usageBytes: 1, quotaBytes: 100000 }; },
+    async assertCanWrite(additionalBytes) {
+      calls.push(additionalBytes);
+      return { supported: true, additionalBytes };
+    }
+  };
+  const fs = new MemoryVFS();
+  fs.mount({ 'value.txt': 'storage-policy' });
+
+  const authority = await new OpfsCheckpointAuthority({ root, storagePolicy }).open();
+  await authority.checkpoint(fs);
+
+  assert.equal(calls.length, 1);
+  assert.ok(calls[0] > JSON.stringify(fs.snapshot()).length);
+});
+
+test('OPFS normalizes browser quota exhaustion into resource exhausted', async () => {
+  const root = new FakeDirectoryHandle();
+  const storagePolicy = {
+    async inspect() {
+      return { supported: true, usageBytes: 999, quotaBytes: 1000, pressure: 'critical' };
+    },
+    async assertCanWrite() {
+      return { supported: true };
+    }
+  };
+  const fs = new MemoryVFS();
+  fs.mount({ 'value.txt': 'quota' });
+
+  const authority = await new OpfsCheckpointAuthority({ root, storagePolicy }).open();
+  const generations = root.dirs.get('opencontainer-workspace').dirs.get('generations');
+  generations.getFileHandle = async () => ({
+    kind: 'file',
+    async createWritable() {
+      return {
+        async write() {
+          const error = new Error('Quota exceeded');
+          error.name = 'QuotaExceededError';
+          throw error;
+        },
+        async close() {},
+        async abort() {}
+      };
+    }
+  });
+
+  await assert.rejects(
+    () => authority.checkpoint(fs),
+    (error) => {
+      assert.equal(error.code, ErrorCodes.RESOURCE_EXHAUSTED);
+      assert.equal(error.details.phase, 'payload');
+      assert.equal(error.details.storage.pressure, 'critical');
+      return true;
+    }
+  );
+});
