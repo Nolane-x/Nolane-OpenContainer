@@ -142,3 +142,66 @@ test('browser guest Worker profiles select explicit bootstrap authorities',()=>{
     (error)=>error.code===ErrorCodes.INVALID_ARGUMENT
   );
 });
+
+
+test('browser guest execution propagates an explicit export byte budget',async()=>{
+  FakeWorker.instances=[];
+  const publication={
+    session:'export-budget-court',
+    resolveDynamic(){throw new Error('unused');}
+  };
+  const authority=new BrowserGuestWorkerAuthority({
+    publication,
+    WorkerImpl:FakeWorker,
+    maxExportBytes:12345
+  });
+  assert.equal(authority.maxExportBytes,12345);
+
+  const pending=authority.execute(
+    'https://example.invalid/__opencontainer__/esm/export-budget-court/probe.mjs',
+    {exportNames:['value']}
+  );
+  const worker=FakeWorker.instances.at(-1);
+  const request=worker.sent.at(-1);
+  assert.equal(request.payload.maxExportBytes,12345);
+
+  worker.emit('message',{
+    v:1,
+    type:'response',
+    session:request.session,
+    epoch:request.epoch,
+    id:request.id,
+    ok:false,
+    error:{
+      code:ErrorCodes.OUTPUT_LIMIT,
+      message:'Guest export payload exceeded OpenContainer output limit',
+      details:{limit:12345,estimatedBytes:12346}
+    }
+  });
+  await assert.rejects(
+    ()=>pending,
+    (error)=>error.code===ErrorCodes.OUTPUT_LIMIT&&error.details?.limit===12345
+  );
+  authority.close();
+});
+
+test('browser guest export budget defaults to ResourceGovernor output budget',()=>{
+  FakeWorker.instances=[];
+  const resources=new ResourceGovernor({outputBytes:8192});
+  const publication={
+    session:'export-resource-budget',
+    resolveDynamic(){throw new Error('unused');}
+  };
+  const authority=new BrowserGuestWorkerAuthority({
+    publication,
+    WorkerImpl:FakeWorker,
+    resources
+  });
+  assert.equal(authority.maxExportBytes,8192);
+  authority.close();
+
+  assert.throws(
+    ()=>new BrowserGuestWorkerAuthority({publication,WorkerImpl:FakeWorker,maxExportBytes:0}),
+    (error)=>error.code===ErrorCodes.INVALID_ARGUMENT
+  );
+});
