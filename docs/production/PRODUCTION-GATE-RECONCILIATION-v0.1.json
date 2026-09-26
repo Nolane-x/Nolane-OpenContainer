@@ -248,6 +248,10 @@
     "hotfix-deprecation-governance": {
       "ref": "CI #352 / 11bbf821b04ee87ca150d2d3c51abdc4c72af6a6",
       "note": "machine-enforced hotfix provenance/migration discipline plus 2-stable-release/90-day deprecation windows and audited high/critical security emergency exception; full installed-distribution Chrome regression remained green"
+    },
+    "critical-flake-campaign": {
+      "ref": "CI #356 / tested pull-request merge checkout",
+      "note": "independent zero-tolerance flake evidence: 5/5 critical contract iterations over 12 files (60 executions) + 2/2 full installed-distribution Chrome product-path iterations; zero explained/unexplained failures; separate 90-day archived receipts; stable preflight requires fresh commit-matched receipts"
     }
   },
   "overrides": [
@@ -886,10 +890,10 @@
     {
       "id": "P14-15",
       "domain": "P14",
-      "state": "PARTIAL",
-      "promotion": "PASS-INTEGRATION",
-      "evidence": "release-preflight",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "critical-flake-campaign",
+      "closure_met": true
     },
     {
       "id": "P14-16",

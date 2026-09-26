@@ -1,0 +1,41 @@
+{
+  "schema": "opencontainer.critical-flake-policy.v0.1",
+  "frozenAt": "2026-09-26",
+  "rule": "Stable release is blocked unless the exact source commit has zero unexplained failures across both the critical contract campaign and repeated installed-distribution browser campaign.",
+  "contract": {
+    "iterations": 5,
+    "testFiles": [
+      "tests/production-profile.test.js",
+      "tests/release-preflight.test.js",
+      "tests/release-governance.test.js",
+      "tests/release-storage-migration.test.js",
+      "tests/opfs-authority.test.js",
+      "tests/sdk-workspace-persistence.test.js",
+      "tests/opfs-package-content-store.test.js",
+      "tests/frozen-install.test.js",
+      "tests/browser-esm-edge.test.js",
+      "tests/browser-node-compat.test.js",
+      "tests/native-esm-publication.test.js",
+      "tests/vite-c1-oracle.test.js"
+    ],
+    "minimumIterations": 5,
+    "minimumTestFiles": 12
+  },
+  "browser": {
+    "iterations": 2,
+    "command": [
+      "node",
+      "scripts/certify-distribution-browser.mjs"
+    ],
+    "minimumIterations": 2,
+    "profile": "installed-distribution-chrome-product-path"
+  },
+  "knownFlakeExceptions": [],
+  "exceptionPolicy": {
+    "requireIssue": true,
+    "requireExpiry": true,
+    "requireExactSignature": true,
+    "expiredException": "FAIL",
+    "unknownFailure": "UNEXPLAINED"
+  }
+}

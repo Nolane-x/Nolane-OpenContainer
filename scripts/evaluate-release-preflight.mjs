@@ -146,7 +146,68 @@ function priorPromotionFailures(candidate,channels,target){
   return failures;
 }
 
-function channelEvidenceFailures({candidate,policy,ledger,target}){
+function criticalFlakeFailures({
+  criticalFlakePolicy,
+  criticalContractFlakeReceipt,
+  criticalBrowserFlakeReceipt,
+  sourceCommit
+}={}){
+  const failures=[];
+  if(criticalFlakePolicy?.schema!=='opencontainer.critical-flake-policy.v0.1'){
+    return ['critical flake policy is missing or invalid'];
+  }
+
+  const contractPolicy=criticalFlakePolicy.contract??{};
+  const browserPolicy=criticalFlakePolicy.browser??{};
+  const contract=criticalContractFlakeReceipt;
+  const browser=criticalBrowserFlakeReceipt;
+
+  if(contract?.schema!=='opencontainer.critical-flake-contract.v0.1'){
+    failures.push('critical contract flake receipt is missing or invalid');
+  }else{
+    if(contract.sourceCommit!==sourceCommit)failures.push('critical contract flake receipt source commit does not match release source');
+    if(contract.status!=='PASS')failures.push('critical contract flake campaign did not PASS');
+    if(contract.unexplainedFailures!==0)failures.push('critical contract flake campaign has '+String(contract.unexplainedFailures)+' unexplained failures');
+    if(!Number.isInteger(contract.iterations)||contract.iterations<(contractPolicy.minimumIterations??Infinity)){
+      failures.push('critical contract flake campaign ran fewer than the frozen minimum iterations');
+    }
+    if(!Array.isArray(contract.testFiles)||contract.testFiles.length<(contractPolicy.minimumTestFiles??Infinity)){
+      failures.push('critical contract flake campaign covered fewer than the frozen minimum test files');
+    }else if(JSON.stringify(contract.testFiles)!==JSON.stringify(contractPolicy.testFiles??[])){
+      failures.push('critical contract flake campaign test set does not match frozen policy');
+    }
+  }
+
+  if(browser?.schema!=='opencontainer.critical-flake-browser.v0.1'){
+    failures.push('critical browser flake receipt is missing or invalid');
+  }else{
+    if(browser.sourceCommit!==sourceCommit)failures.push('critical browser flake receipt source commit does not match release source');
+    if(browser.status!=='PASS')failures.push('critical browser flake campaign did not PASS');
+    if(browser.unexplainedFailures!==0)failures.push('critical browser flake campaign has '+String(browser.unexplainedFailures)+' unexplained failures');
+    if(!Number.isInteger(browser.iterations)||browser.iterations<(browserPolicy.minimumIterations??Infinity)){
+      failures.push('critical browser flake campaign ran fewer than the frozen minimum iterations');
+    }
+    if(browser.fullProductPathPasses!==browser.iterations){
+      failures.push('critical browser flake campaign did not pass the full installed-distribution product path on every iteration');
+    }
+    if(browser.profile!==browserPolicy.profile){
+      failures.push('critical browser flake campaign profile does not match frozen policy');
+    }
+  }
+
+  return failures;
+}
+
+function channelEvidenceFailures({
+  candidate,
+  policy,
+  ledger,
+  target,
+  criticalFlakePolicy,
+  criticalContractFlakeReceipt,
+  criticalBrowserFlakeReceipt,
+  sourceCommit
+}){
   const failures=[];
   const channels=[...policy.channels].sort((a,b)=>a.order-b.order).filter((item)=>item.order<=target.order);
   for(const channel of channels){
@@ -178,8 +239,15 @@ function channelEvidenceFailures({candidate,policy,ledger,target}){
   if(target.requireReleaseVerified===true&&candidate?.releaseVerification?.verified!==true){
     failures.push(target.id+': no verified release receipt is attached');
   }
-  if(target.requireZeroUnexplainedCriticalFlakes===true&&candidate?.criticalTestFlakiness?.unexplained!==0){
-    failures.push(target.id+': unexplained critical test flakiness is '+String(candidate?.criticalTestFlakiness?.unexplained));
+  if(target.requireZeroUnexplainedCriticalFlakes===true){
+    for(const failure of criticalFlakeFailures({
+      criticalFlakePolicy,
+      criticalContractFlakeReceipt,
+      criticalBrowserFlakeReceipt,
+      sourceCommit
+    })){
+      failures.push(target.id+': '+failure);
+    }
   }
   if(target.allowUnresolvedRisks===false&&(candidate?.unresolvedRisks?.length??0)>0){
     failures.push(target.id+': unresolved release risks remain');
@@ -208,7 +276,7 @@ export function renderChangelog(candidate){
 }
 
 export function evaluateReleasePreflight(inputs,{sourceCommit='unknown'}={}){
-  const {policy,candidate,rootPackage,sdkPackage,protocolPackage,profile,ledger}=inputs;
+  const {policy,candidate,rootPackage,sdkPackage,protocolPackage,profile,ledger,criticalFlakePolicy,criticalContractFlakeReceipt,criticalBrowserFlakeReceipt}=inputs;
   const fatal=[];
   fatal.push(...validateReleasePolicy(policy));
   if(candidate?.schema!=='opencontainer.release-candidate.v0.1')fatal.push('invalid release candidate schema');
@@ -222,7 +290,7 @@ export function evaluateReleasePreflight(inputs,{sourceCommit='unknown'}={}){
   if(target){
     redesign.push(...versionClassFailures(candidate,target));
     redesign.push(...priorPromotionFailures(candidate,channels,target));
-    redesign.push(...channelEvidenceFailures({candidate,policy,ledger,target}));
+    redesign.push(...channelEvidenceFailures({candidate,policy,ledger,target,criticalFlakePolicy,criticalContractFlakeReceipt,criticalBrowserFlakeReceipt,sourceCommit}));
   }
 
   const decision=fatal.length?'KILL':redesign.length?'REDESIGN':'GO';
@@ -247,10 +315,15 @@ export function evaluateReleasePreflight(inputs,{sourceCommit='unknown'}={}){
       policyValid:validateReleasePolicy(policy).length===0,
       versionProfileCoherent:profileVersionFailures({candidate,rootPackage,sdkPackage,protocolPackage,profile}).length===0,
       reviewedChangesComplete:reviewedChangeFailures(candidate,policy).length===0,
-      channelEvidenceSatisfied:target?channelEvidenceFailures({candidate,policy,ledger,target}).length===0:false,
+      channelEvidenceSatisfied:target?channelEvidenceFailures({candidate,policy,ledger,target,criticalFlakePolicy,criticalContractFlakeReceipt,criticalBrowserFlakeReceipt,sourceCommit}).length===0:false,
       priorPromotionChainSatisfied:target?priorPromotionFailures(candidate,channels,target).length===0:false,
       versionClassSatisfied:target?versionClassFailures(candidate,target).length===0:false,
-      unexplainedCriticalFlakes:candidate?.criticalTestFlakiness?.unexplained??null
+      independentCriticalFlakeCampaign:criticalFlakeFailures({criticalFlakePolicy,criticalContractFlakeReceipt,criticalBrowserFlakeReceipt,sourceCommit}).length===0,
+      unexplainedCriticalFlakes:criticalContractFlakeReceipt&&criticalBrowserFlakeReceipt
+        ?(criticalContractFlakeReceipt.unexplainedFailures??0)+(criticalBrowserFlakeReceipt.unexplainedFailures??0)
+        :null,
+      criticalContractFlakeIterations:criticalContractFlakeReceipt?.iterations??null,
+      criticalBrowserFlakeIterations:criticalBrowserFlakeReceipt?.iterations??null
     }),
     failures:Object.freeze({
       fatal:Object.freeze(fatal),
@@ -262,6 +335,15 @@ export function evaluateReleasePreflight(inputs,{sourceCommit='unknown'}={}){
   });
 }
 
+async function readOptionalJson(path){
+  try{
+    return JSON.parse(await readFile(join(repoRoot,path),'utf8'));
+  }catch(error){
+    if(error?.code==='ENOENT')return null;
+    throw error;
+  }
+}
+
 export async function loadReleaseInputs(){
   const paths={
     policy:'release/RELEASE-POLICY.v0.1.json',
@@ -270,13 +352,17 @@ export async function loadReleaseInputs(){
     sdkPackage:'packages/sdk/package.json',
     protocolPackage:'packages/protocol/package.json',
     profile:'docs/production/PRODUCTION-PROFILE.json',
-    ledger:'docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.json'
+    ledger:'docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.json',
+    criticalFlakePolicy:'release/CRITICAL-FLAKE-POLICY.v0.1.json'
   };
   const entries=await Promise.all(Object.entries(paths).map(async([key,path])=>[
     key,
     JSON.parse(await readFile(join(repoRoot,path),'utf8'))
   ]));
-  return Object.fromEntries(entries);
+  const inputs=Object.fromEntries(entries);
+  inputs.criticalContractFlakeReceipt=await readOptionalJson('.artifacts/critical-flake/contract-receipt.json');
+  inputs.criticalBrowserFlakeReceipt=await readOptionalJson('.artifacts/critical-flake/browser-receipt.json');
+  return inputs;
 }
 
 function gitHead(){

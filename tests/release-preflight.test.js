@@ -12,6 +12,39 @@ function clone(value){
   return JSON.parse(JSON.stringify(value));
 }
 
+function configureStableCandidate(inputs,{sourceCommit='d'.repeat(40)}={}){
+  inputs.candidate.channel='stable';
+  inputs.candidate.version='1.0.0';
+  inputs.rootPackage.version='1.0.0';
+  inputs.sdkPackage.version='1.0.0';
+  inputs.protocolPackage.version='1.0.0';
+  inputs.profile.runtime.version='1.0.0';
+  inputs.profile.protocol.packageVersion='1.0.0';
+  inputs.candidate.priorPromotions=[
+    {channel:'canary',version:'0.1.0-alpha.1',decision:'GO',evidence:'CI canary'},
+    {channel:'beta',version:'0.9.0-beta.1',decision:'GO',evidence:'CI beta'},
+    {channel:'rc',version:'1.0.0-rc.1',decision:'GO',evidence:'CI rc'}
+  ];
+  inputs.criticalContractFlakeReceipt={
+    schema:'opencontainer.critical-flake-contract.v0.1',
+    sourceCommit,
+    status:'PASS',
+    unexplainedFailures:0,
+    iterations:inputs.criticalFlakePolicy.contract.minimumIterations,
+    testFiles:[...inputs.criticalFlakePolicy.contract.testFiles]
+  };
+  inputs.criticalBrowserFlakeReceipt={
+    schema:'opencontainer.critical-flake-browser.v0.1',
+    sourceCommit,
+    status:'PASS',
+    unexplainedFailures:0,
+    iterations:inputs.criticalFlakePolicy.browser.minimumIterations,
+    fullProductPathPasses:inputs.criticalFlakePolicy.browser.minimumIterations,
+    profile:inputs.criticalFlakePolicy.browser.profile
+  };
+  return sourceCommit;
+}
+
 test('release policy freezes monotonic canary beta rc stable channels',async()=>{
   const {policy}=await loadReleaseInputs();
   assert.deepEqual(validateReleasePolicy(policy),[]);
@@ -80,24 +113,38 @@ test('beta cannot skip prior promotion receipts or required closure',async()=>{
   assert.ok(receipt.failures.redesign.some((item)=>item.includes('P11-12')));
 });
 
-test('stable blocks production-open state unresolved risks and critical flakiness',async()=>{
+test('stable uses independent flake receipts rather than candidate self-report',async()=>{
   const inputs=clone(await loadReleaseInputs());
-  inputs.candidate.channel='stable';
-  inputs.candidate.version='1.0.0';
-  inputs.rootPackage.version='1.0.0';
-  inputs.sdkPackage.version='1.0.0';
-  inputs.protocolPackage.version='1.0.0';
-  inputs.profile.runtime.version='1.0.0';
-  inputs.profile.protocol.packageVersion='1.0.0';
-  inputs.candidate.criticalTestFlakiness.unexplained=1;
-  inputs.candidate.priorPromotions=[
-    {channel:'canary',version:'0.1.0-alpha.1',decision:'GO',evidence:'CI canary'},
-    {channel:'beta',version:'0.9.0-beta.1',decision:'GO',evidence:'CI beta'},
-    {channel:'rc',version:'1.0.0-rc.1',decision:'GO',evidence:'CI rc'}
-  ];
-  const receipt=evaluateReleasePreflight(inputs,{sourceCommit:'d'.repeat(40)});
+  const sourceCommit=configureStableCandidate(inputs);
+  inputs.candidate.criticalTestFlakiness={unexplained:999};
+  const receipt=evaluateReleasePreflight(inputs,{sourceCommit});
   assert.equal(receipt.decision,'REDESIGN');
+  assert.equal(receipt.checks.independentCriticalFlakeCampaign,true);
+  assert.equal(receipt.checks.unexplainedCriticalFlakes,0);
   assert.ok(receipt.failures.redesign.some((item)=>item.includes('production_closed is false')));
-  assert.ok(receipt.failures.redesign.some((item)=>item.includes('unexplained critical test flakiness is 1')));
   assert.ok(receipt.failures.redesign.some((item)=>item.includes('unresolved release risks remain')));
+  assert.equal(receipt.failures.redesign.some((item)=>item.includes('critical flake campaign')),false);
+});
+
+test('stable blocks when an independent browser flake receipt is missing',async()=>{
+  const inputs=clone(await loadReleaseInputs());
+  const sourceCommit=configureStableCandidate(inputs);
+  inputs.criticalBrowserFlakeReceipt=null;
+  const receipt=evaluateReleasePreflight(inputs,{sourceCommit});
+  assert.equal(receipt.decision,'REDESIGN');
+  assert.equal(receipt.checks.independentCriticalFlakeCampaign,false);
+  assert.ok(receipt.failures.redesign.some((item)=>item.includes('critical browser flake receipt is missing or invalid')));
+});
+
+test('stable blocks commit-skewed or unexplained critical flake evidence',async()=>{
+  const inputs=clone(await loadReleaseInputs());
+  const sourceCommit=configureStableCandidate(inputs);
+  inputs.criticalContractFlakeReceipt.sourceCommit='e'.repeat(40);
+  inputs.criticalBrowserFlakeReceipt.unexplainedFailures=1;
+  inputs.criticalBrowserFlakeReceipt.status='FAIL';
+  const receipt=evaluateReleasePreflight(inputs,{sourceCommit});
+  assert.equal(receipt.decision,'REDESIGN');
+  assert.equal(receipt.checks.independentCriticalFlakeCampaign,false);
+  assert.ok(receipt.failures.redesign.some((item)=>item.includes('contract flake receipt source commit does not match')));
+  assert.ok(receipt.failures.redesign.some((item)=>item.includes('browser flake campaign has 1 unexplained failures')));
 });

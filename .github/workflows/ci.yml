@@ -36,6 +36,13 @@ jobs:
           path: .artifacts/release-preflight/
           if-no-files-found: error
           retention-days: 90
+      - name: Archive critical contract flake receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-critical-contract-flake-${{ github.sha }}
+          path: .artifacts/critical-flake/contract-receipt.json
+          if-no-files-found: error
+          retention-days: 90
 
   browser-product-path:
     needs: contract
@@ -50,4 +57,11 @@ jobs:
       - run: npm ci
       - run: |
           google-chrome-stable --version || google-chrome --version || chromium --version
-      - run: npm run distribution:browser
+      - run: npm run critical:browser-flake
+      - name: Archive critical browser flake receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-critical-browser-flake-${{ github.sha }}
+          path: .artifacts/critical-flake/browser-receipt.json
+          if-no-files-found: error
+          retention-days: 90
