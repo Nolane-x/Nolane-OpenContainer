@@ -60,6 +60,7 @@ export class OpfsCheckpointAuthority {
   #lockManager;
   #lockName;
   #storagePolicy;
+  #lastStorageGuard = null;
 
   constructor({
     root,
@@ -96,6 +97,14 @@ export class OpfsCheckpointAuthority {
 
   get lockName() {
     return this.#lockName;
+  }
+
+  get storagePolicyEnabled() {
+    return this.#storagePolicy !== null;
+  }
+
+  get lastStorageGuard() {
+    return this.#lastStorageGuard;
   }
 
   async open() {
@@ -149,7 +158,7 @@ export class OpfsCheckpointAuthority {
       const manifestText = JSON.stringify(manifest);
 
       if (this.#storagePolicy) {
-        await this.#storagePolicy.assertCanWrite(
+        await this.#guardStorageWriteUnlocked(
           encoder.encode(payloadText).byteLength + encoder.encode(manifestText).byteLength
         );
       }
@@ -178,46 +187,7 @@ export class OpfsCheckpointAuthority {
       // payload named by a structurally valid manifest, even if its payload is
       // currently corrupt, so collection never weakens fallback semantics.
       await this.#recoverUnlocked();
-
-      const manifests = [
-        parseManifest(await readText(this.#directory, MANIFEST_A), 'a'),
-        parseManifest(await readText(this.#directory, MANIFEST_B), 'b')
-      ].filter(Boolean);
-      const reachable = new Set(manifests.map((manifest) => manifest.payload));
-
-      assertOc(
-        typeof this.#payloads.entries === 'function' && typeof this.#payloads.removeEntry === 'function',
-        ErrorCodes.INVALID_STATE,
-        'OPFS generations directory does not support enumeration/removal'
-      );
-
-      const removed = [];
-      const retained = [];
-      const skipped = [];
-      for await (const [name, handle] of this.#payloads.entries()) {
-        if (handle?.kind && handle.kind !== 'file') {
-          skipped.push(String(name));
-          continue;
-        }
-        if (reachable.has(name)) {
-          retained.push(String(name));
-          continue;
-        }
-        removed.push(String(name));
-        if (!dryRun) await this.#payloads.removeEntry(name);
-      }
-
-      removed.sort();
-      retained.sort();
-      skipped.sort();
-      return Object.freeze({
-        dryRun,
-        removed: Object.freeze(removed),
-        retained: Object.freeze(retained),
-        skipped: Object.freeze(skipped),
-        currentSequence: this.#current?.sequence ?? null,
-        currentGeneration: this.#current?.generation ?? null
-      });
+      return this.#collectGarbageUnlocked({ dryRun });
     });
   }
 
@@ -241,6 +211,89 @@ export class OpfsCheckpointAuthority {
 
       const snapshot = JSON.parse(text);
       return fs.restore(snapshot);
+    });
+  }
+
+  async #guardStorageWriteUnlocked(additionalBytes) {
+    try {
+      const status = await this.#storagePolicy.assertCanWrite(additionalBytes);
+      this.#lastStorageGuard = Object.freeze({
+        ...status,
+        gcAttempted: false,
+        gcRemoved: Object.freeze([])
+      });
+      return this.#lastStorageGuard;
+    } catch (error) {
+      if (error?.code !== ErrorCodes.RESOURCE_EXHAUSTED) throw error;
+    }
+
+    const collected = await this.#collectGarbageUnlocked({ dryRun: false });
+    try {
+      const status = await this.#storagePolicy.assertCanWrite(additionalBytes);
+      this.#lastStorageGuard = Object.freeze({
+        ...status,
+        gcAttempted: true,
+        gcRemoved: collected.removed
+      });
+      return this.#lastStorageGuard;
+    } catch (error) {
+      if (error?.code !== ErrorCodes.RESOURCE_EXHAUSTED) throw error;
+      this.#lastStorageGuard = Object.freeze({
+        supported: true,
+        additionalBytes,
+        gcAttempted: true,
+        gcRemoved: collected.removed,
+        rejected: true,
+        details: error?.details ?? null
+      });
+      throw ocError(ErrorCodes.RESOURCE_EXHAUSTED, 'OPFS checkpoint blocked by browser storage policy after garbage collection', {
+        ...(error?.details ?? {}),
+        additionalBytes,
+        gcRemoved: collected.removed,
+        gcRetained: collected.retained
+      });
+    }
+  }
+
+  async #collectGarbageUnlocked({ dryRun = false } = {}) {
+    const manifests = [
+      parseManifest(await readText(this.#directory, MANIFEST_A), 'a'),
+      parseManifest(await readText(this.#directory, MANIFEST_B), 'b')
+    ].filter(Boolean);
+    const reachable = new Set(manifests.map((manifest) => manifest.payload));
+
+    assertOc(
+      typeof this.#payloads.entries === 'function' && typeof this.#payloads.removeEntry === 'function',
+      ErrorCodes.INVALID_STATE,
+      'OPFS generations directory does not support enumeration/removal'
+    );
+
+    const removed = [];
+    const retained = [];
+    const skipped = [];
+    for await (const [name, handle] of this.#payloads.entries()) {
+      if (handle?.kind && handle.kind !== 'file') {
+        skipped.push(String(name));
+        continue;
+      }
+      if (reachable.has(name)) {
+        retained.push(String(name));
+        continue;
+      }
+      removed.push(String(name));
+      if (!dryRun) await this.#payloads.removeEntry(name);
+    }
+
+    removed.sort();
+    retained.sort();
+    skipped.sort();
+    return Object.freeze({
+      dryRun,
+      removed: Object.freeze(removed),
+      retained: Object.freeze(retained),
+      skipped: Object.freeze(skipped),
+      currentSequence: this.#current?.sequence ?? null,
+      currentGeneration: this.#current?.generation ?? null
     });
   }
 
