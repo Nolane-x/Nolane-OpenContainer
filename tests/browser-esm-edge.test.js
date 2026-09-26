@@ -125,7 +125,7 @@ test('browser ESM bridge promotes a waiting worker only after compatibility hand
 });
 
 test('browser ESM bridge fails closed when registration never activates',async()=>{
-  const worker=new FakeWorker();
+  const worker=new FakeWorker('installing');
   const registration=new FakeRegistration(worker);
   const container=new FakeContainer(registration);
   const bridge=new BrowserEsmServiceWorkerBridge({publication:publication('test-session'),serviceWorkerContainer:container,timeoutMs:10});
