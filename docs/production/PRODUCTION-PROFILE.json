@@ -38,7 +38,8 @@
   "browser": {
     "referenceProfile": "desktop-chromium-ci-alpha",
     "crossOriginIsolationRequired": true,
-    "crossBrowserReleaseMatrixClosed": false
+    "crossBrowserReleaseMatrixClosed": false,
+    "serviceWorkerCompatibilityId": "opencontainer-sw-edge-v1:rpc1:snapshot1:opfs1"
   },
   "toolchain": {
     "vite": "8.3.0",
