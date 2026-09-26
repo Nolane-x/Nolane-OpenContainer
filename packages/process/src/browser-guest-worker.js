@@ -14,6 +14,8 @@ export class BrowserGuestWorkerAuthority {
   #closed = false;
   #syncRequestHandler;
   #maxSyncResponseBytes;
+  #resources;
+  #workerLease = null;
 
   constructor({
     publication,
@@ -23,7 +25,8 @@ export class BrowserGuestWorkerAuthority {
     maxPending = 64,
     requestTimeoutMs = 5000,
     syncRequestHandler = null,
-    maxSyncResponseBytes = 1024 * 1024
+    maxSyncResponseBytes = 1024 * 1024,
+    resources = null
   } = {}) {
     assertOc(publication && typeof publication.resolveDynamic === 'function', ErrorCodes.INVALID_ARGUMENT, 'Native ESM publication authority is required');
     assertOc(typeof WorkerImpl === 'function', ErrorCodes.ESM_EDGE_UNAVAILABLE, 'Dedicated Worker API is unavailable');
@@ -35,6 +38,7 @@ export class BrowserGuestWorkerAuthority {
     this.requestTimeoutMs = Math.max(1, Number(requestTimeoutMs) || 5000);
     this.#syncRequestHandler = syncRequestHandler;
     this.#maxSyncResponseBytes = Math.max(1024, Number(maxSyncResponseBytes) || 1024 * 1024);
+    this.#resources = resources;
   }
 
   get identity() { return this.#rpc?.identity ?? null; }
@@ -43,10 +47,17 @@ export class BrowserGuestWorkerAuthority {
     if (this.#closed) throw ocError(ErrorCodes.WORKER_CLOSED, 'Browser guest worker authority is closed');
     if (this.#worker) return this.identity;
 
-    this.#worker = new this.#Worker(this.#workerURL, {
-      type: 'module',
-      name: 'opencontainer-guest-' + this.#publication.session
-    });
+    const lease = this.#resources?.reserve({ workers: 1 }) ?? null;
+    try {
+      this.#worker = new this.#Worker(this.#workerURL, {
+        type: 'module',
+        name: 'opencontainer-guest-' + this.#publication.session
+      });
+      this.#workerLease = lease;
+    } catch (error) {
+      lease?.release();
+      throw error;
+    }
 
     this.#hostListener = (event) => {
       const message = event.data;
@@ -189,5 +200,7 @@ export class BrowserGuestWorkerAuthority {
     if (this.#worker) this.#worker.terminate();
     this.#worker = null;
     this.#hostListener = null;
+    this.#workerLease?.release();
+    this.#workerLease = null;
   }
 }
