@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MemoryVFS, OpfsCheckpointAuthority } from '../packages/vfs/src/index.js';
+import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority } from '../packages/vfs/src/index.js';
 import { ErrorCodes } from '../packages/protocol/src/index.js';
 
 class FakeNotFoundError extends Error {
@@ -258,4 +258,107 @@ test('OPFS garbage collection removes only payloads unreachable from both manife
   const restored = new MemoryVFS();
   await reopened.restoreInto(restored);
   assert.equal(restored.readFile('value.txt'), 'two');
+});
+
+
+test('OPFS storage pressure runs garbage collection once before allowing a checkpoint', async () => {
+  const root = new FakeDirectoryHandle();
+  const locks = new FakeLockManager();
+  let pressure = false;
+  let pressuredCalls = 0;
+  const storageManager = {
+    async estimate() {
+      if (!pressure) return { usage: 100, quota: 10_000 };
+      pressuredCalls++;
+      return pressuredCalls === 1
+        ? { usage: 990, quota: 1000 }
+        : { usage: 100, quota: 1000 };
+    },
+    async persisted() { return true; }
+  };
+  const storagePolicy = new BrowserStoragePolicy({
+    storageManager,
+    warningRatio: 0.8,
+    criticalRatio: 0.95
+  });
+  const fs = new MemoryVFS();
+  const authority = await new OpfsCheckpointAuthority({
+    root,
+    lockManager: locks,
+    storagePolicy
+  }).open();
+
+  fs.mount({ 'value.txt': 'one' });
+  const first = await authority.checkpoint(fs);
+
+  const workspace = root.dirs.get('opencontainer-workspace');
+  const generations = workspace.dirs.get('generations');
+  const orphan = await generations.getFileHandle('generation-pressure-orphan.json', { create: true });
+  orphan.data = '{"orphan":true}';
+
+  fs.beginTransaction().writeFile('value.txt', 'two').commit();
+  pressure = true;
+  const second = await authority.checkpoint(fs);
+
+  assert.equal(second.sequence, first.sequence + 1);
+  assert.equal(pressuredCalls, 2);
+  assert.equal(authority.lastStorageGuard.gcAttempted, true);
+  assert.deepEqual(authority.lastStorageGuard.gcRemoved, ['generation-pressure-orphan.json']);
+  assert.equal(generations.files.has('generation-pressure-orphan.json'), false);
+});
+
+test('OPFS storage pressure fails closed without advancing the recovery manifests', async () => {
+  const root = new FakeDirectoryHandle();
+  const locks = new FakeLockManager();
+  let pressure = false;
+  const storageManager = {
+    async estimate() {
+      return pressure
+        ? { usage: 990, quota: 1000 }
+        : { usage: 100, quota: 10_000 };
+    },
+    async persisted() { return true; }
+  };
+  const storagePolicy = new BrowserStoragePolicy({
+    storageManager,
+    warningRatio: 0.8,
+    criticalRatio: 0.95
+  });
+  const fs = new MemoryVFS();
+  const authority = await new OpfsCheckpointAuthority({
+    root,
+    lockManager: locks,
+    storagePolicy
+  }).open();
+
+  fs.mount({ 'value.txt': 'stable' });
+  const stable = await authority.checkpoint(fs);
+  const workspace = root.dirs.get('opencontainer-workspace');
+  const generations = workspace.dirs.get('generations');
+  const beforePayloads = [...generations.files.keys()].sort();
+
+  fs.beginTransaction().writeFile('value.txt', 'blocked').commit();
+  pressure = true;
+
+  await assert.rejects(
+    () => authority.checkpoint(fs),
+    (error) => {
+      assert.equal(error.code, ErrorCodes.RESOURCE_EXHAUSTED);
+      assert.equal(error.details.gcRemoved.length, 0);
+      assert.equal(error.details.additionalBytes > 0, true);
+      return true;
+    }
+  );
+
+  assert.equal(authority.current.sequence, stable.sequence);
+  assert.equal(authority.current.generation, stable.generation);
+  assert.equal(authority.lastStorageGuard.rejected, true);
+  assert.equal(authority.lastStorageGuard.gcAttempted, true);
+  assert.deepEqual([...generations.files.keys()].sort(), beforePayloads);
+
+  const reopened = await new OpfsCheckpointAuthority({ root, lockManager: locks }).open();
+  assert.equal(reopened.current.sequence, stable.sequence);
+  const restored = new MemoryVFS();
+  await reopened.restoreInto(restored);
+  assert.equal(restored.readFile('value.txt'), 'stable');
 });
