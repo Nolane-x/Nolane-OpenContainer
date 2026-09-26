@@ -107,6 +107,14 @@ export class FrozenInstallAuthority {
       packageInstances++;
       assertOc(node.resolved, ErrorCodes.INVALID_PACKAGE_CONFIG, 'Frozen package is missing resolved artifact URL', { location: node.location });
       assertOc(node.integrity, ErrorCodes.ARTIFACT_INTEGRITY, 'Frozen package is missing integrity', { location: node.location });
+      if (!this.#store.has(node.contentId) && typeof this.#store.hydrate === 'function') {
+        await this.#store.hydrate({
+          contentId: node.contentId,
+          integrity: node.integrity,
+          expectedName: node.name,
+          expectedVersion: node.version && node.version !== '0.0.0-link' ? node.version : null
+        });
+      }
       if (!this.#store.has(node.contentId) && !unique.has(node.contentId)) unique.set(node.contentId, node);
     }
 
