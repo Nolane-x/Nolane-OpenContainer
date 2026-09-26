@@ -224,6 +224,10 @@
     "compat-governance": {
       "ref": "CI #309 / ba352ff4b1588d06130afe2d06f4dc834334ef8f",
       "note": "fail-closed Node 24 oracle exception registry + frozen Alpha/Beta/RC/1.0 thresholds + machine evaluator; current level Alpha; Chrome regressions green"
+    },
+    "distribution-certification": {
+      "ref": "CI #314 / 76681847318201aaf942bd1376a95c090fb9070d",
+      "note": "publish-equivalent @nolane/opencontainer tarball installed into clean consumer; public SDK, bundled example and entire Chrome browser-product-path executed from installed artifact; external registry/release publication receipt still absent"
     }
   },
   "overrides": [
@@ -640,7 +644,7 @@
       "domain": "P11",
       "state": "PARTIAL",
       "promotion": "PASS-BROWSER",
-      "evidence": "compat-corpus-repeated",
+      "evidence": "distribution-certification",
       "closure_met": false
     },
     {
@@ -703,8 +707,8 @@
       "id": "P15-12",
       "domain": "P15",
       "state": "PARTIAL",
-      "promotion": "PASS-LOCAL",
-      "evidence": "sdk-s7",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "distribution-certification",
       "closure_met": false
     },
     {
