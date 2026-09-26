@@ -39,7 +39,8 @@ function configureStableCandidate(inputs,{sourceCommit='d'.repeat(40)}={}){
     status:'PASS',
     unexplainedFailures:0,
     iterations:inputs.criticalFlakePolicy.browser.minimumIterations,
-    fullProductPathPasses:inputs.criticalFlakePolicy.browser.minimumIterations
+    fullProductPathPasses:inputs.criticalFlakePolicy.browser.minimumIterations,
+    profile:inputs.criticalFlakePolicy.browser.profile
   };
   return sourceCommit;
 }
