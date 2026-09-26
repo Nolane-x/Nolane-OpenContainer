@@ -29,6 +29,13 @@ jobs:
           path: .artifacts/release/
           if-no-files-found: error
           retention-days: 90
+      - name: Archive release preflight
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-release-preflight-${{ github.sha }}
+          path: .artifacts/release-preflight/
+          if-no-files-found: error
+          retention-days: 90
 
   browser-product-path:
     needs: contract
