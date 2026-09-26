@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 const required=[
   'packages/sdk/src/index.js','packages/kernel/src/index.js','packages/vfs/src/index.js','packages/process/src/index.js',
   'packages/process/src/sync-rpc.js',
+  'release/CRITICAL-FLAKE-POLICY.v0.1.json','scripts/run-critical-flake-campaign.mjs','scripts/run-browser-flake-campaign.mjs',
   'packages/persistence/src/release-storage.js','tests/release-storage-migration.test.js',
   'release/RELEASE-POLICY.v0.1.json','release/RELEASE-CANDIDATE.v0.1.json','scripts/evaluate-release-preflight.mjs','tests/release-preflight.test.js',
   'release/HOTFIX-POLICY.v0.1.json','release/DEPRECATION-POLICY.v0.1.json','release/DEPRECATIONS.v0.1.json','scripts/verify-release-governance.mjs','tests/release-governance.test.js',
