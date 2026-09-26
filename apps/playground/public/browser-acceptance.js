@@ -163,6 +163,11 @@ async function run() {
     "export const cacheStorageCode = typeof caches !== 'undefined' ? await asyncCodeOf(() => caches.open('guest-escape')) : 'ABSENT';"
   ].join('\n')).commit();
 
+  runtime.fs.beginTransaction().writeFile(
+    'src/guest-runaway.mjs',
+    "while (true) {}\nexport const unreachable = true;"
+  ).commit();
+
   const securityPublication = runtime.packages.createNativeEsmPublication({
     baseURL,
     session: 'browser-security-isolation',
@@ -231,6 +236,36 @@ async function run() {
   assert(isolation.exports.internalFetchStatus === 200, 'guest membrane blocked its own authoritative publication resource');
   assert(isolation.exports.internalFetchEdge === 'service-worker', 'guest internal fetch escaped the publication service-worker edge');
   assert(isolation.workerCrossOriginIsolated === true, 'security court guest lost cross-origin isolation');
+
+  stage('guest-runaway-timeout-start');
+  const runawayWorker = new BrowserGuestWorkerAuthority({
+    publication: securityPublication,
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: nodeCompat.syncRequestHandler,
+    requestTimeoutMs: 250
+  });
+  const runawayEntry = securityPublication.moduleURL('./guest-runaway.mjs', '/workspace/src/entry.mjs').href;
+  let runawayCode = 'ALLOWED';
+  try {
+    await runawayWorker.execute(runawayEntry, { exportNames: ['unreachable'] });
+  } catch (error) {
+    runawayCode = error?.code ?? error?.name ?? 'ERROR';
+  }
+  assert(runawayCode === 'OC_WORKER_TIMEOUT', 'runaway guest did not hit the hard execution deadline: ' + runawayCode);
+  assert(runawayWorker.identity === null, 'timed-out guest realm remained attached after deadline');
+
+  const recoveredAfterRunaway = await runawayWorker.execute(securityEntry, {
+    exportNames: ['pageRealmHidden']
+  });
+  assert(recoveredAfterRunaway.exports.pageRealmHidden === true, 'guest authority did not recover on a fresh realm after hard timeout');
+  runawayWorker.close();
+
+  stage('guest-runaway-timeout-pass', {
+    timeoutCode: runawayCode,
+    hardTerminated: true,
+    recoveredOnFreshRealm: recoveredAfterRunaway.exports.pageRealmHidden === true
+  });
+
   securityWorker.close();
   securityBridge.close();
 
