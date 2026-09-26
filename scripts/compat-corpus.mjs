@@ -53,6 +53,18 @@ export function validateCompatibilitySources(corpus,adapters){
     for(const source of entry.pinnedSources??[]){
       if(!source.path||!/^[0-9a-f]{40}$/.test(source.blobSha??''))errors.push(entry.id+': pinned source must include Git blob SHA');
     }
+    const tarball=entry.packageTarball;
+    if(!tarball||!['published','not-published-at-frozen-version','not-applicable'].includes(tarball.status)){
+      errors.push(entry.id+': package tarball publication status must be explicit');
+    }else if(tarball.status==='published'){
+      if(typeof tarball.name!=='string'||!tarball.name)errors.push(entry.id+': published package name missing');
+      if(typeof tarball.version!=='string'||!tarball.version)errors.push(entry.id+': published package version missing');
+      if(!/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(tarball.integrity??''))errors.push(entry.id+': published package SHA-512 integrity missing/invalid');
+      if(!/^[0-9a-f]{40}$/.test(tarball.shasum??''))errors.push(entry.id+': published package SHA-1 shasum missing/invalid');
+      if(typeof tarball.tarball!=='string'||!tarball.tarball.startsWith('https://registry.npmjs.org/'))errors.push(entry.id+': published package tarball URL must be npm registry HTTPS');
+    }else if(typeof tarball.reason!=='string'||!tarball.reason){
+      errors.push(entry.id+': non-published/not-applicable package case must explain why no tarball digest exists');
+    }
     if(!Array.isArray(entry.expectedBoundaries)||entry.expectedBoundaries.length===0)errors.push(entry.id+': expected boundaries must remain explicit');
   }
 
@@ -90,6 +102,11 @@ export function buildCompatibilityBaseline(corpus,adapters){
   const unsupportedRetained=corpus.cases
     .filter(entry=>(entry.expectedBoundaries??[]).some(value=>/UNSUPPORTED/.test(value)))
     .map(entry=>({id:entry.id,boundaries:entry.expectedBoundaries.filter(value=>/UNSUPPORTED/.test(value))}));
+  const tarballCoverage={
+    publishedPinned:corpus.cases.filter(entry=>entry.packageTarball?.status==='published').map(entry=>entry.id).sort(),
+    notPublishedAtFrozenVersion:corpus.cases.filter(entry=>entry.packageTarball?.status==='not-published-at-frozen-version').map(entry=>entry.id).sort(),
+    notApplicable:corpus.cases.filter(entry=>entry.packageTarball?.status==='not-applicable').map(entry=>entry.id).sort()
+  };
 
   return {
     schema:'opencontainer.compatibility-baseline.v0.1',
@@ -104,6 +121,7 @@ export function buildCompatibilityBaseline(corpus,adapters){
       caseClasses:classes,
       packageStrata:strata,
       lockfileSupport,
+      tarballCoverage,
       unsupportedRetained
     },
     progression:{
@@ -159,6 +177,42 @@ async function inspectRegistryPackage(name,version){
   };
 }
 
+async function verifyPinnedTarball(entry,registry){
+  const expected=entry.packageTarball;
+  if(expected.status==='not-applicable'){
+    if(registry.published)throw new Error('package tarball unexpectedly published for not-applicable case');
+    return {kind:'package-tarball',status:expected.status,reason:expected.reason};
+  }
+  if(expected.status==='not-published-at-frozen-version'){
+    if(registry.published)throw new Error('package publication appeared at frozen version but corpus marks it unpublished');
+    if(registry.reason!=='registry-404')throw new Error('expected npm registry 404 for unpublished frozen package version, got '+registry.reason);
+    return {kind:'package-tarball',status:expected.status,reason:expected.reason};
+  }
+
+  if(!registry.published)throw new Error('published package tarball disappeared from registry');
+  for(const field of ['name','version','integrity','shasum','tarball']){
+    if(registry[field]!==expected[field])throw new Error('package tarball '+field+' drift: expected '+expected[field]+' got '+registry[field]);
+  }
+
+  const response=await fetch(expected.tarball,{headers:{'user-agent':'opencontainer-compat-corpus-v0.1'}});
+  if(!response.ok)throw new Error('package tarball returned HTTP '+response.status+': '+expected.tarball);
+  const bytes=new Uint8Array(await response.arrayBuffer());
+  const integrity='sha512-'+createHash('sha512').update(bytes).digest('base64');
+  const shasum=createHash('sha1').update(bytes).digest('hex');
+  if(integrity!==expected.integrity)throw new Error('package tarball SHA-512 mismatch for '+expected.name+'@'+expected.version);
+  if(shasum!==expected.shasum)throw new Error('package tarball SHA-1 mismatch for '+expected.name+'@'+expected.version);
+  return {
+    kind:'package-tarball',
+    status:'published',
+    name:expected.name,
+    version:expected.version,
+    bytes:bytes.byteLength,
+    integrity,
+    shasum,
+    tarball:expected.tarball
+  };
+}
+
 export async function verifyCorpusOnline(corpus){
   const results=[];
   for(const entry of corpus.cases){
@@ -173,6 +227,7 @@ export async function verifyCorpusOnline(corpus){
 
       const registry=await inspectRegistryPackage(packageJson.name,packageJson.version);
       result.checks.push({kind:'registry-package',...registry});
+      result.checks.push(await verifyPinnedTarball(entry,registry));
 
       const licenseBytes=await fetchPinned(entry.repository,entry.commit,entry.license.path);
       const licenseSha=gitBlobSha(licenseBytes);
