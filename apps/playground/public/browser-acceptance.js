@@ -20,6 +20,14 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function canonicalJson(value) {
+  if (Array.isArray(value)) return value.map(canonicalJson);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.keys(value).sort().map((key) => [key, canonicalJson(value[key])])
+  );
+}
+
 async function run() {
   stage('boot');
   assert(globalThis.isSecureContext, 'browser acceptance requires a secure context');
@@ -32,7 +40,7 @@ async function run() {
   const productionProfileResponse = await fetch('/docs/production/PRODUCTION-PROFILE.json', { cache: 'no-store' });
   assert(productionProfileResponse.ok, 'machine-readable production profile is not publicly loadable');
   const publishedProductionProfile = await productionProfileResponse.json();
-  assert(JSON.stringify(publishedProductionProfile) === JSON.stringify(runtime.productionProfile), 'browser SDK production profile drifted from published JSON');
+  assert(JSON.stringify(canonicalJson(publishedProductionProfile)) === JSON.stringify(canonicalJson(runtime.productionProfile)), 'browser SDK production profile drifted from published JSON');
   assert(runtime.productionProfile.productionClosed === false, 'production profile incorrectly claims closure');
   assert(runtime.productionProfile.oracle.node === '24.21.0' && runtime.productionProfile.oracle.npm === '11.19.0', 'production profile oracle drifted');
   stage('production-profile-pass', {
