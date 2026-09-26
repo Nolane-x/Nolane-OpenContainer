@@ -370,6 +370,8 @@ async function run() {
     maxUnpackedBytes: 64 * 1024 * 1024
   });
   const packageCacheDirectory = 'opencontainer-package-cache-' + crypto.randomUUID();
+  const packageDedupeDirectory = packageCacheDirectory + '-dedupe';
+  let capturedPackageArtifact = null;
   try {
     const persistentContent = await new OpfsPackageContentStore({
       root: opfsRoot,
@@ -378,7 +380,13 @@ async function run() {
     }).open();
     const frozenInstaller = runtime.packages.createFrozenInstaller({ contentStore: persistentContent });
     const installReceipt = await frozenInstaller.installAll({
-      artifactAuthority,
+      artifactAuthority: {
+        async fetchArtifact(options) {
+          const artifact = await artifactAuthority.fetchArtifact(options);
+          capturedPackageArtifact = new Uint8Array(artifact.bytes);
+          return artifact;
+        }
+      },
       concurrency: 2
     });
     assert(installReceipt.redirects === 0, 'same-origin retained package unexpectedly redirected');
@@ -422,6 +430,45 @@ async function run() {
     );
     assert(reopenedPackageJson.name === 'lightningcss-wasm' && reopenedPackageJson.version === '1.33.0', 'reopened OPFS package content lost package identity');
 
+    assert(capturedPackageArtifact instanceof Uint8Array && capturedPackageArtifact.byteLength > 0, 'browser package install did not retain verified artifact bytes for dedupe court');
+    const lightningNode = runtime.packages.graph.nodes.find((node) => node.location === 'node_modules/lightningcss-wasm');
+    assert(lightningNode?.contentId, 'browser package graph did not expose immutable content identity');
+    const dedupeA = await new OpfsPackageContentStore({
+      root: opfsRoot,
+      directoryName: packageDedupeDirectory,
+      lockManager: navigator.locks
+    }).open();
+    const dedupeB = await new OpfsPackageContentStore({
+      root: opfsRoot,
+      directoryName: packageDedupeDirectory,
+      lockManager: navigator.locks
+    }).open();
+    const dedupeReceipts = await Promise.all([
+      dedupeA.ingest({
+        contentId: lightningNode.contentId,
+        integrity: lightningIntegrity,
+        bytes: capturedPackageArtifact,
+        expectedName: 'lightningcss-wasm',
+        expectedVersion: '1.33.0'
+      }),
+      dedupeB.ingest({
+        contentId: lightningNode.contentId,
+        integrity: lightningIntegrity,
+        bytes: capturedPackageArtifact,
+        expectedName: 'lightningcss-wasm',
+        expectedVersion: '1.33.0'
+      })
+    ]);
+    const persistentReuseCount = dedupeReceipts.filter((receipt) => receipt.persistentReused === true).length;
+    assert(persistentReuseCount === 1, 'concurrent OPFS package cache did not collapse publication to one persistent writer');
+
+    stage('browser-package-cache-dedupe-pass', {
+      contentId: lightningNode.contentId,
+      artifactBytes: capturedPackageArtifact.byteLength,
+      persistentReuseCount,
+      crossContextLocking: dedupeA.crossContextLocking && dedupeB.crossContextLocking
+    });
+
     stage('browser-package-install-pass', {
       bytes: installReceipt.bytes,
       fetchedContents: installReceipt.fetchedContents,
@@ -436,6 +483,9 @@ async function run() {
     });
   } finally {
     await opfsRoot.removeEntry(packageCacheDirectory, { recursive: true });
+    try { await opfsRoot.removeEntry(packageDedupeDirectory, { recursive: true }); } catch (error) {
+      if (error?.name !== 'NotFoundError') throw error;
+    }
   }
 
   stage('vite-closure-install-start');
