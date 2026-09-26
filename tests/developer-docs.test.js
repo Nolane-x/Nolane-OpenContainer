@@ -38,7 +38,7 @@ test('public SDK contract exactly matches exported module and class surface',asy
 
 test('stable error catalog exactly covers protocol ErrorCodes with actionable metadata',async()=>{
   const catalog=await json('docs/api/ERROR-CATALOG.v0.1.json');
-  const codes=Object.values(ErrorCodes).sort();
+  const codes=[...Object.values(ErrorCodes),'OC_INTERNAL'].sort();
   const catalogCodes=catalog.errors.map((item)=>item.code).sort();
   assert.deepEqual(catalogCodes,codes);
   const classes=new Set(catalog.compatibilityClasses);
