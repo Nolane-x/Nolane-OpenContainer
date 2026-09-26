@@ -20,7 +20,7 @@ export async function loadCompatibilitySources(){
 
 export function gitBlobSha(bytes){
   const data=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
-  const header=Buffer.from('blob '+data.byteLength+'\\0');
+  const header=Buffer.from('blob '+data.byteLength+'\0');
   return createHash('sha1').update(header).update(data).digest('hex');
 }
 
