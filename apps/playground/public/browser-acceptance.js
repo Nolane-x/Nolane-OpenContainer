@@ -401,7 +401,7 @@ async function run() {
     methods: ['GET'],
     paths: ['/toolchain/vendor/']
   });
-  runtime.packages.compile({
+  const browserPackageLockfile = {
     name: 'browser-package-acceptance',
     version: '1.0.0',
     lockfileVersion: 3,
@@ -414,7 +414,8 @@ async function run() {
         integrity: lightningIntegrity
       }
     }
-  });
+  };
+  runtime.packages.compile(browserPackageLockfile);
 
   const artifactAuthority = new PackageArtifactAuthority({
     fs: runtime.fs,
@@ -455,6 +456,46 @@ async function run() {
     assert(lightningPackageJson.name === 'lightningcss-wasm', 'browser-installed package name mismatch');
     assert(lightningPackageJson.version === '1.33.0', 'browser-installed package version mismatch');
     assert(resolvedLightning.path.includes('/workspace/node_modules/lightningcss-wasm/'), 'browser resolver did not target installed immutable package');
+
+    stage('sdk-package-persistence-start');
+    const packageProductRuntime = await OpenContainer.boot({
+      packagePersistence: {
+        root: opfsRoot,
+        directoryName: packageCacheDirectory,
+        lockManager: navigator.locks
+      }
+    });
+    packageProductRuntime.packages.compile(browserPackageLockfile);
+    assert(packageProductRuntime.packageContentStore?.crossContextLocking === true, 'SDK package persistence profile lost Web Locks coordination');
+    const sdkPackageInstaller = packageProductRuntime.packages.createFrozenInstaller();
+    assert(sdkPackageInstaller.contentStore === packageProductRuntime.packageContentStore, 'SDK frozen installer did not inherit the persistent package store');
+
+    let sdkPackageNetworkFetches = 0;
+    const sdkPackageReceipt = await sdkPackageInstaller.installAll({
+      artifactAuthority: {
+        async fetchArtifact() {
+          sdkPackageNetworkFetches++;
+          throw new Error('SDK persistent package profile unexpectedly reached the network');
+        }
+      },
+      concurrency: 2
+    });
+    assert(sdkPackageNetworkFetches === 0, 'SDK persistent package profile reached the network after reopen');
+    assert(sdkPackageReceipt.requestedContents === 0 && sdkPackageReceipt.fetchedContents === 0, 'SDK persistent package profile did not hydrate from OPFS');
+    assert(packageProductRuntime.packageContentStore.hydratedCount === 1, 'SDK persistent package profile did not hydrate exactly one frozen content');
+    const sdkPackageMounted = sdkPackageInstaller.mountFrozenGraph();
+    const sdkPackageJson = JSON.parse(
+      packageProductRuntime.packages.nodeModules.readFile('/workspace/node_modules/lightningcss-wasm/package.json')
+    );
+    assert(sdkPackageJson.name === 'lightningcss-wasm' && sdkPackageJson.version === '1.33.0', 'SDK persistent package profile lost package identity');
+    stage('sdk-package-persistence-pass', {
+      networkFetches: sdkPackageNetworkFetches,
+      requestedContents: sdkPackageReceipt.requestedContents,
+      hydratedContents: packageProductRuntime.packageContentStore.hydratedCount,
+      mountedPackages: sdkPackageMounted.packageCount,
+      crossContextLocking: packageProductRuntime.packageContentStore.crossContextLocking
+    });
+    await packageProductRuntime.terminate();
 
     const reopenedContent = await new OpfsPackageContentStore({
       root: opfsRoot,
