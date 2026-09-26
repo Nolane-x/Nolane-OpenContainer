@@ -380,6 +380,41 @@ async function run() {
     assert(persistentRuntimeC.fs.generation === sdkThird.generation, 'SDK OPFS second reopen generation drifted');
     await persistentRuntimeC.terminate();
 
+    const sdkWorkspaceRoot = await opfsRoot.getDirectoryHandle(sdkWorkspaceDirectory);
+    const sdkGenerations = await sdkWorkspaceRoot.getDirectoryHandle('generations');
+    const sdkNewestPayload = await sdkGenerations.getFileHandle(sdkThird.payload);
+    const sdkCorruptWriter = await sdkNewestPayload.createWritable();
+    await sdkCorruptWriter.write('{"corrupt":true}');
+    await sdkCorruptWriter.close();
+
+    const persistentRuntimeD = await OpenContainer.boot({ workspacePersistence: workspaceProfile });
+    assert(persistentRuntimeD.fs.readFile('persisted.txt') === 'workspace-two', 'SDK corruption fallback did not restore the older valid workspace');
+    assert(persistentRuntimeD.fs.generation === sdkSecond.generation, 'SDK corruption fallback restored the wrong generation');
+    assert(persistentRuntimeD.workspacePersistence?.current?.sequence === sdkSecond.sequence, 'SDK corruption fallback retained the corrupt newest receipt');
+
+    persistentRuntimeD.fs.beginTransaction().writeFile('persisted.txt', 'workspace-recovered').commit();
+    const sdkRecovered = await persistentRuntimeD.persistWorkspace();
+    assert(sdkRecovered.sequence === sdkSecond.sequence + 1, 'SDK corruption recovery could not continue checkpoint sequence');
+    assert(sdkRecovered.generation === sdkSecond.generation + 1, 'SDK corruption recovery could not continue workspace generation');
+    assert(sdkRecovered.payload !== sdkThird.payload, 'SDK corruption recovery reused the corrupt payload identity');
+    const sdkRecoveryGc = await persistentRuntimeD.collectWorkspaceGarbage();
+    assert(sdkRecoveryGc.removed.includes(sdkThird.payload), 'SDK corruption recovery did not collect the superseded corrupt payload');
+    await persistentRuntimeD.terminate();
+
+    const persistentRuntimeE = await OpenContainer.boot({ workspacePersistence: workspaceProfile });
+    assert(persistentRuntimeE.fs.readFile('persisted.txt') === 'workspace-recovered', 'SDK corruption recovery republish did not survive reopen');
+    assert(persistentRuntimeE.workspacePersistence?.current?.payload === sdkRecovered.payload, 'SDK corruption recovery reopened the wrong payload');
+    await persistentRuntimeE.terminate();
+
+    stage('sdk-workspace-corruption-recovery-pass', {
+      fallbackSequence: sdkSecond.sequence,
+      corruptSequence: sdkThird.sequence,
+      recoveredSequence: sdkRecovered.sequence,
+      fallbackGeneration: sdkSecond.generation,
+      recoveredGeneration: sdkRecovered.generation,
+      corruptPayloadCollected: sdkRecoveryGc.removed.includes(sdkThird.payload)
+    });
+
     stage('sdk-workspace-persistence-pass', {
       firstSequence: sdkFirst.sequence,
       secondSequence: sdkSecond.sequence,
