@@ -6,6 +6,7 @@ const required=[
   'packages/process/src/sync-rpc.js',
   'packages/persistence/src/release-storage.js','tests/release-storage-migration.test.js',
   'release/RELEASE-POLICY.v0.1.json','release/RELEASE-CANDIDATE.v0.1.json','scripts/evaluate-release-preflight.mjs','tests/release-preflight.test.js',
+  'release/HOTFIX-POLICY.v0.1.json','release/DEPRECATION-POLICY.v0.1.json','release/DEPRECATIONS.v0.1.json','scripts/verify-release-governance.mjs','tests/release-governance.test.js',
   'packages/protocol/src/service-worker-compatibility.js',
   'packages/package-env/src/index.js',
   'packages/package-env/src/browser-node-compat.js',

@@ -1,0 +1,54 @@
+{
+  "schema": "opencontainer.hotfix-policy.v0.1",
+  "rule": "Hotfix urgency never bypasses artifact provenance, distribution certification, release preflight, migration discipline, rollback planning, or archived decision evidence.",
+  "requiredEvidenceCommands": [
+    "npm run distribution:certify",
+    "npm run distribution:browser",
+    "npm run release:evidence",
+    "npm run release:verify",
+    "npm run release:preflight"
+  ],
+  "requiredArtifactBindings": [
+    "sourceCommit",
+    "artifactSha256",
+    "artifactSha512",
+    "sbomDigest",
+    "provenanceDigest",
+    "decisionReceipt"
+  ],
+  "storageImpact": {
+    "none": {
+      "migrationRequired": false
+    },
+    "compatible": {
+      "migrationRequired": false,
+      "compatibilityStatementRequired": true
+    },
+    "migration": {
+      "migrationRequired": true,
+      "requiredCrashPhases": [
+        "after-preflight",
+        "after-payload",
+        "after-verify",
+        "after-publish"
+      ],
+      "rollbackPlanRequired": true
+    }
+  },
+  "securityImpact": {
+    "none": {
+      "incidentReferenceRequired": false
+    },
+    "security": {
+      "incidentReferenceRequired": true,
+      "fullBrowserRegressionRequired": true
+    }
+  },
+  "releaseRules": {
+    "stableHotfix": "patch-only",
+    "prereleaseHotfix": "same-base-prerelease-increment",
+    "directArtifactMutationForbidden": true,
+    "destructiveStorageDowngradeForbidden": true,
+    "archivedDecisionRequired": true
+  }
+}

@@ -15,7 +15,7 @@
   "scripts": {
     "check": "node scripts/check.mjs",
     "test": "node --test tests/*.test.js",
-    "ci": "npm run check && npm test && npm run compat:corpus:verify && npm run compat:promotion && npm run distribution:certify && npm run release:evidence && npm run release:verify && npm run release:preflight",
+    "ci": "npm run check && npm test && npm run compat:corpus:verify && npm run compat:promotion && npm run distribution:certify && npm run release:evidence && npm run release:verify && npm run release:preflight && npm run release:governance",
     "playground": "node apps/playground/server.mjs",
     "browser:acceptance": "node scripts/browser-acceptance.mjs",
     "hosting:self-check": "node scripts/hosting-self-check.mjs",
@@ -26,7 +26,8 @@
     "distribution:browser": "node scripts/certify-distribution-browser.mjs",
     "release:evidence": "node scripts/build-release-evidence.mjs",
     "release:verify": "node scripts/verify-release-evidence.mjs",
-    "release:preflight": "node scripts/evaluate-release-preflight.mjs"
+    "release:preflight": "node scripts/evaluate-release-preflight.mjs",
+    "release:governance": "node scripts/verify-release-governance.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",

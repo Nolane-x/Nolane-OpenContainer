@@ -1,0 +1,27 @@
+{
+  "schema": "opencontainer.deprecation-policy.v0.1",
+  "minimumStableReleaseWindow": 2,
+  "minimumDays": 90,
+  "surfaces": [
+    "public-api",
+    "adapter"
+  ],
+  "rule": "Public API/adapter removal requires both the stable-release and calendar window unless a qualifying security incident requires immediate disablement.",
+  "normalRemoval": {
+    "noticeRequired": true,
+    "replacementOrRationaleRequired": true,
+    "migrationGuideRequired": true,
+    "releaseNotesRequired": true
+  },
+  "securityImmediateDisablement": {
+    "allowed": true,
+    "requiredSeverity": [
+      "high",
+      "critical"
+    ],
+    "incidentIdRequired": true,
+    "customerWarningRequired": true,
+    "recoveryOrAlternativeRequired": true,
+    "postIncidentReviewRequired": true
+  }
+}
