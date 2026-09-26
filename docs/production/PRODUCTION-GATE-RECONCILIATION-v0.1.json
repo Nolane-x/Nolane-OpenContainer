@@ -228,6 +228,10 @@
     "distribution-certification": {
       "ref": "CI #314 / 76681847318201aaf942bd1376a95c090fb9070d",
       "note": "publish-equivalent @nolane/opencontainer tarball installed into clean consumer; public SDK, bundled example and entire Chrome browser-product-path executed from installed artifact; external registry/release publication receipt still absent"
+    },
+    "release-evidence": {
+      "ref": "CI #319 / 144299359225975dc8cf54a10c7704c992ff2215",
+      "note": "immutable-action CI generated reproducible installed-distribution artifact plus independent checksums, SPDX 2.3 SBOM, in-toto/SLSA provenance, categorized dependency/license inventory and content-policy scan; 7 evidence files archived 90 days; unsigned and not release-published"
     }
   },
   "overrides": [
@@ -669,6 +673,110 @@
       "state": "PARTIAL",
       "promotion": "PASS-BROWSER",
       "evidence": "guest-output",
+      "closure_met": false
+    },
+    {
+      "id": "P13-01",
+      "domain": "P13",
+      "state": "PARTIAL",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "release-evidence",
+      "closure_met": false
+    },
+    {
+      "id": "P13-02",
+      "domain": "P13",
+      "state": "PARTIAL",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "release-evidence",
+      "closure_met": false
+    },
+    {
+      "id": "P13-04",
+      "domain": "P13",
+      "state": "PARTIAL",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "release-evidence",
+      "closure_met": false
+    },
+    {
+      "id": "P13-05",
+      "domain": "P13",
+      "state": "PARTIAL",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "release-evidence",
+      "closure_met": false
+    },
+    {
+      "id": "P13-06",
+      "domain": "P13",
+      "state": "PARTIAL",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "release-evidence",
+      "closure_met": false
+    },
+    {
+      "id": "P13-07",
+      "domain": "P13",
+      "state": "PARTIAL",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "release-evidence",
+      "closure_met": false
+    },
+    {
+      "id": "P13-08",
+      "domain": "P13",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "evidence": "release-evidence",
+      "closure_met": false
+    },
+    {
+      "id": "P13-11",
+      "domain": "P13",
+      "state": "PARTIAL",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "release-evidence",
+      "closure_met": false
+    },
+    {
+      "id": "P13-12",
+      "domain": "P13",
+      "state": "PARTIAL",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "release-evidence",
+      "closure_met": false
+    },
+    {
+      "id": "P13-13",
+      "domain": "P13",
+      "state": "PARTIAL",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "release-evidence",
+      "closure_met": false
+    },
+    {
+      "id": "P13-14",
+      "domain": "P13",
+      "state": "PARTIAL",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "release-evidence",
+      "closure_met": false
+    },
+    {
+      "id": "P13-15",
+      "domain": "P13",
+      "state": "PARTIAL",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "release-evidence",
+      "closure_met": false
+    },
+    {
+      "id": "P13-20",
+      "domain": "P13",
+      "state": "PARTIAL",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "release-evidence",
       "closure_met": false
     },
     {

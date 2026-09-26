@@ -11,7 +11,7 @@ const port = Number(process.env.PORT || 4173);
 const lexerPath = fileURLToPath(import.meta.resolve('es-module-lexer/minimal/js'));
 const sourcePackageLockPath = existsSync(join(repoRoot, 'package-lock.json'))
   ? join(repoRoot, 'package-lock.json')
-  : join(repoRoot, 'fixtures/source-package-lock.json');
+  : join(repoRoot, 'metadata/source-package-lock.json');
 
 const compatibilityUpstream = new Map([
   ['/__compat__/yoctocolors/index.js', {

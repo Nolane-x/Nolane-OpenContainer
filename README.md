@@ -103,6 +103,7 @@ See:
 - [`docs/compatibility/COMPATIBILITY-BASELINE.v0.1.json`](docs/compatibility/COMPATIBILITY-BASELINE.v0.1.json)
 - [`docs/compatibility/PROMOTION-GOVERNANCE.md`](docs/compatibility/PROMOTION-GOVERNANCE.md)
 - [`docs/production/DISTRIBUTION-CERTIFICATION.md`](docs/production/DISTRIBUTION-CERTIFICATION.md)
+- [`docs/production/RELEASE-EVIDENCE.md`](docs/production/RELEASE-EVIDENCE.md)
 - [`research/reference/W5-HANDOFF-v1.33.md`](research/reference/W5-HANDOFF-v1.33.md)
 
 ## License
