@@ -8,7 +8,7 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **58**
+- Seed-reconciled against implementation evidence: **59**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -26,7 +26,7 @@
 | P8 Diagnostics, supportability & privacy | 0 | 14 | 14 |
 | P9 UI/UX, accessibility & human safety | 0 | 18 | 18 |
 | P10 AI consumer, authority & data egress | 0 | 18 | 18 |
-| P11 Compatibility corpus & certification | 10 | 4 | 14 |
+| P11 Compatibility corpus & certification | 11 | 3 | 14 |
 | P12 Product security engineering | 2 | 18 | 20 |
 | P13 Build, supply chain & publication | 0 | 20 | 20 |
 | P14 Release, update, migration & rollback | 0 | 18 | 18 |
@@ -53,10 +53,11 @@
 - **P1-13 / P1-16 / P15-04** now have an executable hosting self-check and exact header diagnostics, plus published secure-hosting guidance. Production CDN/reverse-proxy validation remains open.
 
 - **P11-01 / 02 / 03 / 04 / 06 / 09 / 10** now meet their integration-level minimum closure: the 13-repository corpus is frozen before tuning, required case classes/package strata and unsupported classes are CI-enforced, six compatibility axes are reported separately, a machine-readable baseline is generated from the tested corpus, and adapter semantics are explicit.
-- **P11-05** remains partial: commits, lockfiles, licenses and selected source blobs are pinned; supported npm lockfiles verified 219 + 8 graph nodes with zero missing integrity entries, but package-tarball digest coverage is not closed for every corpus class.
-- **P11-07** remains partial despite the first real-repository Chrome pass: primitive -> package -> framework -> real repository is evidenced, but repeated-browser progression is still open.
+- **P11-05** now meets its integration-level minimum closure: every corpus repository retains commit/license/lockfile identity where applicable; all 9 npm-published frozen package cases pin exact registry tarball URL + SHA-512 + SHA-1, and CI #300 re-downloads every tarball and verifies the bytes. The remaining 4 repository-only cases explicitly record no publication at their frozen root version or a versionless root.
+- **P11-07** now meets its minimum closure for the declared Chrome profile: primitive/package/framework evidence already existed, and CI #300 runs two different real repositories (`yoctocolors`, `clsx`) twice each on fresh publication + Dedicated Worker realms, then proves all four stale sessions fail closed with HTTP 504.
+- **P11-12** is now partial: exact npm-published `clsx@2.1.1` passes SRI -> FrozenInstaller -> VNFS -> package exports resolution -> native ESM -> isolated Worker. The gate cannot close until the actual published OpenContainer package/bundle is used for every supported feature rather than source checkout.
 - **P11-14** remains partial: known limitations are published with the baseline, but "every release compatibility report" cannot close before release certification exists.
-- Pinned `sindresorhus/yoctocolors@a85b98a90e5731914567d8c209e7ec45ac2d24e2` executed through Workspace VFS -> native ESM publication -> bounded `node:tty` -> isolated Dedicated Worker in CI #286.
+- CI #300 promoted repeated real-repository progression: exact `yoctocolors@a85b98a...` and `clsx@925494c...` each execute twice on fresh isolated realms; a separate published-package court fetches and executes the exact npm `clsx@2.1.1` tarball.
 
 ## Update discipline
 
