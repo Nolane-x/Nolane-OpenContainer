@@ -84,15 +84,15 @@ The repository has no runtime npm dependencies in this wave.
 npm run playground
 ```
 
-Open `http://localhost:4173`. The local server emits COOP/COEP headers so future SharedArrayBuffer/Worker work can be integrated without changing the development topology.
+Open `http://localhost:4173`. The local server emits COOP/COEP headers required by the promoted SharedArrayBuffer/Worker browser execution path.
 
 ## Production status
 
 **Not production-closed.** The implementation is real and CI-green, but browser/runtime promotion remains evidence-gated.
 
-The local exact-byte blocker for Lightning CSS has been removed: `lightningcss-wasm@1.33.0` is retained under `toolchain/vendor/`, and CI revalidates the npm tarball digest, extracts the inner WASM, verifies its digest/shape and compiles it through the runtime artifact manager.
+The exact browser toolchain path is now promoted through clean Chrome CI: retained Lightning CSS executes through its verified WASM, retained Rolldown 1.2.9 executes through the browser WASI/N-API path, and Vite 8.3.0 passes both C1 production-build and C2 dev/HMR courts. C2 also proves virtual HTTP, safe HMR failure/reconnect/recovery, same-port preview epoch restart, Service Worker route rehydration and real dependency optimization into `.vite/deps`.
 
-The major remaining gates are SharedArrayBuffer/synchronous guest RPC for Node-style sync APIs, broader Node compatibility/native-ESM builtins, deeper OPFS persistence/quota/multi-tab integration, broad npm package-policy compatibility, Rolldown + Lightning CSS execution inside the OpenContainer guest browser toolchain, Vite C1 inside that guest path, Vite C2 dev/HMR, PC-A/PC-B target-device campaigns, weak-device/reliability/security/release testing and FTO/legal closure.
+The major remaining gates are broader Node compatibility/isolation, deeper OPFS persistence/quota/eviction/multi-tab integration, broad npm package-policy compatibility, PC-A/PC-B target-device/browser campaigns, weak-device/resource-budget and long-run/fault/security/release testing, plus dependency/test-corpus licensing and FTO/legal closure.
 
 See:
 

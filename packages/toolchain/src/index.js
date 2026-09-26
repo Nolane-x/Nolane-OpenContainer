@@ -26,3 +26,5 @@ export { WasmArtifactManager, RolldownWasi129Profile, LightningCssWasm133Profile
 export { LightningCssPackage133Profile, verifyRetainedLightningCssPackage } from './lightningcss-profile.js';
 
 export { RolldownBrowser129Profile, verifyRetainedRolldownBrowserPackage } from './rolldown-browser-profile.js';
+
+export { createBrowserToolchainVfsBridge } from './browser-vfs-bridge.js';

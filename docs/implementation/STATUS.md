@@ -1,5 +1,37 @@
 # Implementation Status
 
+## Current promotion ledger — 2026-09-26
+
+This section is the authoritative current-state ledger. Later sections preserve incremental promotion history; an older `OPEN` statement is historical when this ledger explicitly supersedes it.
+
+Promoted in the clean Chrome product/browser path:
+
+- SharedArrayBuffer synchronous guest RPC transport with bounded mailbox/timeout semantics;
+- browser-native Node builtin bridge sufficient for the promoted Vite court;
+- exact retained `lightningcss-wasm@1.33.0` JS/WASM execution;
+- exact `@rolldown/browser@1.2.9` WASI/N-API/Worker execution;
+- Vite `8.3.0` C1 production-build court, including config loading/plugins, TypeScript, Lightning CSS, assets, source maps, rebuild/config reload, failure atomicity and deterministic normalized output;
+- Vite C2 dev/HMR court, including transformed index/TypeScript/`/@vite/client`, virtual HTTP, HMR update/failure/reconnect/recovery, same-port epoch restart, Service Worker preview rehydration and explicit dependency optimization;
+- dependency optimization materializes an actual `.vite/deps` artifact through the Rolldown browser memfs ↔ OpenContainer VFS bridge rather than faking metadata.
+
+Evidence anchors:
+
+- C1 merged to `main` at `47f089e020b5b412f6a4f0880718b8b64963410a`;
+- C2 merged to `main` at `118c84660aa5bae7a7d8d991559cad9ce07a068b`;
+- final C2 head browser court `f4fed415405dde5434a99f9f5f425290c3a335e2` passed both contract and browser-product-path in CI run #197.
+
+Still required before production closure:
+
+1. Broader guest-isolation hardening and Node 24 compatibility beyond the promoted synchronous/builtin/toolchain court.
+2. OPFS-backed WorkspaceFS/PackageFS product integration, persistence policy/GC, quota/eviction, multi-tab/Web Locks and extended durability campaigns.
+3. Broader browser package-install corpus, peer/optional/script policy, persistent immutable PackageContent and concurrent cache-dedupe evidence.
+4. PC-A/PC-B target-device and browser matrix beyond CI Chrome.
+5. Weak-device/resource-budget, long-run/plateau, fault/security and release-packaging campaigns.
+6. Dependency/test-corpus licensing plus FTO/legal closure before a commercial production claim.
+
+`production_closed = false` until those remaining gates produce evidence.
+
+
 ## Wave 1 — foundation runtime
 
 Implemented:
@@ -17,19 +49,7 @@ Implemented:
 - Browser-playground shell with COOP/COEP headers.
 - Dependency-free Node contract/integration tests.
 
-Still required before production closure:
-
-1. SharedArrayBuffer/synchronous guest RPC for Node-style sync APIs plus broader guest-isolation hardening.
-2. OPFS-backed WorkspaceFS/PackageFS product integration, persistence policy/GC and extended durability campaigns; real-browser checkpoint/recovery now passes.
-3. Broader browser package-install corpus, peer/optional/script policy and persistent immutable PackageContent; exact retained-package browser install now passes.
-4. Broader Node 24 compatibility and native ESM builtin execution beyond the promoted resolver/CJS/browser-ESM courts.
-5. Lightning CSS browser product execution inside the OpenContainer guest toolchain; exact bytes + local JS-glue/WASM differential are already promoted.
-6. Rolldown browser WASI/N-API/thread execution inside the clean product browser path; exact retained artifact + local execution court are already promoted.
-7. Vite 8.3 C1 inside the OpenContainer guest/browser runtime, then C2 dev/HMR; exact native-oracle C1 already passes.
-8. PC-A/PC-B target-device/browser matrix beyond CI Chrome.
-9. Weak-device/long-run/fault/security testing, release packaging, licensing and FTO/legal closure.
-
-`production_closed = false` until those gates produce evidence.
+Historical Wave 1 closure list (superseded by the current promotion ledger above): the original list included SAB sync RPC, Lightning CSS browser execution, Rolldown browser execution and Vite C1/C2. Those compatibility gates are now promoted; the unresolved production campaigns are tracked in the current ledger.
 
 
 ## Wave 2 — browser execution authority
