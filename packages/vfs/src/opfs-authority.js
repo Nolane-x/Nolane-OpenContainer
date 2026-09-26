@@ -58,21 +58,28 @@ export class OpfsCheckpointAuthority {
   #current = null;
   #lockManager;
   #lockName;
+  #storagePolicy;
+  #lastStorageGuard = null;
 
   constructor({
     root,
     directoryName = 'opencontainer-workspace',
     lockManager = globalThis.navigator?.locks ?? null,
-    lockName = null
+    lockName = null,
+    storagePolicy = null
   } = {}) {
     assertOc(root && typeof root.getDirectoryHandle === 'function', ErrorCodes.INVALID_ARGUMENT, 'OPFS root directory handle is required');
     if (lockManager !== null) {
       assertOc(typeof lockManager?.request === 'function', ErrorCodes.INVALID_ARGUMENT, 'OPFS lock manager must expose request()');
     }
+    if (storagePolicy !== null) {
+      assertOc(typeof storagePolicy?.assertCanWrite === 'function', ErrorCodes.INVALID_ARGUMENT, 'OPFS storage policy must expose assertCanWrite()');
+    }
     this.#root = root;
     this.#directoryName = directoryName;
     this.#lockManager = lockManager;
     this.#lockName = lockName ?? 'opencontainer:opfs-checkpoint:' + directoryName;
+    this.#storagePolicy = storagePolicy;
   }
 
   get current() {
@@ -85,6 +92,14 @@ export class OpfsCheckpointAuthority {
 
   get lockName() {
     return this.#lockName;
+  }
+
+  get storagePolicyEnabled() {
+    return this.#storagePolicy !== null;
+  }
+
+  get lastStorageGuard() {
+    return this.#lastStorageGuard;
   }
 
   async open() {
@@ -122,11 +137,25 @@ export class OpfsCheckpointAuthority {
         });
       }
 
+      const payloadBytes = new TextEncoder().encode(payloadText).byteLength;
+      await this.#guardStorageWriteUnlocked(payloadBytes);
+
       const sequence = (this.#current?.sequence ?? 0) + 1;
       const payload = 'generation-' + snapshot.generation + '-' + digest.slice(0, 16) + '.json';
 
       // Payload first. A crash here can only leave an unreachable orphan.
-      await writeText(this.#payloads, payload, payloadText);
+      try {
+        await writeText(this.#payloads, payload, payloadText);
+      } catch (error) {
+        if (error?.name === 'QuotaExceededError') {
+          throw ocError(ErrorCodes.RESOURCE_EXHAUSTED, 'OPFS checkpoint payload write exceeded browser storage quota', {
+            stage: 'payload-write',
+            generation: snapshot.generation,
+            payloadBytes
+          });
+        }
+        throw error;
+      }
 
       const manifest = {
         version: 1,
@@ -160,46 +189,7 @@ export class OpfsCheckpointAuthority {
       // payload named by a structurally valid manifest, even if its payload is
       // currently corrupt, so collection never weakens fallback semantics.
       await this.#recoverUnlocked();
-
-      const manifests = [
-        parseManifest(await readText(this.#directory, MANIFEST_A), 'a'),
-        parseManifest(await readText(this.#directory, MANIFEST_B), 'b')
-      ].filter(Boolean);
-      const reachable = new Set(manifests.map((manifest) => manifest.payload));
-
-      assertOc(
-        typeof this.#payloads.entries === 'function' && typeof this.#payloads.removeEntry === 'function',
-        ErrorCodes.INVALID_STATE,
-        'OPFS generations directory does not support enumeration/removal'
-      );
-
-      const removed = [];
-      const retained = [];
-      const skipped = [];
-      for await (const [name, handle] of this.#payloads.entries()) {
-        if (handle?.kind && handle.kind !== 'file') {
-          skipped.push(String(name));
-          continue;
-        }
-        if (reachable.has(name)) {
-          retained.push(String(name));
-          continue;
-        }
-        removed.push(String(name));
-        if (!dryRun) await this.#payloads.removeEntry(name);
-      }
-
-      removed.sort();
-      retained.sort();
-      skipped.sort();
-      return Object.freeze({
-        dryRun,
-        removed: Object.freeze(removed),
-        retained: Object.freeze(retained),
-        skipped: Object.freeze(skipped),
-        currentSequence: this.#current?.sequence ?? null,
-        currentGeneration: this.#current?.generation ?? null
-      });
+      return this.#collectGarbageUnlocked({ dryRun });
     });
   }
 
@@ -223,6 +213,99 @@ export class OpfsCheckpointAuthority {
 
       const snapshot = JSON.parse(text);
       return fs.restore(snapshot);
+    });
+  }
+
+  async #guardStorageWriteUnlocked(additionalBytes) {
+    if (!this.#storagePolicy) {
+      this.#lastStorageGuard = Object.freeze({
+        supported: false,
+        additionalBytes,
+        gcAttempted: false,
+        gcRemoved: Object.freeze([])
+      });
+      return this.#lastStorageGuard;
+    }
+
+    try {
+      const status = await this.#storagePolicy.assertCanWrite(additionalBytes);
+      this.#lastStorageGuard = Object.freeze({
+        ...status,
+        gcAttempted: false,
+        gcRemoved: Object.freeze([])
+      });
+      return this.#lastStorageGuard;
+    } catch (error) {
+      if (error?.code !== ErrorCodes.RESOURCE_EXHAUSTED) throw error;
+    }
+
+    const collected = await this.#collectGarbageUnlocked({ dryRun: false });
+    try {
+      const status = await this.#storagePolicy.assertCanWrite(additionalBytes);
+      this.#lastStorageGuard = Object.freeze({
+        ...status,
+        gcAttempted: true,
+        gcRemoved: collected.removed
+      });
+      return this.#lastStorageGuard;
+    } catch (error) {
+      if (error?.code !== ErrorCodes.RESOURCE_EXHAUSTED) throw error;
+      this.#lastStorageGuard = Object.freeze({
+        supported: true,
+        additionalBytes,
+        gcAttempted: true,
+        gcRemoved: collected.removed,
+        rejected: true,
+        details: error?.details ?? null
+      });
+      throw ocError(ErrorCodes.RESOURCE_EXHAUSTED, 'OPFS checkpoint blocked by browser storage quota policy after garbage collection', {
+        ...(error?.details ?? {}),
+        gcRemoved: collected.removed,
+        gcRetained: collected.retained,
+        additionalBytes
+      });
+    }
+  }
+
+  async #collectGarbageUnlocked({ dryRun = false } = {}) {
+    const manifests = [
+      parseManifest(await readText(this.#directory, MANIFEST_A), 'a'),
+      parseManifest(await readText(this.#directory, MANIFEST_B), 'b')
+    ].filter(Boolean);
+    const reachable = new Set(manifests.map((manifest) => manifest.payload));
+
+    assertOc(
+      typeof this.#payloads.entries === 'function' && typeof this.#payloads.removeEntry === 'function',
+      ErrorCodes.INVALID_STATE,
+      'OPFS generations directory does not support enumeration/removal'
+    );
+
+    const removed = [];
+    const retained = [];
+    const skipped = [];
+    for await (const [name, handle] of this.#payloads.entries()) {
+      if (handle?.kind && handle.kind !== 'file') {
+        skipped.push(String(name));
+        continue;
+      }
+      if (reachable.has(name)) {
+        retained.push(String(name));
+        continue;
+      }
+      removed.push(String(name));
+      if (!dryRun) await this.#payloads.removeEntry(name);
+    }
+
+    removed.sort();
+    retained.sort();
+    skipped.sort();
+    return Object.freeze({
+      dryRun,
+      removed: Object.freeze(removed),
+      retained: Object.freeze(retained),
+      skipped: Object.freeze(skipped),
+      currentSequence: this.#current?.sequence ?? null,
+      currentGeneration: this.#current?.generation ?? null
     });
   }
 
