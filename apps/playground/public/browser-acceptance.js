@@ -3,6 +3,7 @@ import { BrowserEsmServiceWorkerBridge } from '/packages/package-env/src/browser
 import { PackageArtifactAuthority } from '/packages/package-env/src/index.js';
 import { BrowserGuestWorkerAuthority } from '/packages/process/src/browser-guest-worker.js';
 import { MemoryVFS, OpfsCheckpointAuthority } from '/packages/vfs/src/index.js';
+import { BrowserPreviewServiceWorkerBridge } from '/packages/preview/src/index.js';
 
 const resultNode = document.getElementById('result');
 const stages = [];
@@ -321,7 +322,42 @@ async function run() {
       ? viteNodeChunkSource.slice(Math.max(0, viteRequireDeclarationIndex - 500), viteRequireDeclarationIndex + 900)
       : null
   });
-  const viteProcessVersionIndex = viteNodeChunkSource.indexOf('process.versions.node');
+  const viteImportAnalysisErrorIndex = viteNodeChunkSource.indexOf('Failed to parse source for import analysis');
+  const viteLexerMarkerIndex = viteNodeChunkSource.indexOf('es-module-lexer');
+  const viteParseImportsIndex = viteNodeChunkSource.indexOf('parseImports');
+  const viteWebAssemblyCompileIndex = viteNodeChunkSource.indexOf('WebAssembly.compile');
+  const viteUtf16LexerIndex = viteNodeChunkSource.indexOf('utf16le');
+  const viteBufferLexerIndex = viteUtf16LexerIndex >= 0
+    ? viteNodeChunkSource.lastIndexOf('Buffer', viteUtf16LexerIndex)
+    : -1;
+  stage('vite-import-analysis-source-shape', {
+    errorIndex: viteImportAnalysisErrorIndex,
+    errorSnippet: viteImportAnalysisErrorIndex >= 0
+      ? viteNodeChunkSource.slice(Math.max(0, viteImportAnalysisErrorIndex - 2200), viteImportAnalysisErrorIndex + 1400)
+      : null,
+    lexerMarkerIndex: viteLexerMarkerIndex,
+    lexerMarkerSnippet: viteLexerMarkerIndex >= 0
+      ? viteNodeChunkSource.slice(Math.max(0, viteLexerMarkerIndex - 1200), viteLexerMarkerIndex + 2200)
+      : null,
+    parseImportsIndex: viteParseImportsIndex,
+    parseImportsSnippet: viteParseImportsIndex >= 0
+      ? viteNodeChunkSource.slice(Math.max(0, viteParseImportsIndex - 1200), viteParseImportsIndex + 2200)
+      : null,
+    webAssemblyCompileIndex: viteWebAssemblyCompileIndex,
+    webAssemblyCompileSnippet: viteWebAssemblyCompileIndex >= 0
+      ? viteNodeChunkSource.slice(Math.max(0, viteWebAssemblyCompileIndex - 1600), viteWebAssemblyCompileIndex + 2400)
+      : null,
+    utf16LexerIndex: viteUtf16LexerIndex,
+    utf16LexerSnippet: viteUtf16LexerIndex >= 0
+      ? viteNodeChunkSource.slice(Math.max(0, viteUtf16LexerIndex - 2200), viteUtf16LexerIndex + 2200)
+      : null,
+    bufferLexerIndex: viteBufferLexerIndex,
+    bufferLexerSnippet: viteBufferLexerIndex >= 0
+      ? viteNodeChunkSource.slice(Math.max(0, viteBufferLexerIndex - 800), viteBufferLexerIndex + 1600)
+      : null,
+    importAnalysisLines: viteNodeChunkLines.slice(25970, 26045).join('\n')
+  });
+    const viteProcessVersionIndex = viteNodeChunkSource.indexOf('process.versions.node');
   const viteProcessDeclarationMatch = /\b(?:const|let|var|function|class)\s+process\b/.exec(viteNodeChunkSource);
   const viteProcessImportMatch = /\bimport\s+process\b/.exec(viteNodeChunkSource);
   stage('vite-picomatch-source-shape', {
@@ -377,6 +413,10 @@ async function run() {
       "if (app) { app.textContent = 'OpenContainer Vite C1'; app.dataset.logo = logoUrl; app.dataset.source = 'source-v1'; }",
       "export const marker: string = 'vite-c1';"
     ].join('\n'))
+    .writeFile('c1-app/src/dep-opt.ts', [
+      "import { nanoid } from 'nanoid';",
+      "export const optimizedMarker: string = nanoid(4);"
+    ].join('\n'))
     .writeFile('c1-app/src/style.css', c1CssSource)
     .writeFile('c1-app/src/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32"/></svg>')
     .writeFile('c1-app/vite.config.ts', [
@@ -414,6 +454,7 @@ async function run() {
       "import { memfs } from 'rolldown/experimental';",
       "import { existsSync, readFileSync, writeFileSync } from 'node:fs';",
       "import { dirname, resolve as pathResolve } from 'node:path';",
+      "import { parseAst } from 'rolldown/parseAst';",
       "const root = '/workspace/c1-app';",
       "const configPath = root + '/vite.config.ts';",
       "const mirrorConfig = () => {",
@@ -528,6 +569,396 @@ async function run() {
       "export const deterministicManifest = normalizedManifest(thirdRun) === normalizedManifest(fourthRun);",
       "export const repeatedOutputFiles = thirdRun.outputs.map((entry) => entry.fileName).sort().join('|') === fourthRun.outputs.map((entry) => entry.fileName).sort().join('|');"
     ].join('\n'))
+    .writeFile('src/vite-dev-probe.mjs', [
+      "import { createServer, DevEnvironment, transformWithOxc, version } from 'vite';",
+      "import { existsSync, readFileSync, writeFileSync } from 'node:fs';",
+      "import { dirname, resolve as pathResolve } from 'node:path';",
+      "import { parseAst } from 'rolldown/parseAst';",
+      "const root = '/workspace/c1-app';",
+      "const cleanId = (id) => String(id).split('?')[0].split('#')[0];",
+      "const vfsTrace = [];",
+      "const trace = (kind, detail) => { if (vfsTrace.length < 80) vfsTrace.push(kind + ':' + detail); };",
+      "const hotListeners = new Map();",
+      "const hotPayloads = [];",
+      "const hotDeliveries = [];",
+      "const hotReplies = [];",
+      "const hotClients = new Map();",
+      "let hotListening = false;",
+      "let hotClosed = false;",
+      "const hotHandlers = (event) => { let set = hotListeners.get(event); if (!set) { set = new Set(); hotListeners.set(event, set); } return set; };",
+      "const emitHot = (event, data, client) => { for (const handler of hotListeners.get(event) ?? []) handler(data, client); };",
+      "const hotTransport = {",
+      "  skipFsCheck: true,",
+      "  send(payload) {",
+      "    const copy = structuredClone(payload);",
+      "    hotPayloads.push(copy);",
+      "    for (const client of hotClients.values()) hotDeliveries.push({ clientId: client.id, payload: structuredClone(copy) });",
+      "  },",
+      "  on(event, handler) { hotHandlers(event).add(handler); },",
+      "  off(event, handler) { hotListeners.get(event)?.delete(handler); },",
+      "  listen() { hotListening = true; },",
+      "  close() {",
+      "    for (const client of [...hotClients.values()]) emitHot('vite:client:disconnect', undefined, client);",
+      "    hotClients.clear();",
+      "    hotClosed = true;",
+      "  }",
+      "};",
+      "const connectHot = (id) => {",
+      "  const client = { id, send(payload) { hotReplies.push({ clientId: id, payload: structuredClone(payload) }); } };",
+      "  hotClients.set(id, client);",
+      "  emitHot('vite:client:connect', undefined, client);",
+      "  return client;",
+      "};",
+      "const disconnectHot = (id) => {",
+      "  const client = hotClients.get(id);",
+      "  if (!client) return false;",
+      "  emitHot('vite:client:disconnect', undefined, client);",
+      "  hotClients.delete(id);",
+      "  return true;",
+      "};",
+      "const isJsUpdate = (payload) => payload?.type === 'update' && payload.updates?.some((update) => update.type === 'js-update' && (update.path === '/src/main.ts' || update.acceptedPath === '/src/main.ts'));",
+      "const vfsPlugin = {",
+      "  name: 'opencontainer-vfs-dev',",
+      "  enforce: 'pre',",
+      "  resolveId(source, importer) {",
+      "    trace('resolve', String(source) + '<-' + String(importer ?? ''));",
+      "    const raw = cleanId(source);",
+      "    let candidate = null;",
+      "    if (raw.startsWith('/workspace/')) candidate = raw;",
+      "    else if (raw.startsWith('/') && !raw.startsWith('/@')) candidate = root + raw;",
+      "    else if (importer && cleanId(importer).startsWith('/workspace/') && (raw.startsWith('./') || raw.startsWith('../'))) candidate = pathResolve(dirname(cleanId(importer)), raw);",
+      "    if (candidate && existsSync(candidate)) { trace('resolved', candidate); return candidate; }",
+      "    if (candidate) trace('resolve-miss', candidate);",
+      "    return null;",
+      "  },",
+      "  async load(id) {",
+      "    trace('load', String(id));",
+      "    const file = cleanId(id);",
+      "    if (!file.startsWith('/workspace/') || !existsSync(file)) { trace('load-miss', file); return null; }",
+      "    if (/\\.(?:svg|png|jpe?g|gif|webp|avif|ico|woff2?|ttf|otf|wasm)$/i.test(file)) return null;",
+      "    const source = readFileSync(file, 'utf8');",
+      "    if (/\\.(?:[cm]?ts|tsx)$/i.test(file)) {",
+      "      const transformed = await transformWithOxc(source, file);",
+      "      const hmrCode = file === root + '/src/main.ts' ? transformed.code + '\\nif (import.meta.hot) import.meta.hot.accept();' : transformed.code;",
+      "      trace('load-oxc', file + ':' + String(source.length) + '->' + String(hmrCode.length));",
+      "      return { code: hmrCode, map: transformed.map, moduleType: 'js' };",
+      "    }",
+      "    return source;",
+      "  }",
+      "};",
+      "const server = await createServer({",
+      "  root,",
+      "  configFile: false,",
+      "  logLevel: 'silent',",
+      "  appType: 'spa',",
+      "  plugins: [vfsPlugin],",
+      "  optimizeDeps: { noDiscovery: true, include: [] },",
+      "  environments: {",
+      "    client: {",
+      "      dev: {",
+      "        createEnvironment(name, config, context) {",
+      "          return new DevEnvironment(name, config, { ...context, hot: true, transport: hotTransport });",
+      "        }",
+      "      }",
+      "    }",
+      "  },",
+      "  server: { middlewareMode: true, watch: null, ws: false, hmr: true }",
+      "});",
+      "const hotEnvironment = server.environments.client;",
+      "let hotConnectEvents = 0;",
+      "let hotDisconnectEvents = 0;",
+      "hotEnvironment.hot.on('vite:client:connect', () => { hotConnectEvents += 1; });",
+      "hotEnvironment.hot.on('vite:client:disconnect', () => { hotDisconnectEvents += 1; });",
+      "connectHot('client-1');",
+      "const clientContainer = server.environments?.client?.pluginContainer;",
+      "let preImportAnalysisCode = '';",
+      "let preImportAnalysisBytes = 0;",
+      "let preImportAnalysisAstParsed = false;",
+      "let preImportAnalysisAstError = '';",
+      "const importAnalysisPlugin = clientContainer?.getSortedPlugins('transform').find((plugin) => plugin?.name === 'vite:import-analysis') ?? server.config.plugins.find((plugin) => plugin?.name === 'vite:import-analysis');",
+      "const importAnalysisHook = importAnalysisPlugin?.transform;",
+      "if (importAnalysisPlugin && importAnalysisHook) {",
+      "  const originalHandler = typeof importAnalysisHook === 'function' ? importAnalysisHook : importAnalysisHook.handler;",
+      "  const wrappedHandler = async function(code, id, options) {",
+      "    if (cleanId(id) === root + '/src/main.ts') {",
+      "      preImportAnalysisCode = String(code);",
+      "      preImportAnalysisBytes = preImportAnalysisCode.length;",
+      "      try { parseAst(preImportAnalysisCode); preImportAnalysisAstParsed = true; }",
+      "      catch (error) { preImportAnalysisAstError = error?.stack ?? String(error); }",
+      "    }",
+      "    return originalHandler.call(this, code, id, options);",
+      "  };",
+      "  importAnalysisPlugin.transform = typeof importAnalysisHook === 'function'",
+      "    ? wrappedHandler",
+      "    : { ...importAnalysisHook, handler: wrappedHandler };",
+      "}",
+      "const directTsSource = readFileSync(root + '/src/main.ts', 'utf8');",
+      "const directTsResult = await transformWithOxc(directTsSource, root + '/src/main.ts');",
+      "const directTsTransformed = !directTsResult.code.includes('querySelector<HTMLDivElement>');",
+      "const pluginNames = server.config.plugins.map((plugin) => plugin?.name ?? '<anonymous>').join('|');",
+      "const oxcEnabled = server.config.oxc !== false;",
+      "const manualResolved = clientContainer ? await clientContainer.resolveId('/src/main.ts', undefined) : null;",
+      "const manualResolvedId = manualResolved?.id ?? '';",
+      "let manualLoadType = '';",
+      "let manualLoadHasTsGeneric = null;",
+      "let manualLoadBytes = 0;",
+      "let manualTransformError = '';",
+      "let manualTransformPlugin = '';",
+      "let manualTransformId = '';",
+      "let manualTransformFrame = '';",
+      "if (clientContainer && manualResolvedId) {",
+      "  const loaded = await clientContainer.load(manualResolvedId);",
+      "  const loadedCode = typeof loaded === 'string' ? loaded : loaded?.code ?? '';",
+      "  manualLoadType = typeof loaded === 'string' ? 'string' : (loaded?.moduleType ?? typeof loaded);",
+      "  manualLoadHasTsGeneric = loadedCode.includes('querySelector<HTMLDivElement>');",
+      "  manualLoadBytes = loadedCode.length;",
+      "  try {",
+      "    await clientContainer.transform(loadedCode, manualResolvedId, { moduleType: typeof loaded === 'object' ? loaded?.moduleType : undefined });",
+      "  } catch (error) {",
+      "    manualTransformError = error?.message ?? String(error);",
+      "    manualTransformPlugin = error?.plugin ?? '';",
+      "    manualTransformId = error?.id ?? '';",
+      "    manualTransformFrame = error?.frame ?? '';",
+      "  }",
+      "}",
+      "let html = '';",
+      "let tsCode = '';",
+      "let clientCode = '';",
+      "let closed = false;",
+      "let devErrorPhase = '';",
+      "let devErrorMessage = '';",
+      "let hmrSelfAccepting = false;",
+      "let hmrFirstUpdate = false;",
+      "let hmrFirstDelivered = false;",
+      "let hmrFailureObserved = false;",
+      "let hmrFailureDidNotBroadcast = false;",
+      "let hmrReconnectDelivered = false;",
+      "let hmrStaleClientQuiet = false;",
+      "let hmrRecovered = false;",
+      "let hmrUpdateCount = 0;",
+      "try {",
+      "  try {",
+      "    html = await server.transformIndexHtml('/', readFileSync(root + '/index.html', 'utf8'));",
+      "  } catch (error) { devErrorPhase = 'index-html'; devErrorMessage = error?.stack ?? String(error); }",
+      "  if (!devErrorPhase) {",
+      "    try {",
+      "      const ts = await server.transformRequest('/src/main.ts');",
+      "      tsCode = ts?.code ?? '';",
+      "    } catch (error) { devErrorPhase = 'typescript'; devErrorMessage = error?.stack ?? String(error); }",
+      "  }",
+      "  if (!devErrorPhase) {",
+      "    try {",
+      "      const client = await server.transformRequest('/@vite/client');",
+      "      clientCode = client?.code ?? '';",
+      "    } catch (error) { devErrorPhase = 'vite-client'; devErrorMessage = error?.stack ?? String(error); }",
+      "  }",
+      "  if (!devErrorPhase) {",
+      "    try {",
+      "      const environment = server.environments.client;",
+      "      const sourcePath = root + '/src/main.ts';",
+      "      const module = await environment.moduleGraph.getModuleByUrl('/src/main.ts');",
+      "      hmrSelfAccepting = module?.isSelfAccepting === true;",
+      "      if (!module) throw new Error('Vite C2 HMR module graph lost /src/main.ts');",
+      "      const sourceV2 = readFileSync(sourcePath, 'utf8');",
+      "      const sourceV3 = sourceV2.replace('source-v2', 'source-v3');",
+      "      if (sourceV3 === sourceV2) throw new Error('Vite C2 HMR fixture did not contain source-v2');",
+      "      const firstPayloadStart = hotPayloads.length;",
+      "      writeFileSync(sourcePath, sourceV3);",
+      "      environment.moduleGraph.onFileChange(sourcePath);",
+      "      await environment.reloadModule(module);",
+      "      const firstPayloads = hotPayloads.slice(firstPayloadStart);",
+      "      hmrFirstUpdate = firstPayloads.some(isJsUpdate);",
+      "      hmrFirstDelivered = hotDeliveries.some((entry) => entry.clientId === 'client-1' && isJsUpdate(entry.payload));",
+      "      const updated = await environment.transformRequest('/src/main.ts?oc-hmr=1');",
+      "      if (!(updated?.code ?? '').includes('source-v3')) throw new Error('Vite C2 HMR update did not expose source-v3');",
+      "      const payloadCountBeforeFailure = hotPayloads.length;",
+      "      writeFileSync(sourcePath, sourceV3 + '\\nexport const broken: = ;');",
+      "      environment.moduleGraph.onFileChange(sourcePath);",
+      "      try { await environment.transformRequest('/src/main.ts?oc-invalid=1'); }",
+      "      catch { hmrFailureObserved = true; }",
+      "      hmrFailureDidNotBroadcast = hotPayloads.length === payloadCountBeforeFailure;",
+      "      disconnectHot('client-1');",
+      "      const staleClientDeliveries = hotDeliveries.filter((entry) => entry.clientId === 'client-1').length;",
+      "      connectHot('client-2');",
+      "      const sourceV4 = sourceV3.replace('source-v3', 'source-v4');",
+      "      writeFileSync(sourcePath, sourceV4);",
+      "      environment.moduleGraph.onFileChange(sourcePath);",
+      "      const reconnectModule = await environment.moduleGraph.getModuleByUrl('/src/main.ts');",
+      "      if (!reconnectModule) throw new Error('Vite C2 HMR reconnect lost /src/main.ts');",
+      "      const reconnectPayloadStart = hotPayloads.length;",
+      "      await environment.reloadModule(reconnectModule);",
+      "      const recovered = await environment.transformRequest('/src/main.ts?oc-recover=1');",
+      "      hmrRecovered = (recovered?.code ?? '').includes('source-v4');",
+      "      hmrReconnectDelivered = hotDeliveries.some((entry) => entry.clientId === 'client-2' && isJsUpdate(entry.payload));",
+      "      hmrStaleClientQuiet = hotDeliveries.filter((entry) => entry.clientId === 'client-1').length === staleClientDeliveries;",
+      "      hmrUpdateCount = hotPayloads.filter(isJsUpdate).length;",
+      "      if (!hotPayloads.slice(reconnectPayloadStart).some(isJsUpdate)) throw new Error('Vite C2 reconnect did not emit js-update');",
+      "    } catch (error) { devErrorPhase = 'hmr'; devErrorMessage = error?.stack ?? String(error); }",
+      "  }",
+      "} finally {",
+      "  await server.close();",
+      "  closed = true;",
+      "}",
+      "export const viteVersion = version;",
+      "export const created = !!server && server.httpServer === null;",
+      "export const htmlHasClient = html.includes('/@vite/client');",
+      "export const htmlHasEntry = html.includes('/src/main.ts');",
+      "export const tsTransformed = tsCode.includes('source-v2') && !tsCode.includes('document.querySelector<HTMLDivElement>');",
+      "export const viteClientServed = clientCode.includes('createHotContext') || clientCode.includes('HotContext');",
+      "export const clientBytes = clientCode.length;",
+      "export const tsBytes = tsCode.length;",
+      "export { html, tsCode, clientCode };",
+      "export const closeSucceeded = closed;",
+      "export const hotChannelListening = hotListening;",
+      "export const hotChannelClosed = hotClosed;",
+      "export { hotConnectEvents, hotDisconnectEvents, hmrSelfAccepting, hmrFirstUpdate, hmrFirstDelivered, hmrFailureObserved, hmrFailureDidNotBroadcast, hmrReconnectDelivered, hmrStaleClientQuiet, hmrRecovered, hmrUpdateCount };",
+      "export { devErrorPhase, devErrorMessage, pluginNames, oxcEnabled, directTsTransformed, vfsTrace, manualResolvedId, manualLoadType, manualLoadHasTsGeneric, manualLoadBytes, manualTransformError, manualTransformPlugin, manualTransformId, manualTransformFrame, preImportAnalysisCode, preImportAnalysisBytes, preImportAnalysisAstParsed, preImportAnalysisAstError };"
+    ].join('\n'))
+    .writeFile('src/vite-dep-opt-probe.mjs', [
+      "import { createServer, transformWithOxc, version } from 'vite';",
+      "import { memfs } from 'rolldown/experimental';",
+      "import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';",
+      "import { dirname, resolve as pathResolve } from 'node:path';",
+      "import { createRequire } from 'node:module';",
+      "const root = '/workspace';",
+      "const appRoot = '/workspace/c1-app';",
+      "const cleanId = (id) => String(id).split('?')[0].split('#')[0];",
+      "const isBare = (id) => id && !id.startsWith('.') && !id.startsWith('/') && !id.startsWith('node:') && !id.startsWith('#') && !/^[a-zA-Z][a-zA-Z\\d+.-]*:/.test(id);",
+      "const resolvePackage = (specifier, importer) => {",
+      "  if (!isBare(specifier)) return null;",
+      "  const issuer = importer && cleanId(importer).startsWith('/workspace/') ? cleanId(importer) : root + '/index.js';",
+      "  try { return createRequire(issuer).resolve(specifier); } catch { return null; }",
+      "};",
+      "const mirrorRolldownInput = (sourcePath) => {",
+      "  if (!memfs) throw new Error('Rolldown browser memfs is unavailable for dependency optimization');",
+      "  const source = readFileSync(sourcePath, 'utf8');",
+      "  const targets = [sourcePath, sourcePath.replace(/^\\/workspace/, '')];",
+      "  for (const target of targets) {",
+      "    memfs.fs.mkdirSync(dirname(target), { recursive: true });",
+      "    memfs.fs.writeFileSync(target, source);",
+      "  }",
+      "};",
+      "for (const sourcePath of [",
+      "  '/workspace/node_modules/nanoid/package.json',",
+      "  '/workspace/node_modules/nanoid/index.browser.js',",
+      "  '/workspace/node_modules/nanoid/url-alphabet/index.js'",
+      "]) mirrorRolldownInput(sourcePath);",
+      "const depRolldownBridge = {",
+      "  name: 'opencontainer-dep-rolldown-vfs-bridge',",
+      "  writeBundle(options, bundle) {",
+      "    const outputDir = options?.dir ? String(options.dir) : '';",
+      "    if (!outputDir) return;",
+      "    mkdirSync(outputDir, { recursive: true });",
+      "    for (const output of Object.values(bundle ?? {})) {",
+      "      const target = pathResolve(outputDir, output.fileName);",
+      "      mkdirSync(dirname(target), { recursive: true });",
+      "      if (output.type === 'asset') {",
+      "        writeFileSync(target, typeof output.source === 'string' ? output.source : new Uint8Array(output.source));",
+      "      } else {",
+      "        writeFileSync(target, output.code, 'utf8');",
+      "        if (output.map && !Object.values(bundle).some((entry) => entry.fileName === output.fileName + '.map')) {",
+      "          writeFileSync(target + '.map', output.map.toString(), 'utf8');",
+      "        }",
+      "      }",
+      "    }",
+      "  }",
+      "};",
+      "const vfsPlugin = {",
+      "  name: 'opencontainer-vfs-dep-opt',",
+      "  enforce: 'pre',",
+      "  resolveId(source, importer) {",
+      "    const raw = cleanId(source);",
+      "    let candidate = resolvePackage(raw, importer);",
+      "    if (candidate) return candidate;",
+      "    if (raw.startsWith('/workspace/')) candidate = raw;",
+      "    else if (raw.startsWith('/c1-app/')) candidate = root + raw;",
+      "    else if (raw.startsWith('/') && !raw.startsWith('/@')) candidate = appRoot + raw;",
+      "    else if (importer && cleanId(importer).startsWith('/workspace/') && (raw.startsWith('./') || raw.startsWith('../'))) candidate = pathResolve(dirname(cleanId(importer)), raw);",
+      "    return candidate && existsSync(candidate) ? candidate : null;",
+      "  },",
+      "  async load(id) {",
+      "    const file = cleanId(id);",
+      "    if (!file.startsWith('/workspace/') || !existsSync(file)) return null;",
+      "    if (/\\.(?:svg|png|jpe?g|gif|webp|avif|ico|woff2?|ttf|otf|wasm)$/i.test(file)) return null;",
+      "    const source = readFileSync(file, 'utf8');",
+      "    if (/\\.(?:[cm]?ts|tsx)$/i.test(file)) {",
+      "      const transformed = await transformWithOxc(source, file);",
+      "      return { code: transformed.code, map: transformed.map, moduleType: 'js' };",
+      "    }",
+      "    return source;",
+      "  }",
+      "};",
+      "let depError = '';",
+      "let depOptimizerPresent = false;",
+      "let depPackageJsonExists = false;",
+      "let depPackageIndexExists = false;",
+      "let depPackageJsonName = '';",
+      "let depManualResolvedId = '';",
+      "let depManualResolveError = '';",
+      "let depOptimizedKeys = [];",
+      "let depDiscoveredKeys = [];",
+      "let depOptimizedFile = '';",
+      "let depOptimizedFileExists = false;",
+      "let depOptimizedBytes = 0;",
+      "let depTransformCode = '';",
+      "let depTransformUsesOptimizedPath = false;",
+      "let depMetadataHash = '';",
+      "let depCacheDir = '';",
+      "let depOptimizerClosed = false;",
+      "let server;",
+      "try {",
+      "  server = await createServer({",
+      "    root,",
+      "    configFile: false,",
+      "    logLevel: 'silent',",
+      "    appType: 'custom',",
+      "    cacheDir: root + '/node_modules/.vite',",
+      "    resolve: { alias: { nanoid: '/workspace/node_modules/nanoid/index.browser.js' } },",
+      "    plugins: [vfsPlugin],",
+      "    optimizeDeps: { noDiscovery: true, include: ['nanoid'], force: true, holdUntilCrawlEnd: false, rolldownOptions: { plugins: [depRolldownBridge] } },",
+      "    server: { middlewareMode: true, watch: null, ws: false, hmr: false }",
+      "  });",
+      "  const environment = server.environments.client;",
+      "  depPackageJsonExists = existsSync('/workspace/node_modules/nanoid/package.json');",
+      "  depPackageIndexExists = existsSync('/workspace/node_modules/nanoid/index.js');",
+      "  if (depPackageJsonExists) {",
+      "    try { depPackageJsonName = JSON.parse(readFileSync('/workspace/node_modules/nanoid/package.json', 'utf8')).name ?? ''; } catch {}",
+      "  }",
+      "  try {",
+      "    const manual = await environment.pluginContainer.resolveId('nanoid', '/workspace/c1-app/src/dep-opt.ts');",
+      "    depManualResolvedId = manual?.id ?? '';",
+      "  } catch (error) { depManualResolveError = error?.stack ?? String(error); }",
+      "  const optimizer = environment?.depsOptimizer;",
+      "  depOptimizerPresent = !!optimizer;",
+      "  if (!optimizer) throw new Error('Vite C2 dependency optimizer was not created');",
+      "  await optimizer.init();",
+      "  if (optimizer.scanProcessing) await optimizer.scanProcessing;",
+      "  depTransformCode = (await server.transformRequest('/c1-app/src/dep-opt.ts'))?.code ?? '';",
+      "  const pendingBefore = optimizer.metadata?.depInfoList?.map((info) => info?.processing).filter(Boolean) ?? [];",
+      "  if (pendingBefore.length) await Promise.allSettled(pendingBefore);",
+      "  const metadata = optimizer.metadata ?? {};",
+      "  depOptimizedKeys = Object.keys(metadata.optimized ?? {});",
+      "  depDiscoveredKeys = Object.keys(metadata.discovered ?? {});",
+      "  const info = metadata.optimized?.nanoid ?? metadata.discovered?.nanoid ?? null;",
+      "  if (info?.processing) await info.processing;",
+      "  const finalMetadata = optimizer.metadata ?? metadata;",
+      "  const finalInfo = finalMetadata.optimized?.nanoid ?? finalMetadata.discovered?.nanoid ?? info;",
+      "  depOptimizedKeys = Object.keys(finalMetadata.optimized ?? {});",
+      "  depDiscoveredKeys = Object.keys(finalMetadata.discovered ?? {});",
+      "  depOptimizedFile = finalInfo?.file ?? '';",
+      "  depOptimizedFileExists = !!depOptimizedFile && existsSync(depOptimizedFile);",
+      "  depOptimizedBytes = depOptimizedFileExists ? readFileSync(depOptimizedFile).length : 0;",
+      "  depTransformUsesOptimizedPath = /node_modules\\/.vite\\/deps|\\/\\@id\\//.test(depTransformCode);",
+      "  depMetadataHash = String(finalMetadata.hash ?? finalMetadata.lockfileHash ?? finalMetadata.configHash ?? '');",
+      "  depCacheDir = server.config.cacheDir;",
+      "} catch (error) {",
+      "  depError = error?.stack ?? String(error);",
+      "} finally {",
+      "  if (server) { await server.close(); depOptimizerClosed = true; }",
+      "}",
+      "export const viteVersion = version;",
+      "export { depError, depOptimizerPresent, depPackageJsonExists, depPackageIndexExists, depPackageJsonName, depManualResolvedId, depManualResolveError, depOptimizedKeys, depDiscoveredKeys, depOptimizedFile, depOptimizedFileExists, depOptimizedBytes, depTransformCode, depTransformUsesOptimizedPath, depMetadataHash, depCacheDir, depOptimizerClosed };"
+    ].join('\n'))
     .commit();
 
   stage('vite-publication-graph-start');
@@ -558,6 +989,22 @@ async function run() {
         path === '/workspace/node_modules/lightningcss/lightningcss_node.wasm'
       ),
     nodeGlobalAllow: (path) => path.startsWith('/workspace/node_modules/vite/dist/node/'),
+    modulePrelude: (path) =>
+      path === '/workspace/node_modules/vite/dist/node/chunks/node.js'
+        ? [
+            "const __ocBrowserSetTimeout=globalThis.setTimeout.bind(globalThis);",
+            "const setTimeout=(callback,delay,...args)=>{",
+            "  const id=__ocBrowserSetTimeout(callback,delay,...args);",
+            "  const handle={",
+            "    ref(){return handle;},",
+            "    unref(){return handle;},",
+            "    hasRef(){return false;},",
+            "    [Symbol.toPrimitive](){return id;}",
+            "  };",
+            "  return handle;",
+            "};"
+          ].join('\n')
+        : '',
     moduleEpilogue: (path) =>
       path === '/workspace/node_modules/lightningcss/index.mjs'
         ? 'await init();'
@@ -752,6 +1199,273 @@ async function run() {
     deterministicManifest: viteBuildExecution.exports.deterministicManifest
   });
 
+  stage('vite-c2-dev-start');
+  const viteDevEntryUrl = vitePublication.moduleURL('./vite-dev-probe.mjs', '/workspace/src/entry.mjs');
+  const viteDevGraph = await vitePublication.graph(viteDevEntryUrl);
+  const viteDevExecution = await viteWorker.execute(viteDevGraph.entryURL, {
+    exportNames: [
+      'viteVersion',
+      'created',
+      'htmlHasClient',
+      'htmlHasEntry',
+      'tsTransformed',
+      'viteClientServed',
+      'clientBytes',
+      'tsBytes',
+      'html',
+      'tsCode',
+      'clientCode',
+      'closeSucceeded',
+      'devErrorPhase',
+      'devErrorMessage',
+      'pluginNames',
+      'oxcEnabled',
+      'directTsTransformed',
+      'vfsTrace',
+      'manualResolvedId',
+      'manualLoadType',
+      'manualLoadHasTsGeneric',
+      'manualLoadBytes',
+      'manualTransformError',
+      'manualTransformPlugin',
+      'manualTransformId',
+      'manualTransformFrame',
+      'preImportAnalysisCode',
+      'preImportAnalysisBytes',
+      'preImportAnalysisAstParsed',
+      'preImportAnalysisAstError',
+      'hotChannelListening',
+      'hotChannelClosed',
+      'hotConnectEvents',
+      'hotDisconnectEvents',
+      'hmrSelfAccepting',
+      'hmrFirstUpdate',
+      'hmrFirstDelivered',
+      'hmrFailureObserved',
+      'hmrFailureDidNotBroadcast',
+      'hmrReconnectDelivered',
+      'hmrStaleClientQuiet',
+      'hmrRecovered',
+      'hmrUpdateCount'
+    ],
+    observeNestedWorkers: true
+  });
+  stage('vite-c2-dev-probe', {
+    devErrorPhase: viteDevExecution.exports.devErrorPhase,
+    devErrorMessage: viteDevExecution.exports.devErrorMessage,
+    oxcEnabled: viteDevExecution.exports.oxcEnabled,
+    directTsTransformed: viteDevExecution.exports.directTsTransformed,
+    pluginNames: viteDevExecution.exports.pluginNames,
+    vfsTrace: viteDevExecution.exports.vfsTrace,
+    manualResolvedId: viteDevExecution.exports.manualResolvedId,
+    manualLoadType: viteDevExecution.exports.manualLoadType,
+    manualLoadHasTsGeneric: viteDevExecution.exports.manualLoadHasTsGeneric,
+    manualLoadBytes: viteDevExecution.exports.manualLoadBytes,
+    manualTransformError: viteDevExecution.exports.manualTransformError,
+    manualTransformPlugin: viteDevExecution.exports.manualTransformPlugin,
+    manualTransformId: viteDevExecution.exports.manualTransformId,
+    manualTransformFrame: viteDevExecution.exports.manualTransformFrame,
+    preImportAnalysisCode: viteDevExecution.exports.preImportAnalysisCode,
+    preImportAnalysisBytes: viteDevExecution.exports.preImportAnalysisBytes,
+    preImportAnalysisAstParsed: viteDevExecution.exports.preImportAnalysisAstParsed,
+    preImportAnalysisAstError: viteDevExecution.exports.preImportAnalysisAstError,
+    hotChannelListening: viteDevExecution.exports.hotChannelListening,
+    hotChannelClosed: viteDevExecution.exports.hotChannelClosed,
+    hotConnectEvents: viteDevExecution.exports.hotConnectEvents,
+    hotDisconnectEvents: viteDevExecution.exports.hotDisconnectEvents,
+    hmrSelfAccepting: viteDevExecution.exports.hmrSelfAccepting,
+    hmrFirstUpdate: viteDevExecution.exports.hmrFirstUpdate,
+    hmrFirstDelivered: viteDevExecution.exports.hmrFirstDelivered,
+    hmrFailureObserved: viteDevExecution.exports.hmrFailureObserved,
+    hmrFailureDidNotBroadcast: viteDevExecution.exports.hmrFailureDidNotBroadcast,
+    hmrReconnectDelivered: viteDevExecution.exports.hmrReconnectDelivered,
+    hmrStaleClientQuiet: viteDevExecution.exports.hmrStaleClientQuiet,
+    hmrRecovered: viteDevExecution.exports.hmrRecovered,
+    hmrUpdateCount: viteDevExecution.exports.hmrUpdateCount
+  });
+  assert(!viteDevExecution.exports.devErrorPhase, 'Vite C2 dev transform failed at ' + viteDevExecution.exports.devErrorPhase + ': ' + viteDevExecution.exports.devErrorMessage);
+  assert(viteDevExecution.exports.viteVersion === '8.3.0', 'Vite C2 dev server used the wrong version');
+  assert(viteDevExecution.exports.created === true, 'Vite C2 middleware dev server was not created');
+  assert(viteDevExecution.exports.htmlHasClient === true, 'Vite C2 transformed HTML did not inject /@vite/client');
+  assert(viteDevExecution.exports.htmlHasEntry === true, 'Vite C2 transformed HTML lost source entry');
+  assert(viteDevExecution.exports.tsTransformed === true, 'Vite C2 did not transform TypeScript source');
+  assert(viteDevExecution.exports.viteClientServed === true, 'Vite C2 did not transform /@vite/client');
+  assert(viteDevExecution.exports.hotChannelListening === true, 'Vite C2 virtual hot channel never entered listening state');
+  assert(viteDevExecution.exports.hotChannelClosed === true, 'Vite C2 virtual hot channel did not close with dev server');
+  assert(viteDevExecution.exports.hotConnectEvents >= 2, 'Vite C2 virtual hot channel did not observe reconnect');
+  assert(viteDevExecution.exports.hotDisconnectEvents >= 1, 'Vite C2 virtual hot channel did not observe disconnect');
+  assert(viteDevExecution.exports.hmrSelfAccepting === true, 'Vite C2 main module was not self-accepting');
+  assert(viteDevExecution.exports.hmrFirstUpdate === true, 'Vite C2 did not emit a js-update for source edit');
+  assert(viteDevExecution.exports.hmrFirstDelivered === true, 'Vite C2 js-update was not delivered to the connected client');
+  assert(viteDevExecution.exports.hmrFailureObserved === true, 'Vite C2 invalid update did not fail safely');
+  assert(viteDevExecution.exports.hmrFailureDidNotBroadcast === true, 'Vite C2 invalid update broadcast an HMR payload');
+  assert(viteDevExecution.exports.hmrReconnectDelivered === true, 'Vite C2 reconnect client did not receive js-update');
+  assert(viteDevExecution.exports.hmrStaleClientQuiet === true, 'Vite C2 disconnected client received a later update');
+  assert(viteDevExecution.exports.hmrRecovered === true, 'Vite C2 did not recover after invalid update');
+  assert(viteDevExecution.exports.closeSucceeded === true, 'Vite C2 dev server did not close gracefully');
+  stage('vite-c2-hmr-pass', {
+    updates: viteDevExecution.exports.hmrUpdateCount,
+    connects: viteDevExecution.exports.hotConnectEvents,
+    disconnects: viteDevExecution.exports.hotDisconnectEvents,
+    safeFailure: viteDevExecution.exports.hmrFailureDidNotBroadcast,
+    recovered: viteDevExecution.exports.hmrRecovered
+  });
+
+  const c2Owner = 'vite-c2-session-1';
+  const c2Route = runtime.listen(5173, (request = {}) => {
+    const url = String(request.url ?? '/').split('?')[0];
+    if (url === '/' || url === '/index.html') {
+      return new Response(viteDevExecution.exports.html, { headers: { 'content-type': 'text/html; charset=utf-8' } });
+    }
+    if (url === '/src/main.ts') {
+      return new Response(viteDevExecution.exports.tsCode, { headers: { 'content-type': 'application/javascript; charset=utf-8' } });
+    }
+    if (url === '/@vite/client') {
+      return new Response(viteDevExecution.exports.clientCode, { headers: { 'content-type': 'application/javascript; charset=utf-8' } });
+    }
+    return new Response('Not Found', { status: 404 });
+  }, { owner: c2Owner });
+  const c2IndexResponse = await runtime.preview.dispatch(5173, { url: '/' }, c2Route);
+  const c2TsResponse = await runtime.preview.dispatch(5173, { url: '/src/main.ts' }, c2Route);
+  const c2ClientResponse = await runtime.preview.dispatch(5173, { url: '/@vite/client' }, c2Route);
+  const c2IndexBody = await c2IndexResponse.text();
+  const c2TsBody = await c2TsResponse.text();
+  const c2ClientBody = await c2ClientResponse.text();
+  assert(c2IndexResponse.status === 200 && c2IndexBody.includes('/@vite/client'), 'Vite C2 virtual HTTP index route failed');
+  assert(c2TsResponse.status === 200 && c2TsBody.includes('source-v2'), 'Vite C2 virtual HTTP TS route failed');
+  assert(c2ClientResponse.status === 200 && c2ClientBody.length > 1000, 'Vite C2 virtual HTTP /@vite/client route failed');
+  stage('vite-c2-http-pass', {
+    port: c2Route.port,
+    owner: c2Route.owner,
+    epoch: c2Route.epoch,
+    indexBytes: c2IndexBody.length,
+    tsBytes: c2TsBody.length,
+    clientBytes: c2ClientBody.length,
+    gracefulClose: viteDevExecution.exports.closeSucceeded
+  });
+
+  const c2PreviewBridge = new BrowserPreviewServiceWorkerBridge({
+    preview: runtime.preview,
+    diagnostics: runtime.diagnostics
+  });
+  await c2PreviewBridge.start();
+  const c2ServiceWorkerUrl = c2PreviewBridge.url(c2Route, '/');
+  const c2ServiceWorkerResponse = await fetch(c2ServiceWorkerUrl, { cache: 'no-store' });
+  const c2ServiceWorkerBody = await c2ServiceWorkerResponse.text();
+  assert(c2ServiceWorkerResponse.status === 200 && c2ServiceWorkerBody.includes('/@vite/client'), 'Vite C2 Service Worker preview route failed');
+  assert(c2ServiceWorkerResponse.headers.get('x-opencontainer-edge') === 'service-worker', 'Vite C2 preview did not traverse Service Worker edge');
+  stage('vite-c2-preview-edge-pass', {
+    status: c2ServiceWorkerResponse.status,
+    port: c2Route.port,
+    owner: c2Route.owner,
+    epoch: c2Route.epoch
+  });
+  c2PreviewBridge.close();
+
+  const c2RestartOwner = 'vite-c2-session-2';
+  const c2RestartRoute = runtime.listen(5173, () =>
+    new Response('restart-ok', { headers: { 'content-type': 'text/plain; charset=utf-8' } }),
+  { owner: c2RestartOwner });
+  let c2StaleRejected = false;
+  try {
+    await runtime.preview.dispatch(5173, { url: '/' }, c2Route);
+  } catch (error) {
+    c2StaleRejected = error?.code === 'OC_PREVIEW_STALE';
+  }
+  assert(c2RestartRoute.epoch > c2Route.epoch, 'Vite C2 restart did not advance preview epoch');
+  assert(c2StaleRejected, 'Vite C2 stale preview receipt was not rejected after restart');
+  const c2RestartResponse = await runtime.preview.dispatch(5173, { url: '/' }, c2RestartRoute);
+  assert(c2RestartResponse.status === 200 && await c2RestartResponse.text() === 'restart-ok', 'Vite C2 restarted route is not authoritative');
+  stage('vite-c2-restart-pass', {
+    port: c2RestartRoute.port,
+    oldOwner: c2Route.owner,
+    newOwner: c2RestartRoute.owner,
+    oldEpoch: c2Route.epoch,
+    newEpoch: c2RestartRoute.epoch,
+    staleRejected: c2StaleRejected
+  });
+
+  const c2RehydratedBridge = new BrowserPreviewServiceWorkerBridge({
+    preview: runtime.preview,
+    diagnostics: runtime.diagnostics
+  });
+  await c2RehydratedBridge.start();
+  const c2RestartServiceWorkerUrl = c2RehydratedBridge.url(c2RestartRoute, '/');
+  const c2RestartServiceWorkerResponse = await fetch(c2RestartServiceWorkerUrl, { cache: 'no-store' });
+  assert(
+    c2RestartServiceWorkerResponse.status === 200 && await c2RestartServiceWorkerResponse.text() === 'restart-ok',
+    'Vite C2 rehydrated Service Worker preview route is not authoritative'
+  );
+  const c2StaleServiceWorkerResponse = await fetch(c2ServiceWorkerUrl, { cache: 'no-store' });
+  assert(c2StaleServiceWorkerResponse.status === 409, 'Vite C2 stale Service Worker preview receipt did not fail closed');
+  stage('vite-c2-preview-rehydration-pass', {
+    port: c2RestartRoute.port,
+    oldEpoch: c2Route.epoch,
+    newEpoch: c2RestartRoute.epoch,
+    staleStatus: c2StaleServiceWorkerResponse.status
+  });
+  c2RehydratedBridge.close();
+  runtime.preview.revoke(5173, { owner: c2RestartOwner });
+
+  stage('vite-c2-dep-opt-start');
+  const viteDepOptEntryUrl = vitePublication.moduleURL('./vite-dep-opt-probe.mjs', '/workspace/src/entry.mjs');
+  const viteDepOptGraph = await vitePublication.graph(viteDepOptEntryUrl);
+  const viteDepOptExecution = await viteWorker.execute(viteDepOptGraph.entryURL, {
+    exportNames: [
+      'viteVersion',
+      'depError',
+      'depOptimizerPresent',
+      'depPackageJsonExists',
+      'depPackageIndexExists',
+      'depPackageJsonName',
+      'depManualResolvedId',
+      'depManualResolveError',
+      'depOptimizedKeys',
+      'depDiscoveredKeys',
+      'depOptimizedFile',
+      'depOptimizedFileExists',
+      'depOptimizedBytes',
+      'depTransformCode',
+      'depTransformUsesOptimizedPath',
+      'depMetadataHash',
+      'depCacheDir',
+      'depOptimizerClosed'
+    ],
+    observeNestedWorkers: true
+  });
+  stage('vite-c2-dep-opt-probe', {
+    error: viteDepOptExecution.exports.depError,
+    packageJsonExists: viteDepOptExecution.exports.depPackageJsonExists,
+    packageIndexExists: viteDepOptExecution.exports.depPackageIndexExists,
+    packageJsonName: viteDepOptExecution.exports.depPackageJsonName,
+    manualResolvedId: viteDepOptExecution.exports.depManualResolvedId,
+    manualResolveError: viteDepOptExecution.exports.depManualResolveError,
+    optimizedKeys: viteDepOptExecution.exports.depOptimizedKeys,
+    discoveredKeys: viteDepOptExecution.exports.depDiscoveredKeys,
+    optimizedFile: viteDepOptExecution.exports.depOptimizedFile,
+    optimizedFileExists: viteDepOptExecution.exports.depOptimizedFileExists,
+    optimizedBytes: viteDepOptExecution.exports.depOptimizedBytes,
+    transformPrefix: String(viteDepOptExecution.exports.depTransformCode ?? '').slice(0, 500),
+    usesOptimizedPath: viteDepOptExecution.exports.depTransformUsesOptimizedPath,
+    metadataHash: viteDepOptExecution.exports.depMetadataHash,
+    cacheDir: viteDepOptExecution.exports.depCacheDir,
+    closed: viteDepOptExecution.exports.depOptimizerClosed
+  });
+  assert(!viteDepOptExecution.exports.depError, 'Vite C2 dependency optimizer failed: ' + viteDepOptExecution.exports.depError);
+  assert(viteDepOptExecution.exports.viteVersion === '8.3.0', 'Vite C2 dependency optimizer used the wrong Vite version');
+  assert(viteDepOptExecution.exports.depOptimizerPresent === true, 'Vite C2 dependency optimizer authority was absent');
+  assert(viteDepOptExecution.exports.depOptimizedKeys.includes('nanoid'), 'Vite C2 did not promote nanoid into optimized metadata');
+  assert(viteDepOptExecution.exports.depOptimizedFileExists === true, 'Vite C2 optimized nanoid artifact was not materialized');
+  assert(viteDepOptExecution.exports.depOptimizedBytes > 0, 'Vite C2 optimized nanoid artifact is empty');
+  assert(viteDepOptExecution.exports.depTransformUsesOptimizedPath === true, 'Vite C2 transformed dependency import did not target optimized cache');
+  assert(viteDepOptExecution.exports.depOptimizerClosed === true, 'Vite C2 dependency optimizer server did not close gracefully');
+  stage('vite-c2-dep-opt-pass', {
+    optimized: viteDepOptExecution.exports.depOptimizedKeys,
+    file: viteDepOptExecution.exports.depOptimizedFile,
+    bytes: viteDepOptExecution.exports.depOptimizedBytes,
+    metadataHash: viteDepOptExecution.exports.depMetadataHash
+  });
+
   viteWorker.close();
   viteBridge.close();
 
@@ -772,6 +1486,12 @@ async function run() {
     rolldownWasiWorkerPreflight: true,
     viteModuleExecution: true,
     viteC1Build: true,
+    viteC2DevServer: true,
+    viteC2VirtualHttp: true,
+    viteC2Hmr: true,
+    viteC2RestartEpoch: true,
+    viteC2PreviewRehydration: true,
+    viteC2DependencyOptimization: true,
     stages
   };
 }

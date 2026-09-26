@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { MemoryVFS } from '../packages/vfs/src/index.js';
 import { VirtualNodeModulesFS } from '../packages/package-env/src/virtual-node-modules.js';
 import { createBrowserNodeCompatBridge } from '../packages/package-env/src/browser-node-compat.js';
+import { BufferCompat } from '../packages/package-env/src/builtins/buffer.js';
 import { ErrorCodes } from '../packages/protocol/src/index.js';
 
 function fixture(){
@@ -19,6 +20,17 @@ function fixture(){
   };
   return {base,fs,bridge:createBrowserNodeCompatBridge({fs,writableFs:base,cwd:'/workspace',resolver})};
 }
+
+test('BufferCompat writes UTF-16LE through an ArrayBuffer view for WASM lexers',()=>{
+  const backing=new ArrayBuffer(32);
+  const buffer=BufferCompat.from(backing,4,12);
+  const written=buffer.write('AΩ','utf16le');
+  assert.equal(written,4);
+  assert.deepEqual([...new Uint8Array(backing,4,4)],[0x41,0x00,0xa9,0x03]);
+  assert.equal(buffer.byteOffset,4);
+  assert.equal(buffer.byteLength,12);
+  assert.equal(new Uint8Array(backing)[0],0);
+});
 
 test('browser Node compat fs host bridge reads and writes WorkspaceFS',async()=>{
   const {base,bridge}=fixture();

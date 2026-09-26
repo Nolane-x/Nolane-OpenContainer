@@ -20,3 +20,5 @@ export class PreviewAuthority {
   }
   list(){return [...this.#routes.values()].map(({handler,...route})=>Object.freeze(route));}
 }
+
+export { BrowserPreviewServiceWorkerBridge } from './browser-service-worker.js';
