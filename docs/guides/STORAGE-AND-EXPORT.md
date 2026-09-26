@@ -8,7 +8,7 @@ OpenContainer distinguishes **live VFS state**, **in-memory snapshots**, **OPFS 
 
 ## OPFS workspace persistence
 
-When booted with `workspacePersistence`, OpenContainer opens the OPFS checkpoint authority before the runtime becomes ready. `persistWorkspace()` publishes a generation through the existing dual-slot / Web-Lock-coordinated authority. Browser storage remains quota- and eviction-sensitive; a browser or user action may evict origin data. OpenContainer does not promise infinite or permanent local storage.
+When booted with `workspacePersistence`, OpenContainer opens the OPFS checkpoint authority before the runtime becomes ready. `persistWorkspace()` publishes a generation through the existing dual-slot / Web-Lock-coordinated authority. Browser storage remains quota- and eviction-sensitive; browser-managed data may be evicted by the browser or removed by a user action. OpenContainer does not promise infinite or permanent local storage.
 
 ## Portable export
 
