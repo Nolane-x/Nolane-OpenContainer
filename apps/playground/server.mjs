@@ -10,8 +10,21 @@ const port = Number(process.env.PORT || 4173);
 const lexerPath = fileURLToPath(import.meta.resolve('es-module-lexer/minimal/js'));
 
 const compatibilityUpstream = new Map([
-  ['/__compat__/yoctocolors/index.js', 'https://raw.githubusercontent.com/sindresorhus/yoctocolors/a85b98a90e5731914567d8c209e7ec45ac2d24e2/index.js'],
-  ['/__compat__/yoctocolors/base.js', 'https://raw.githubusercontent.com/sindresorhus/yoctocolors/a85b98a90e5731914567d8c209e7ec45ac2d24e2/base.js']
+  ['/__compat__/yoctocolors/index.js', {
+    url: 'https://raw.githubusercontent.com/sindresorhus/yoctocolors/a85b98a90e5731914567d8c209e7ec45ac2d24e2/index.js',
+    repository: 'sindresorhus/yoctocolors',
+    commit: 'a85b98a90e5731914567d8c209e7ec45ac2d24e2'
+  }],
+  ['/__compat__/yoctocolors/base.js', {
+    url: 'https://raw.githubusercontent.com/sindresorhus/yoctocolors/a85b98a90e5731914567d8c209e7ec45ac2d24e2/base.js',
+    repository: 'sindresorhus/yoctocolors',
+    commit: 'a85b98a90e5731914567d8c209e7ec45ac2d24e2'
+  }],
+  ['/__compat__/clsx/src/index.js', {
+    url: 'https://raw.githubusercontent.com/lukeed/clsx/925494cf31bcd97d3337aacd34e659e80cae7fe2/src/index.js',
+    repository: 'lukeed/clsx',
+    commit: '925494cf31bcd97d3337aacd34e659e80cae7fe2'
+  }]
 ]);
 
 const publicAliases = new Map([
@@ -59,7 +72,7 @@ const server = createServer(async (request, response) => {
     const url = new URL(request.url, 'http://127.0.0.1');
     const upstream = compatibilityUpstream.get(url.pathname);
     if (upstream) {
-      const upstreamResponse = await fetch(upstream, {
+      const upstreamResponse = await fetch(upstream.url, {
         headers: { 'User-Agent': 'OpenContainer-compatibility-corpus-v0.1' }
       });
       if (!upstreamResponse.ok) {
@@ -69,8 +82,8 @@ const server = createServer(async (request, response) => {
         return;
       }
       response.setHeader('Content-Type', 'text/javascript; charset=utf-8');
-      response.setHeader('X-OpenContainer-Compat-Repository', 'sindresorhus/yoctocolors');
-      response.setHeader('X-OpenContainer-Compat-Commit', 'a85b98a90e5731914567d8c209e7ec45ac2d24e2');
+      response.setHeader('X-OpenContainer-Compat-Repository', upstream.repository);
+      response.setHeader('X-OpenContainer-Compat-Commit', upstream.commit);
       response.end(new Uint8Array(await upstreamResponse.arrayBuffer()));
       return;
     }
