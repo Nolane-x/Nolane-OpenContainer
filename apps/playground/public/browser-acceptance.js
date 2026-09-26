@@ -134,6 +134,126 @@ async function run() {
   workerB.close();
   bridgeB.close();
 
+  stage('guest-isolation-start');
+  runtime.fs.beginTransaction().writeFile('src/guest-isolation.mjs', [
+    "import { spawn } from 'node:child_process';",
+    "import net from 'node:net';",
+    "import tls from 'node:tls';",
+    "import https from 'node:https';",
+    "const codeOf = (fn) => { try { fn(); return 'ALLOWED'; } catch (error) { return error?.code ?? error?.name ?? 'ERROR'; } };",
+    "const asyncCodeOf = async (fn) => { try { await fn(); return 'ALLOWED'; } catch (error) { return error?.code ?? error?.name ?? 'ERROR'; } };",
+    "export const pageRealmHidden = typeof window === 'undefined' && typeof document === 'undefined' && typeof localStorage === 'undefined' && typeof sessionStorage === 'undefined';",
+    "export const globalAliasIsGuest = globalThis.global === globalThis && self === globalThis;",
+    "export const childProcessCode = codeOf(() => spawn('node', ['-e', 'process.exit(0)']));",
+    "export const rawTcpCode = codeOf(() => net.connect(80, 'example.com'));",
+    "export const tlsCode = codeOf(() => tls.connect(443, 'example.com'));",
+    "export const httpsCode = codeOf(() => https.get('https://example.com/'));",
+    "export const webSocketCode = codeOf(() => new WebSocket('wss://example.com/socket'));",
+    "export const broadcastCode = typeof BroadcastChannel === 'function' ? codeOf(() => new BroadcastChannel('opencontainer-escape')) : 'ABSENT';",
+    "export const nestedWorkerCode = codeOf(() => new Worker(import.meta.url, { type: 'module' }));",
+    "export const unknownHostCode = codeOf(() => globalThis.__opencontainer_sync_host_call__('host.escape', {}));",
+    "export const externalFetchCode = await asyncCodeOf(() => fetch('https://example.com/'));",
+    "export const sameOriginBypassCode = await asyncCodeOf(() => fetch(location.origin + '/package-lock.json'));",
+    "const internalResponse = await fetch(import.meta.url, { cache: 'no-store' });",
+    "export const internalFetchStatus = internalResponse.status;",
+    "export const internalFetchEdge = internalResponse.headers.get('x-opencontainer-edge');",
+    "export const opfsCode = navigator.storage?.getDirectory ? await asyncCodeOf(() => navigator.storage.getDirectory()) : 'ABSENT';",
+    "export const locksCode = navigator.locks?.request ? await asyncCodeOf(() => navigator.locks.request('guest-escape', () => true)) : 'ABSENT';",
+    "export const indexedDbCode = typeof indexedDB !== 'undefined' ? codeOf(() => indexedDB.open('guest-escape')) : 'ABSENT';",
+    "export const cacheStorageCode = typeof caches !== 'undefined' ? await asyncCodeOf(() => caches.open('guest-escape')) : 'ABSENT';"
+  ].join('\n')).commit();
+
+  const securityPublication = runtime.packages.createNativeEsmPublication({
+    baseURL,
+    session: 'browser-security-isolation',
+    builtinSource: nodeCompat.builtinSource
+  });
+  const securityBridge = new BrowserEsmServiceWorkerBridge({ publication: securityPublication });
+  await securityBridge.start();
+  const securityWorker = new BrowserGuestWorkerAuthority({
+    publication: securityPublication,
+    diagnostics: runtime.diagnostics,
+    syncRequestHandler: nodeCompat.syncRequestHandler,
+    requestTimeoutMs: 30000
+  });
+  securityWorker.start();
+  const securityEntry = securityPublication.moduleURL('./guest-isolation.mjs', '/workspace/src/entry.mjs').href;
+  const isolation = await securityWorker.execute(securityEntry, {
+    exportNames: [
+      'pageRealmHidden',
+      'globalAliasIsGuest',
+      'childProcessCode',
+      'rawTcpCode',
+      'tlsCode',
+      'httpsCode',
+      'webSocketCode',
+      'broadcastCode',
+      'nestedWorkerCode',
+      'unknownHostCode',
+      'externalFetchCode',
+      'sameOriginBypassCode',
+      'internalFetchStatus',
+      'internalFetchEdge',
+      'opfsCode',
+      'locksCode',
+      'indexedDbCode',
+      'cacheStorageCode'
+    ]
+  });
+
+  assert(isolation.exports.pageRealmHidden === true, 'guest Worker leaked page DOM/storage globals');
+  assert(isolation.exports.globalAliasIsGuest === true, 'guest global alias escaped the isolated Worker realm');
+  for (const [name, value] of Object.entries({
+    childProcessCode: isolation.exports.childProcessCode,
+    rawTcpCode: isolation.exports.rawTcpCode,
+    tlsCode: isolation.exports.tlsCode,
+    httpsCode: isolation.exports.httpsCode,
+    unknownHostCode: isolation.exports.unknownHostCode,
+    opfsCode: isolation.exports.opfsCode,
+    locksCode: isolation.exports.locksCode,
+    indexedDbCode: isolation.exports.indexedDbCode,
+    cacheStorageCode: isolation.exports.cacheStorageCode
+  })) {
+    assert(value === 'OC_BUILTIN_UNAVAILABLE', name + ' did not fail closed: ' + value);
+  }
+  for (const [name, value] of Object.entries({
+    webSocketCode: isolation.exports.webSocketCode,
+    nestedWorkerCode: isolation.exports.nestedWorkerCode,
+    externalFetchCode: isolation.exports.externalFetchCode,
+    sameOriginBypassCode: isolation.exports.sameOriginBypassCode
+  })) {
+    assert(value === 'OC_NETWORK_DENIED', name + ' bypassed guest network authority: ' + value);
+  }
+  assert(
+    isolation.exports.broadcastCode === 'OC_NETWORK_DENIED' || isolation.exports.broadcastCode === 'ABSENT',
+    'BroadcastChannel escaped guest isolation: ' + isolation.exports.broadcastCode
+  );
+  assert(isolation.exports.internalFetchStatus === 200, 'guest membrane blocked its own authoritative publication resource');
+  assert(isolation.exports.internalFetchEdge === 'service-worker', 'guest internal fetch escaped the publication service-worker edge');
+  assert(isolation.workerCrossOriginIsolated === true, 'security court guest lost cross-origin isolation');
+  securityWorker.close();
+  securityBridge.close();
+
+  stage('guest-isolation-pass', {
+    pageRealmHidden: isolation.exports.pageRealmHidden,
+    childProcess: isolation.exports.childProcessCode,
+    rawTcp: isolation.exports.rawTcpCode,
+    tls: isolation.exports.tlsCode,
+    https: isolation.exports.httpsCode,
+    externalFetch: isolation.exports.externalFetchCode,
+    sameOriginBypass: isolation.exports.sameOriginBypassCode,
+    webSocket: isolation.exports.webSocketCode,
+    broadcast: isolation.exports.broadcastCode,
+    nestedWorker: isolation.exports.nestedWorkerCode,
+    opfs: isolation.exports.opfsCode,
+    webLocks: isolation.exports.locksCode,
+    indexedDb: isolation.exports.indexedDbCode,
+    cacheStorage: isolation.exports.cacheStorageCode,
+    unknownHostRpc: isolation.exports.unknownHostCode,
+    internalPublicationFetch: isolation.exports.internalFetchStatus,
+    workerCrossOriginIsolated: isolation.workerCrossOriginIsolated
+  });
+
   stage('opfs-real-start');
   assert(navigator.storage?.getDirectory, 'OPFS API is unavailable');
   const opfsRoot = await navigator.storage.getDirectory();

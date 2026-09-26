@@ -20,6 +20,7 @@ Promoted in the clean Chrome product/browser path:
 - browser package policy now resolves required peers into the frozen closure, keeps optional peers explicit, rejects missing required peers, and denies lifecycle install scripts by default; explicit skip/ignore policies remain auditable and never execute host lifecycle scripts.
 - the browser package corpus now also includes an independent `es-module-lexer@3.0.2` court: frozen-lockfile fetch/SRI, immutable install, VNFS mount, native ESM publication and real `init()` + `parse()` execution in a cross-origin-isolated Dedicated Worker.
 - the browser package corpus now also exercises exact `nanoid@3.3.19` conditional exports: the same frozen install resolves `nanoid/non-secure` to distinct ESM/CJS targets and executes the ESM subpath in a cross-origin-isolated Dedicated Worker.
+- the Dedicated Worker guest now installs a deny-by-default browser capability membrane: direct external/same-origin non-publication fetch, WebSocket/EventSource/WebTransport/XMLHttpRequest, SharedWorker/BroadcastChannel, origin OPFS/StorageManager, Web Locks, IndexedDB, CacheStorage/CookieStore and arbitrary nested Workers are denied; direct fetch remains scoped to the active publication session, and only the retained Rolldown WASI helper is admitted as a nested Worker.
 
 Evidence anchors:
 
@@ -36,10 +37,11 @@ Evidence anchors:
 - SDK PackageContent persistence court `4584eed9b7da6f8a437af3f2dc1890544fc853d1` passed contract + Chrome browser-product-path in CI run #235: default installer hydration after reopen required 0 network fetches and 0 requested contents, hydrated 1 persisted content, mounted 1 exact package, preserved cross-context Web Locks, and left all existing workspace/package/C1/C2 courts green.
 - SDK WorkspaceFS corruption-recovery court `78e2435a975bd5d758012237e59c31528a0dd08b` passed contract + Chrome browser-product-path in CI run #238: corrupting sequence 3 forced fallback to sequence/generation 2, the recovered runtime safely republished sequence/generation 3 with a new payload identity, GC collected the corrupt payload, and the republished state survived another reopen.
 - conditional package corpus court `9391f61ef6602fcfe059605c0b8ac4c2f3abf3ac` passed contract + Chrome browser-product-path in CI run #241: exact `nanoid@3.3.19` fetched 5,694 bytes, ESM resolved to `/workspace/node_modules/nanoid/non-secure/index.js`, CJS resolved to `/workspace/node_modules/nanoid/non-secure/index.cjs`, and the ESM subpath generated valid IDs inside an isolated worker.
+- guest browser-capability isolation court `e97d0a4eebca5f6482afabf500f59771f6f6164b` passed contract + Chrome browser-product-path in CI run #244: page realm stayed hidden; child_process/raw TCP/TLS/HTTPS/unknown host RPC/OPFS/Web Locks/IndexedDB/CacheStorage failed with explicit unavailable errors; external fetch, same-origin bypass, WebSocket, BroadcastChannel and arbitrary nested Worker failed with `OC_NETWORK_DENIED`; active-publication fetch still returned 200 through the Service Worker; all persistence/package/Vite C1/C2 courts remained green.
 
 Still required before production closure:
 
-1. Broader guest-isolation hardening and Node 24 compatibility beyond the promoted synchronous/builtin/toolchain court.
+1. Remaining guest-isolation hardening beyond the promoted direct browser-capability membrane: CSP/origin separation, side-channel/resource-abuse controls, and broader Node 24 compatibility.
 2. Extended WorkspaceFS/PackageFS durability campaigns beyond the promoted public SDK persistence profiles; WorkspaceFS restore/checkpoint/GC plus corrupt-newest fallback-and-continuation, persistent PackageContent hydration/forced-eviction recovery, policy/GC/quota preflight and multi-tab/Web Locks are promoted.
 3. Broader browser package-install corpus beyond the promoted Vite/Rolldown/Lightning CSS + standalone `es-module-lexer` and conditional-export `nanoid` courts; peer/optional/script policy, persistent immutable PackageContent, lockfile-authoritative hydration and concurrent cache dedupe are promoted.
 4. PC-A/PC-B target-device and browser matrix beyond CI Chrome.
@@ -176,7 +178,7 @@ Security boundary:
 - dynamic CommonJS source execution is **disabled by default**;
 - the built-in evaluator must be explicitly enabled and is intended only for a hardened guest worker;
 - trusted UI/main-thread code must not enable guest dynamic execution;
-- browser guest-worker isolation and CSP evidence remain open.
+- direct browser-capability guest isolation is promoted; CSP/origin-separation evidence remains open.
 
 
 ## Frozen install / immutable PackageContent advancement
