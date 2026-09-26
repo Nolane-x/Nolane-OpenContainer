@@ -111,7 +111,7 @@
     "primitive": "promoted-selected",
     "package": "promoted-selected",
     "framework": "vite-8.3.0-c1-c2-promoted",
-    "realRepository": "yoctocolors-browser-court-pending",
+    "realRepository": "yoctocolors-pass-ci-286",
     "repeatedBrowser": "not-closed"
   },
   "adapters": [
@@ -167,5 +167,31 @@
     "generic fs.watch/chokidar parity is not promoted",
     "raw guest TCP/UDP and arbitrary host process creation are unsupported",
     "minimum cross-browser versions are intentionally not frozen before browser matrix evidence"
-  ]
+  ],
+  "surfaceEvidence": {
+    "fs": {
+      "state": "PASS-BROWSER-BOUNDED",
+      "evidence": "Workspace VFS + OPFS courts; real repo source mounted in CI #286"
+    },
+    "module": {
+      "state": "PASS-BROWSER-BOUNDED",
+      "evidence": "native ESM/CJS courts + pinned yoctocolors Native ESM execution in CI #286"
+    },
+    "process": {
+      "state": "PASS-BROWSER-BOUNDED",
+      "evidence": "virtual process/Worker authority; arbitrary host child process remains denied"
+    },
+    "http": {
+      "state": "PASS-BROWSER-BOUNDED",
+      "evidence": "PreviewAuthority virtual HTTP + Vite C2 virtual HTTP; raw host TCP listen is not claimed"
+    },
+    "package": {
+      "state": "PASS-BROWSER-SELECTED",
+      "evidence": "npm package-lock v2/v3 frozen installer + package corpus; pnpm/yarn remain unsupported"
+    },
+    "watch": {
+      "state": "PARTIAL",
+      "evidence": "Vite HMR is promoted; generic fs.watch/chokidar parity remains open"
+    }
+  }
 }
