@@ -120,3 +120,5 @@ export { OpfsReleaseStorageAuthority, releaseCacheNamespace, assessReleaseStorag
 
 export { OpfsDerivedIndexStore } from './opfs-derived-index-store.js';
 export { PersistenceCorruptionClass, PersistenceCorruptionAction, corruptionDisposition, persistenceCorruptionMatrix } from './corruption.js';
+
+export { StorageCleanupCoordinator, StorageCleanupTier } from './storage-cleanup.js';
