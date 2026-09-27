@@ -8,8 +8,8 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **182**
-- Minimum-closure satisfied: **125**
+- Seed-reconciled against implementation evidence: **183**
+- Minimum-closure satisfied: **126**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -31,7 +31,7 @@
 | P12 Product security engineering | 20 | 0 | 20 |
 | P13 Build, supply chain & publication | 13 | 7 | 20 |
 | P14 Release, update, migration & rollback | 15 | 3 | 18 |
-| P15 SDK, API, documentation & developer experience | 13 | 1 | 14 |
+| P15 SDK, API, documentation & developer experience | 14 | 0 | 14 |
 | P16 License, FTO, governance & contribution policy | 0 | 14 | 14 |
 | P17 Operations, vulnerability response & long-term maintenance | 14 | 0 | 14 |
 | P18 Evidence, assurance & research integrity | 12 | 0 | 12 |
@@ -44,6 +44,8 @@
 
 ## Newly reconciled in this wave
 
+- **P15-05** now meets release-ready evidence through CI #421: every release publishes a browser/OS/profile matrix with one retained evidence-backed row (Chrome 153.0.8010.52 / Ubuntu 24.04 x64 / `desktop-chrome153-ubuntu2404-x64-ci`) and six explicit unverified rows for Windows, macOS, Firefox, Safari, Android and weak-device profiles. The matrix fails closed if an unverified row is promoted without evidence, retains browser minimums/resource floors as unfrozen, is SHA-256-bound to six source artifacts, and is archived with the compatibility report.
+- P11-13 browser minimums, P14-13 frozen-floor/newest-stable regression, P14-14/P7 weak-device evidence and P15-12 external published-package sample testing remain separate blockers.
 - **P17-01 through P17-14** now meet the pre-1.0 exercised-process minimum closure through an executable operations authority. CI #413 exercised supported-line/security-fix policy, a six-state vulnerability lifecycle, named incident roles, revocation/user-warning rules, known-bad runtime read-only enforcement, dependency and browser-watch cadence, telemetry-free health, v0.1/v0.2 support-bundle parsing, backup/EOL policy, issue-to-regression enforcement, known-issues lookup and four disaster scenarios.
 - CI #413 produced an operations receipt with **14 process areas**, **4/4 disaster drills**, **4 known issues**, **12 retained critical/high regressions**, **0 remote health requests**, a successful known-bad mutation block and SHA-256-bound raw results. The repeated critical court ran **20 files × 5 = 100 executions** with zero unexplained failures, and the declared Chrome profile passed **2/2** installed-distribution product paths.
 - A weekly maintenance workflow now reruns dependency audit, operations drills, browser-profile verification and the repeated browser court. This does **not** create a verified private disclosure channel (P12-17), an externally published package/release, a cross-browser floor or weak-device evidence; those remain separate blockers.

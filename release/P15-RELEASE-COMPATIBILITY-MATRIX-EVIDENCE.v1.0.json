@@ -1,0 +1,73 @@
+{
+  "schema": "opencontainer.p15-release-compatibility-matrix-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P15-05",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "requirement": "Publish browser/OS/profile compatibility matrix per release.",
+  "minimumClosure": "RELEASE-READY evidence",
+  "pullRequest": 45,
+  "implementationHead": "51142c03da23bee52dd85c1beeba40a8184ca00e",
+  "ci": {
+    "runNumber": 421,
+    "runId": 36308852382,
+    "testedCheckoutCommit": "79abfe50a3d6a16fcd0df95fef748fd3cea43cf4",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "matrixStatus": "PASS",
+    "matrixRows": 7,
+    "evidenceBackedRows": 1,
+    "unverifiedRows": 6,
+    "sourceDigestCount": 6,
+    "criticalTestFiles": 24,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 120,
+    "contractUnexplainedFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "browserUnexplainedFailures": 0
+  },
+  "release": {
+    "releaseId": "opencontainer-0.1.0-alpha.1-canary",
+    "version": "0.1.0-alpha.1",
+    "channel": "canary",
+    "productionProfileId": "opencontainer-alpha-chromium-node24-v1",
+    "matrixSource": "release/RELEASE-COMPATIBILITY-MATRIX.v1.0.json",
+    "humanSource": "docs/compatibility/RELEASE-COMPATIBILITY-MATRIX.md",
+    "archivedArtifact": ".artifacts/compatibility/release-compatibility-matrix.json",
+    "archiveRetentionDays": 90
+  },
+  "evidenceProfile": {
+    "id": "desktop-chrome153-ubuntu2404-x64-ci",
+    "browser": "Google Chrome 153.0.8010.52",
+    "os": "Ubuntu 24.04 x64",
+    "deviceClass": "github-hosted-standard-x64",
+    "browserMinimumsFrozen": false,
+    "resourceFloorClaimed": false
+  },
+  "closure": {
+    "id": "P15-05",
+    "state": "EVIDENCE",
+    "promotion": "PASS-BROWSER",
+    "closureMet": true,
+    "evidence": "A per-release browser/OS/profile matrix is now machine-verified and archived. It publishes the one retained evidence-backed Chrome/Ubuntu profile alongside explicit unverified Windows/macOS/Firefox/Safari/Android/weak-device rows, preventing omission from becoming an implicit support claim."
+  },
+  "preservedOpenGates": [
+    {
+      "id": "P11-13",
+      "reason": "Minimum browser versions are not frozen until real cross-browser matrix evidence exists."
+    },
+    {
+      "id": "P14-13",
+      "reason": "Frozen-floor versus newest-stable regression campaign remains separate."
+    },
+    {
+      "id": "P14-14/P7",
+      "reason": "Weak-device performance/resource-floor evidence remains open."
+    },
+    {
+      "id": "P15-12",
+      "reason": "Documentation samples are not yet tested against an externally published OpenContainer package."
+    }
+  ],
+  "productionClosed": false
+}

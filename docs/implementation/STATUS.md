@@ -674,3 +674,10 @@ P17 is process-closed for the current pre-1.0 scope, not a claim of a staffed ho
 PR #44 implementation head `676fcec1b4b8b1fad108c28ab7d71595d5b368db` passed CI #417. The canary release compatibility report is machine-verified against the exact five baseline limitations, four product-scope unsupported classes and four version/profile/browser known issues; seven source files are SHA-256 bound and the receipt is archived for 90 days. The critical contract campaign ran 110 test-file executions with zero unexplained failures and Chrome passed 2/2 installed-distribution product paths.
 
 P11-14 is closed. P11-12 remains PARTIAL until the actual externally published OpenContainer package/bundle is exercised, and P11-13 remains unreconciled until real browser-matrix evidence exists. `production_closed=false`.
+
+
+## P15 per-release browser/OS/profile matrix closure
+
+PR #45 implementation head `51142c03da23bee52dd85c1beeba40a8184ca00e` passed CI #421 across contract, CodeQL and the installed-distribution Chrome product path. The release matrix publishes seven rows: exactly one evidence-backed profile (Chrome 153.0.8010.52 / Ubuntu 24.04 x64 / `desktop-chrome153-ubuntu2404-x64-ci`) and six explicit unverified rows for broader browser/OS/mobile/weak-device profiles. The matrix receipt binds six source artifacts by SHA-256, the repeated critical court ran 120 test-file executions with zero unexplained failures, and Chrome passed 2/2 full product paths.
+
+P15-05 is closed without freezing browser minimums or claiming Windows/macOS/Firefox/Safari/mobile/weak-device support. P15-12 remains the only open P15 row because documentation samples are not yet tested against an externally published OpenContainer package. `production_closed=false`.
