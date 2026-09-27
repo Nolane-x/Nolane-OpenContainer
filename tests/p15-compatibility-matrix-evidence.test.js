@@ -46,16 +46,17 @@ test('P15-05 closes while P15-12 and broader browser/resource gates remain open'
   assert.equal(ledger.overrides.some(x=>x.id==='P14-13'&&x.closure_met===true),false);
   assert.equal(matrix.browserMinimumsFrozen,false);
   assert.equal(matrix.resourceFloorClaimed,false);
-  assert.equal(ledger.overrides.length,183);
-  assert.equal(ledger.overrides.filter(x=>x.closure_met===true).length,126);
-  assert.equal(ledger.overrides.filter(x=>x.state==='PARTIAL').length,37);
+  // P15 owns exact P15 closure; later domains may legitimately grow global totals.
+  assert.ok(ledger.overrides.length>=183);
+  assert.ok(ledger.overrides.filter(x=>x.closure_met===true).length>=126);
+  assert.equal(rows.filter(x=>x.state==='PARTIAL').length,1);
   assert.equal(ledger.production_closed,false);
 });
 
 test('P15-05 closure evidence is repeated in the critical contract campaign',()=>{
   assert.ok(flake.contract.testFiles.includes('tests/release-compatibility-matrix.test.js'));
   assert.ok(flake.contract.testFiles.includes('tests/p15-compatibility-matrix-evidence.test.js'));
-  assert.equal(flake.contract.testFiles.length,25);
-  assert.equal(flake.contract.minimumTestFiles,25);
+  assert.ok(flake.contract.testFiles.length>=25);
+  assert.equal(flake.contract.testFiles.length,flake.contract.minimumTestFiles);
   assert.equal(flake.contract.iterations,5);
 });

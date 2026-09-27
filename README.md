@@ -125,6 +125,7 @@ See:
 - [`docs/compatibility/PROMOTION-GOVERNANCE.md`](docs/compatibility/PROMOTION-GOVERNANCE.md)
 - [`docs/production/DISTRIBUTION-CERTIFICATION.md`](docs/production/DISTRIBUTION-CERTIFICATION.md)
 - [`docs/production/RELEASE-EVIDENCE.md`](docs/production/RELEASE-EVIDENCE.md)
+- [`docs/production/SUPPLY-CHAIN-SECURITY-REVIEW.md`](docs/production/SUPPLY-CHAIN-SECURITY-REVIEW.md)
 - [`docs/production/RELEASE-PROMOTION.md`](docs/production/RELEASE-PROMOTION.md)
 - [`docs/production/DIAGNOSTICS-SUPPORT.md`](docs/production/DIAGNOSTICS-SUPPORT.md)
 - [`docs/production/SERVICE-WORKER-RELEASE-COMPATIBILITY.md`](docs/production/SERVICE-WORKER-RELEASE-COMPATIBILITY.md)

@@ -36,6 +36,13 @@ jobs:
           path: .artifacts/release/
           if-no-files-found: error
           retention-days: 90
+      - name: Archive P13 supply-chain review
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-supply-chain-review-${{ github.sha }}
+          path: .artifacts/supply-chain-review/
+          if-no-files-found: error
+          retention-days: 90
       - name: Archive release preflight
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

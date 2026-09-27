@@ -3,7 +3,7 @@ import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { buildDistribution } from './build-distribution.mjs';
 
 const npmCommand=process.platform==='win32'?'npm.cmd':'npm';
@@ -212,7 +212,7 @@ console.log(JSON.stringify(receipt));
     ]);
   }
 
-  console.log(JSON.stringify({
+  const certification={
     schema:'opencontainer.distribution-certification.v0.1',
     build,
     consumer:receipt,
@@ -237,7 +237,11 @@ console.log(JSON.stringify(receipt));
       exportMap:installedManifest.exports,
       forbiddenInternalSubpaths:installedSdkContract.privacyBoundary.noPublicPackageSubpaths.length
     }
-  },null,2));
+  };
+  const certificationPath=join(dirname(build.tarballPath),'certification.json');
+  await mkdir(dirname(certificationPath),{recursive:true});
+  await writeFile(certificationPath,JSON.stringify(certification,null,2)+'\n');
+  console.log(JSON.stringify(certification,null,2));
 }finally{
   await rm(consumer,{recursive:true,force:true,maxRetries:8,retryDelay:100});
 }
