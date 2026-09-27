@@ -41,7 +41,7 @@ export const OpenContainerProductionProfile=deepFreeze({
   browser:{
     referenceProfile:'desktop-chromium-ci-alpha',
     crossOriginIsolationRequired:true,
-    serviceWorkerCompatibilityId:'opencontainer-sw-edge-v1:rpc1:snapshot1:opfs1',
+    serviceWorkerCompatibilityId:'opencontainer-sw-edge-v2:rpc1:snapshot1:opfs1:preview2',
     crossBrowserReleaseMatrixClosed:false
   },
   toolchain:{

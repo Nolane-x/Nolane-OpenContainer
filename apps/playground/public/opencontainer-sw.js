@@ -1,7 +1,7 @@
 const MODULE_PREFIX = '/__opencontainer__/esm/';
 const PREVIEW_PREFIX = '/__opencontainer__/preview/';
 const REQUEST_TIMEOUT_MS = 5000;
-const SERVICE_WORKER_COMPATIBILITY_ID = 'opencontainer-sw-edge-v1:rpc1:snapshot1:opfs1';
+const SERVICE_WORKER_COMPATIBILITY_ID = 'opencontainer-sw-edge-v2:rpc1:snapshot1:opfs1:preview2';
 
 self.addEventListener('install', () => {
   // Deliberately remain waiting. A compatible client must authorize promotion.

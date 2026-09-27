@@ -2,7 +2,9 @@
 
 OpenContainer Service Worker updates are fail-closed against an explicit release compatibility identity:
 
-`opencontainer-sw-edge-v1:rpc1:snapshot1:opfs1`.
+`opencontainer-sw-edge-v2:rpc1:snapshot1:opfs1:preview2`.
+
+The v2 edge identity adds the P5 preview workspace/session/version proof tuple. A controller that only implements the prior v1 preview message shape is intentionally incompatible with identity-bound routes and must be replaced through the compatibility-authorized promotion flow.
 
 That identity is published in the canonical production profile and must agree with the Service Worker implementation.
 
@@ -35,6 +37,8 @@ This two-phase activation/claim protocol deliberately avoids relying on in-memor
 - no compatibility mismatch is normalized into a successful update.
 
 ## Evidence
+
+The original release-handshake court below is historical v1 evidence; current P5 closure must additionally pass the v2 installed-distribution browser court before promotion.
 
 CI #331 at head `7f5f28395c3d533e2b9df2f70edd6cb693106ef0` passed contract and the complete installed-distribution Chrome path.
 
