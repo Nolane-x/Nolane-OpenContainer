@@ -71,6 +71,13 @@ jobs:
           path: .artifacts/resource-retention/contract-receipt.json
           if-no-files-found: error
           retention-days: 90
+      - name: Archive P3 persistence source audit
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-p3-persistence-audit-${{ github.sha }}
+          path: .artifacts/p3-persistence/source-audit.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Archive P12 security review
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
