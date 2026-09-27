@@ -1076,6 +1076,14 @@ async function run() {
     assert(persistentRuntimeB.fs.readFile('persisted.txt') === 'workspace-two', 'SDK OPFS boot did not restore workspace content');
     assert(persistentRuntimeB.fs.generation === sdkSecond.generation, 'SDK OPFS boot did not preserve persisted VFS generation');
     assert(persistentRuntimeB.workspacePersistence?.current?.sequence === sdkSecond.sequence, 'SDK OPFS boot did not expose current persistence receipt');
+    const recoverySequenceBeforeSupport = persistentRuntimeB.workspacePersistence.current.sequence;
+    const recoveryGenerationBeforeSupport = persistentRuntimeB.fs.generation;
+    const recoverySupportBundle = persistentRuntimeB.supportBundle();
+    assert(recoverySupportBundle.outcomes.recovery?.status === 'restored', 'support bundle omitted automatic workspace recovery outcome');
+    assert(recoverySupportBundle.outcomes.recovery?.sequence === sdkSecond.sequence, 'support bundle recovery sequence drifted');
+    assert(recoverySupportBundle.outcomes.recovery?.generation === sdkSecond.generation, 'support bundle recovery generation drifted');
+    assert(persistentRuntimeB.workspacePersistence.current.sequence === recoverySequenceBeforeSupport, 'support bundle mutated checkpoint sequence');
+    assert(persistentRuntimeB.fs.generation === recoveryGenerationBeforeSupport, 'support bundle mutated recovered VFS generation');
     assert(persistentRuntimeB.workspacePersistence?.crossContextLocking === true, 'SDK OPFS product profile lost Web Locks coordination');
 
     persistentRuntimeB.fs.beginTransaction().writeFile('persisted.txt', 'workspace-three').commit();
