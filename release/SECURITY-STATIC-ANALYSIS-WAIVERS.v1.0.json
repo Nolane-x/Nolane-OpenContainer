@@ -1,0 +1,6 @@
+{
+  "schema": "opencontainer.security-static-analysis-waivers.v1.0",
+  "frozenAt": "2026-09-27",
+  "rule": "A CodeQL/static-analysis finding is not ignored unless an explicit waiver names the finding, severity, rationale, owner, expiry and compensating control. Critical/high waivers still require human review and release decision.",
+  "waivers": []
+}

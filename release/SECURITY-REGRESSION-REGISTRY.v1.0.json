@@ -1,0 +1,134 @@
+{
+  "schema": "opencontainer.security-regression-registry.v1.0",
+  "frozenAt": "2026-09-27",
+  "rule": "Critical/high security fixes remain in the repeated regression corpus; harness-only failures are not misrepresented as product vulnerabilities.",
+  "entries": [
+    {
+      "id": "SEC-REG-001",
+      "severity": "CRITICAL",
+      "class": "artifact redirect capability bypass",
+      "status": "FIXED_RETAINED",
+      "evidence": [
+        "tests/artifact-authority.test.js",
+        "tests/network-security.test.js"
+      ]
+    },
+    {
+      "id": "SEC-REG-002",
+      "severity": "CRITICAL",
+      "class": "preview host credential leakage",
+      "status": "FIXED_RETAINED",
+      "evidence": [
+        "tests/browser-preview-edge.test.js"
+      ]
+    },
+    {
+      "id": "SEC-REG-003",
+      "severity": "CRITICAL",
+      "class": "stale preview route identity reuse",
+      "status": "FIXED_RETAINED",
+      "evidence": [
+        "tests/browser-preview-edge.test.js",
+        "release/P5-NETWORK-PREVIEW-EVIDENCE.v1.0.json"
+      ]
+    },
+    {
+      "id": "SEC-REG-004",
+      "severity": "CRITICAL",
+      "class": "unconditional Service Worker activation/claim",
+      "status": "FIXED_RETAINED",
+      "evidence": [
+        "tests/browser-esm-edge.test.js",
+        "docs/production/SERVICE-WORKER-RELEASE-COMPATIBILITY.md"
+      ]
+    },
+    {
+      "id": "SEC-REG-005",
+      "severity": "CRITICAL",
+      "class": "OPFS stale writer/split brain",
+      "status": "FIXED_RETAINED",
+      "evidence": [
+        "tests/opfs-authority.test.js",
+        "tests/sdk-workspace-persistence.test.js"
+      ]
+    },
+    {
+      "id": "SEC-REG-006",
+      "severity": "CRITICAL",
+      "class": "package archive traversal/link escape",
+      "status": "FIXED_RETAINED",
+      "evidence": [
+        "tests/artifact-authority.test.js",
+        "tests/security-malicious-package.test.js"
+      ]
+    },
+    {
+      "id": "SEC-REG-007",
+      "severity": "CRITICAL",
+      "class": "secret leakage through diagnostics/support",
+      "status": "FIXED_RETAINED",
+      "evidence": [
+        "tests/production-diagnostics.test.js",
+        "tests/network-security.test.js"
+      ]
+    },
+    {
+      "id": "SEC-REG-008",
+      "severity": "HIGH",
+      "class": "runaway guest survives RPC timeout",
+      "status": "FIXED_RETAINED",
+      "evidence": [
+        "tests/browser-guest-worker.test.js"
+      ]
+    },
+    {
+      "id": "SEC-REG-009",
+      "severity": "HIGH",
+      "class": "gzip expansion allocates before archive budget",
+      "status": "FIXED_RETAINED",
+      "evidence": [
+        "tests/security-hardening.test.js"
+      ]
+    },
+    {
+      "id": "SEC-REG-010",
+      "severity": "HIGH",
+      "class": "duplicate TAR path ambiguity",
+      "status": "FIXED_RETAINED",
+      "evidence": [
+        "tests/security-hardening.test.js",
+        "tests/security-malicious-package.test.js"
+      ]
+    },
+    {
+      "id": "SEC-REG-011",
+      "severity": "HIGH",
+      "class": "duplicate canonical snapshot path ambiguity",
+      "status": "FIXED_RETAINED",
+      "evidence": [
+        "tests/security-hardening.test.js",
+        "tests/security-fuzz.test.js"
+      ]
+    },
+    {
+      "id": "SEC-REG-012",
+      "severity": "HIGH",
+      "class": "unbounded lockfile graph input",
+      "status": "FIXED_RETAINED",
+      "evidence": [
+        "tests/security-hardening.test.js",
+        "tests/security-fuzz.test.js"
+      ]
+    }
+  ],
+  "excludedHarnessHistory": [
+    {
+      "id": "NEG-002",
+      "reason": "P5 synchronous assertion harness bug; runtime fail-closed behavior was correct."
+    },
+    {
+      "id": "NEG-003",
+      "reason": "P5 hostile srcdoc fixture construction bug; not a product isolation vulnerability."
+    }
+  ]
+}

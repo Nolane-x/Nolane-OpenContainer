@@ -8,8 +8,8 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **150**
-- Minimum-closure satisfied: **93**
+- Seed-reconciled against implementation evidence: **168**
+- Minimum-closure satisfied: **110**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -28,7 +28,7 @@
 | P9 UI/UX, accessibility & human safety | 0 | 18 | 18 |
 | P10 AI consumer, authority & data egress | 0 | 18 | 18 |
 | P11 Compatibility corpus & certification | 13 | 1 | 14 |
-| P12 Product security engineering | 2 | 18 | 20 |
+| P12 Product security engineering | 20 | 0 | 20 |
 | P13 Build, supply chain & publication | 13 | 7 | 20 |
 | P14 Release, update, migration & rollback | 15 | 3 | 18 |
 | P15 SDK, API, documentation & developer experience | 13 | 1 | 14 |
@@ -44,6 +44,9 @@
 
 ## Newly reconciled in this wave
 
+- **P12-01 through P12-16 and P12-19** now meet their SECURITY-REVIEWED / RELEASE-VERIFIED technical closure for the declared Chrome profile. CI #409 combined the versioned six-zone threat model, OWASP ASVS 5.0.0 cross-check, strict document/Worker CSP and Permissions-Policy review, capability mediation, complete hostile-parser court, traversal/symlink review, explicit resource-DoS review, Service Worker/preview/stale-writer isolation, secret-redaction review, dependency audit, retained CodeQL SARIF, malicious-package corpus, registry-driven critical/high regressions, severity/SLA policy and residual-risk register.
+- CI #409 reported **0 npm vulnerabilities**, **0 CodeQL findings**, **0 CodeQL waivers**, **12/12 retained critical/high regression entries** exercised by 11 executable test files, and **2/2** installed-distribution Chrome product paths with zero unexplained failures.
+- **P12-17, P12-18 and P12-20 remain PARTIAL by design**: no verified private disclosure channel, no independent/second-party review artifact and no human product-security review artifact exist yet. Scanner, CI or AI confidence cannot override them; `production_closed=false` remains explicit.
 - **P18-01 through P18-12** now meet RELEASE-READY evidence through an executable assurance system rather than documentation confidence. Every ledger evidence key is typed by kind and evidence level; closed critical gates must use EXECUTABLE INTEGRATION-or-stronger PASS evidence, while SOURCE/DOCUMENTATION/MODEL/LOCAL/UNIT and BLOCKED-HARNESS cannot be silently promoted into closure.
 - Decisive contract/browser paths now emit SHA-256-manifested bundles containing environment, raw results, programmatic summary, retained full iteration logs, failure cases, frozen corpus lock and append-only negative-result history. Harness exclusions require one predefined HARNESS_* reason code plus issue/expiry/exact signature; application/runtime/product failures remain outcome data.
 - The frozen 13-case compatibility corpus is content-addressed by Git blob identity, and browser environment receipts explicitly preserve warmup/cache/CPU-throttling/GC/thermal/network/DevTools validity conditions. Stable preflight now recomputes the exact 304 source gate IDs and refuses 1.0 if any gate is unreconciled/open even when `production_closed=true` is forged.

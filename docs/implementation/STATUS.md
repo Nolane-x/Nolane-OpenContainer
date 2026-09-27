@@ -653,3 +653,10 @@ Vite's browser graph now receives deterministic, privacy-preserving networking/O
 - `node:net` promotes IP classification helpers used by Vite, while raw TCP sockets/server creation remain fail-closed.
 
 This lets build/config code reason about addresses without expanding OpenContainer's network authority.
+
+
+## P12 product security technical closure
+
+P12 now has an executable product-security court on PR #42. CI #409 at implementation head `4e05b3cf1ca27d6bb5f3e33fda69ebc6411d67af` passed contract, pinned CodeQL and the installed-distribution Chrome product path. The court retains OWASP ASVS 5.0.0 identity, zero-vulnerability npm audit, zero-finding/zero-waiver CodeQL SARIF, an 11-case malicious-package corpus, a 12-entry critical/high regression registry and explicit resource-DoS residual risks for source maps/WASM heap behavior.
+
+The production ledger closes P12-01..P12-16 and P12-19 only. P12-17 (verified private disclosure channel), P12-18 (independent/second-party review) and P12-20 (human product-security review) remain PARTIAL and non-machine-closable. This does not close P7 weak-device/resource-floor work, cross-browser evidence, legal/FTO or operations. `production_closed=false`.

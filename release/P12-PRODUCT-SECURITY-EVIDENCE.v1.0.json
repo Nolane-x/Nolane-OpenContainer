@@ -1,0 +1,203 @@
+{
+  "schema": "opencontainer.p12-product-security-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P12",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "SECURITY-REVIEWED / RELEASE-VERIFIED",
+  "pullRequest": 42,
+  "implementationHead": "4e05b3cf1ca27d6bb5f3e33fda69ebc6411d67af",
+  "ci": {
+    "runNumber": 409,
+    "runId": 36303993192,
+    "testedCheckoutCommit": "520e745bac9f179a98a8313a9f5da524589274b1",
+    "contract": "PASS",
+    "staticAnalysis": "PASS",
+    "browserProductPath": "PASS",
+    "dependencyBlockingFindings": 0,
+    "dependencyVulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "codeqlFindingCount": 0,
+    "codeqlWaiverCount": 0,
+    "codeqlBlockingUnwaived": 0,
+    "regressionRegistryEntries": 12,
+    "regressionExecutableTestFiles": 11,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "unexplainedFailures": 0
+  },
+  "staticAnalysis": {
+    "engine": "GitHub CodeQL",
+    "actionVersion": "4.38.2",
+    "actionCommit": "2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2",
+    "sarifFiles": 1,
+    "retainedDays": 90
+  },
+  "asvs": {
+    "version": "5.0.0",
+    "asset": "OWASP_Application_Security_Verification_Standard_5.0.0_en.json",
+    "sha256": "bcdbec214d70abcfad9284a31d4f9e5134305831d628aad3aa85d7e26626cb35"
+  },
+  "evidenceProfile": {
+    "id": "desktop-chrome153-ubuntu2404-x64-ci",
+    "browser": "Google Chrome 153.0.8010.52",
+    "os": "Ubuntu 24.04 x64",
+    "deviceClass": "github-hosted-standard-x64",
+    "resourceFloorClaimed": false
+  },
+  "gates": [
+    {
+      "id": "P12-01",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Versioned threat model covers the exact six source trust zones—trusted host, guest JS, package bytes, preview edge, storage and future AI credentials—with controls/evidence paths validated by the technical court."
+    },
+    {
+      "id": "P12-02",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "OWASP ASVS 5.0.0 is frozen by official asset SHA-256 and mapped only to requirements relevant to the deployed browser-native architecture; the mapping explicitly retains human review."
+    },
+    {
+      "id": "P12-03",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Shipping topology now enforces document CSP, Permissions-Policy, COOP/COEP/CORP, nosniff and no-referrer plus separate strict/toolchain Worker CSPs; hosting self-check and Chrome product path validate the controls."
+    },
+    {
+      "id": "P12-04",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Capability review exercises external/LNA network policy, redirect reauthorization, opaque secret binding, lifecycle-script denial and persistence authority boundaries; guest capability membrane remains deny-by-default."
+    },
+    {
+      "id": "P12-05",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Deterministic adversarial/fuzz courts cover path, URL/capability, exports/imports, lockfile, graph, TAR, diagnostic journal, snapshot/import and RPC-envelope parsers with fail-closed outcomes and publication invariants."
+    },
+    {
+      "id": "P12-06",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Workspace VFS, package archive/resolver, symlink canonicalization and snapshot/import courts reject traversal, duplicate canonical paths, special archive links and package-root escapes before canonical publication."
+    },
+    {
+      "id": "P12-07",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Resource-DoS review covers worker explosion, output floods, decompression, source maps and WASM memory growth. Source-map/WASM heap ceilings remain explicit residual risks and do not close P7/P15 device-floor evidence."
+    },
+    {
+      "id": "P12-08",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Service Worker install/activate/claim remains compatibility-authorized rather than unconditional; stale publication routes fail closed and release compatibility regressions are retained."
+    },
+    {
+      "id": "P12-09",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Preview edge strips host credentials, binds owner/epoch/workspace/session/version identity, rejects stale/tampered routes and exercises sandboxed hostile preview content in the declared Chrome profile."
+    },
+    {
+      "id": "P12-10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "OPFS/Web Locks and stale-generation courts treat multi-tab stale writers/split brain as security/data-integrity failures; old writers cannot publish over the current generation."
+    },
+    {
+      "id": "P12-11",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Generated secret sentinels are exercised across errors, diagnostics, support bundles, signed URLs, request/response bodies, source fields and provider/network paths with no retained plaintext leakage."
+    },
+    {
+      "id": "P12-12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Commit-bound npm audit includes release dependencies and dev/build tooling; CI #409 reported zero info/low/moderate/high/critical vulnerabilities and zero blocking findings."
+    },
+    {
+      "id": "P12-13",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Pinned GitHub CodeQL v4.38.2 produced retained SARIF plus a commit-bound severity/waiver receipt; CI #409 reported 0 findings, 0 waivers and 0 unwaived high/critical blockers."
+    },
+    {
+      "id": "P12-14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "The frozen malicious-package corpus executes 11 negative cases covering traversal, absolute/backslash paths, links/special entries, duplicates, decompression expansion, lifecycle scripts, identity/integrity mismatch and redirect escape."
+    },
+    {
+      "id": "P12-15",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Registry-driven regression court re-executes every retained fixed critical/high issue: 12 registry entries across 11 executable test files passed and the raw regression log is SHA-256 bound."
+    },
+    {
+      "id": "P12-16",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Versioned security policy defines CRITICAL/HIGH/MODERATE/LOW acknowledgement/remediation SLA and makes CRITICAL/HIGH release-blocking; scanner scores cannot override release policy."
+    },
+    {
+      "id": "P12-17",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "closureMet": false,
+      "evidence": "SECURITY.md documents supported-version policy, but no verified private/responsible-disclosure channel exists yet. Documentation alone cannot satisfy this gate."
+    },
+    {
+      "id": "P12-18",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "closureMet": false,
+      "evidence": "No independent or second-party reviewer/review artifact has yet covered critical isolation/storage/network changes; machine/AI review is intentionally insufficient."
+    },
+    {
+      "id": "P12-19",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Versioned residual-risk register records browser-visible credential risk, toolchain unsafe-eval, single-profile evidence, weak-device gap, CDN/header dependency, third-party code, future AI credentials, broker SSRF and manual-review limits."
+    },
+    {
+      "id": "P12-20",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "closureMet": false,
+      "evidence": "Policy explicitly forbids treating CodeQL/npm/CI/AI scores as a product-security claim, but the required human product-security review artifact has not yet been completed."
+    }
+  ],
+  "boundaries": [
+    "This is a technical product-security review for the declared Chrome 153 / Ubuntu 24.04 x64 profile; it is not a claim that the product is secure.",
+    "P12-17 remains open until a verified private/responsible-disclosure channel exists.",
+    "P12-18 remains open until an independent or second-party review artifact covers critical isolation/storage/network changes.",
+    "P12-20 remains open until a human product-security review is completed; scanner, CI and AI evidence cannot substitute for it.",
+    "Source-map/WASM memory residual risks do not close P7 weak-device, long-run, memory-pressure or performance-floor gates.",
+    "This is not cross-browser, Windows, macOS, mobile, final-CDN/topology, legal/FTO or operations closure."
+  ],
+  "productionClosed": false
+}

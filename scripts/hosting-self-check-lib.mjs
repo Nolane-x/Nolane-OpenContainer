@@ -31,6 +31,18 @@ export async function checkHostingHeaders(baseUrl){
     exactHeader(root,'cross-origin-opener-policy','same-origin',failures);
     exactHeader(root,'cross-origin-embedder-policy','require-corp',failures);
     exactHeader(root,'cross-origin-resource-policy','same-origin',failures);
+    exactHeader(root,'x-content-type-options','nosniff',failures);
+    exactHeader(root,'referrer-policy','no-referrer',failures);
+    exactHeader(root,'x-opencontainer-document-profile','strict',failures);
+    const documentCsp=containsDirective(root,"object-src 'none'",failures);
+    containsDirective(root,"base-uri 'none'",failures);
+    containsDirective(root,"frame-ancestors 'none'",failures);
+    containsDirective(root,"script-src 'self'",failures);
+    if(documentCsp.includes("'unsafe-inline'"))failures.push({kind:'csp',path:'/',forbidden:"'unsafe-inline'",actual:documentCsp});
+    const permissions=root.headers.get('permissions-policy')??'';
+    for(const feature of ['camera=()','microphone=()','geolocation=()','display-capture=()','usb=()','serial=()','hid=()','payment=()']){
+      if(!permissions.includes(feature))failures.push({kind:'permissions-policy',path:'/',expectedContains:feature,actual:permissions});
+    }
   }
   receipts.push({path:'/',status:root.status});
 

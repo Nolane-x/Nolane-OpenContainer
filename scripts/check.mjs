@@ -4,6 +4,10 @@ import { resolve } from 'node:path';
 const required=[
   'release/PRODUCT-SCOPE.v1.0.json','release/SCOPE-DEBT.v1.0.json','release/PUBLIC-CLAIMS.v1.0.json','release/CRITICAL-GATE-WAIVERS.v1.0.json',
   'release/EVIDENCE-ASSURANCE-POLICY.v1.0.json','release/EVIDENCE-REGISTRY.v1.0.json','release/EVIDENCE-NEGATIVE-RESULTS.v1.0.json','release/EVIDENCE-CORPUS-LOCK.v1.0.json','release/P18-EVIDENCE-ASSURANCE-EVIDENCE.v1.0.json',
+  'release/SECURITY-REVIEW-POLICY.v1.0.json','release/SECURITY-THREAT-MODEL.v1.0.json','release/ASVS-5.0.0-CROSSCHECK.v1.0.json',
+  'release/SECURITY-MALICIOUS-PACKAGE-CORPUS.v1.0.json','release/SECURITY-REGRESSION-REGISTRY.v1.0.json','release/SECURITY-RESIDUAL-RISKS.v1.0.json','release/SECURITY-STATIC-ANALYSIS-WAIVERS.v1.0.json','release/SECURITY-RESOURCE-DOS-REVIEW.v1.0.json','release/P12-PRODUCT-SECURITY-EVIDENCE.v1.0.json',
+  'SECURITY.md','docs/production/PRODUCT-SECURITY-REVIEW.md','scripts/security-review-policy.mjs','scripts/security-dependency-audit.mjs','scripts/run-security-regressions.mjs','scripts/security-codeql-receipt.mjs','scripts/run-security-review.mjs',
+  'tests/product-security.test.js','tests/security-hardening.test.js','tests/security-fuzz.test.js','tests/security-malicious-package.test.js','tests/p12-evidence.test.js',
   'scripts/evidence-assurance-policy.mjs','scripts/evidence-assurance-bundle.mjs','scripts/build-evidence-assurance.mjs','scripts/capture-browser-evidence-assurance.mjs','scripts/verify-evidence-assurance.mjs','tests/evidence-assurance.test.js','tests/p18-evidence.test.js','docs/production/EVIDENCE-ASSURANCE.md',
   'scripts/verify-product-scope.mjs','scripts/verify-browser-profile.mjs','tests/product-scope.test.js','docs/production/PRODUCT-SCOPE-AND-CLAIMS.md',
   'tests/network-security.test.js','tests/p5-evidence.test.js','release/P5-NETWORK-PREVIEW-EVIDENCE.v1.0.json','docs/production/NETWORK-SECRET-PREVIEW-SECURITY.md',

@@ -2,6 +2,9 @@ const SECRET_KEYS = /(?:authorization|cookie|token|secret|password|api[-_]?key|p
 const SECRET_VALUE = /\b(?:bearer\s+)?[A-Za-z0-9_\-]{20,}\b/gi;
 const SIGNED_QUERY_VALUE = /([?&](?:token|signature|sig|x-amz-signature|x-goog-signature|key|credential)=)[^&#\s]*/gi;
 const encoder=new TextEncoder();
+const REDACTION_MAX_DEPTH=16;
+const REDACTION_MAX_ITEMS=128;
+const REDACTION_MAX_STRING_CHARS=16*1024;
 
 export const DiagnosticsPolicy=Object.freeze({
   schema:'opencontainer.diagnostics-policy.v0.1',
@@ -31,11 +34,17 @@ export const DiagnosticsPolicy=Object.freeze({
 });
 
 function stableStringify(value){
+  if(value===undefined)return '"[undefined]"';
+  if(typeof value==='bigint')return JSON.stringify(String(value)+'n');
+  if(typeof value==='symbol')return JSON.stringify('[symbol]');
+  if(typeof value==='function')return JSON.stringify('[function]');
+  if(typeof value==='number'&&!Number.isFinite(value))return JSON.stringify(String(value));
   if(Array.isArray(value))return '['+value.map(stableStringify).join(',')+']';
   if(value&&typeof value==='object'){
     return '{'+Object.keys(value).sort().map((key)=>JSON.stringify(key)+':'+stableStringify(value[key])).join(',')+'}';
   }
-  return JSON.stringify(value);
+  const encoded=JSON.stringify(value);
+  return encoded===undefined?JSON.stringify(String(value)):encoded;
 }
 
 function fnv64(value){
@@ -59,18 +68,34 @@ function publicDiagnosticType(value){
   return PUBLIC_DIAGNOSTIC_TYPE.test(redacted)?redacted:'[custom]';
 }
 
-export function redact(value, seen = new WeakSet()) {
+export function redact(value, seen = new WeakSet(), depth = 0) {
   if (typeof value === 'string'){
-    return value
+    const safe=value
       .replace(SIGNED_QUERY_VALUE,'$1[REDACTED]')
       .replace(SECRET_VALUE,'[REDACTED]');
+    return safe.length>REDACTION_MAX_STRING_CHARS
+      ? safe.slice(0,REDACTION_MAX_STRING_CHARS)+'[TRUNCATED]'
+      : safe;
   }
+  if (typeof value === 'bigint') return String(value)+'n';
+  if (typeof value === 'symbol') return '[symbol]';
+  if (typeof value === 'function') return '[function]';
+  if (typeof value === 'number'&&!Number.isFinite(value)) return String(value);
   if (value === null || typeof value !== 'object') return value;
+  if (depth>=REDACTION_MAX_DEPTH) return '[MaxDepth]';
   if (seen.has(value)) return '[Circular]';
   seen.add(value);
-  if (Array.isArray(value)) return value.map((v) => redact(v, seen));
+  if (Array.isArray(value)) {
+    const out=value.slice(0,REDACTION_MAX_ITEMS).map((v)=>redact(v,seen,depth+1));
+    if(value.length>REDACTION_MAX_ITEMS)out.push('[TruncatedItems:'+String(value.length-REDACTION_MAX_ITEMS)+']');
+    return out;
+  }
   const out = {};
-  for (const [key,item] of Object.entries(value)) out[key] = SECRET_KEYS.test(key) ? '[REDACTED]' : redact(item, seen);
+  const entries=Object.entries(value);
+  for (const [key,item] of entries.slice(0,REDACTION_MAX_ITEMS)) {
+    out[key] = SECRET_KEYS.test(key) ? '[REDACTED]' : redact(item, seen, depth+1);
+  }
+  if(entries.length>REDACTION_MAX_ITEMS)out.__truncated__='[TruncatedItems:'+String(entries.length-REDACTION_MAX_ITEMS)+']';
   return out;
 }
 

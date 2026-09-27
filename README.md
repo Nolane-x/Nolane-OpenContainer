@@ -106,6 +106,8 @@ See:
 - [`docs/production/PRODUCT-SCOPE-AND-CLAIMS.md`](docs/production/PRODUCT-SCOPE-AND-CLAIMS.md)
 - [`docs/production/NETWORK-SECRET-PREVIEW-SECURITY.md`](docs/production/NETWORK-SECRET-PREVIEW-SECURITY.md)
 - [`docs/production/EVIDENCE-ASSURANCE.md`](docs/production/EVIDENCE-ASSURANCE.md)
+- [`SECURITY.md`](SECURITY.md)
+- [`docs/production/PRODUCT-SECURITY-REVIEW.md`](docs/production/PRODUCT-SECURITY-REVIEW.md)
 - [`docs/guides/SDK-QUICKSTART.md`](docs/guides/SDK-QUICKSTART.md)
 - [`docs/guides/STORAGE-AND-EXPORT.md`](docs/guides/STORAGE-AND-EXPORT.md)
 - [`docs/guides/HOSTING-HEADERS.md`](docs/guides/HOSTING-HEADERS.md)
