@@ -116,6 +116,11 @@ export class BrowserPreviewServiceWorkerBridge {
       timeoutMs: this.#timeoutMs
     });
     const controller = lifecycle.controller;
+    this.#diagnostics?.record('service-worker.update',{
+      status:'compatible',
+      compatibilityId:lifecycle.compatibilityId,
+      activation:lifecycle.activation
+    });
     return Object.freeze({
       scope: this.#registration.scope,
       controllerURL: controller.scriptURL,
