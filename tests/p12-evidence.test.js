@@ -56,9 +56,12 @@ test('P12 ledger and evidence registry cannot upgrade the manual-review gates',(
   }
   const entry=registry.entries.find(x=>x.key==='p12-product-security');
   assert.deepEqual({kind:entry.kind,level:entry.level,status:entry.status},{kind:'EXECUTABLE',level:'BROWSER',status:'PASS'});
-  assert.equal(ledger.overrides.length,168);
-  assert.equal(ledger.overrides.filter(x=>x.closure_met===true).length,110);
-  assert.equal(ledger.overrides.filter(x=>x.state==='PARTIAL').length,38);
+  // P12 owns its exact 20-row invariant; later domains may legitimately grow
+  // global reconciliation/closure totals without weakening P12.
+  assert.ok(ledger.overrides.length>=168);
+  assert.ok(ledger.overrides.filter(x=>x.closure_met===true).length>=110);
+  assert.equal(rows.filter(x=>x.state==='PARTIAL').length,3);
+  assert.deepEqual(rows.filter(x=>x.state==='PARTIAL').map(x=>x.id),manual);
   assert.equal(ledger.production_closed,false);
 });
 
