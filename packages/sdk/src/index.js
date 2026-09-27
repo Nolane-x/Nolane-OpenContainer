@@ -40,6 +40,8 @@ export class OpenContainer {
         sequence:authority.current?.sequence??null,
         generation:authority.current?.generation??restoredGeneration??null
       });
+    }else{
+      this._support.recordOutcome('recovery',{status:'not-configured',generation:this.fs.generation});
     }
     if(this._packagePersistenceOptions){
       const store=await new OpfsPackageContentStore(this._packagePersistenceOptions).open();
