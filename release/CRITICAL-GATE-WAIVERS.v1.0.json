@@ -1,0 +1,6 @@
+{
+  "schema": "opencontainer.critical-gate-waivers.v1.0",
+  "frozenAt": "2026-09-27",
+  "rule": "No critical gate waiver exists unless it is explicitly listed with a decision record. Stable release cannot carry an unresolved critical waiver.",
+  "waivers": []
+}

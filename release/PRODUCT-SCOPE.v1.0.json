@@ -1,0 +1,195 @@
+{
+  "schema": "opencontainer.product-scope-policy.v1.0",
+  "frozenAt": "2026-09-27",
+  "targetRelease": "1.0",
+  "sourceGateDomain": "P0",
+  "rule": "Scope, claims and release decisions are fail-closed. Evidence may narrow the supported profile but may never be generalized beyond the named profile.",
+  "profileId": "opencontainer-alpha-chromium-node24-v1",
+  "coreSurfaceCount": 9,
+  "coreSurfaces": [
+    {
+      "id": "S1",
+      "name": "Runtime Kernel & Lifecycle",
+      "namespace": "runtime"
+    },
+    {
+      "id": "S2",
+      "name": "Virtual Filesystem",
+      "namespace": "runtime.fs"
+    },
+    {
+      "id": "S3",
+      "name": "Processes & Streams",
+      "namespace": "runtime.process"
+    },
+    {
+      "id": "S4",
+      "name": "Package / Module Environment",
+      "namespace": "runtime.packages"
+    },
+    {
+      "id": "S5",
+      "name": "External Network Capability",
+      "namespace": "runtime.net"
+    },
+    {
+      "id": "S6",
+      "name": "Virtual HTTP / Preview",
+      "namespace": "runtime.preview"
+    },
+    {
+      "id": "S7",
+      "name": "Persistence / Snapshot / Export",
+      "namespace": "runtime.snapshots"
+    },
+    {
+      "id": "S8",
+      "name": "Resource Governance",
+      "namespace": "runtime.resources"
+    },
+    {
+      "id": "S9",
+      "name": "Diagnostics / Evidence",
+      "namespace": "runtime.diagnostics"
+    }
+  ],
+  "oracle": {
+    "node": "24.21.0",
+    "npm": "11.19.0"
+  },
+  "declaredEvidenceProfile": {
+    "id": "desktop-chrome153-ubuntu2404-x64-ci",
+    "productionProfileId": "opencontainer-alpha-chromium-node24-v1",
+    "browser": {
+      "product": "Google Chrome",
+      "channel": "stable",
+      "major": 153,
+      "exactEvidenceVersion": "153.0.8010.52"
+    },
+    "os": {
+      "platform": "linux",
+      "distribution": "ubuntu",
+      "version": "24.04",
+      "arch": "x64",
+      "runnerImage": "ubuntu-24.04"
+    },
+    "device": {
+      "class": "github-hosted-standard-x64",
+      "provider": "github-hosted",
+      "resourceFloorClaimed": false
+    },
+    "evidence": {
+      "workflow": "CI",
+      "runNumber": 383,
+      "headSha": "73779ed08730423d1d905492f9517836b17e5def",
+      "job": "browser-product-path"
+    },
+    "claimBoundary": "This is the only P0 supported evidence profile. It is not a cross-browser, Windows, macOS, weak-device or mobile support claim."
+  },
+  "unsupportedClasses": [
+    {
+      "id": "native-addons",
+      "statement": "Native .node addons, node-gyp and arbitrary host-native binaries are unsupported in Core 1.x."
+    },
+    {
+      "id": "raw-tcp-tls",
+      "statement": "Arbitrary raw TCP/UDP/TLS socket semantics are unsupported in Core 1.x."
+    },
+    {
+      "id": "full-linux",
+      "statement": "Full Linux/POSIX process, device and host-filesystem semantics are unsupported in Core 1.x."
+    },
+    {
+      "id": "undeclared-browser-profiles",
+      "statement": "Browser/OS/device profiles without retained evidence are unsupported and must not be marketed as supported."
+    }
+  ],
+  "outOfCore": [
+    {
+      "id": "ai",
+      "rule": "AI/LLM/agent behavior is a separately versioned consumer or adapter."
+    },
+    {
+      "id": "git-hosting",
+      "rule": "Git hosting integrations are consumers/adapters, not Core authority."
+    },
+    {
+      "id": "cloud-sync",
+      "rule": "Cloud synchronization is outside Core."
+    },
+    {
+      "id": "billing",
+      "rule": "Billing/subscription systems are outside Core."
+    },
+    {
+      "id": "accounts",
+      "rule": "Account/identity systems are outside Core."
+    }
+  ],
+  "decisionPolicy": {
+    "path": "release/RELEASE-POLICY.v0.1.json",
+    "values": [
+      "GO",
+      "REDESIGN",
+      "KILL"
+    ]
+  },
+  "nonGoals": [
+    "remote desktop or real-PC control",
+    "cloud VM orchestration, Kubernetes or Docker replacement",
+    "full Linux desktop or mandatory CPU emulation",
+    "P2P/distributed RAM, distributed inference or CUDA scheduling",
+    "Python/Rust/C/C++ toolchains as 1.0 requirements",
+    "model hosting or built-in coding-agent behavior",
+    "accounts, billing, team SaaS or a VS Code clone"
+  ],
+  "scopeDebtRegistry": "release/SCOPE-DEBT.v1.0.json",
+  "severity": {
+    "schema": "opencontainer.production-severity.v1.0",
+    "releaseBlockers": [
+      {
+        "id": "DATA_LOSS",
+        "severity": "CRITICAL",
+        "definition": "Confirmed loss or unrecoverable corruption of canonical user data."
+      },
+      {
+        "id": "ISOLATION_BREAK",
+        "severity": "CRITICAL",
+        "definition": "Guest code escapes a declared capability/origin/authority boundary."
+      },
+      {
+        "id": "SECRET_EXPOSURE",
+        "severity": "CRITICAL",
+        "definition": "Secret material is disclosed through runtime, diagnostics, support or adapter paths."
+      },
+      {
+        "id": "SILENT_SEMANTIC_CORRUPTION",
+        "severity": "CRITICAL",
+        "definition": "Runtime reports success while producing materially incorrect canonical state or execution semantics."
+      }
+    ],
+    "criticalRule": "Any unresolved release blocker forces KILL or REDESIGN; it cannot be waived silently."
+  },
+  "publicClaimsRegistry": "release/PUBLIC-CLAIMS.v1.0.json",
+  "oneZeroCriteria": [
+    "production_closed must be true in the gate ledger",
+    "all critical production gates must meet their frozen minimum closure",
+    "release verification and zero unexplained critical flake evidence must be current for the release commit",
+    "legal/FTO decisions required by P16 must be recorded",
+    "operations/vulnerability-response handoff required by P17 must be exercised",
+    "1.0 criteria are independent from future SaaS/Program B"
+  ],
+  "criticalGateWaiverPolicy": {
+    "registry": "release/CRITICAL-GATE-WAIVERS.v1.0.json",
+    "undocumentedAllowed": false,
+    "stableAllowsUnresolvedCriticalWaiver": false,
+    "requiredFields": [
+      "gate",
+      "decisionRecord",
+      "rationale",
+      "approvedBy",
+      "reviewedAt",
+      "revisitTrigger"
+    ]
+  }
+}

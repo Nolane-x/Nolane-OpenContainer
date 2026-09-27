@@ -91,6 +91,8 @@ Open `http://localhost:4173`. The local server emits COOP/COEP headers required 
 
 **Not production-closed.** The implementation is real and CI-green, but browser/runtime promotion remains evidence-gated.
 
+The P0 release scope is now machine-frozen to nine Core surfaces, exact Node/npm oracle identity and one evidence-bounded browser profile (Chrome 153 on Ubuntu 24.04 x64 CI); broader browser/OS/device support remains unclaimed until its own matrix evidence exists.
+
 The exact browser toolchain path is now promoted through clean Chrome CI: retained Lightning CSS executes through its verified WASM, retained Rolldown 1.2.9 executes through the browser WASI/N-API path, and Vite 8.3.0 passes both C1 production-build and C2 dev/HMR courts. C2 also proves virtual HTTP, safe HMR failure/reconnect/recovery, same-port preview epoch restart, Service Worker route rehydration and real dependency optimization into `.vite/deps`.
 
 The major remaining gates are broader Node compatibility/isolation, deeper OPFS persistence/quota/eviction/multi-tab integration, broad npm package-policy compatibility, PC-A/PC-B target-device/browser campaigns, weak-device/resource-budget and long-run/fault/security/release testing, plus dependency/test-corpus licensing and FTO/legal closure.
@@ -100,6 +102,7 @@ See:
 - [`docs/architecture/CORE-SURFACES.md`](docs/architecture/CORE-SURFACES.md)
 - [`docs/implementation/STATUS.md`](docs/implementation/STATUS.md)
 - [`docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.md`](docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.md)
+- [`docs/production/PRODUCT-SCOPE-AND-CLAIMS.md`](docs/production/PRODUCT-SCOPE-AND-CLAIMS.md)
 - [`docs/guides/SDK-QUICKSTART.md`](docs/guides/SDK-QUICKSTART.md)
 - [`docs/guides/STORAGE-AND-EXPORT.md`](docs/guides/STORAGE-AND-EXPORT.md)
 - [`docs/guides/HOSTING-HEADERS.md`](docs/guides/HOSTING-HEADERS.md)

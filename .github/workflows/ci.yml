@@ -22,6 +22,13 @@ jobs:
       - run: node --version
       - run: npm --version
       - run: npm run ci
+      - name: Archive product scope contract receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-product-scope-contract-${{ github.sha }}
+          path: .artifacts/product-scope/contract-receipt.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Archive release evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -57,7 +64,15 @@ jobs:
       - run: npm ci
       - run: |
           google-chrome-stable --version || google-chrome --version || chromium --version
+      - run: npm run browser:profile:verify
       - run: npm run critical:browser-flake
+      - name: Archive product scope browser receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-product-scope-browser-${{ github.sha }}
+          path: .artifacts/product-scope/browser-profile-receipt.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Archive critical browser flake receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
