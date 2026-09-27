@@ -261,6 +261,7 @@ test('browser ESM bridge preserves WASM bytes without UTF-8 transcoding',async()
   const bridge=new BrowserEsmServiceWorkerBridge({
     publication:{
       session:'binary-session',
+      generation:'1',
       async response(){
         return new Response(wasmBytes,{
           headers:{'content-type':'application/wasm'}

@@ -161,7 +161,12 @@ test('publication cache is generation-keyed and never serves stale workspace sou
 
   const first = await authority.serve(entryURL);
   runtime.fs.beginTransaction().writeFile('src/entry.mjs', 'export const value = 2').commit();
-  const second = await authority.serve(entryURL);
+  await assert.rejects(
+    () => authority.serve(entryURL),
+    (error) => error.code === ErrorCodes.ESM_PUBLICATION_INVALID && error.details?.actualGeneration === first.generation
+  );
+  const freshEntryURL = authority.moduleURL('./entry.mjs', '/workspace/src/bootstrap.mjs');
+  const second = await authority.serve(freshEntryURL);
 
   assert.notEqual(second.generation, first.generation);
   assert.match(first.source, /value = 1/);
@@ -188,10 +193,9 @@ test('nonliteral dynamic import is routed through explicit runtime helper', asyn
 
   assert.doesNotMatch(served.source, /import\(name\)/);
   assert.match(served.source, /__opencontainer_dynamic_import__\(import\.meta\.url,name\)/);
-  assert.equal(
-    authority.resolveDynamic(entryURL, './lazy.mjs'),
-    'https://example.invalid/modules/dynamic/fs/workspace/src/lazy.mjs'
-  );
+  const dynamicURL = new URL(authority.resolveDynamic(entryURL, './lazy.mjs'));
+  assert.equal(dynamicURL.origin + dynamicURL.pathname, 'https://example.invalid/modules/dynamic/fs/workspace/src/lazy.mjs');
+  assert.equal(dynamicURL.searchParams.get('__oc_vfs_generation'), authority.generation);
 });
 
 test('node builtin edges use synthetic publication modules without creating a new public runtime surface', async () => {

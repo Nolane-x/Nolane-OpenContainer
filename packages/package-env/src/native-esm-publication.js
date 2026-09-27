@@ -730,17 +730,16 @@ export class NativeEsmPublicationAuthority {
       });
     }
 
-    const generationProof=url.searchParams.get('__oc_vfs_generation');
-    if(generationProof!==this.generation){
-      throw ocError(ErrorCodes.ESM_PUBLICATION_INVALID,'Published module workspace generation proof is stale or missing',{
-        expectedGeneration:this.generation,
-        actualGeneration:generationProof,
-        session:this.#session
-      });
-    }
-
     const relative = url.pathname.slice(this.#root.pathname.length);
     if (relative.startsWith('fs/')) {
+      const generationProof=url.searchParams.get('__oc_vfs_generation');
+      if(generationProof!==this.generation){
+        throw ocError(ErrorCodes.ESM_PUBLICATION_INVALID,'Published workspace module generation proof is stale or missing',{
+          expectedGeneration:this.generation,
+          actualGeneration:generationProof,
+          session:this.#session
+        });
+      }
       const path = decodePath(relative.slice(3));
       assertOc(path === '/workspace' || path.startsWith('/workspace/'), ErrorCodes.PATH_ESCAPE, 'Published guest module escaped /workspace', {
         path
