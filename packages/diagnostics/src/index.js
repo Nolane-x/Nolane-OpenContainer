@@ -238,6 +238,13 @@ function safeOutcome(value){
   return Object.freeze(allowed);
 }
 
+function safePackageIntegrity(value){
+  if(value===null||value===undefined)return null;
+  const text=String(value);
+  if(/^sha(?:256|384|512)-[A-Za-z0-9+/=]+$/.test(text))return text;
+  return diagnosticFingerprint(text);
+}
+
 function packageIdentity(packages){
   const graph=packages?.graph;
   if(!graph)return Object.freeze({generation:packages?.generation??0,compiled:false});
@@ -260,7 +267,7 @@ function packageIdentity(packages){
       name:node.name,
       version:node.version,
       contentId:node.contentId,
-      integrity:node.integrity
+      integrity:safePackageIntegrity(node.integrity)
     })))
   });
 }
