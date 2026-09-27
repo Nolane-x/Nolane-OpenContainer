@@ -1419,6 +1419,16 @@ async function run() {
     const restored = new MemoryVFS();
     await reopened.restoreInto(restored);
     assert(restored.readFile('value.txt') === 'third', 'OPFS recovery restored the wrong generation after quota guarding');
+    const checkpointDisposition=corruptionDisposition(PersistenceCorruptionClass.CHECKPOINT);
+    assert(checkpointDisposition.action==='fallback-checkpoint','P3 checkpoint corruption policy drifted');
+    p3CorruptionEvidence.checkpoint={
+      corruptionClass:checkpointDisposition.kind,
+      action:checkpointDisposition.action,
+      corruptSequence:fourthCheckpoint.sequence,
+      recoveredSequence:reopened.current.sequence,
+      recoveredGeneration:reopened.current.generation,
+      fallbackValue:restored.readFile('value.txt')
+    };
 
     stage('opfs-real-pass', {
       firstSequence: firstCheckpoint.sequence,
