@@ -1094,6 +1094,105 @@ async function run() {
     await opfsRoot.removeEntry(p3FatalDirectory, { recursive: true }).catch(() => {});
   }
 
+  stage('p3-recovery-draft-corruption-start');
+  const p3DraftDirectory=opfsDirectory+'-corrupt-recovery-draft';
+  try{
+    const draftFs=new MemoryVFS();
+    const draftAuthority=await new OpfsCheckpointAuthority({
+      root:opfsRoot,
+      directoryName:p3DraftDirectory,
+      lockManager:navigator.locks
+    }).open();
+    draftFs.mount({'draft.txt':'stable'});
+    const draftStable=await draftAuthority.checkpoint(draftFs);
+    draftFs.beginTransaction().writeFile('draft.txt','uncommitted').commit();
+    let draftCrashCode=null;
+    let draftCrashDetails=null;
+    try{await draftAuthority.checkpoint(draftFs,{crashAt:'after-payload'});}
+    catch(error){draftCrashCode=error?.code??null;draftCrashDetails=error?.details??null;}
+    assert(draftCrashCode==='OC_INVALID_STATE','P3 recovery draft crash injection did not stop after payload');
+    assert(typeof draftCrashDetails?.payload==='string','P3 recovery draft did not expose orphan payload identity');
+    const draftWorkspace=await opfsRoot.getDirectoryHandle(p3DraftDirectory);
+    const draftGenerations=await draftWorkspace.getDirectoryHandle('generations');
+    const draftPayload=await draftGenerations.getFileHandle(draftCrashDetails.payload);
+    const draftWriter=await draftPayload.createWritable();
+    await draftWriter.write('{"corruptRecoveryDraft":true}');
+    await draftWriter.close();
+
+    const draftReopen=await new OpfsCheckpointAuthority({
+      root:opfsRoot,
+      directoryName:p3DraftDirectory,
+      lockManager:navigator.locks
+    }).open();
+    const draftRestored=new MemoryVFS();
+    await draftReopen.restoreInto(draftRestored);
+    assert(draftRestored.readFile('draft.txt')==='stable','P3 corrupt recovery draft displaced canonical source');
+    assert(draftReopen.current?.sequence===draftStable.sequence,'P3 corrupt recovery draft advanced canonical sequence');
+    const draftGc=await draftReopen.collectGarbage();
+    assert(draftGc.removed.includes(draftCrashDetails.payload),'P3 corrupt recovery draft was not discardable garbage');
+    const draftDisposition=corruptionDisposition(PersistenceCorruptionClass.RECOVERY_DRAFT);
+    assert(draftDisposition.action==='discard-draft','P3 recovery draft corruption policy drifted');
+    p3CorruptionEvidence.recoveryDraft={
+      corruptionClass:draftDisposition.kind,
+      action:draftDisposition.action,
+      recoveredSequence:draftReopen.current.sequence,
+      recoveredGeneration:draftReopen.current.generation,
+      discarded:draftGc.removed.includes(draftCrashDetails.payload)
+    };
+    stage('p3-recovery-draft-corruption-pass',p3CorruptionEvidence.recoveryDraft);
+  }finally{
+    await opfsRoot.removeEntry(p3DraftDirectory,{recursive:true}).catch(()=>{});
+  }
+
+  stage('p3-derived-index-corruption-start');
+  const p3DerivedDirectory=opfsDirectory+'-derived-index';
+  try{
+    const derivedStore=await new OpfsDerivedIndexStore({
+      root:opfsRoot,
+      directoryName:p3DerivedDirectory,
+      lockManager:navigator.locks
+    }).open();
+    await derivedStore.publish({
+      sourceGeneration:runtime.fs.generation,
+      value:{moduleCount:3,files:['src/main.js','src/dep.js','src/sync.js']}
+    });
+    const derivedVerified=await derivedStore.read({sourceGeneration:runtime.fs.generation});
+    assert(derivedVerified.status==='verified','P3 derived index did not verify before corruption');
+
+    const derivedDirectory=await opfsRoot.getDirectoryHandle(p3DerivedDirectory);
+    const derivedPayload=await derivedDirectory.getFileHandle('derived-index.json');
+    const derivedWriter=await derivedPayload.createWritable();
+    await derivedWriter.write('{"corruptDerivedIndex":true}');
+    await derivedWriter.close();
+
+    const derivedCorrupt=await derivedStore.read({sourceGeneration:runtime.fs.generation});
+    assert(derivedCorrupt.status==='corrupt','P3 derived index corruption was not detected');
+    assert(derivedCorrupt.corruptionClass==='derived-index'&&derivedCorrupt.action==='discard-rebuild','P3 derived index corruption classification drifted');
+    const derivedRebuilt=await derivedStore.rebuild({
+      sourceGeneration:runtime.fs.generation,
+      value:{moduleCount:4,files:['src/main.js','src/dep.js','src/sync.js','src/late.js']}
+    });
+    assert(derivedRebuilt.status==='published','P3 derived index did not rebuild after corruption');
+    const derivedReopen=await new OpfsDerivedIndexStore({
+      root:opfsRoot,
+      directoryName:p3DerivedDirectory,
+      lockManager:navigator.locks
+    }).open();
+    const derivedRepaired=await derivedReopen.read({sourceGeneration:runtime.fs.generation});
+    assert(derivedRepaired.status==='verified'&&derivedRepaired.value.moduleCount===4,'P3 derived index rebuild did not survive reopen');
+    p3CorruptionEvidence.derivedIndex={
+      corruptionClass:derivedCorrupt.corruptionClass,
+      action:derivedCorrupt.action,
+      corruptDetected:true,
+      rebuilt:true,
+      reopenedVerified:derivedRepaired.status==='verified',
+      crossContextLocking:derivedReopen.crossContextLocking
+    };
+    stage('p3-derived-index-corruption-pass',p3CorruptionEvidence.derivedIndex);
+  }finally{
+    await opfsRoot.removeEntry(p3DerivedDirectory,{recursive:true}).catch(()=>{});
+  }
+
   stage('p3-quota-fault-matrix-start');
   const p3QuotaFaultResults = [];
   for (const phase of ['after-0-bytes','after-1-byte','after-header','mid-payload','pre-commit','post-payload-pre-manifest']) {
