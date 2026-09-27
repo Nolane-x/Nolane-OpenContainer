@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { OpenContainer } from '../packages/sdk/src/index.js';
 
 const secret='diagnostic-self-check-secret-123456789012345678901234567890';
