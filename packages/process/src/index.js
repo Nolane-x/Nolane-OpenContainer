@@ -18,6 +18,13 @@ export class ProcessSupervisor {
     this.#resources=resources;this.#diagnostics=diagnostics;
     this.#outputLimit=Math.min(outputLimitBytes,resources?.limits?.outputBytes??outputLimitBytes);
   }
+  get limits(){
+    return Object.freeze({
+      stdoutHistoryBytes:this.#outputLimit,
+      stderrHistoryBytes:this.#outputLimit,
+      streamsIndependent:true
+    });
+  }
   register(name,handler){
     if(typeof name!=='string'||typeof handler!=='function')throw ocError(ErrorCodes.INVALID_ARGUMENT,'Invalid command registration');
     this.#commands.set(name,handler);return()=>this.#commands.delete(name);
