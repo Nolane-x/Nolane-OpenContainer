@@ -742,3 +742,12 @@ CI #491 on PR #52 implementation head `3debec759ac83f5fd5582a211659bb1be623de68`
 P3-14 is now closed for the declared Chrome profile. Low-storage cleanup is explicitly ordered across temporary, derived/rebuildable, public cache and checkpoint-garbage tiers; canonical source and canonical checkpoints are hard-protected. An impossible reclaim target remains unsatisfied instead of authorizing deletion of last-known-good state. The browser court reopens the workspace after cleanup and verifies the current acknowledged generation plus fallback checkpoint remain valid.
 
 All 14 currently reconciled P3 rows are now closed. P3-07, P3-09, P3-15, P3-17, P3-18 and P3-20 remain unreconciled/open, so the domain is not complete. The production ledger is now 155/304 minimum-closure satisfied; `production_closed=false`.
+
+
+## P3 persistence/data-safety wave 5
+
+PR #53 safe-checkpoint-restore implementation passed CI #509 with 394/394 unit tests, CodeQL, 37 critical files × 5 = 185 repeated executions, and 2/2 installed-distribution Chrome product paths. Dedicated CI #512 repeated the product path and produced artifact #10944841419 with safe-restore verification PASS in both iterations.
+
+P3-15 is now reconciled and closed for the declared Chrome profile. Restore planning binds working generation + canonical sequence/generation; commit locks local mutation, creates/reuses a pre-restore recovery point, uses canonical-sequence CAS under Web Locks, republishes older checkpoint contents as a new generation, and fails closed on local conflict, cross-context conflict or inability to create the safety point.
+
+P3-07, P3-09, P3-17, P3-18 and P3-20 remain unreconciled/open. The production ledger is now 156/304 minimum-closure satisfied; `production_closed=false`.
