@@ -74,7 +74,7 @@ test('P13 closure cannot erase publication tag signing OIDC hygiene or archive b
 test('P13 closure evidence is repeated in the critical contract campaign',()=>{
   assert.ok(flake.contract.testFiles.includes('tests/supply-chain-review.test.js'));
   assert.ok(flake.contract.testFiles.includes('tests/p13-supply-chain-evidence.test.js'));
-  assert.equal(flake.contract.testFiles.length,27);
-  assert.equal(flake.contract.minimumTestFiles,27);
+  assert.ok(flake.contract.testFiles.length>=27);
+  assert.equal(flake.contract.testFiles.length,flake.contract.minimumTestFiles);
   assert.equal(flake.contract.iterations,5);
 });
