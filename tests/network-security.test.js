@@ -11,7 +11,12 @@ import {
 import { ErrorCodes } from '../packages/protocol/src/index.js';
 
 async function expectCode(action,code){
-  await assert.rejects(action,(error)=>error?.code===code);
+  try{
+    await action();
+    assert.fail('expected '+code);
+  }catch(error){
+    assert.equal(error?.code,code);
+  }
 }
 
 test('network URL canonicalization rejects credentials backslashes and encoded hosts',()=>{
