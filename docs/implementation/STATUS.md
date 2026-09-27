@@ -6,6 +6,8 @@ This section is the authoritative current-state ledger. Later sections preserve 
 
 Promoted in the clean Chrome product/browser path:
 
+- P5 network/secrets/preview is now release-ready for the declared Chrome profile: external networking is capability-checked after hardened URL canonicalization; four named network profiles downgrade monotonically; policy version/hash is retained; secret plaintext stays authority-side behind scheme/host/method/path/expiry/session/process/task-scoped opaque handles; decoded response bytes and cancellation are bounded; package install receives no secret handles; preview remains independent of external-network permission; the trusted Service Worker edge strips host credentials; preview routes bind owner+epoch+workspace/session/version and the v2 Service Worker compatibility ID prevents legacy-protocol reuse; hostile sandboxed preview code cannot read trusted parent/browser storage.
+
 - P0 product scope is now release-ready and machine-enforced: 1.0 remains exactly nine Core surfaces; the Node/npm oracle is frozen; the current evidence claim is explicitly limited to Chrome 153 on Ubuntu 24.04 x64; unsupported/out-of-Core classes, scope debt, production severity, public claims and critical-gate waivers are governed by versioned registries. Broader browser/device support is still unclaimed.
 
 - SharedArrayBuffer synchronous guest RPC transport with bounded mailbox/timeout semantics;
@@ -41,6 +43,8 @@ Promoted in the clean Chrome product/browser path:
 - P8 diagnostics/supportability/privacy is now production-integrated: diagnostics have independent entry/raw-byte/duplicate-fingerprint/terminal-metadata bounds; support bundles provide deterministic failure fingerprints, previewed categories, browser/header/package/storage/profile/recovery-migration-update metadata, default-out AI content and zero-remote-telemetry behavior while excluding workspace/private-source/HTTP-body/raw-terminal/secret content. A receipt-first issue template and installed deterministic `opencontainer-diagnostic` command complete the support workflow.
 
 Evidence anchors:
+
+- P5 network/secret/preview court `fb9e45ac36f17a42c01b1769b37a968d1ed0944a` passed contract + full browser product path in CI run #398: Chrome `153.0.8010.52` / Ubuntu 24.04 x64 passed the declared profile probe; the critical browser campaign passed **2/2** installed-distribution paths with **0 unexplained failures**. Evidence covers real CORS allow/deny/opaque and LNA behavior, canonical URL/redirect controls, decoded-byte/cancellation bounds, authority-side scoped secrets, provider failure state invariance, secret-free diagnostics, virtual HTTP semantics, preview/external-network separation, hostile-frame isolation, four frozen network profiles, policy hashes, and Service Worker owner+epoch+workspace/session/version tamper rejection. P5-01 through P5-18 are reconciled closed by `release/P5-NETWORK-PREVIEW-EVIDENCE.v1.0.json`; `production_closed=false` remains explicit.
 
 - P0 product-scope court `6f560a5d96521f0ec2071e8ae0dea3673cdab571` passed contract + full browser product path in CI run #385: the scope verifier returned `ok=true`, 9 Core surfaces, 6 scope debts, 6 approved public claims and 0 critical-gate waivers; Chrome profile verification passed on `153.0.8010.52` / Ubuntu 24.04 x64, and the browser flake campaign passed 2/2 with zero unexplained failures. P0-01 through P0-12 are reconciled closed while `production_closed=false` remains explicit.
 

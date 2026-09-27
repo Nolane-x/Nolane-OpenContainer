@@ -264,6 +264,10 @@
     "p0-product-scope": {
       "ref": "CI #385 / PR #39 head 6f560a5d96521f0ec2071e8ae0dea3673cdab571",
       "note": "machine-enforced P0 1.0 scope court: exact nine Core surfaces; Node 24.21.0/npm 11.19.0 oracle; named Chrome 153/Ubuntu 24.04 x64 evidence profile; unsupported/out-of-Core boundaries; six-entry scope-debt register with owner/removal/revisit rules; release-blocking severity taxonomy; profile-bound public claim registry; empty fail-closed critical-waiver registry; contract court PASS; browser profile probe PASS on Google Chrome 153.0.8010.52; 2/2 full installed-distribution Chrome product paths PASS; zero unexplained browser failures; production_closed remains false"
+    },
+    "p5-network-preview": {
+      "ref": "CI #398 / PR #40 head fb9e45ac36f17a42c01b1769b37a968d1ed0944a",
+      "note": "P5 18-gate network/secret/preview court: Chrome 153/Ubuntu 24.04 x64 declared profile; real CORS/LNA/stream/abort/provider fixtures; canonical URL + redirect capability enforcement; authority-side opaque secrets; diagnostics redaction; virtual HTTP/SW preview isolation; workspace/session/version identity proof with compatibility-ID v2; four frozen network profiles; policy hash/version; contract PASS + 2/2 installed-distribution Chrome paths PASS, zero unexplained failures; production_closed remains false"
     }
   },
   "overrides": [
@@ -586,6 +590,150 @@
       "promotion": "IMPLEMENTED",
       "evidence": "node-boundary",
       "closure_met": false
+    },
+    {
+      "id": "P5-01",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
+    },
+    {
+      "id": "P5-02",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
+    },
+    {
+      "id": "P5-03",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
+    },
+    {
+      "id": "P5-04",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
+    },
+    {
+      "id": "P5-05",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
+    },
+    {
+      "id": "P5-06",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
+    },
+    {
+      "id": "P5-07",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
+    },
+    {
+      "id": "P5-08",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
+    },
+    {
+      "id": "P5-09",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
+    },
+    {
+      "id": "P5-10",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
+    },
+    {
+      "id": "P5-11",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
+    },
+    {
+      "id": "P5-12",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
+    },
+    {
+      "id": "P5-13",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
+    },
+    {
+      "id": "P5-14",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
+    },
+    {
+      "id": "P5-15",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
+    },
+    {
+      "id": "P5-16",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
+    },
+    {
+      "id": "P5-17",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
+    },
+    {
+      "id": "P5-18",
+      "domain": "P5",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p5-network-preview",
+      "closure_met": true
     },
     {
       "id": "P6-01",
