@@ -140,6 +140,7 @@ export class OpfsReleaseStorageAuthority{
   #lockName;
   #capacityProvider;
   #safetyReserveBytes;
+  #diagnostics;
 
   constructor({
     root,
@@ -147,7 +148,8 @@ export class OpfsReleaseStorageAuthority{
     lockManager=globalThis.navigator?.locks??null,
     lockName=null,
     capacityProvider=null,
-    safetyReserveBytes=64*1024
+    safetyReserveBytes=64*1024,
+    diagnostics=null
   }={}){
     assertOc(root&&typeof root.getDirectoryHandle==='function',ErrorCodes.INVALID_ARGUMENT,'OPFS root directory handle is required');
     if(lockManager!==null)assertOc(typeof lockManager?.request==='function',ErrorCodes.INVALID_ARGUMENT,'Release migration lock manager must expose request()');
@@ -159,6 +161,7 @@ export class OpfsReleaseStorageAuthority{
     this.#lockName=lockName??'opencontainer:release-storage:'+directoryName;
     this.#capacityProvider=capacityProvider;
     this.#safetyReserveBytes=safetyReserveBytes;
+    this.#diagnostics=diagnostics;
   }
 
   get current(){return this.#current;}
@@ -360,7 +363,7 @@ export class OpfsReleaseStorageAuthority{
       await writeText(this.#directory,manifestName,candidate.manifestText);
       this.#current=Object.freeze(candidate.manifest);
       this.#injectCrash(crashAt,'after-publish',plan);
-      return Object.freeze({
+      const receipt=Object.freeze({
         schema:'opencontainer.release-storage-migration.v0.1',
         fromVersion:plan.fromVersion,
         toVersion:plan.toVersion,
@@ -372,6 +375,14 @@ export class OpfsReleaseStorageAuthority{
         destructiveDowngrade:false,
         canonicalPublished:true
       });
+      this.#diagnostics?.record('release.migration',{
+        status:'published',
+        fromVersion:receipt.fromVersion,
+        toVersion:receipt.toVersion,
+        generation:receipt.generation,
+        sequence:receipt.sequence
+      });
+      return receipt;
     });
   }
 
@@ -395,7 +406,7 @@ export class OpfsReleaseStorageAuthority{
 
   async rollbackPolicy({runtimeStorageVersion,readableStorageVersions=[runtimeStorageVersion]}={}){
     const receipt=await this.compatibility({runtimeStorageVersion,readableStorageVersions});
-    return Object.freeze({
+    const policy=Object.freeze({
       schema:'opencontainer.release-storage-rollback.v0.1',
       strategy:receipt.mode==='read-only'?'reuse-newer-storage-read-only':
         receipt.mode==='read-write'?'reuse-compatible-storage':
@@ -406,6 +417,13 @@ export class OpfsReleaseStorageAuthority{
       canonicalStorageVersion:receipt.canonicalStorageVersion,
       reason:receipt.reason??null
     });
+    this.#diagnostics?.record('release.rollback',{
+      status:policy.mode==='unsupported'?'refused':'evaluated',
+      mode:policy.mode,
+      runtimeStorageVersion:policy.runtimeStorageVersion,
+      canonicalStorageVersion:policy.canonicalStorageVersion
+    });
+    return policy;
   }
 
   async #dryRunUnlocked(options){
