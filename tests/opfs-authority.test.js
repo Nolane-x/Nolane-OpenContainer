@@ -625,3 +625,182 @@ test('P3 quota fault matrix preserves the last committed generation at every inj
     if(phase==='post-payload-pre-manifest')assert.ok(gc.removed.length>=1);
   }
 });
+
+
+test('P3 safe restore blocks local work that appears after restore planning',async()=>{
+  const root=new FakeDirectoryHandle();
+  const locks=new FakeLockManager();
+  const fs=new MemoryVFS();
+  const authority=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName:'p3-safe-restore-local'}).open();
+
+  fs.mount({'project.txt':'old','unrelated.txt':'base'});
+  const target=await authority.checkpoint(fs);
+  fs.beginTransaction().writeFile('project.txt','current').writeFile('unrelated.txt','newer').commit();
+  const current=await authority.checkpoint(fs);
+
+  const plan=await authority.prepareCheckpointRestore(fs,target);
+  assert.equal(plan.expectedCanonicalSequence,current.sequence);
+  assert.equal(plan.expectedWorkingGeneration,fs.generation);
+
+  fs.beginTransaction().writeFile('unrelated.txt','after-plan').commit();
+  await assert.rejects(
+    ()=>authority.restoreCheckpoint(fs,plan),
+    error=>error.code===ErrorCodes.STALE_GENERATION
+  );
+  assert.equal(fs.readFile('project.txt'),'current');
+  assert.equal(fs.readFile('unrelated.txt'),'after-plan');
+
+  const reopened=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName:'p3-safe-restore-local'}).open();
+  assert.equal(reopened.current.sequence,current.sequence);
+});
+
+test('P3 safe restore creates a recovery point before publishing the older checkpoint as a new generation',async()=>{
+  const root=new FakeDirectoryHandle();
+  const locks=new FakeLockManager();
+  const fs=new MemoryVFS();
+  const authority=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName:'p3-safe-restore-success'}).open();
+
+  fs.mount({'project.txt':'old','unrelated.txt':'base'});
+  const target=await authority.checkpoint(fs);
+  fs.beginTransaction().writeFile('project.txt','current').writeFile('unrelated.txt','newer').commit();
+  const current=await authority.checkpoint(fs);
+  fs.beginTransaction().writeFile('unrelated.txt','unpersisted-newer-work').writeFile('later.txt','keep-recoverable').commit();
+
+  const plan=await authority.prepareCheckpointRestore(fs,target);
+  const receipt=await authority.restoreCheckpoint(fs,plan);
+
+  assert.equal(receipt.status,'restored');
+  assert.equal(receipt.recoveryPointCreated,true);
+  assert.equal(receipt.recoveryPointReused,false);
+  assert.equal(receipt.recoveryPoint.sequence,current.sequence+1);
+  assert.equal(receipt.published.sequence,receipt.recoveryPoint.sequence+1);
+  assert.equal(receipt.published.generation,receipt.recoveryPoint.generation+1);
+  assert.equal(receipt.riskDeclared,false);
+  assert.equal(receipt.blindOverwritePrevented,true);
+
+  assert.equal(fs.readFile('project.txt'),'old');
+  assert.equal(fs.readFile('unrelated.txt'),'base');
+  assert.equal(fs.exists('later.txt'),false);
+
+  const safety=await authority.readCheckpoint(receipt.recoveryPoint);
+  const safetyFs=new MemoryVFS();
+  safetyFs.restore(safety);
+  assert.equal(safetyFs.readFile('project.txt'),'current');
+  assert.equal(safetyFs.readFile('unrelated.txt'),'unpersisted-newer-work');
+  assert.equal(safetyFs.readFile('later.txt'),'keep-recoverable');
+
+  const reopened=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName:'p3-safe-restore-success'}).open();
+  assert.equal(reopened.current.sequence,receipt.published.sequence);
+  const restored=new MemoryVFS();
+  await reopened.restoreInto(restored);
+  assert.equal(restored.readFile('project.txt'),'old');
+  assert.equal(restored.readFile('unrelated.txt'),'base');
+
+  const gc=await reopened.collectGarbage({dryRun:true});
+  assert.ok(gc.retained.includes(receipt.recoveryPoint.payload));
+  assert.ok(gc.retained.includes(receipt.published.payload));
+});
+
+test('P3 safe restore rejects a cross-context publication after planning',async()=>{
+  const root=new FakeDirectoryHandle();
+  const locks=new FakeLockManager();
+  const fs=new MemoryVFS();
+  const directoryName='p3-safe-restore-cross-context';
+  const authority=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName}).open();
+
+  fs.mount({'project.txt':'old'});
+  const target=await authority.checkpoint(fs);
+  fs.beginTransaction().writeFile('project.txt','current').commit();
+  const current=await authority.checkpoint(fs);
+  const plan=await authority.prepareCheckpointRestore(fs,target);
+
+  const remoteFs=new MemoryVFS();
+  remoteFs.restore(fs.snapshot());
+  remoteFs.beginTransaction().writeFile('remote.txt','published-after-plan').commit();
+  const remote=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName}).open();
+  const newer=await remote.checkpoint(remoteFs);
+  assert.equal(newer.sequence,current.sequence+1);
+
+  await assert.rejects(
+    ()=>authority.restoreCheckpoint(fs,plan),
+    error=>{
+      assert.equal(error.code,ErrorCodes.STALE_GENERATION);
+      assert.equal(error.details?.blindOverwritePrevented,true);
+      assert.equal(error.details?.restoreAborted,true);
+      return true;
+    }
+  );
+  assert.equal(fs.readFile('project.txt'),'current');
+  assert.equal(fs.exists('remote.txt'),false);
+
+  const reopened=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName}).open();
+  assert.equal(reopened.current.sequence,newer.sequence);
+  const remoteRestored=new MemoryVFS();
+  await reopened.restoreInto(remoteRestored);
+  assert.equal(remoteRestored.readFile('remote.txt'),'published-after-plan');
+});
+
+test('P3 safe restore declares risk and aborts when quota prevents the pre-restore recovery point',async()=>{
+  const root=new FakeDirectoryHandle();
+  const locks=new FakeLockManager();
+  let rejectWrites=false;
+  const storagePolicy={
+    async inspect(){return {supported:true,usageBytes:rejectWrites?999:100,quotaBytes:1000,pressure:rejectWrites?'critical':'normal'};},
+    async assertCanWrite(additionalBytes){
+      if(rejectWrites){
+        throw Object.assign(new Error('quota blocked'),{
+          code:ErrorCodes.RESOURCE_EXHAUSTED,
+          details:{additionalBytes,pressure:'critical'}
+        });
+      }
+      return {supported:true,additionalBytes};
+    }
+  };
+  const fs=new MemoryVFS();
+  const authority=await new OpfsCheckpointAuthority({
+    root,lockManager:locks,directoryName:'p3-safe-restore-quota',storagePolicy
+  }).open();
+
+  fs.mount({'project.txt':'old'});
+  const target=await authority.checkpoint(fs);
+  fs.beginTransaction().writeFile('project.txt','current').commit();
+  const current=await authority.checkpoint(fs);
+  fs.beginTransaction().writeFile('unpersisted.txt','must-survive').commit();
+  const plan=await authority.prepareCheckpointRestore(fs,target);
+
+  rejectWrites=true;
+  await assert.rejects(
+    ()=>authority.restoreCheckpoint(fs,plan),
+    error=>{
+      assert.equal(error.code,ErrorCodes.RESOURCE_EXHAUSTED);
+      assert.equal(error.details?.riskDeclared,true);
+      assert.equal(error.details?.recoveryPointCreated,false);
+      assert.equal(error.details?.blindOverwritePrevented,true);
+      assert.equal(error.details?.restoreAborted,true);
+      return true;
+    }
+  );
+  assert.equal(fs.readFile('project.txt'),'current');
+  assert.equal(fs.readFile('unpersisted.txt'),'must-survive');
+
+  rejectWrites=false;
+  const reopened=await new OpfsCheckpointAuthority({
+    root,lockManager:locks,directoryName:'p3-safe-restore-quota',storagePolicy
+  }).open();
+  assert.equal(reopened.current.sequence,current.sequence);
+});
+
+test('P3 VFS mutation lease prevents concurrent transaction commit during restore window',()=>{
+  const fs=new MemoryVFS();
+  fs.mount({'value.txt':'one'});
+  const lease=fs.acquireMutationLease({expectedGeneration:fs.generation,reason:'restore-test'});
+  const tx=fs.beginTransaction().writeFile('value.txt','two');
+  assert.throws(
+    ()=>tx.commit(),
+    error=>error.code===ErrorCodes.INVALID_STATE&&error.details?.lease===lease.id
+  );
+  assert.equal(fs.readFile('value.txt'),'one');
+  assert.equal(lease.release(),true);
+  fs.beginTransaction().writeFile('value.txt','three').commit();
+  assert.equal(fs.readFile('value.txt'),'three');
+});
