@@ -94,5 +94,37 @@
       "post-payload-pre-manifest"
     ]
   },
-  "productionClosed": false
+  "productionClosed": false,
+  "dedicatedBrowserVerification": {
+    "runNumber": 461,
+    "runId": 36323532478,
+    "testedCheckoutCommit": "46b4c19cc10d31ac4471d6c5b71856e41a14f55c",
+    "artifactId": 10933396855,
+    "schema": "opencontainer.p3-persistence-wave2-browser.v1.0",
+    "status": "PASS",
+    "iterations": 2,
+    "fullProductPathPasses": 2,
+    "unexplainedFailures": 0,
+    "writerEpoch": {
+      "first": 1,
+      "successor": 2,
+      "storageGeneration": 2,
+      "staleCode": "OC_STALE_GENERATION",
+      "crossContextLocking": true
+    },
+    "quotaFaultPhases": [
+      "after-0-bytes",
+      "after-1-byte",
+      "after-header",
+      "mid-payload",
+      "pre-commit",
+      "post-payload-pre-manifest"
+    ],
+    "everyQuotaArm": {
+      "code": "OC_RESOURCE_EXHAUSTED",
+      "recoveredSequence": 1,
+      "recoveredGeneration": 1,
+      "garbageRemovedAtLeast": 1
+    }
+  }
 }
