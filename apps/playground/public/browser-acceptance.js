@@ -1041,18 +1041,20 @@ async function run() {
     let fatalCode = null;
     let silentEmptyFallback = null;
     try {
-      await new OpfsCheckpointAuthority({
-        root: opfsRoot,
-        directoryName: p3FatalDirectory,
-        lockManager: navigator.locks
-      }).open();
+      await OpenContainer.boot({
+        workspacePersistence: {
+          root: opfsRoot,
+          directoryName: p3FatalDirectory,
+          lockManager: navigator.locks
+        }
+      });
     } catch (error) {
       fatalCode = error?.code ?? null;
       silentEmptyFallback = error?.details?.silentEmptyFallback ?? null;
     }
-    assert(fatalCode === 'OC_IMPORT_INVALID', 'P3 all-root corruption silently reopened');
+    assert(fatalCode === 'OC_IMPORT_INVALID', 'P3 SDK boot silently replaced invalid canonical workspace with an empty project');
     assert(silentEmptyFallback === false, 'P3 fatal recovery did not explicitly reject silent empty fallback');
-    stage('p3-no-silent-empty-pass', { fatalCode, silentEmptyFallback });
+    stage('p3-no-silent-empty-pass', { fatalCode, silentEmptyFallback, sdkBootRejected: true });
   } finally {
     await opfsRoot.removeEntry(p3FatalDirectory, { recursive: true }).catch(() => {});
   }
