@@ -6,7 +6,7 @@ import { WorkerRpcAuthority } from '/packages/process/src/worker-authority.js';
 import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority } from '/packages/vfs/src/index.js';
 import { BrowserPreviewServiceWorkerBridge, createSandboxedPreviewFrame } from '/packages/preview/src/index.js';
 import { ResourceGovernor } from '/packages/resources/src/index.js';
-import { OpfsReleaseStorageAuthority, OpfsDerivedIndexStore, PersistenceCorruptionClass, corruptionDisposition } from '/packages/persistence/src/index.js';
+import { OpfsReleaseStorageAuthority, OpfsDerivedIndexStore, PersistenceCorruptionClass, corruptionDisposition, StorageCleanupCoordinator, StorageCleanupTier } from '/packages/persistence/src/index.js';
 import { checkHostingHeaders } from '/scripts/hosting-self-check-lib.mjs';
 
 const resultNode = document.getElementById('result');
@@ -1683,6 +1683,171 @@ async function run() {
     assert(lightningNode?.contentId, 'browser package graph did not expose immutable content identity');
 
     const packageCacheRoot = await opfsRoot.getDirectoryHandle(packageCacheDirectory);
+
+    stage('p3-low-storage-cleanup-start');
+    const cleanupTempDirectory=packageCacheDirectory+'-p3-cleanup-temp';
+    const cleanupDerivedDirectory=packageCacheDirectory+'-p3-cleanup-derived';
+    const cleanupWorkspaceDirectory=packageCacheDirectory+'-p3-cleanup-workspace';
+    try{
+      const tempDirectory=await opfsRoot.getDirectoryHandle(cleanupTempDirectory,{create:true});
+      const tempFile=await tempDirectory.getFileHandle('scratch.bin',{create:true});
+      const tempWriter=await tempFile.createWritable();
+      await tempWriter.write('t'.repeat(4096));
+      await tempWriter.close();
+      const temporaryBytes=(await tempFile.getFile()).size;
+
+      const cleanupDerived=await new OpfsDerivedIndexStore({
+        root:opfsRoot,
+        directoryName:cleanupDerivedDirectory,
+        lockManager:navigator.locks
+      }).open();
+      await cleanupDerived.publish({
+        sourceGeneration:runtime.fs.generation,
+        value:{kind:'rebuildable-index',payload:'d'.repeat(4096)}
+      });
+      const derivedUsage=await cleanupDerived.inspectStorage();
+      assert(derivedUsage.totalBytes>0,'P3 low-storage court did not persist derived bytes');
+
+      const packageUsage=await reopenedContent.persistedUsage(lightningNode.contentId);
+      assert(packageUsage.exists&&packageUsage.totalBytes>0,'P3 low-storage court did not observe persisted public cache');
+
+      const cleanupFs=new MemoryVFS();
+      cleanupFs.mount({'canonical.txt':'one'});
+      const cleanupCheckpoint=await new OpfsCheckpointAuthority({
+        root:opfsRoot,
+        directoryName:cleanupWorkspaceDirectory,
+        lockManager:navigator.locks
+      }).open();
+      const cleanupFirst=await cleanupCheckpoint.checkpoint(cleanupFs);
+      cleanupFs.beginTransaction().writeFile('canonical.txt','two').commit();
+      const cleanupSecond=await cleanupCheckpoint.checkpoint(cleanupFs);
+      const cleanupWorkspace=await opfsRoot.getDirectoryHandle(cleanupWorkspaceDirectory);
+      const cleanupGenerations=await cleanupWorkspace.getDirectoryHandle('generations');
+      const cleanupOrphanName='cleanup-pressure-orphan.json';
+      const cleanupOrphan=await cleanupGenerations.getFileHandle(cleanupOrphanName,{create:true});
+      const cleanupOrphanWriter=await cleanupOrphan.createWritable();
+      await cleanupOrphanWriter.write('{"scratch":"'+ 'x'.repeat(2048) +'"}');
+      await cleanupOrphanWriter.close();
+
+      let canonicalSourceCalled=false;
+      let canonicalCheckpointCalled=false;
+      const cleanupCoordinator=new StorageCleanupCoordinator({sources:[
+        {
+          id:'temporary-scratch',
+          tier:StorageCleanupTier.TEMPORARY,
+          rebuildable:true,
+          async reclaim(){
+            await opfsRoot.removeEntry(cleanupTempDirectory,{recursive:true});
+            return {reclaimedBytes:temporaryBytes,items:['scratch.bin']};
+          }
+        },
+        {
+          id:'derived-index',
+          tier:StorageCleanupTier.DERIVED_REBUILDABLE,
+          rebuildable:true,
+          async reclaim(){
+            const receipt=await cleanupDerived.discard();
+            return {reclaimedBytes:receipt.reclaimedBytes,items:receipt.removed};
+          }
+        },
+        {
+          id:'public-package-cache',
+          tier:StorageCleanupTier.PUBLIC_CACHE,
+          rebuildable:true,
+          async reclaim(){
+            const receipt=await reopenedContent.evictPersisted(lightningNode.contentId);
+            return {reclaimedBytes:receipt.reclaimedBytes,items:[lightningNode.contentId]};
+          }
+        },
+        {
+          id:'checkpoint-garbage',
+          tier:StorageCleanupTier.CHECKPOINT_GARBAGE,
+          rebuildable:false,
+          async reclaim(){
+            const receipt=await cleanupCheckpoint.collectGarbage();
+            return {reclaimedBytes:receipt.reclaimedBytes,items:receipt.removed};
+          }
+        },
+        {
+          id:'canonical-source',
+          tier:StorageCleanupTier.CANONICAL_SOURCE,
+          async reclaim(){canonicalSourceCalled=true;throw new Error('canonical source cleanup must never run');}
+        },
+        {
+          id:'canonical-checkpoint',
+          tier:StorageCleanupTier.CANONICAL_CHECKPOINT,
+          async reclaim(){canonicalCheckpointCalled=true;throw new Error('canonical checkpoint cleanup must never run');}
+        }
+      ]});
+
+      const cleanupReceipt=await cleanupCoordinator.cleanup({targetBytes:Number.MAX_SAFE_INTEGER});
+      assert(cleanupReceipt.targetSatisfied===false,'P3 cleanup unexpectedly claimed impossible headroom target');
+      assert(cleanupReceipt.canonicalDeletionAttempted===false,'P3 cleanup attempted canonical deletion');
+      assert(canonicalSourceCalled===false&&canonicalCheckpointCalled===false,'P3 cleanup invoked a protected canonical reclaimer');
+      assert(
+        JSON.stringify(cleanupReceipt.attempts.map(item=>item.tier))===
+        JSON.stringify(['temporary','derived-rebuildable','public-cache','checkpoint-garbage']),
+        'P3 low-storage cleanup order drifted'
+      );
+      assert(
+        JSON.stringify(cleanupReceipt.protectedSkipped.map(item=>item.tier))===
+        JSON.stringify(['canonical-source','canonical-checkpoint']),
+        'P3 low-storage cleanup did not preserve canonical tiers'
+      );
+
+      let temporaryRemoved=false;
+      try{await opfsRoot.getDirectoryHandle(cleanupTempDirectory);}
+      catch(error){temporaryRemoved=error?.name==='NotFoundError';}
+      assert(temporaryRemoved,'P3 low-storage cleanup retained temporary scratch');
+
+      const derivedAfter=await cleanupDerived.read({sourceGeneration:runtime.fs.generation});
+      assert(derivedAfter.status==='missing','P3 low-storage cleanup retained rebuildable derived index');
+      const packageAfter=await reopenedContent.persistedUsage(lightningNode.contentId);
+      assert(packageAfter.exists===false&&packageAfter.totalBytes===0,'P3 low-storage cleanup retained public package cache');
+
+      const cleanupReopen=await new OpfsCheckpointAuthority({
+        root:opfsRoot,
+        directoryName:cleanupWorkspaceDirectory,
+        lockManager:navigator.locks
+      }).open();
+      assert(cleanupReopen.current?.sequence===cleanupSecond.sequence,'P3 low-storage cleanup changed canonical checkpoint');
+      const cleanupRestored=new MemoryVFS();
+      await cleanupReopen.restoreInto(cleanupRestored);
+      assert(cleanupRestored.readFile('canonical.txt')==='two','P3 low-storage cleanup damaged canonical workspace state');
+      const cleanupGcDry=await cleanupReopen.collectGarbage({dryRun:true});
+      assert(cleanupGcDry.retained.includes(cleanupFirst.payload),'P3 low-storage cleanup deleted fallback checkpoint');
+      assert(cleanupGcDry.retained.includes(cleanupSecond.payload),'P3 low-storage cleanup deleted current checkpoint');
+      assert(!cleanupGcDry.removed.includes(cleanupOrphanName),'P3 low-storage cleanup failed to remove checkpoint garbage before verification');
+
+      const repopulatedPackage=await reopenedContent.ingest({
+        contentId:lightningNode.contentId,
+        integrity:lightningIntegrity,
+        bytes:capturedPackageArtifact,
+        expectedName:'lightningcss-wasm',
+        expectedVersion:'1.33.0'
+      });
+      const packageRestoredUsage=await reopenedContent.persistedUsage(lightningNode.contentId);
+      assert(repopulatedPackage.persisted===true&&packageRestoredUsage.exists===true,'P3 low-storage court did not restore package cache for later courts');
+
+      stage('p3-low-storage-cleanup-pass',{
+        order:cleanupReceipt.attempts.map(item=>item.tier),
+        protected:cleanupReceipt.protectedSkipped.map(item=>item.tier),
+        reclaimedBytes:cleanupReceipt.reclaimedBytes,
+        targetSatisfied:cleanupReceipt.targetSatisfied,
+        canonicalDeletionAttempted:cleanupReceipt.canonicalDeletionAttempted,
+        canonicalSourceCalled,
+        canonicalCheckpointCalled,
+        currentSequence:cleanupReopen.current.sequence,
+        fallbackSequence:cleanupFirst.sequence,
+        restoredValue:cleanupRestored.readFile('canonical.txt'),
+        packageCacheRebuildable:packageUsage.rebuildable,
+        derivedRebuildable:derivedUsage.rebuildable
+      });
+    }finally{
+      await opfsRoot.removeEntry(cleanupTempDirectory,{recursive:true}).catch(()=>{});
+      await opfsRoot.removeEntry(cleanupDerivedDirectory,{recursive:true}).catch(()=>{});
+      await opfsRoot.removeEntry(cleanupWorkspaceDirectory,{recursive:true}).catch(()=>{});
+    }
 
     stage('p3-package-cache-corruption-start');
     const packageContentDirectory=await packageCacheRoot.getDirectoryHandle(encodeURIComponent(lightningNode.contentId));

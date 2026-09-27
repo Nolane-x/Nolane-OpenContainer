@@ -72,6 +72,11 @@ class FakeDirectoryHandle {
     for (const entry of this.dirs) yield entry;
     for (const entry of this.files) yield entry;
   }
+
+  async removeEntry(name) {
+    if (this.dirs.delete(name) || this.files.delete(name)) return;
+    throw new FakeNotFoundError();
+  }
 }
 
 class FakeLockManager {
@@ -199,6 +204,39 @@ test('OPFS package content reopens verified content and skips network fetch', as
 
   const loader = runtime.packages.createCommonJsLoader({ allowDynamicCode: true });
   assert.deepEqual(loader.require('a', '/workspace/src/app.cjs'), { name: 'a', persisted: true });
+});
+
+test('P3 package cache reports and evicts only persisted rebuildable bytes', async () => {
+  const root = new FakeDirectoryHandle();
+  const locks = new FakeLockManager();
+  const bytes = packageTar('evictable', '1.0.0');
+  const integrity = sri(bytes);
+  const contentId = 'content:evictable';
+
+  const store = await new OpfsPackageContentStore({ root, lockManager: locks }).open();
+  await store.ingest({
+    contentId,
+    integrity,
+    bytes,
+    expectedName: 'evictable',
+    expectedVersion: '1.0.0'
+  });
+
+  const before = await store.persistedUsage(contentId);
+  assert.equal(before.exists, true);
+  assert.equal(before.artifactBytes, bytes.byteLength);
+  assert.ok(before.manifestBytes > 0);
+  assert.equal(before.totalBytes, before.artifactBytes + before.manifestBytes);
+  assert.equal(before.rebuildable, true);
+
+  const evicted = await store.evictPersisted(contentId);
+  assert.equal(evicted.evicted, true);
+  assert.equal(evicted.reclaimedBytes, before.totalBytes);
+  assert.equal(evicted.rebuildable, true);
+
+  const after = await store.persistedUsage(contentId);
+  assert.equal(after.exists, false);
+  assert.equal(after.totalBytes, 0);
 });
 
 test('OPFS package content uses one cross-context publication for concurrent identical ingest', async () => {

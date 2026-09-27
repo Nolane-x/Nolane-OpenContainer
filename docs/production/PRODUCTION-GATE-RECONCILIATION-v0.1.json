@@ -312,6 +312,10 @@
     "p3-corruption-classification": {
       "ref": "CI #475 / PR #51 implementation head edb93487724046443c73b98cad397ee43ec36f94",
       "note": "P3-13 five-class corruption court: canonical source fail-closed; recovery draft discard; checkpoint fallback; package cache discard/refetch; derived index discard/rebuild. Dedicated browser receipt proves 5 classes / 5 distinct actions in both installed Chrome iterations."
+    },
+    "p3-low-storage-cleanup": {
+      "ref": "CI #491 / PR #52 implementation head 3debec759ac83f5fd5582a211659bb1be623de68",
+      "note": "P3-14 real-browser low-storage court: temporary, derived/rebuildable, public package cache and checkpoint garbage are reclaimed before hard-protected canonical source/checkpoints. Impossible target remains unsatisfied rather than deleting canonical roots."
     }
   },
   "overrides": [
@@ -566,10 +570,10 @@
     {
       "id": "P3-14",
       "domain": "P3",
-      "state": "PARTIAL",
+      "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
-      "evidence": "opfs-gc",
-      "closure_met": false
+      "evidence": "p3-low-storage-cleanup",
+      "closure_met": true
     },
     {
       "id": "P3-16",

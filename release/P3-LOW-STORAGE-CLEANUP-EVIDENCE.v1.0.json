@@ -1,0 +1,60 @@
+{
+  "schema": "opencontainer.p3-low-storage-cleanup-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P3-14",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "requirement": "Prove low-storage cleanup removes rebuildable data before canonical source/checkpoints.",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 52,
+  "implementationHead": "3debec759ac83f5fd5582a211659bb1be623de68",
+  "ci": {
+    "runNumber": 491,
+    "runId": 36328754038,
+    "testedCheckoutCommit": "55a15f97f7ba7e5b31f508f865c1d659aa397fab",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "unitTests": 383,
+    "unitPassed": 383,
+    "unitFailed": 0,
+    "criticalTestFiles": 35,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 175,
+    "contractUnexplainedFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "browserUnexplainedFailures": 0
+  },
+  "dedicatedBrowserVerification": {
+    "artifactId": 10935380632,
+    "schema": "opencontainer.p3-low-storage-cleanup-browser.v1.0",
+    "status": "PASS",
+    "iterations": 2,
+    "expectedOrder": [
+      "temporary",
+      "derived-rebuildable",
+      "public-cache",
+      "checkpoint-garbage"
+    ],
+    "protected": [
+      "canonical-source",
+      "canonical-checkpoint"
+    ]
+  },
+  "invariants": [
+    "Temporary bytes are reclaimed before derived/rebuildable data.",
+    "Derived/rebuildable data is reclaimed before public package cache.",
+    "Public cache is reclaimed before checkpoint garbage.",
+    "Canonical source and canonical checkpoint tiers are hard-protected and cannot opt out.",
+    "An impossible cleanup target remains targetSatisfied=false instead of deleting canonical state.",
+    "Current and fallback checkpoint roots survive cleanup and reopen to the acknowledged canonical workspace."
+  ],
+  "preservedOpenGates": [
+    "P3-07",
+    "P3-09",
+    "P3-15",
+    "P3-17",
+    "P3-18",
+    "P3-20"
+  ],
+  "productionClosed": false
+}

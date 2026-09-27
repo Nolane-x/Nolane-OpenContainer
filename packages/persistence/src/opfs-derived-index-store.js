@@ -111,15 +111,40 @@ export class OpfsDerivedIndexStore{
     });
   }
 
+  async inspectStorage(){
+    this.#assertOpen();
+    return this.#withLock(async()=>{
+      const manifestText=await readText(this.#directory,MANIFEST);
+      const payloadText=await readText(this.#directory,PAYLOAD);
+      const manifestBytes=manifestText===null?0:encoder.encode(manifestText).byteLength;
+      const payloadBytes=payloadText===null?0:encoder.encode(payloadText).byteLength;
+      return Object.freeze({
+        manifestBytes,
+        payloadBytes,
+        totalBytes:manifestBytes+payloadBytes,
+        rebuildable:true
+      });
+    });
+  }
+
   async discard(){
     this.#assertOpen();
     return this.#withLock(async()=>{
+      const manifestText=await readText(this.#directory,MANIFEST);
+      const payloadText=await readText(this.#directory,PAYLOAD);
+      const reclaimedBytes=(manifestText===null?0:encoder.encode(manifestText).byteLength)
+        +(payloadText===null?0:encoder.encode(payloadText).byteLength);
       const removed=[];
       for(const name of [MANIFEST,PAYLOAD]){
         try{await this.#directory.removeEntry(name);removed.push(name);}
         catch(error){if(error?.name!=='NotFoundError')throw error;}
       }
-      return Object.freeze({status:'discarded',removed:Object.freeze(removed)});
+      return Object.freeze({
+        status:'discarded',
+        removed:Object.freeze(removed),
+        reclaimedBytes,
+        rebuildable:true
+      });
     });
   }
 

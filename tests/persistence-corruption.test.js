@@ -101,4 +101,13 @@ test('P3 derived index corruption is detected and rebuilt from canonical generat
   assert.equal(repaired.status,'verified');
   assert.deepEqual(repaired.value,{files:['c.js'],count:1});
   assert.equal(reopened.crossContextLocking,true);
+
+  const usage=await reopened.inspectStorage();
+  assert.ok(usage.totalBytes>0);
+  assert.equal(usage.totalBytes,usage.manifestBytes+usage.payloadBytes);
+  assert.equal(usage.rebuildable,true);
+  const discarded=await reopened.discard();
+  assert.equal(discarded.reclaimedBytes,usage.totalBytes);
+  assert.equal(discarded.rebuildable,true);
+  assert.equal((await reopened.inspectStorage()).totalBytes,0);
 });

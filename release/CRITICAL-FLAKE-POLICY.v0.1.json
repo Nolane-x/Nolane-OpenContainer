@@ -39,10 +39,12 @@
       "tests/p3-persistence-source-audit.test.js",
       "tests/p3-persistence-wave1-evidence.test.js",
       "tests/p3-persistence-wave2-evidence.test.js",
-      "tests/p3-corruption-evidence.test.js"
+      "tests/p3-corruption-evidence.test.js",
+      "tests/storage-cleanup.test.js",
+      "tests/p3-low-storage-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 35
+    "minimumTestFiles": 37
   },
   "browser": {
     "iterations": 2,
