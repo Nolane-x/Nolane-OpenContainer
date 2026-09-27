@@ -588,3 +588,40 @@ test('P3 writer epoch can advance without storage generation after failed writer
   assert.equal(committed.writerEpoch,3);
   assert.equal(committed.generation,stable.generation+1);
 });
+
+
+test('P3 quota fault matrix preserves the last committed generation at every injected byte boundary',async()=>{
+  const phases=['after-0-bytes','after-1-byte','after-header','mid-payload','pre-commit','post-payload-pre-manifest'];
+  for(const phase of phases){
+    const root=new FakeDirectoryHandle();
+    const locks=new FakeLockManager();
+    const directoryName='p3-quota-'+phase;
+    const fs=new MemoryVFS();
+    const authority=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName}).open();
+    fs.mount({'state.txt':'stable'});
+    const stable=await authority.checkpoint(fs);
+    fs.beginTransaction().writeFile('state.txt','blocked-'+phase+'-'+'x'.repeat(256)).commit();
+
+    await assert.rejects(
+      ()=>authority.checkpoint(fs,{quotaFaultAt:phase}),
+      error=>{
+        assert.equal(error.code,ErrorCodes.RESOURCE_EXHAUSTED);
+        assert.equal(error.details?.phase,phase);
+        assert.equal(error.details?.injectedQuota,true);
+        return true;
+      }
+    );
+    assert.equal(authority.current.sequence,stable.sequence);
+    assert.equal(authority.current.generation,stable.generation);
+
+    const reopened=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName}).open();
+    assert.equal(reopened.current.sequence,stable.sequence);
+    assert.equal(reopened.current.generation,stable.generation);
+    const restored=new MemoryVFS();
+    await reopened.restoreInto(restored);
+    assert.equal(restored.readFile('state.txt'),'stable');
+
+    const gc=await reopened.collectGarbage();
+    if(phase==='post-payload-pre-manifest')assert.ok(gc.removed.length>=1);
+  }
+});
