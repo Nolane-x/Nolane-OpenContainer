@@ -74,6 +74,6 @@ test('P3 low-storage closure is typed browser evidence retained by critical camp
     'tests/p3-low-storage-evidence.test.js'
   ]) assert.ok(flake.contract.testFiles.includes(file),file);
   assert.equal(flake.contract.testFiles.length,flake.contract.minimumTestFiles);
-  assert.ok(flake.contract.testFiles.length>=36);
+  assert.ok(flake.contract.testFiles.length>=37);
   assert.equal(flake.contract.iterations,5);
 });
