@@ -1081,6 +1081,14 @@ async function run() {
     }
     assert(fatalCode === 'OC_IMPORT_INVALID', 'P3 SDK boot silently replaced invalid canonical workspace with an empty project');
     assert(silentEmptyFallback === false, 'P3 fatal recovery did not explicitly reject silent empty fallback');
+    const canonicalDisposition=corruptionDisposition(PersistenceCorruptionClass.CANONICAL_SOURCE);
+    assert(canonicalDisposition.action==='fail-closed','P3 canonical corruption policy drifted');
+    p3CorruptionEvidence.canonicalSource={
+      corruptionClass:canonicalDisposition.kind,
+      action:canonicalDisposition.action,
+      code:fatalCode,
+      silentEmptyFallback
+    };
     stage('p3-no-silent-empty-pass', { fatalCode, silentEmptyFallback, sdkBootRejected: true });
   } finally {
     await opfsRoot.removeEntry(p3FatalDirectory, { recursive: true }).catch(() => {});
