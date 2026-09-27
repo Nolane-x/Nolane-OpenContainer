@@ -68,7 +68,8 @@ async function run() {
     directoryName: releaseBase + '-main',
     lockManager: navigator.locks,
     capacityProvider,
-    safetyReserveBytes: 1024
+    safetyReserveBytes: 1024,
+    diagnostics: runtime.diagnostics
   }).open();
   await migrationStore.seed({
     storageVersion: 1,
@@ -255,7 +256,7 @@ async function run() {
     session: 'browser-acceptance-a',
     builtinSource: nodeCompat.builtinSource
   });
-  const bridgeA = new BrowserEsmServiceWorkerBridge({ publication: publicationA });
+  const bridgeA = new BrowserEsmServiceWorkerBridge({ publication: publicationA, diagnostics: runtime.diagnostics });
   stage('bridge-a-starting');
   const bridgeAReceipt = await bridgeA.start();
   assert(
@@ -306,7 +307,7 @@ async function run() {
     session: 'browser-acceptance-b',
     builtinSource: nodeCompat.builtinSource
   });
-  const bridgeB = new BrowserEsmServiceWorkerBridge({ publication: publicationB });
+  const bridgeB = new BrowserEsmServiceWorkerBridge({ publication: publicationB, diagnostics: runtime.diagnostics });
   stage('bridge-b-starting');
   const bridgeBReceipt = await bridgeB.start();
   assert(
@@ -1163,6 +1164,73 @@ async function run() {
     }
   };
   runtime.packages.compile(browserPackageLockfile);
+
+  stage('support-bundle-production-start');
+  const supportSecret = 'browser-support-secret-123456789012345678901234567890';
+  runtime.diagnostics.record('custom-' + supportSecret, {
+    authorization: 'Bearer ' + supportSecret,
+    body: supportSecret,
+    source: supportSecret,
+    signedUrl: location.origin + '/private?x-amz-signature=' + supportSecret
+  });
+  const supportGenerationBefore = runtime.fs.generation;
+  const supportPreview = runtime.supportBundlePreview({ deploymentBaseUrl: location.origin });
+  assert(supportPreview.categories.some((item) => item.id === 'deployment-headers' && item.included === true), 'support preview omitted requested deployment headers');
+  assert(supportPreview.categories.some((item) => item.id === 'ai-prompt-transcript' && item.included === false), 'support preview included AI content by default');
+
+  const supportError = Object.assign(new Error('support failure ' + supportSecret), {
+    code: 'OC_INVALID_STATE',
+    details: { secret: supportSecret, source: supportSecret }
+  });
+  const supportBundle = await runtime.createSupportBundle(supportError, {
+    deploymentBaseUrl: location.origin,
+    aiContent: { prompt: 'do not include ' + supportSecret, transcript: supportSecret }
+  });
+  const supportText = JSON.stringify(supportBundle);
+  assert(supportBundle.schema === 'opencontainer.support-bundle.v0.2', 'support bundle schema drifted');
+  assert(/^ocfp-v1-[0-9a-f]{16}$/.test(supportBundle.fingerprint.id), 'support fingerprint is not stable-format');
+  assert(supportBundle.fingerprint.identity.previewEpoch === runtime.preview.epoch, 'support fingerprint lost preview epoch');
+  assert(supportBundle.fingerprint.identity.workspaceGeneration === runtime.fs.generation, 'support fingerprint lost VFS generation');
+  assert(supportBundle.fingerprint.identity.packageGeneration === runtime.packages.generation, 'support fingerprint lost package generation');
+  assert(supportBundle.packageIdentity.nodeCount === 1, 'support bundle package graph identity count drifted');
+  assert(supportBundle.packageIdentity.content.length === 1, 'support bundle content identity count drifted');
+  assert(supportBundle.storage.workspaceGeneration === runtime.fs.generation, 'support bundle storage generation drifted');
+  assert(supportBundle.outcomes.migration?.status === 'published', 'support bundle omitted last release migration outcome');
+  assert(supportBundle.outcomes.update?.status === 'compatible', 'support bundle omitted last Service Worker update outcome');
+  assert(supportBundle.browserCapabilities.environment === 'browser', 'support bundle browser capability probe did not detect browser');
+  assert(supportBundle.browserCapabilities.crossOriginIsolated === true, 'support bundle lost cross-origin isolation capability');
+  assert(supportBundle.deployment?.ok === true, 'support bundle deployment-header diagnostics failed');
+  assert(supportBundle.telemetry.remoteAnalytics === false && supportBundle.telemetry.networkEmission === false, 'support bundle enabled remote analytics');
+  assert(supportBundle.ai.included === false, 'AI prompt/transcript content was included without opt-in');
+  assert(supportBundle.privacy.workspaceContentsIncluded === false, 'support bundle included workspace contents');
+  assert(supportBundle.privacy.privateSourceIncluded === false, 'support bundle included private source');
+  assert(supportBundle.privacy.httpBodiesIncluded === false, 'support bundle included HTTP bodies');
+  assert(supportText.includes(supportSecret) === false, 'support bundle leaked generated secret sentinel');
+  assert(runtime.fs.generation === supportGenerationBefore, 'support bundle generation mutated canonical workspace generation');
+
+  const optedInAi = runtime.supportBundle(null, {
+    includeAiContent: true,
+    aiContent: { prompt: 'safe prompt with token ' + supportSecret }
+  });
+  assert(optedInAi.ai.included === true, 'explicit AI support-content opt-in was ignored');
+  assert(JSON.stringify(optedInAi).includes(supportSecret) === false, 'opted-in AI content bypassed secret redaction');
+
+  stage('support-bundle-production-pass', {
+    fingerprint: supportBundle.fingerprint.id,
+    previewEpoch: supportBundle.fingerprint.identity.previewEpoch,
+    workspaceGeneration: supportBundle.fingerprint.identity.workspaceGeneration,
+    packageGeneration: supportBundle.fingerprint.identity.packageGeneration,
+    diagnosticRetained: supportBundle.diagnosticBounds.retained,
+    duplicateSuppressed: supportBundle.diagnosticBounds.suppressedDuplicates,
+    packageNodes: supportBundle.packageIdentity.nodeCount,
+    deploymentOk: supportBundle.deployment.ok,
+    migrationOutcome: supportBundle.outcomes.migration?.status ?? null,
+    updateOutcome: supportBundle.outcomes.update?.status ?? null,
+    crossOriginIsolated: supportBundle.browserCapabilities.crossOriginIsolated,
+    remoteAnalytics: supportBundle.telemetry.remoteAnalytics,
+    aiIncludedByDefault: supportBundle.ai.included,
+    workspaceGenerationUnchanged: runtime.fs.generation === supportGenerationBefore
+  });
 
   const artifactAuthority = new PackageArtifactAuthority({
     fs: runtime.fs,
