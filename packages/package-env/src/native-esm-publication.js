@@ -717,6 +717,7 @@ export class NativeEsmPublicationAuthority {
       url.search = parsed.search;
       url.hash = parsed.hash;
     }
+    url.searchParams.set('__oc_vfs_generation', this.generation);
     return url;
   }
 
@@ -726,6 +727,15 @@ export class NativeEsmPublicationAuthority {
       throw ocError(ErrorCodes.ESM_PUBLICATION_INVALID, 'Module URL is outside the current publication session', {
         expectedRoot: this.#root.href,
         actual: url.href
+      });
+    }
+
+    const generationProof=url.searchParams.get('__oc_vfs_generation');
+    if(generationProof!==this.generation){
+      throw ocError(ErrorCodes.ESM_PUBLICATION_INVALID,'Published module workspace generation proof is stale or missing',{
+        expectedGeneration:this.generation,
+        actualGeneration:generationProof,
+        session:this.#session
       });
     }
 
