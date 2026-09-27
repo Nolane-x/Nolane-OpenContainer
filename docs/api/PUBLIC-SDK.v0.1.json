@@ -96,9 +96,19 @@
       "signature": "runtime.status() -> RuntimeStatus"
     },
     {
+      "name": "supportBundlePreview",
+      "kind": "method",
+      "signature": "runtime.supportBundlePreview(options?) -> SupportBundlePreview"
+    },
+    {
       "name": "supportBundle",
       "kind": "method",
-      "signature": "runtime.supportBundle(error?) -> SupportBundle"
+      "signature": "runtime.supportBundle(error?, options?) -> SupportBundle"
+    },
+    {
+      "name": "recordSupportOutcome",
+      "kind": "method",
+      "signature": "runtime.recordSupportOutcome(kind, outcome) -> SupportOutcome"
     },
     {
       "name": "persistWorkspace",
