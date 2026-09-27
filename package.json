@@ -30,7 +30,8 @@
     "release:governance": "node scripts/verify-release-governance.mjs",
     "critical:contract-flake": "node scripts/run-critical-flake-campaign.mjs",
     "critical:browser-flake": "node scripts/run-browser-flake-campaign.mjs",
-    "docs:verify": "node scripts/generate-developer-docs.mjs"
+    "docs:verify": "node scripts/generate-developer-docs.mjs",
+    "diagnostics:self-check": "node scripts/diagnostic-self-check.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",
