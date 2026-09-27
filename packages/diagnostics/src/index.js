@@ -254,13 +254,25 @@ export class DiagnosticJournal {
   }
 }
 
+function stablePublicIdentifier(key,value){
+  if(typeof value!=='string')return null;
+  if(key==='schema'&&/^opencontainer\.[a-z0-9._-]+\.v\d+$/i.test(value))return value;
+  if(key==='profileId'&&/^opencontainer-[a-z0-9._:-]+$/i.test(value))return value;
+  if(key==='compatibilityId'&&/^opencontainer-[a-z0-9._:-]+$/i.test(value))return value;
+  if(key==='version'&&/^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/.test(value))return value;
+  if(key==='code'&&/^OC_[A-Z0-9_]+$/.test(value))return value;
+  return null;
+}
+
 function safeOutcome(value){
   if(value===null||value===undefined)return null;
   const redacted=redact(value);
   if(!redacted||typeof redacted!=='object')return redacted;
   const allowed={};
   for(const key of ['schema','status','mode','strategy','sequence','generation','storageVersion','fromVersion','toVersion','version','profileId','compatibilityId','activation','ok','code','result']){
-    if(Object.hasOwn(redacted,key))allowed[key]=redacted[key];
+    if(!Object.hasOwn(value,key)&&!Object.hasOwn(redacted,key))continue;
+    const stable=stablePublicIdentifier(key,value?.[key]);
+    allowed[key]=stable??redacted[key];
   }
   return Object.freeze(allowed);
 }
