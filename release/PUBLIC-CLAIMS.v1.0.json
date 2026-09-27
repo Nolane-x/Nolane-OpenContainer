@@ -1,0 +1,68 @@
+{
+  "schema": "opencontainer.public-claims.v1.0",
+  "frozenAt": "2026-09-27",
+  "rule": "Release/marketing claims must be listed here, name a compatibility profile and point to retained evidence. Absence from this registry means the claim is not approved for release marketing.",
+  "defaultProfileId": "opencontainer-alpha-chromium-node24-v1",
+  "claims": [
+    {
+      "id": "core-nine-surfaces",
+      "claim": "OpenContainer Core owns exactly nine public semantic surfaces.",
+      "profileId": "opencontainer-alpha-chromium-node24-v1",
+      "evidence": [
+        "docs/architecture/CORE-SURFACES.md",
+        "packages/sdk/src/profile.js"
+      ]
+    },
+    {
+      "id": "browser-native-runtime",
+      "claim": "OpenContainer is a browser-native Node/web development runtime for the declared evidence profile.",
+      "profileId": "opencontainer-alpha-chromium-node24-v1",
+      "evidence": [
+        "docs/implementation/STATUS.md",
+        "apps/playground/public/browser-acceptance.js"
+      ]
+    },
+    {
+      "id": "vite-8-3-c1-c2",
+      "claim": "Vite 8.3.0 C1 production build and C2 dev/HMR are promoted in the declared Chrome evidence path.",
+      "profileId": "opencontainer-alpha-chromium-node24-v1",
+      "evidence": [
+        "docs/implementation/STATUS.md",
+        "toolchain/artifacts/vite-c1-runtime-8.3.0.json"
+      ]
+    },
+    {
+      "id": "installed-distribution",
+      "claim": "The publish-equivalent installed distribution passes the declared Chrome product path; external publication identity is not implied.",
+      "profileId": "opencontainer-alpha-chromium-node24-v1",
+      "evidence": [
+        "docs/production/DISTRIBUTION-CERTIFICATION.md",
+        "docs/production/RELEASE-EVIDENCE.md"
+      ]
+    },
+    {
+      "id": "diagnostics-privacy",
+      "claim": "Production diagnostics/support export is bounded and privacy-minimized for the declared Chrome profile.",
+      "profileId": "opencontainer-alpha-chromium-node24-v1",
+      "evidence": [
+        "docs/production/DIAGNOSTICS-SUPPORT.md",
+        "docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.json"
+      ]
+    },
+    {
+      "id": "not-production-closed",
+      "claim": "OpenContainer is not production-closed.",
+      "profileId": "opencontainer-alpha-chromium-node24-v1",
+      "evidence": [
+        "docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.json",
+        "docs/production/PRODUCTION-PROFILE.json"
+      ]
+    }
+  ],
+  "forbiddenGeneralizations": [
+    "Do not claim Firefox, Safari, Windows, macOS, mobile or weak-device support from the Chrome/Ubuntu CI receipt.",
+    "Do not claim full Node 24 compatibility from selected differential/package/framework evidence.",
+    "Do not claim a public npm/GitHub release from publish-equivalent local certification.",
+    "Do not claim production/commercial closure while production_closed is false or P16/P17 remain open."
+  ]
+}
