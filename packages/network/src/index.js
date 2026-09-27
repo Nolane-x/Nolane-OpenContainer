@@ -304,8 +304,27 @@ export class NetworkAuthority{
   }
 
   authorize(url,{method='GET'}={}){
-    const parsed=canonicalizeNetworkUrl(url);
     const normalizedMethod=normalizeMethod(method);
+    let parsed;
+    try{
+      parsed=canonicalizeNetworkUrl(url);
+    }catch(error){
+      if(error?.code!==ErrorCodes.NETWORK_DENIED)throw error;
+      const receipt=Object.freeze({
+        schema:'opencontainer.network-decision.v0.1',
+        decision:'deny',
+        auditUrl:'[invalid-or-ambiguous-url]',
+        origin:null,
+        method:normalizedMethod,
+        profile:this.#profile,
+        policyId:this.#policyId,
+        policyVersion:NETWORK_POLICY_VERSION,
+        policyHash:this.#policyHash,
+        reason:'url-canonicalization'
+      });
+      this.#recordDecision(receipt);
+      throw ocError(ErrorCodes.NETWORK_DENIED,error?.message??'Invalid network URL',receipt);
+    }
     const networkClass=classifyNetworkHost(parsed.hostname);
     const publicUrl=sanitizeDecisionUrl(parsed);
 
