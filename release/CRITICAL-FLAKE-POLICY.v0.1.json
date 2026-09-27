@@ -38,10 +38,11 @@
       "tests/p7-resource-wave2-evidence.test.js",
       "tests/p3-persistence-source-audit.test.js",
       "tests/p3-persistence-wave1-evidence.test.js",
-      "tests/p3-persistence-wave2-evidence.test.js"
+      "tests/p3-persistence-wave2-evidence.test.js",
+      "tests/p3-corruption-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 34
+    "minimumTestFiles": 35
   },
   "browser": {
     "iterations": 2,
