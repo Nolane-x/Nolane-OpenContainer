@@ -1,10 +1,12 @@
 # Implementation Status
 
-## Current promotion ledger — 2026-09-26
+## Current promotion ledger — 2026-09-27
 
 This section is the authoritative current-state ledger. Later sections preserve incremental promotion history; an older `OPEN` statement is historical when this ledger explicitly supersedes it.
 
 Promoted in the clean Chrome product/browser path:
+
+- P0 product scope is now release-ready and machine-enforced: 1.0 remains exactly nine Core surfaces; the Node/npm oracle is frozen; the current evidence claim is explicitly limited to Chrome 153 on Ubuntu 24.04 x64; unsupported/out-of-Core classes, scope debt, production severity, public claims and critical-gate waivers are governed by versioned registries. Broader browser/device support is still unclaimed.
 
 - SharedArrayBuffer synchronous guest RPC transport with bounded mailbox/timeout semantics;
 - browser-native Node builtin bridge sufficient for the promoted Vite court;
@@ -39,6 +41,8 @@ Promoted in the clean Chrome product/browser path:
 - P8 diagnostics/supportability/privacy is now production-integrated: diagnostics have independent entry/raw-byte/duplicate-fingerprint/terminal-metadata bounds; support bundles provide deterministic failure fingerprints, previewed categories, browser/header/package/storage/profile/recovery-migration-update metadata, default-out AI content and zero-remote-telemetry behavior while excluding workspace/private-source/HTTP-body/raw-terminal/secret content. A receipt-first issue template and installed deterministic `opencontainer-diagnostic` command complete the support workflow.
 
 Evidence anchors:
+
+- P0 product-scope court `6f560a5d96521f0ec2071e8ae0dea3673cdab571` passed contract + full browser product path in CI run #385: the scope verifier returned `ok=true`, 9 Core surfaces, 6 scope debts, 6 approved public claims and 0 critical-gate waivers; Chrome profile verification passed on `153.0.8010.52` / Ubuntu 24.04 x64, and the browser flake campaign passed 2/2 with zero unexplained failures. P0-01 through P0-12 are reconciled closed while `production_closed=false` remains explicit.
 
 - C1 merged to `main` at `47f089e020b5b412f6a4f0880718b8b64963410a`;
 - C2 merged to `main` at `118c84660aa5bae7a7d8d991559cad9ce07a068b`;
