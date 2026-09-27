@@ -96,10 +96,15 @@ const receipt={
   supportBundle:{
     schema:supportBundle.schema,
     errorCode:supportBundle.error?.code??null,
-    customDiagnosticRedacted:supportBundle.diagnostics.some((entry)=>entry.type==='[custom]'),
+    fingerprint:supportBundle.fingerprint,
+    customDiagnosticRedacted:supportBundle.diagnostics.events.some((entry)=>entry.type==='[custom]'),
     workspaceContentsIncluded:supportBundle.privacy.workspaceContentsIncluded,
+    privateSourceIncluded:supportBundle.privacy.privateSourceIncluded,
+    httpBodiesIncluded:supportBundle.privacy.httpBodiesIncluded,
     diagnosticDetailsIncluded:supportBundle.privacy.diagnosticDetailsIncluded,
+    rawTerminalContentIncluded:supportBundle.privacy.rawTerminalContentIncluded,
     secretsIncluded:supportBundle.privacy.secretsIncluded,
+    telemetryRemoteEnabled:supportBundle.telemetry.remoteEnabled,
     leakedSecret:supportSerialized.includes(supportSecret)
   }
 };
@@ -117,12 +122,17 @@ console.log(JSON.stringify(receipt));
   if(receipt.state!=='READY'||receipt.exitCode!==0||receipt.stdout!=='distribution ok')throw new Error('distribution SDK/process court failed: '+JSON.stringify(receipt));
   if(receipt.previewText!=='distribution-preview'||receipt.restored!=='one'||receipt.imported!=='one')throw new Error('distribution preview/persistence court failed: '+JSON.stringify(receipt));
   if(
-    receipt.supportBundle?.schema!=='opencontainer.support-bundle.v0.1'||
+    receipt.supportBundle?.schema!=='opencontainer.support-bundle.v0.2'||
     receipt.supportBundle?.errorCode!=='OC_INVALID_STATE'||
+    !/^ocfp:[0-9a-f]{16}$/.test(receipt.supportBundle?.fingerprint??'')||
     receipt.supportBundle?.customDiagnosticRedacted!==true||
     receipt.supportBundle?.workspaceContentsIncluded!==false||
+    receipt.supportBundle?.privateSourceIncluded!==false||
+    receipt.supportBundle?.httpBodiesIncluded!==false||
     receipt.supportBundle?.diagnosticDetailsIncluded!==false||
+    receipt.supportBundle?.rawTerminalContentIncluded!==false||
     receipt.supportBundle?.secretsIncluded!==false||
+    receipt.supportBundle?.telemetryRemoteEnabled!==false||
     receipt.supportBundle?.leakedSecret!==false
   )throw new Error('installed distribution support bundle privacy court failed: '+JSON.stringify(receipt.supportBundle));
 
@@ -166,15 +176,33 @@ console.log(JSON.stringify(receipt));
     stdio:['ignore','pipe','pipe']
   });
   let hostingReceipt;
+  let localDiagnosticReceipt;
   try{
     await waitForPlayground(hostingChild);
+    const installedOrigin='http://127.0.0.1:'+hostingPort+'/';
     const hostingResult=run(process.execPath,[
       join(installedRoot,'scripts','hosting-self-check.mjs'),
-      'http://127.0.0.1:'+hostingPort+'/'
+      installedOrigin
     ],{cwd:installedRoot});
     hostingReceipt=JSON.parse(hostingResult.stdout.trim());
     if(hostingReceipt.ok!==true||hostingReceipt.failures?.length!==0){
       throw new Error('installed hosting self-check failed: '+JSON.stringify(hostingReceipt));
+    }
+    const diagnosticResult=run(process.execPath,[
+      join(installedRoot,'scripts','opencontainer-diagnostic.mjs'),
+      '--url',installedOrigin,
+      '--simulate-error','OC_INVALID_STATE'
+    ],{cwd:installedRoot});
+    localDiagnosticReceipt=JSON.parse(diagnosticResult.stdout.trim());
+    if(
+      localDiagnosticReceipt.schema!=='opencontainer.local-diagnostic.v0.1'||
+      !/^ocfp:[0-9a-f]{16}$/.test(localDiagnosticReceipt.fingerprint??'')||
+      localDiagnosticReceipt.hosting?.ok!==true||
+      localDiagnosticReceipt.hosting?.failureCount!==0||
+      localDiagnosticReceipt.diagnostics?.telemetry?.remoteEnabled!==false||
+      localDiagnosticReceipt.privacy?.secretsIncluded!==false
+    ){
+      throw new Error('installed local diagnostic command failed: '+JSON.stringify(localDiagnosticReceipt));
     }
   }finally{
     hostingChild.kill('SIGTERM');
@@ -199,6 +227,10 @@ console.log(JSON.stringify(receipt));
     installedHostingSelfCheck:{
       source:'node_modules/@nolane/opencontainer/scripts/hosting-self-check.mjs',
       receipt:hostingReceipt
+    },
+    installedLocalDiagnostic:{
+      source:'node_modules/@nolane/opencontainer/scripts/opencontainer-diagnostic.mjs',
+      receipt:localDiagnosticReceipt
     },
     publicSdkContract:{
       source:'node_modules/@nolane/opencontainer/docs/api/PUBLIC-SDK.v0.1.json',
