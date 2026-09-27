@@ -1,0 +1,52 @@
+name: OpenContainer bug report
+description: Report a reproducible OpenContainer runtime or compatibility problem without pasting secrets.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please share reproducible machine receipts, not credentials or private source. Never paste API keys, cookies, Authorization headers, signed URLs, private workspace files, AI prompts/transcripts, or proprietary package contents.
+  - type: input
+    id: error_code
+    attributes:
+      label: Stable error code
+      description: For example OC_ESM_EDGE_UNAVAILABLE or OC_STORAGE_READ_ONLY.
+      placeholder: OC_...
+    validations:
+      required: false
+  - type: input
+    id: fingerprint
+    attributes:
+      label: Support-bundle fingerprint
+      description: The ocfp-v1-* identifier from runtime.supportBundle()/createSupportBundle().
+      placeholder: ocfp-v1-...
+    validations:
+      required: false
+  - type: input
+    id: profile
+    attributes:
+      label: Production profile and runtime version
+      placeholder: opencontainer-alpha-chromium-node24-v1 / 0.1.0-alpha.1
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser, version and OS
+    validations:
+      required: false
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction steps
+      description: Describe operations and public package/version identities. Remove secrets and private source/data.
+    validations:
+      required: true
+  - type: textarea
+    id: receipts
+    attributes:
+      label: Reproducible receipts
+      description: Paste sanitized status/capability/header receipts or the deterministic diagnostic-self-check output. Do not paste workspace/source contents.
+    validations:
+      required: false
