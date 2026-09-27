@@ -1,0 +1,91 @@
+{
+  "schema": "opencontainer.network-policy.v0.1",
+  "version": "opencontainer-network-policy-v2",
+  "directBrowser": {
+    "mode": "cors-capability",
+    "protocols": [
+      "http:",
+      "https:"
+    ],
+    "credentials": "omit-by-default",
+    "redirects": "manual-and-reauthorized-per-hop",
+    "opaqueResponses": "deny-in-managed-fetch",
+    "localNetwork": "deny-unless-explicit-and-browser-permission-probed"
+  },
+  "profiles": {
+    "offline": {
+      "external": "deny",
+      "local": "deny"
+    },
+    "registry-only": {
+      "external": "declared-registry-rules-only",
+      "local": "deny"
+    },
+    "restricted": {
+      "external": "explicit-rules-only",
+      "local": "deny-unless-allowLocal"
+    },
+    "open-web": {
+      "external": "public-http(s)-allow",
+      "local": "deny-unless-allowLocal"
+    }
+  },
+  "broker": {
+    "enabled": false,
+    "openFetchProxy": false,
+    "futureRequirements": [
+      "normalize and authorize every target and redirect hop",
+      "deny loopback/private/link-local/metadata destinations unless an explicit product profile permits them",
+      "resolve DNS and re-check every resolved address before connect",
+      "prevent DNS rebinding by binding authorization to resolved endpoint identity",
+      "enforce method/path/request/decoded-response/time/concurrency budgets",
+      "never accept arbitrary caller-supplied credential headers",
+      "inject secrets only from authority-side opaque handles",
+      "emit policy version/hash in every allow/deny receipt"
+    ]
+  },
+  "secrets": {
+    "guestVisible": "opaque-handle-only",
+    "plaintextLocation": "authority-side-only",
+    "scope": [
+      "scheme",
+      "host",
+      "method",
+      "path",
+      "session",
+      "task",
+      "expiry"
+    ],
+    "callerSensitiveHeaders": [
+      "authorization",
+      "cookie",
+      "proxy-authorization"
+    ],
+    "defaultPackageInstallAccess": false
+  },
+  "preview": {
+    "externalNetworkPolicyIndependent": true,
+    "serviceWorkerIdentity": [
+      "publication-session",
+      "workspace-generation",
+      "service-worker-compatibility-version"
+    ],
+    "frameSandbox": "opaque-origin-v1",
+    "credentialSettingHeaders": "stripped",
+    "requestCancellation": "propagated-to-preview-handler"
+  },
+  "decisionReceipt": {
+    "schema": "opencontainer.network-decision.v0.1",
+    "includes": [
+      "decision",
+      "auditUrl",
+      "origin",
+      "method",
+      "ruleId/profile",
+      "policyId",
+      "policyVersion",
+      "policyHash"
+    ],
+    "queryValuesInAudit": false
+  }
+}
