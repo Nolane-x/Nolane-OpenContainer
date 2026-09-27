@@ -1,0 +1,145 @@
+{
+  "schema": "opencontainer.p3-persistence-wave1-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P3",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 49,
+  "implementationHead": "1cbc9df096759d4cc4b108c25add5ba0359d7a58",
+  "ci": {
+    "runNumber": 444,
+    "runId": 36321405216,
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "criticalTestFiles": 32,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 160,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "explainedFailures": 0,
+    "unexplainedFailures": 0,
+    "excludedHarnessFailures": 0
+  },
+  "closedGates": [
+    {
+      "id": "P3-01",
+      "evidence": [
+        "real OPFS workspace checkpoint/reopen in Chrome",
+        "exclusive Web Lock around canonical mutations",
+        "SDK workspace persistence profile"
+      ]
+    },
+    {
+      "id": "P3-02",
+      "evidence": [
+        "exclusive Web Lock source audit",
+        "steal:true forbidden by audit",
+        "real Chrome same-generation competing writers admit exactly one publisher and reject the other stale"
+      ]
+    },
+    {
+      "id": "P3-04",
+      "evidence": [
+        "real Chrome WorkspaceFS crash injection at after-preflight/after-payload/after-manifest",
+        "reopen yields only old-valid or new-valid canonical state"
+      ]
+    },
+    {
+      "id": "P3-05",
+      "evidence": [
+        "real OPFS A/B manifest recovery",
+        "corrupt newest payload falls back to older fully valid root",
+        "republish/reopen court remains green"
+      ]
+    },
+    {
+      "id": "P3-06",
+      "evidence": [
+        "canonical workspace and release publication source audit contains no rename/move dependency",
+        "payload-before-manifest publication",
+        "real browser crash recovery"
+      ]
+    },
+    {
+      "id": "P3-10",
+      "evidence": [
+        "real Chrome release-storage dry-run builds and validates target generation",
+        "canonical identity remains unchanged before payload verification and manifest publication"
+      ]
+    },
+    {
+      "id": "P3-11",
+      "evidence": [
+        "real Chrome release migration crash court covers after-preflight/after-payload/after-verify/after-publish",
+        "reopen preserves old-valid or new-valid roots"
+      ]
+    },
+    {
+      "id": "P3-12",
+      "evidence": [
+        "real Chrome rollback reuses readable newer storage read-only",
+        "incompatible newer storage refuses open",
+        "no destructive downgrade"
+      ]
+    },
+    {
+      "id": "P3-16",
+      "evidence": [
+        "public SDK export pins one committed VFS generation",
+        "mutation after export invocation does not contaminate imported generation",
+        "real Chrome"
+      ]
+    },
+    {
+      "id": "P3-19",
+      "evidence": [
+        "canonical metadata with all recovery payloads invalid returns OC_IMPORT_INVALID",
+        "OpenContainer.boot workspace persistence rejects instead of opening an empty project",
+        "real Chrome"
+      ]
+    }
+  ],
+  "preservedOpenGates": [
+    {
+      "id": "P3-03",
+      "reason": "WriterEpoch + StorageGeneration pair is not yet persisted/validated as the source gate requires."
+    },
+    {
+      "id": "P3-07",
+      "reason": "Exact flush/durability boundary still needs explicit browser-backed contract."
+    },
+    {
+      "id": "P3-08",
+      "reason": "Quota refusal has not yet been injected before/during/after every data-write phase in the declared browser profile."
+    },
+    {
+      "id": "P3-09",
+      "reason": "Real multi-tab freeze/resume stale-publication court remains open."
+    },
+    {
+      "id": "P3-13",
+      "reason": "Corruption classes are not yet separately certified across canonical source, draft, checkpoint, package cache and derived index."
+    },
+    {
+      "id": "P3-14",
+      "reason": "Global low-storage cleanup priority across rebuildable and canonical data is not yet proven."
+    },
+    {
+      "id": "P3-15",
+      "reason": "Checkpoint restore still needs an explicit unrelated-newer-work safety court."
+    },
+    {
+      "id": "P3-17",
+      "reason": "Imported-copy, linked-folder and read-only-source modes are not yet certified."
+    },
+    {
+      "id": "P3-18",
+      "reason": "External permission revocation/edit-conflict court remains open."
+    },
+    {
+      "id": "P3-20",
+      "reason": "Destructive delete/tombstone/permanent purge recoverability court remains open."
+    }
+  ],
+  "productionClosed": false
+}

@@ -410,6 +410,14 @@
       "status": "PASS",
       "ref": "CI #432 / PR #48 head 0f71f7492ae0175d929c98c6e032dd4cf522d728",
       "note": "P7 wave-2 closure court for P7-08 and P7-13 only. Global retained-resource audit + real Chrome pressure pause/resume stale-publication rejection passed. Stage timings for P7-02..05 remain measurement evidence only; weak-device, 8-hour, thermal, cross-browser and latency-floor claims remain open."
+    },
+    {
+      "key": "p3-persistence-wave1",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #444 / PR #49 head 1cbc9df096759d4cc4b108c25add5ba0359d7a58",
+      "note": "Ten-gate P3 declared-profile closure court. Real Chrome OPFS/Web Locks writer competition, WorkspaceFS crash boundaries, A/B recovery, release migration/rollback, pinned export and SDK fatal recovery all pass. P3-03/07/08/09/13/14/15/17/18/20 remain explicitly open."
     }
   ]
 }

@@ -8,8 +8,8 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **186**
-- Minimum-closure satisfied: **141**
+- Seed-reconciled against implementation evidence: **191**
+- Minimum-closure satisfied: **151**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -19,7 +19,7 @@
 | P0 Product scope & production profile | 12 | 0 | 12 |
 | P1 Browser deployment, origin & lifecycle | 7 | 9 | 16 |
 | P2 Kernel, RPC, process & stream semantics | 6 | 8 | 14 |
-| P3 VFS, OPFS, persistence & data safety | 9 | 11 | 20 |
+| P3 VFS, OPFS, persistence & data safety | 14 | 6 | 20 |
 | P4 Packages, resolver, archive & installer | 6 | 12 | 18 |
 | P5 Network, secrets & preview edge | 18 | 0 | 18 |
 | P6 Toolchain, BCR, Vite & framework integration | 8 | 8 | 16 |
@@ -43,6 +43,14 @@
 - Release trust chain now has reproducible artifact/checksum/SBOM/provenance/inventory evidence, but authenticated attestation, public publication, rollback and license/FTO closure remain open.
 
 ## Newly reconciled in this wave
+
+- **P3-01, P3-02, P3-04, P3-05, P3-06, P3-10, P3-11, P3-12, P3-16 and P3-19** now meet `PASS-INTEGRATION + declared-profile evidence` through CI #444 on PR #49 implementation head `1cbc9df096759d4cc4b108c25add5ba0359d7a58`.
+- The real Chrome court now serializes two same-generation OPFS publishers through an exclusive Web Lock with no `steal:true`; exactly one writer publishes and the competitor fails `OC_STALE_GENERATION`. Workspace checkpoint crash injection covers `after-preflight`, `after-payload` and `after-manifest`; reopen returns only the old fully-valid or new fully-valid generation.
+- A production-source audit proves canonical WorkspaceFS and release-storage publication has no rename/move dependency and remains payload-before-manifest. Existing real-OPFS corruption fallback, migration dry-run, four release-migration crash phases, non-destructive rollback/read-only/refuse-open behavior and pinned SDK export remain green.
+- P3-19 is now fail-closed at the public SDK boundary: if canonical metadata exists but all recovery payloads are invalid, `OpenContainer.boot({ workspacePersistence })` rejects with `OC_IMPORT_INVALID` and explicitly reports `silentEmptyFallback=false`; it cannot silently replace the workspace with an empty project.
+- CI #444 passed **32 critical files × 5 = 160 executions**, CodeQL and **2/2** full installed-distribution Chrome paths with zero explained, unexplained or harness-excluded failures.
+- **P3-03, P3-07, P3-08, P3-09, P3-13, P3-14, P3-15, P3-17, P3-18 and P3-20 remain open/partial**. In particular, the source requirement for persistent WriterEpoch + StorageGeneration, exact flush/durability boundary, quota refusal at every write phase, frozen-tab failover and the remaining corruption/delete/external-file courts has not been weakened.
+
 
 - **P7-07** now meets declared-profile closure: hardwareConcurrency is only a scheduling hint; the effective worker budget is derived by policy and clamped instead of mapping logical CPUs directly to guest workers. The real-browser quota court rejects an over-budget second Worker, releases the lease on close and permits reuse.
 - **P7-14** now meets declared-profile closure: CI #428 archives a machine-readable Chrome 153 / Ubuntu 24.04 measurement receipt with logical CPU/RAM identity, two complete installed-distribution wall-clock durations and explicit warmup/cache/CPU-throttle/GC/thermal/network/DevTools validity metadata.

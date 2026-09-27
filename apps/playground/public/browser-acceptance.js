@@ -178,6 +178,26 @@ async function run() {
   assert(rollbackWriteCode === 'OC_STORAGE_READ_ONLY', 'read-only rollback did not fail writes with OC_STORAGE_READ_ONLY');
   assert(rollbackFs.readFile('rollback.txt') === 'stable', 'read-only rollback mutated canonical workspace');
 
+  const rollbackRefusal = await migrationStore.rollbackPolicy({
+    runtimeStorageVersion: 1,
+    readableStorageVersions: [1]
+  });
+  assert(rollbackRefusal.strategy === 'refuse-open', 'incompatible rollback did not refuse open');
+  assert(rollbackRefusal.destructiveStorageDowngrade === false, 'incompatible rollback requested destructive downgrade');
+  const rollbackRefusalFs = new MemoryVFS();
+  rollbackRefusalFs.mount({ 'rollback-refusal.txt': 'preserved' });
+  let rollbackRefusalCode = null;
+  try {
+    await migrationStore.applyCompatibility(rollbackRefusalFs, {
+      runtimeStorageVersion: 1,
+      readableStorageVersions: [1]
+    });
+  } catch (error) {
+    rollbackRefusalCode = error?.code ?? null;
+  }
+  assert(rollbackRefusalCode === 'OC_STORAGE_MIGRATION_INVALID', 'incompatible rollback did not fail closed');
+  assert(rollbackRefusalFs.readFile('rollback-refusal.txt') === 'preserved', 'rollback refusal mutated workspace state');
+
   const crashResults = [];
   for (const phase of ['after-preflight', 'after-payload', 'after-verify', 'after-publish']) {
     const directoryName = releaseBase + '-crash-' + phase;
@@ -908,6 +928,137 @@ async function run() {
   assert(navigator.storage?.getDirectory, 'OPFS API is unavailable');
   const opfsRoot = await navigator.storage.getDirectory();
   const opfsDirectory = 'opencontainer-browser-acceptance-' + crypto.randomUUID();
+
+  stage('p3-writer-election-start');
+  const p3ElectionDirectory = opfsDirectory + '-writer-election';
+  try {
+    const writerA = await new OpfsCheckpointAuthority({
+      root: opfsRoot,
+      directoryName: p3ElectionDirectory,
+      lockManager: navigator.locks
+    }).open();
+    const writerB = await new OpfsCheckpointAuthority({
+      root: opfsRoot,
+      directoryName: p3ElectionDirectory,
+      lockManager: navigator.locks
+    }).open();
+    const writerFsA = new MemoryVFS();
+    const writerFsB = new MemoryVFS();
+    writerFsA.mount({ 'writer.txt': 'A' });
+    writerFsB.mount({ 'writer.txt': 'B' });
+    const writerResults = await Promise.allSettled([
+      writerA.checkpoint(writerFsA),
+      writerB.checkpoint(writerFsB)
+    ]);
+    const writerFulfilled = writerResults.filter((item) => item.status === 'fulfilled');
+    const writerRejected = writerResults.filter((item) => item.status === 'rejected');
+    assert(writerFulfilled.length === 1, 'P3 writer election admitted more or fewer than one same-generation publisher');
+    assert(writerRejected.length === 1, 'P3 writer election did not reject the competing publisher');
+    assert(writerRejected[0].reason?.code === 'OC_STALE_GENERATION', 'P3 competing writer did not fail stale');
+    const electionReopen = await new OpfsCheckpointAuthority({
+      root: opfsRoot,
+      directoryName: p3ElectionDirectory,
+      lockManager: navigator.locks
+    }).open();
+    const electionRestore = new MemoryVFS();
+    await electionReopen.restoreInto(electionRestore);
+    assert(['A','B'].includes(electionRestore.readFile('writer.txt')), 'P3 election reopened an unknown winner');
+    assert(electionReopen.current?.sequence === 1, 'P3 election produced split canonical sequence');
+    stage('p3-writer-election-pass', {
+      fulfilled: writerFulfilled.length,
+      staleRejected: writerRejected[0].reason?.code,
+      sequence: electionReopen.current.sequence,
+      crossContextLocking: electionReopen.crossContextLocking
+    });
+  } finally {
+    await opfsRoot.removeEntry(p3ElectionDirectory, { recursive: true }).catch(() => {});
+  }
+
+  stage('p3-workspace-crash-start');
+  const p3CrashResults = [];
+  for (const phase of ['after-preflight','after-payload','after-manifest']) {
+    const directoryName = opfsDirectory + '-crash-' + phase;
+    try {
+      const crashFs = new MemoryVFS();
+      const crashAuthority = await new OpfsCheckpointAuthority({
+        root: opfsRoot,
+        directoryName,
+        lockManager: navigator.locks
+      }).open();
+      crashFs.mount({ 'state.txt': 'old' });
+      const stable = await crashAuthority.checkpoint(crashFs);
+      crashFs.beginTransaction().writeFile('state.txt','new').commit();
+      let crashCode = null;
+      let crashPhase = null;
+      try {
+        await crashAuthority.checkpoint(crashFs,{ crashAt: phase });
+      } catch (error) {
+        crashCode = error?.code ?? null;
+        crashPhase = error?.details?.phase ?? null;
+      }
+      assert(crashCode === 'OC_INVALID_STATE' && crashPhase === phase, 'P3 crash injection did not stop at ' + phase);
+      const reopened = await new OpfsCheckpointAuthority({
+        root: opfsRoot,
+        directoryName,
+        lockManager: navigator.locks
+      }).open();
+      const restored = new MemoryVFS();
+      await reopened.restoreInto(restored);
+      const expected = phase === 'after-manifest' ? 'new' : 'old';
+      assert(restored.readFile('state.txt') === expected, 'P3 crash phase reopened a half-version at ' + phase);
+      assert(
+        reopened.current.sequence === stable.sequence + (phase === 'after-manifest' ? 1 : 0),
+        'P3 crash phase canonical sequence drifted at ' + phase
+      );
+      p3CrashResults.push({ phase, reopened: expected, sequence: reopened.current.sequence });
+    } finally {
+      await opfsRoot.removeEntry(directoryName, { recursive: true }).catch(() => {});
+    }
+  }
+  stage('p3-workspace-crash-pass', { phases: p3CrashResults });
+
+  stage('p3-no-silent-empty-start');
+  const p3FatalDirectory = opfsDirectory + '-fatal-recovery';
+  try {
+    const fatalFs = new MemoryVFS();
+    const fatalAuthority = await new OpfsCheckpointAuthority({
+      root: opfsRoot,
+      directoryName: p3FatalDirectory,
+      lockManager: navigator.locks
+    }).open();
+    fatalFs.mount({ 'state.txt': 'one' });
+    const fatalFirst = await fatalAuthority.checkpoint(fatalFs);
+    fatalFs.beginTransaction().writeFile('state.txt','two').commit();
+    const fatalSecond = await fatalAuthority.checkpoint(fatalFs);
+    const fatalWorkspace = await opfsRoot.getDirectoryHandle(p3FatalDirectory);
+    const fatalGenerations = await fatalWorkspace.getDirectoryHandle('generations');
+    for (const payload of [fatalFirst.payload, fatalSecond.payload]) {
+      const handle = await fatalGenerations.getFileHandle(payload);
+      const writer = await handle.createWritable();
+      await writer.write('{"corrupt":true}');
+      await writer.close();
+    }
+    let fatalCode = null;
+    let silentEmptyFallback = null;
+    try {
+      await OpenContainer.boot({
+        workspacePersistence: {
+          root: opfsRoot,
+          directoryName: p3FatalDirectory,
+          lockManager: navigator.locks
+        }
+      });
+    } catch (error) {
+      fatalCode = error?.code ?? null;
+      silentEmptyFallback = error?.details?.silentEmptyFallback ?? null;
+    }
+    assert(fatalCode === 'OC_IMPORT_INVALID', 'P3 SDK boot silently replaced invalid canonical workspace with an empty project');
+    assert(silentEmptyFallback === false, 'P3 fatal recovery did not explicitly reject silent empty fallback');
+    stage('p3-no-silent-empty-pass', { fatalCode, silentEmptyFallback, sdkBootRejected: true });
+  } finally {
+    await opfsRoot.removeEntry(p3FatalDirectory, { recursive: true }).catch(() => {});
+  }
+
   try {
     assert(navigator.locks?.request, 'Web Locks API is unavailable');
     const storagePolicy = new BrowserStoragePolicy({ storageManager: navigator.storage });

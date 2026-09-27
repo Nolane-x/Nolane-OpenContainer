@@ -704,3 +704,12 @@ PR #48 implementation head `0f71f7492ae0175d929c98c6e032dd4cf522d728` passed CI 
 P7-08 is closed for the declared Chrome profile by a repo-wide production-source retention audit plus the existing bounded task/in-flight/process/output/diagnostic/terminal budgets. P7-13 is closed by browser evidence that serious/critical pressure pauses background admission, makes a pre-pressure result stale, and permits only fresh publication after resume.
 
 P7-02 through P7-05 receive stage-level measurement evidence only and remain unclosed. P7-01, P7-06, P7-09, P7-10, P7-11 and P7-12 remain open/partial for the stronger device, coexistence, soak, lifecycle/contention, storage-amplification and regression-budget obligations. `production_closed=false`.
+
+
+## P3 persistence/data-safety wave 1
+
+CI #444 on PR #49 implementation head `1cbc9df096759d4cc4b108c25add5ba0359d7a58` passed contract, CodeQL and 2/2 full installed-distribution Chrome paths with zero failures. Real browser evidence now closes P3-01, P3-02, P3-04, P3-05, P3-06, P3-10, P3-11, P3-12, P3-16 and P3-19.
+
+The most material behavior change is fatal canonical recovery: OPFS metadata that exists but has no fully valid recovery payload now raises `OC_IMPORT_INVALID`; public SDK boot cannot reinterpret it as a never-initialized empty workspace. Workspace persistence also exposes deterministic crash-injection boundaries so the browser court can prove payload-before-manifest atomicity.
+
+P3-03, P3-07, P3-08, P3-09, P3-13, P3-14, P3-15, P3-17, P3-18 and P3-20 remain open/partial. `production_closed=false`.
