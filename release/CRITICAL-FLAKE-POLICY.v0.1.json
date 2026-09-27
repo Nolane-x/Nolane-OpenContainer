@@ -22,10 +22,11 @@
       "tests/product-security.test.js",
       "tests/security-hardening.test.js",
       "tests/security-fuzz.test.js",
-      "tests/security-malicious-package.test.js"
+      "tests/security-malicious-package.test.js",
+      "tests/p12-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 18
+    "minimumTestFiles": 19
   },
   "browser": {
     "iterations": 2,

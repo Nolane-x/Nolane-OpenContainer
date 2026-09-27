@@ -73,3 +73,10 @@ CodeQL, npm audit, CI pass percentages, architectural confidence, or AI review m
 CodeQL v4.38.2 is pinned by immutable commit. CI retains raw SARIF plus a commit-bound receipt; any unwaived CodeQL finding with security severity >= 7.0 fails the CodeQL job. Waivers must be explicit and unexpired.
 
 The critical/high regression registry is also executable rather than documentary: `security:regressions` derives its test list from every registry entry, runs the union, hashes the log and emits a commit-bound receipt. A registry entry without executable test evidence fails closed.
+
+
+## CI #409 technical closure boundary
+
+PR #42 implementation head `4e05b3cf1ca27d6bb5f3e33fda69ebc6411d67af` passed CI #409 across contract, pinned CodeQL and installed-distribution Chrome. The retained receipts report zero npm vulnerabilities; zero CodeQL findings, waivers and unwaived blockers; 12 critical/high regression entries executed through 11 test files; and 2/2 complete browser product paths with zero unexplained failures.
+
+This evidence closes the technical review duties for P12-01 through P12-16 and P12-19. It deliberately does not close P12-17, P12-18 or P12-20.

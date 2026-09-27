@@ -354,6 +354,14 @@
       "status": "PASS",
       "ref": "CI #401 / PR #41 head bc283647ee9ab04a5ee645eb0a41c8236e97fb40",
       "note": "Contract/browser P18 assurance bundles, evidence registry enforcement, reason-coded harness exclusions, negative-result preservation, corpus lock, environment validity threats and exact 304-gate stable decision guard."
+    },
+    {
+      "key": "p12-product-security",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #409 / PR #42 head 4e05b3cf1ca27d6bb5f3e33fda69ebc6411d67af",
+      "note": "Technical P12 security evidence: OWASP ASVS 5.0.0 mapping, strict browser security policy, bounded hostile-parser/DoS/package courts, npm audit with zero vulnerabilities, retained CodeQL SARIF with zero findings/waivers, 12-entry critical/high regression court and 2/2 installed-distribution Chrome paths. Explicitly does not close P12-17 disclosure channel, P12-18 second-party review or P12-20 human review."
     }
   ]
 }

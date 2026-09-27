@@ -272,6 +272,10 @@
     "p18-evidence-assurance": {
       "ref": "CI #401 / PR #41 head bc283647ee9ab04a5ee645eb0a41c8236e97fb40",
       "note": "P18 executable evidence-assurance court: machine-typed evidence registry; source/docs/local cannot close critical gates; HARNESS_* only exclusion codes; append-only negative results; content-addressed 13-case corpus lock; SHA-256 contract/browser bundles with full iteration logs; programmatic counts; benchmark-validity environment receipt; exact 304/304 stable ledger guard; contract 5/5 over 13 critical files = 65 executions PASS; browser 2/2 installed-distribution product paths PASS on Chrome 153.0.8010.52; both assurance verifiers ok=true; production_closed remains false"
+    },
+    "p12-product-security": {
+      "ref": "CI #409 / PR #42 head 4e05b3cf1ca27d6bb5f3e33fda69ebc6411d67af",
+      "note": "P12 technical security court: ASVS 5.0.0 cross-check; strict document/Worker security headers; capability/fuzz/traversal/DoS/SW/preview/stale-writer/redaction courts; npm audit zero vulnerabilities; retained CodeQL SARIF zero findings/waivers; 11-case malicious package corpus; 12-entry critical/high regression court; 2/2 installed-distribution Chrome paths. P12-17/18/20 remain manual/external blockers."
     }
   },
   "overrides": [
@@ -1036,19 +1040,163 @@
       "closure_met": false
     },
     {
+      "id": "P12-01",
+      "domain": "P12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
+      "closure_met": true
+    },
+    {
+      "id": "P12-02",
+      "domain": "P12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
+      "closure_met": true
+    },
+    {
+      "id": "P12-03",
+      "domain": "P12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
+      "closure_met": true
+    },
+    {
       "id": "P12-04",
       "domain": "P12",
-      "state": "PARTIAL",
+      "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
-      "evidence": "guest-isolation",
-      "closure_met": false
+      "evidence": "p12-product-security",
+      "closure_met": true
+    },
+    {
+      "id": "P12-05",
+      "domain": "P12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
+      "closure_met": true
+    },
+    {
+      "id": "P12-06",
+      "domain": "P12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
+      "closure_met": true
     },
     {
       "id": "P12-07",
       "domain": "P12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
+      "closure_met": true
+    },
+    {
+      "id": "P12-08",
+      "domain": "P12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
+      "closure_met": true
+    },
+    {
+      "id": "P12-09",
+      "domain": "P12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
+      "closure_met": true
+    },
+    {
+      "id": "P12-10",
+      "domain": "P12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
+      "closure_met": true
+    },
+    {
+      "id": "P12-11",
+      "domain": "P12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
+      "closure_met": true
+    },
+    {
+      "id": "P12-12",
+      "domain": "P12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
+      "closure_met": true
+    },
+    {
+      "id": "P12-13",
+      "domain": "P12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
+      "closure_met": true
+    },
+    {
+      "id": "P12-14",
+      "domain": "P12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
+      "closure_met": true
+    },
+    {
+      "id": "P12-15",
+      "domain": "P12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
+      "closure_met": true
+    },
+    {
+      "id": "P12-16",
+      "domain": "P12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
+      "closure_met": true
+    },
+    {
+      "id": "P12-17",
+      "domain": "P12",
       "state": "PARTIAL",
       "promotion": "PASS-BROWSER",
-      "evidence": "guest-output",
+      "evidence": "p12-product-security",
+      "closure_met": false
+    },
+    {
+      "id": "P12-18",
+      "domain": "P12",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
+      "closure_met": false
+    },
+    {
+      "id": "P12-19",
+      "domain": "P12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
+      "closure_met": true
+    },
+    {
+      "id": "P12-20",
+      "domain": "P12",
+      "state": "PARTIAL",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p12-product-security",
       "closure_met": false
     },
     {
