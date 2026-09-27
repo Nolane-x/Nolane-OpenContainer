@@ -426,6 +426,14 @@
       "status": "PASS",
       "ref": "CI #459 / PR #50 implementation head 4c8d5b1fc88ad2db49e0431dbdbd86786f50552a",
       "note": "Declared-profile P3 wave-2 closure for P3-03 and P3-08 only: persistent WriterEpoch + StorageGeneration fencing and six-phase quota fault injection passed 165/165 repeated critical file executions, CodeQL and 2/2 installed-distribution Chrome product paths with zero unexplained failures. P3-07/09/13/14/15/17/18/20 remain open."
+    },
+    {
+      "key": "p3-corruption-classification",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #475 / PR #51 implementation head edb93487724046443c73b98cad397ee43ec36f94",
+      "note": "Declared-profile P3-13 closure court: five distinct corruption classes (canonical source, recovery draft, checkpoint, package cache, derived index) each have a separate recovery action. 375/375 unit tests, 170/170 repeated critical file executions, CodeQL and 2/2 installed-distribution Chrome paths passed with a dedicated 5-class/5-action browser receipt."
     }
   ]
 }
