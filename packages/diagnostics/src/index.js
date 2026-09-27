@@ -1,4 +1,4 @@
-const SECRET_KEYS = /(?:authorization|cookie|token|secret|password|api[-_]?key|private[-_]?key|prompt|transcript|request[-_]?body|response[-_]?body|source[-_]?code)/i;
+const SECRET_KEYS = /(?:authorization|cookie|token|secret|password|api[-_]?key|private[-_]?key|prompt|transcript|(?:request|response)?[-_]?body|source(?:[-_]?code)?|file[-_]?contents|workspace[-_]?text)/i;
 const SECRET_VALUE = /\b(?:bearer\s+)?[A-Za-z0-9_\-]{20,}\b/gi;
 const SIGNED_QUERY_VALUE = /([?&](?:token|signature|sig|x-amz-signature|x-goog-signature|key|credential)=)[^&#\s]*/gi;
 const encoder=new TextEncoder();
@@ -255,7 +255,13 @@ function packageIdentity(packages){
     rootName:graph.rootName??null,
     rootVersion:graph.rootVersion??null,
     nodeCount:nodes.length,
-    graphFingerprint:diagnosticFingerprint(nodes)
+    graphFingerprint:diagnosticFingerprint(nodes),
+    components:freezeArray(nodes.map((node)=>({
+      name:node.name,
+      version:node.version,
+      contentId:node.contentId,
+      integrity:node.integrity
+    })))
   });
 }
 
@@ -364,16 +370,23 @@ export class SupportBundleAuthority{
       code:typeof error?.code==='string'?error.code:'OC_INTERNAL'
     }):null;
     const diagSummary=this.#runtime.diagnostics.summary();
-    const failureFingerprint=diagnosticFingerprint({
+    const fingerprintBasis=Object.freeze({
       code:errorReceipt?.code??null,
-      profile:profileIdentity(this.#profile),
+      profileId:this.#profile.profileId,
+      runtimeVersion:this.#profile.runtime.version,
+      workerRpcEnvelopeVersion:this.#profile.protocol.workerRpcEnvelopeVersion,
+      snapshotFormatVersion:this.#profile.snapshot.portableFormatVersion,
+      serviceWorkerCompatibilityId:this.#profile.browser.serviceWorkerCompatibilityId,
       state:this.#runtime.state,
-      generation:this.#runtime.fs.generation,
+      previewEpoch:this.#runtime.preview?.epoch??null,
+      workspaceGeneration:this.#runtime.fs.generation,
       packageGeneration:this.#runtime.packages.generation,
       workspaceSequence:this.#runtime.workspacePersistence?.current?.sequence??null,
-      workspaceGeneration:this.#runtime.workspacePersistence?.current?.generation??null,
-      diagnostics:this.#runtime.diagnostics.list().map((entry)=>({type:publicDiagnosticType(entry.type),fingerprint:entry.fingerprint})),
-      previewEpoch:this.#runtime.preview?.epoch??null
+      persistedWorkspaceGeneration:this.#runtime.workspacePersistence?.current?.generation??null
+    });
+    const failureFingerprint=diagnosticFingerprint({
+      basis:fingerprintBasis,
+      diagnostics:this.#runtime.diagnostics.list().map((entry)=>({type:publicDiagnosticType(entry.type),fingerprint:entry.fingerprint}))
     });
     const diagnostics=freezeArray(this.#runtime.diagnostics.list().map((entry)=>({
       seq:entry.seq,
@@ -392,6 +405,7 @@ export class SupportBundleAuthority{
       schema:'opencontainer.support-bundle.v0.2',
       preview,
       fingerprint:failureFingerprint,
+      fingerprintBasis,
       profile:profileIdentity(this.#profile),
       status:this.#runtime.status(),
       resources:Object.freeze({
