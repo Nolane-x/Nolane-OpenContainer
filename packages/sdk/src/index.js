@@ -112,6 +112,7 @@ export class OpenContainer {
       profile:OpenContainerProductionProfile,
       status:this.status(),
       resources:this.resources,
+      process:this.process,
       diagnostics:this.diagnostics,
       packages:this.packages,
       preview:this.preview,
