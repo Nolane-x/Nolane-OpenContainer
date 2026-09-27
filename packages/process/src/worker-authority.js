@@ -75,7 +75,7 @@ export class WorkerRpcAuthority {
     return this.identity;
   }
 
-  request(method, payload, { transfer } = {}) {
+  request(method, payload, { transfer, background=false } = {}) {
     if (this.#closed) throw ocError(ErrorCodes.WORKER_CLOSED, 'Worker authority is closed');
     if (!this.#transport) throw ocError(ErrorCodes.INVALID_STATE, 'Worker transport is not attached');
     if (typeof method !== 'string' || !method) {
@@ -100,7 +100,9 @@ export class WorkerRpcAuthority {
     });
 
     const inFlightBytes=estimateEnvelopeBytes(envelope);
-    const lease=this.#resources?.reserve({tasks:1,inFlightBytes})??null;
+    const lease=this.#resources?.acquireTask
+      ? this.#resources.acquireTask({background,inFlightBytes})
+      : this.#resources?.reserve({tasks:1,inFlightBytes})??null;
 
     let resolve;
     let reject;
@@ -128,7 +130,7 @@ export class WorkerRpcAuthority {
       }, this.#requestTimeoutMs);
     }
 
-    this.#pending.set(id, { resolve, reject, method, timer, lease, inFlightBytes });
+    this.#pending.set(id, { resolve, reject, method, timer, lease, inFlightBytes, background:background===true });
     try {
       if (transfer !== undefined) this.#transport.postMessage(envelope, transfer);
       else this.#transport.postMessage(envelope);
@@ -167,9 +169,13 @@ export class WorkerRpcAuthority {
     if (!pending) return false;
     this.#pending.delete(message.id);
     if (pending.timer) clearTimeout(pending.timer);
+    let publishError=null;
+    try{pending.lease?.assertPublish?.();}
+    catch(error){publishError=error;}
     pending.lease?.release();
 
-    if (message.ok === false) pending.reject(workerErrorFromEnvelope(message.error));
+    if(publishError)pending.reject(publishError);
+    else if (message.ok === false) pending.reject(workerErrorFromEnvelope(message.error));
     else pending.resolve(message.value);
 
     this.#diagnostics?.record('worker.response', {
