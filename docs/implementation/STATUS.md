@@ -724,3 +724,12 @@ P3-03 is now closed for the declared Chrome profile: persistent monotonic Writer
 P3-08 is now closed for the declared Chrome profile: deterministic quota faults cover six write boundaries from zero bytes through post-payload/pre-manifest; every arm preserves the previous committed OPFS generation after reopen.
 
 P3-07, P3-09, P3-13, P3-14, P3-15, P3-17, P3-18 and P3-20 remain open/partial. The production ledger is now 153/304 minimum-closure satisfied; `production_closed=false`.
+
+
+## P3 persistence/data-safety wave 3
+
+CI #475 on PR #51 implementation head `edb93487724046443c73b98cad397ee43ec36f94` passed 375/375 unit tests, CodeQL, 34 critical files × 5 iterations = 170 repeated executions, and 2/2 installed-distribution Chrome product paths with zero unexplained failures.
+
+P3-13 is now closed for the declared Chrome profile. Corruption is classified separately across all five source-gate classes: canonical source fails closed; corrupt recovery drafts are discardable noncanonical state; corrupt checkpoints fall back to an older valid recovery root; corrupt package-cache bytes are rejected/refetched/reverified; and corrupt derived indexes are discarded/rebuilt from canonical source generation. The dedicated browser receipt proves five distinct classes and five distinct recovery actions in both Chrome iterations.
+
+P3-07, P3-09, P3-14, P3-15, P3-17, P3-18 and P3-20 remain open/partial. The production ledger is now 154/304 minimum-closure satisfied; `production_closed=false`.
