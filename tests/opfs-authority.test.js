@@ -422,3 +422,86 @@ test('OPFS persistent quota pressure rejects before publication and preserves th
   await reopened.restoreInto(restored);
   assert.equal(restored.readFile('value.txt'), 'stable');
 });
+
+
+test('P3 writer election serializes competing same-generation publishers without split brain',async()=>{
+  const root=new FakeDirectoryHandle();
+  const locks=new FakeLockManager();
+  const first=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName:'p3-election'}).open();
+  const second=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName:'p3-election'}).open();
+  const fsA=new MemoryVFS();
+  const fsB=new MemoryVFS();
+  fsA.mount({'winner.txt':'A'});
+  fsB.mount({'winner.txt':'B'});
+
+  const outcomes=await Promise.allSettled([
+    first.checkpoint(fsA),
+    second.checkpoint(fsB)
+  ]);
+  assert.equal(outcomes.filter(item=>item.status==='fulfilled').length,1);
+  assert.equal(outcomes.filter(item=>item.status==='rejected').length,1);
+  const rejected=outcomes.find(item=>item.status==='rejected');
+  assert.equal(rejected.reason.code,ErrorCodes.STALE_GENERATION);
+  assert.ok(locks.requests.length>=2);
+  assert.ok(locks.requests.every(item=>item.mode==='exclusive'));
+
+  const reopened=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName:'p3-election'}).open();
+  const restored=new MemoryVFS();
+  await reopened.restoreInto(restored);
+  assert.ok(['A','B'].includes(restored.readFile('winner.txt')));
+  assert.equal(reopened.current.sequence,1);
+});
+
+test('P3 checkpoint crash phases reopen only old-valid or new-valid canonical state',async()=>{
+  for(const phase of ['after-preflight','after-payload','after-manifest']){
+    const root=new FakeDirectoryHandle();
+    const locks=new FakeLockManager();
+    const directoryName='p3-crash-'+phase;
+    const fs=new MemoryVFS();
+    const authority=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName}).open();
+    fs.mount({'state.txt':'old'});
+    const stable=await authority.checkpoint(fs);
+    fs.beginTransaction().writeFile('state.txt','new').commit();
+
+    await assert.rejects(
+      ()=>authority.checkpoint(fs,{crashAt:phase}),
+      error=>error.code===ErrorCodes.INVALID_STATE&&error.details?.injectedCrash===true&&error.details?.phase===phase
+    );
+
+    const reopened=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName}).open();
+    const restored=new MemoryVFS();
+    await reopened.restoreInto(restored);
+    if(phase==='after-manifest'){
+      assert.equal(restored.readFile('state.txt'),'new');
+      assert.equal(reopened.current.sequence,stable.sequence+1);
+    }else{
+      assert.equal(restored.readFile('state.txt'),'old');
+      assert.equal(reopened.current.sequence,stable.sequence);
+    }
+  }
+});
+
+test('P3 canonical metadata corruption fails closed instead of silently opening an empty workspace',async()=>{
+  const root=new FakeDirectoryHandle();
+  const locks=new FakeLockManager();
+  const directoryName='p3-no-silent-empty';
+  const fs=new MemoryVFS();
+  const authority=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName}).open();
+  fs.mount({'state.txt':'one'});
+  const first=await authority.checkpoint(fs);
+  fs.beginTransaction().writeFile('state.txt','two').commit();
+  const second=await authority.checkpoint(fs);
+
+  const generations=root.dirs.get(directoryName).dirs.get('generations');
+  generations.files.get(first.payload).data='{"corrupt":true}';
+  generations.files.get(second.payload).data='{"corrupt":true}';
+
+  await assert.rejects(
+    ()=>new OpfsCheckpointAuthority({root,lockManager:locks,directoryName}).open(),
+    error=>{
+      assert.equal(error.code,ErrorCodes.IMPORT_INVALID);
+      assert.equal(error.details?.silentEmptyFallback,false);
+      return true;
+    }
+  );
+});
