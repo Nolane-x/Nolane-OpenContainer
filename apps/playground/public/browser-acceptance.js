@@ -6,6 +6,7 @@ import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority } from '/packa
 import { BrowserPreviewServiceWorkerBridge } from '/packages/preview/src/index.js';
 import { ResourceGovernor } from '/packages/resources/src/index.js';
 import { OpfsReleaseStorageAuthority } from '/packages/persistence/src/index.js';
+import { checkHostingHeaders } from '/scripts/hosting-self-check-lib.mjs';
 
 const resultNode = document.getElementById('result');
 const stages = [];
@@ -97,6 +98,7 @@ async function run() {
     transform: (data) => ({ ...data, marker: 'v2', migrated: true }),
     validate: (candidate) => candidate.data.migrated === true
   });
+  runtime.recordSupportOutcome('migration', migrationReceipt);
   const migratedCanonical = await migrationStore.readCanonical();
   const migrationRoots = await migrationStore.recoveryRoots();
   assert(migrationReceipt.destructiveDowngrade === false, 'migration receipt allowed destructive downgrade');
@@ -267,6 +269,12 @@ async function run() {
       bridgeAReceipt.serviceWorkerActivation === 'existing-compatible',
     'first Service Worker activation did not use compatibility authorization'
   );
+  runtime.recordSupportOutcome('update',{
+    schema:'opencontainer.service-worker-update.v0.1',
+    status:'compatible',
+    compatibilityId:bridgeAReceipt.serviceWorkerCompatibilityId,
+    activation:bridgeAReceipt.serviceWorkerActivation
+  });
   stage('bridge-a-ready', {
     controlled: !!navigator.serviceWorker.controller,
     serviceWorkerCompatibilityId: bridgeAReceipt.serviceWorkerCompatibilityId,
@@ -2794,6 +2802,92 @@ async function run() {
   viteWorker.close();
   viteBridge.close();
 
+  stage('p8-support-bundle-start');
+  const hostingDiagnostics = await checkHostingHeaders(location.origin + '/');
+  assert(hostingDiagnostics.ok === true, 'P8 hosting diagnostics failed inside browser product path');
+  const supportSecret = 'browser-support-secret-abcdefghijklmnopqrstuvwxyz-0123456789';
+  runtime.diagnostics.record('custom-' + supportSecret, {
+    token: supportSecret,
+    requestBody: 'body-' + supportSecret,
+    sourceCode: 'const secret = "' + supportSecret + '"',
+    url: location.origin + '/signed?token=' + supportSecret
+  });
+  const supportError = Object.assign(new Error('hidden ' + supportSecret), {
+    code: 'OC_INVALID_STATE',
+    details: { secret: supportSecret }
+  });
+  const supportBefore = {
+    generation: runtime.fs.generation,
+    packageGeneration: runtime.packages.generation,
+    previewEpoch: runtime.preview.epoch,
+    diagnosticSequence: runtime.diagnostics.summary().latestSequence
+  };
+  const supportPreview = runtime.supportBundlePreview({
+    error: supportError,
+    hostingDiagnostics,
+    ai: { prompt: supportSecret, transcript: supportSecret }
+  });
+  assert(supportPreview.categories.includes('browser-capabilities'), 'P8 preview omitted browser capabilities category');
+  assert(supportPreview.categories.includes('deployment-headers'), 'P8 preview omitted deployment header category');
+  assert(supportPreview.categories.includes('package-graph-identity'), 'P8 preview omitted package graph category');
+  assert(supportPreview.categories.includes('storage-generation'), 'P8 preview omitted storage generation category');
+  assert(supportPreview.privacy.aiContentIncluded === false, 'P8 support preview included AI content without opt-in');
+  assert(supportPreview.privacy.workspaceContentsIncluded === false, 'P8 support preview includes workspace contents');
+
+  const supportBundle = runtime.supportBundle(supportError, {
+    hostingDiagnostics,
+    ai: { prompt: supportSecret, transcript: supportSecret }
+  });
+  const supportBundleAgain = runtime.supportBundle(supportError, {
+    hostingDiagnostics,
+    ai: { prompt: supportSecret, transcript: supportSecret }
+  });
+  const supportSerialized = JSON.stringify(supportBundle);
+  assert(/^ocfp:[0-9a-f]{16}$/.test(supportBundle.fingerprint), 'P8 support fingerprint format drifted');
+  assert(supportBundleAgain.fingerprint === supportBundle.fingerprint, 'P8 support fingerprint is not deterministic for stable state');
+  assert(supportBundle.browser.crossOriginIsolated === true, 'P8 browser probe lost crossOriginIsolated');
+  assert(supportBundle.browser.sharedArrayBuffer === true, 'P8 browser probe lost SharedArrayBuffer');
+  assert(supportBundle.browser.serviceWorker === true, 'P8 browser probe lost Service Worker');
+  assert(supportBundle.browser.opfs === true, 'P8 browser probe lost OPFS');
+  assert(supportBundle.browser.webLocks === true, 'P8 browser probe lost Web Locks');
+  assert(supportBundle.hosting?.ok === true && supportBundle.hosting.failures.length === 0, 'P8 bundle hosting diagnostics are not clean');
+  assert(supportBundle.packages.compiled === true && supportBundle.packages.nodeCount > 0, 'P8 package graph identity is missing');
+  assert(/^ocfp:[0-9a-f]{16}$/.test(supportBundle.packages.graphFingerprint), 'P8 package graph fingerprint missing');
+  assert(supportBundle.storage.workspaceGeneration === runtime.fs.generation, 'P8 storage generation drifted');
+  assert(supportBundle.outcomes.recovery?.status === 'not-configured', 'P8 recovery outcome is missing');
+  assert(supportBundle.outcomes.migration?.toVersion === 2, 'P8 migration outcome is missing');
+  assert(
+    supportBundle.outcomes.update?.compatibilityId === runtime.productionProfile.browser.serviceWorkerCompatibilityId,
+    'P8 Service Worker update outcome is missing'
+  );
+  assert(supportBundle.telemetry.remoteEnabled === false, 'P8 Core unexpectedly enabled remote telemetry');
+  assert(supportBundle.ai === null, 'P8 AI prompt/transcript was included without opt-in');
+  assert(supportBundle.diagnostics.events.some((event) => event.type === '[custom]'), 'P8 custom diagnostic label was not collapsed');
+  assert(supportBundle.privacy.privateSourceIncluded === false, 'P8 bundle includes private source');
+  assert(supportBundle.privacy.httpBodiesIncluded === false, 'P8 bundle includes HTTP bodies');
+  assert(supportBundle.privacy.rawTerminalContentIncluded === false, 'P8 bundle includes raw terminal content');
+  assert(supportSerialized.includes(supportSecret) === false, 'P8 support bundle leaked secret sentinel');
+
+  const supportAfter = {
+    generation: runtime.fs.generation,
+    packageGeneration: runtime.packages.generation,
+    previewEpoch: runtime.preview.epoch,
+    diagnosticSequence: runtime.diagnostics.summary().latestSequence
+  };
+  assert(JSON.stringify(supportAfter) === JSON.stringify(supportBefore), 'P8 support bundle generation mutated canonical runtime state');
+  stage('p8-support-bundle-pass', {
+    fingerprint: supportBundle.fingerprint,
+    packageGraphFingerprint: supportBundle.packages.graphFingerprint,
+    browser: supportBundle.browser,
+    hostingFailures: supportBundle.hosting.failures.length,
+    recovery: supportBundle.outcomes.recovery,
+    migration: supportBundle.outcomes.migration,
+    update: supportBundle.outcomes.update,
+    diagnostics: supportBundle.diagnostics.summary,
+    privacy: supportBundle.privacy,
+    leakedSecret: supportSerialized.includes(supportSecret)
+  });
+
   await runtime.terminate();
 
   return {
@@ -2817,6 +2911,7 @@ async function run() {
     viteC2RestartEpoch: true,
     viteC2PreviewRehydration: true,
     viteC2DependencyOptimization: true,
+    p8SupportBundle: true,
     stages
   };
 }
