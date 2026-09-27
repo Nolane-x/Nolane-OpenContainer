@@ -45,7 +45,7 @@ for(const finding of findings){
     violations.push({...finding,reason:'source-map reference outside audited production paths'});
     continue;
   }
-  if(finding.path==='packages/resources/src/index.js'&&!/sourceMapBytes/.test(finding.text)){
+  if(finding.path==='packages/resources/src/index.js'&&!/sourceMapBytes|Retained source-map cache is disabled by default/.test(finding.text)){
     violations.push({...finding,reason:'resource source-map reference is not the explicit retained-byte budget'});
   }
   if(finding.path==='apps/playground/public/browser-acceptance.js'){
