@@ -131,7 +131,7 @@ export class OpfsCheckpointAuthority {
     return this;
   }
 
-  async checkpoint(fsOrSnapshot,{crashAt=null,quotaFaultAt=null}={}) {
+  async checkpoint(fsOrSnapshot,{crashAt=null,quotaFaultAt=null,expectedCurrentSequence=undefined}={}) {
     this.#assertOpen();
     const crashPhases=['after-preflight','after-payload','after-manifest'];
     const quotaFaultPhases=['after-0-bytes','after-1-byte','after-header','mid-payload','pre-commit','post-payload-pre-manifest'];
@@ -147,6 +147,14 @@ export class OpfsCheckpointAuthority {
       'Unknown OPFS checkpoint quota fault phase',
       {quotaFaultAt,quotaFaultPhases}
     );
+    assertOc(
+      expectedCurrentSequence===undefined||
+      expectedCurrentSequence===null||
+      (Number.isInteger(expectedCurrentSequence)&&expectedCurrentSequence>=1),
+      ErrorCodes.INVALID_ARGUMENT,
+      'expectedCurrentSequence must be undefined, null, or a positive integer',
+      {expectedCurrentSequence}
+    );
     const snapshot = typeof fsOrSnapshot?.snapshot === 'function' ? fsOrSnapshot.snapshot() : fsOrSnapshot;
     assertOc(snapshot?.version === 1 && Number.isInteger(snapshot.generation) && Array.isArray(snapshot.entries), ErrorCodes.INVALID_ARGUMENT, 'Invalid VFS checkpoint snapshot');
 
@@ -155,6 +163,18 @@ export class OpfsCheckpointAuthority {
       // Refresh the shared manifest state under the origin-wide Web Lock before
       // deciding whether this writer is stale or selecting the next sequence.
       await this.#recoverUnlocked();
+
+      if(expectedCurrentSequence!==undefined){
+        const actualCurrentSequence=this.#current?.sequence??null;
+        if(actualCurrentSequence!==expectedCurrentSequence){
+          throw ocError(ErrorCodes.STALE_GENERATION,'Canonical checkpoint changed before guarded publication',{
+            expectedCurrentSequence,
+            currentSequence:actualCurrentSequence,
+            currentGeneration:this.#current?.generation??null,
+            guardedPublication:true
+          });
+        }
+      }
 
       if (this.#writerEpoch > 0) {
         await this.#assertWriterEpochCurrentUnlocked();
