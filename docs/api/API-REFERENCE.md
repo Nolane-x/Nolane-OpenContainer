@@ -48,6 +48,8 @@ Contract version: 0.1.0-alpha.1
 | supportBundle | method | runtime.supportBundle(error?, options?) -> SupportBundle |
 | recordSupportOutcome | method | runtime.recordSupportOutcome(kind, outcome) -> SupportOutcome |
 | persistWorkspace | method | runtime.persistWorkspace() -> Promise<CheckpointReceipt> |
+| prepareWorkspaceRestore | method | runtime.prepareWorkspaceRestore(checkpoint) -> Promise<WorkspaceRestorePlan> |
+| restoreWorkspaceCheckpoint | method | runtime.restoreWorkspaceCheckpoint(plan) -> Promise<WorkspaceRestoreReceipt> |
 | collectWorkspaceGarbage | method | runtime.collectWorkspaceGarbage(options?) -> Promise<GCReceipt> |
 | teardown | method | runtime.teardown() -> Promise<void> |
 | terminate | method | runtime.terminate() -> Promise<void> |
