@@ -1,0 +1,60 @@
+{
+  "schema": "opencontainer.release-compatibility-report.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P11-14",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "releaseId": "opencontainer-0.1.0-alpha.1-canary",
+  "channel": "canary",
+  "version": "0.1.0-alpha.1",
+  "profileId": "opencontainer-alpha-chromium-node24-v1",
+  "declaredEvidenceProfile": "desktop-chrome153-ubuntu2404-x64-ci",
+  "compatibilityBaseline": "docs/compatibility/COMPATIBILITY-BASELINE.v0.1.json",
+  "limitations": [
+    "pnpm and yarn lockfiles are not accepted by the promoted frozen package graph parser",
+    "native .node addons and arbitrary node-gyp/native binary execution are unsupported",
+    "generic fs.watch/chokidar parity is not promoted",
+    "raw guest TCP/UDP and arbitrary host process creation are unsupported",
+    "minimum cross-browser versions are intentionally not frozen before browser matrix evidence"
+  ],
+  "unsupportedClasses": [
+    {
+      "id": "native-addons",
+      "statement": "Native .node addons, node-gyp and arbitrary host-native binaries are unsupported in Core 1.x."
+    },
+    {
+      "id": "raw-tcp-tls",
+      "statement": "Arbitrary raw TCP/UDP/TLS socket semantics are unsupported in Core 1.x."
+    },
+    {
+      "id": "full-linux",
+      "statement": "Full Linux/POSIX process, device and host-filesystem semantics are unsupported in Core 1.x."
+    },
+    {
+      "id": "undeclared-browser-profiles",
+      "statement": "Browser/OS/device profiles without retained evidence are unsupported and must not be marketed as supported."
+    }
+  ],
+  "knownIssueIds": [
+    "KI-001",
+    "KI-002",
+    "KI-003",
+    "KI-004"
+  ],
+  "requiredOpenBoundaries": [
+    "P11-12 actual published OpenContainer package/bundle remains open",
+    "P11-13 browser minimum versions remain unfrozen until real matrix evidence exists",
+    "P7/P14 weak-device and long-run resource evidence remains open",
+    "P12-17 verified private vulnerability intake remains open"
+  ],
+  "forbiddenClaims": [
+    "cross-browser support",
+    "minimum Firefox version",
+    "minimum Safari version",
+    "Windows support",
+    "macOS support",
+    "mobile support",
+    "weak-device support",
+    "externally published @nolane/opencontainer package",
+    "production closed"
+  ],
+  "productionClosed": false
+}

@@ -53,7 +53,7 @@ test('P17 maintenance is recurring and P17 closure test is repeated in the criti
   assert.match(maintenance,/npm run critical:browser-flake/);
   assert.ok(flake.contract.testFiles.includes('tests/operations-maintenance.test.js'));
   assert.ok(flake.contract.testFiles.includes('tests/p17-evidence.test.js'));
-  assert.equal(flake.contract.testFiles.length,21);
-  assert.equal(flake.contract.minimumTestFiles,21);
+  assert.ok(flake.contract.testFiles.length>=21);
+  assert.equal(flake.contract.testFiles.length,flake.contract.minimumTestFiles);
   assert.equal(flake.contract.iterations,5);
 });
