@@ -54,7 +54,7 @@ test('network decisions carry stable policy version hash and path-boundary truth
   assert.equal(allowed.url,'https://example.com/api/v1?token=secret');
   assert.equal(allowed.auditUrl,'https://example.com/api/v1');
   assert.equal(JSON.stringify(allowed).includes('token=secret'),true);
-  assert.equal(JSON.stringify(net.decisions()).includes('token=secret'),true);
+  assert.equal(JSON.stringify(net.decisions()).includes('token=secret'),false);
   await expectCode(()=>Promise.resolve(net.authorize('https://example.com/apievil')),ErrorCodes.NETWORK_DENIED);
   const denied=net.decisions().at(-1);
   assert.equal(denied.decision,'deny');
