@@ -22,8 +22,10 @@ const workspaceUsesExclusiveLock=workspace.includes("this.#lockManager.request(t
 const workspaceRequestsSteal=/\bsteal\s*:\s*true\b/.test(workspace);
 if(!workspaceUsesExclusiveLock)violations.push({path:'packages/vfs/src/opfs-authority.js',reason:'workspace writer does not use an exclusive origin-wide Web Lock'});
 if(workspaceRequestsSteal)violations.push({path:'packages/vfs/src/opfs-authority.js',reason:'workspace writer requests steal-based Web Lock ownership'});
-const workspacePayload=workspace.indexOf("await this.#writeCheckpointText(this.#payloads, payload, payloadText, 'payload')");
-const workspaceManifest=workspace.indexOf("await this.#writeCheckpointText(this.#directory, manifestName, manifestText, 'manifest')");
+const workspacePayloadMatch=/await\s+this\.\#writeCheckpointText\(\s*this\.\#payloads\s*,\s*payload\s*,\s*payloadText\s*,\s*['"]payload['"][\s\S]*?\);/.exec(workspace);
+const workspaceManifestMatch=/await\s+this\.\#writeCheckpointText\(\s*this\.\#directory\s*,\s*manifestName\s*,\s*manifestText\s*,\s*['"]manifest['"][\s\S]*?\);/.exec(workspace);
+const workspacePayload=workspacePayloadMatch?.index??-1;
+const workspaceManifest=workspaceManifestMatch?.index??-1;
 if(!(workspacePayload>=0&&workspaceManifest>workspacePayload)){
   violations.push({path:'packages/vfs/src/opfs-authority.js',reason:'workspace canonical publication is not payload-before-manifest'});
 }
