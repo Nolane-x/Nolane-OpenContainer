@@ -74,3 +74,5 @@ export class DiagnosticJournal {
   }
   clear() { this.#entries.length=0; }
 }
+
+export { browserCapabilityProbe, probeDeploymentHeaders, supportPreview, buildSupportBundle } from './support.js';
