@@ -187,6 +187,8 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
     'package/toolchain/vendor/rolldown-browser-1.2.9.tgz',
     'package/metadata/source-package-lock.json',
     'package/docs/production/PRODUCTION-PROFILE.json',
+    'package/docs/production/DIAGNOSTICS-POLICY.v0.1.json',
+    'package/docs/production/DIAGNOSTICS-SUPPORT.md',
     'package/docs/api/PUBLIC-SDK.v0.1.json',
     'package/docs/api/ERROR-CATALOG.v0.1.json',
     'package/docs/api/API-REFERENCE.md',
