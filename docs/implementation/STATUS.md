@@ -667,3 +667,10 @@ The production ledger closes P12-01..P12-16 and P12-19 only. P12-17 (verified pr
 PR #43 implementation head `631ce3608424a901f74c67e83666f6d14bb87a73` passed CI #413 across contract, CodeQL and the installed-distribution Chrome product path. The operations drill exercised all 14 P17 process areas, four disaster scenarios, four version/profile/browser known issues, 12 retained critical/high regressions, telemetry-free health with zero remote requests, support-bundle v0.1/v0.2 backward parsing and a real VFS mutation block for a known-bad runtime. The repeated critical court ran 100 test-file executions with zero unexplained failures; Chrome passed 2/2 full paths.
 
 P17 is process-closed for the current pre-1.0 scope, not a claim of a staffed hosted operations organization. P12-17 private intake, public package/release identity, cross-browser/browser-floor, weak-device and production-topology evidence remain open. `production_closed=false`.
+
+
+## P11 release compatibility reporting closure
+
+PR #44 implementation head `676fcec1b4b8b1fad108c28ab7d71595d5b368db` passed CI #417. The canary release compatibility report is machine-verified against the exact five baseline limitations, four product-scope unsupported classes and four version/profile/browser known issues; seven source files are SHA-256 bound and the receipt is archived for 90 days. The critical contract campaign ran 110 test-file executions with zero unexplained failures and Chrome passed 2/2 installed-distribution product paths.
+
+P11-14 is closed. P11-12 remains PARTIAL until the actual externally published OpenContainer package/bundle is exercised, and P11-13 remains unreconciled until real browser-matrix evidence exists. `production_closed=false`.

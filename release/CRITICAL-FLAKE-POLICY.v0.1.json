@@ -26,10 +26,11 @@
       "tests/p12-evidence.test.js",
       "tests/operations-maintenance.test.js",
       "tests/p17-evidence.test.js",
-      "tests/release-compatibility-report.test.js"
+      "tests/release-compatibility-report.test.js",
+      "tests/p11-release-report-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 22
+    "minimumTestFiles": 23
   },
   "browser": {
     "iterations": 2,

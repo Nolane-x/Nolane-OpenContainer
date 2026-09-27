@@ -9,7 +9,7 @@
 - Gates: **304**
 - Domains: **19**
 - Seed-reconciled against implementation evidence: **182**
-- Minimum-closure satisfied: **124**
+- Minimum-closure satisfied: **125**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -86,7 +86,7 @@
 - **P11-05** now meets its integration-level minimum closure: every corpus repository retains commit/license/lockfile identity where applicable; all 9 npm-published frozen package cases pin exact registry tarball URL + SHA-512 + SHA-1, and CI #300 re-downloads every tarball and verifies the bytes. The remaining 4 repository-only cases explicitly record no publication at their frozen root version or a versionless root.
 - **P11-07** now meets its minimum closure for the declared Chrome profile: primitive/package/framework evidence already existed, and CI #300 runs two different real repositories (`yoctocolors`, `clsx`) twice each on fresh publication + Dedicated Worker realms, then proves all four stale sessions fail closed with HTTP 504.
 - **P11-12** is now substantially stronger but remains partial: CI #314 builds a publish-equivalent `@nolane/opencontainer@0.1.0-alpha.1` tarball, installs it into a clean consumer, runs the public SDK and bundled SDK example from `node_modules`, then runs the entire Chrome browser-product-path from the installed package. External npm/GitHub Release publication identity is still absent, so the gate is not closed.
-- **P11-14** remains partial: known limitations are published with the baseline, but "every release compatibility report" cannot close before release certification exists.
+- **P11-14** now meets minimum closure: CI #417 generates and archives a release-candidate compatibility report that is fail-closed against the exact five baseline limitations, four product-scope unsupported classes and four version/profile/browser known issues. Seven source artifacts are SHA-256 bound; omission tests fail CI. P11-12 actual external publication and P11-13 browser floors remain open.
 - CI #300 promoted repeated real-repository progression: exact `yoctocolors@a85b98a...` and `clsx@925494c...` each execute twice on fresh isolated realms; a separate published-package court fetches and executes the exact npm `clsx@2.1.1` tarball.
 
 - **P11-08** now meets minimum closure: selected Node 24.21.0 differential cases have stable IDs and a fail-closed exception registry; unlisted mismatches and stale exceptions fail CI. The current selected court has zero active hidden discrepancies.
