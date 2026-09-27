@@ -1,12 +1,12 @@
 import { ErrorCodes, ocError } from '../../protocol/src/index.js';
 
 class OutputBuffer {
-  #chunks=[];#bytes=0;#limit;
-  constructor(limit){this.#limit=limit;}
+  #chunks=[];#bytes=0;#limit;#onWrite;
+  constructor(limit,onWrite=null){this.#limit=limit;this.#onWrite=onWrite;}
   write(value){
     const text=String(value);const bytes=new TextEncoder().encode(text).byteLength;
     if(this.#bytes+bytes>this.#limit)throw ocError(ErrorCodes.OUTPUT_LIMIT,'Process output limit exceeded',{limit:this.#limit});
-    this.#bytes+=bytes;this.#chunks.push(text);
+    this.#bytes+=bytes;this.#chunks.push(text);this.#onWrite?.(bytes);
   }
   toString(){return this.#chunks.join('');}
   get bytes(){return this.#bytes;}
@@ -27,7 +27,9 @@ export class ProcessSupervisor {
     const handler=this.#commands.get(command);
     if(!handler)throw ocError(ErrorCodes.COMMAND_NOT_FOUND,'Command not found: '+command,{command});
     const lease=this.#resources?.reserve({processes:1,outputBytes:this.#outputLimit})??{release(){}};
-    const pid=++this.#nextPid;const stdout=new OutputBuffer(this.#outputLimit);const stderr=new OutputBuffer(this.#outputLimit);
+    const pid=++this.#nextPid;
+    const stdout=new OutputBuffer(this.#outputLimit,(bytes)=>this.#diagnostics?.recordTerminal({pid,stream:'stdout',byteLength:bytes}));
+    const stderr=new OutputBuffer(this.#outputLimit,(bytes)=>this.#diagnostics?.recordTerminal({pid,stream:'stderr',byteLength:bytes}));
     let killed=false,signal=null,resolveExit;
     const exit=new Promise((resolve)=>{resolveExit=resolve;});
     const process={pid,command,argv:[command,...args],stdout,stderr,exit,
