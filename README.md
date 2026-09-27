@@ -63,6 +63,7 @@ Internal protocol/toolchain packages do not create extra product surfaces.
 - committed-generation snapshots and streaming export prototype;
 - public snapshot/restore plus pinned streaming NDJSON export/import through the SDK;
 - stable machine-readable errors, secret redaction and bounded resource governance;
+- versioned network policy receipts, canonical URL/path capability checks, authority-scoped opaque secret handles, decoded-byte response budgets and monotonic Offline/Registry-only/Restricted/Open-web profile downgrade;
 - exact toolchain profile checks that reject silent Rolldown binding skew;
 - a verified WasmArtifactManager that gates bytes, digest and compiled module shape;
 - retained exact `lightningcss-wasm@1.33.0` npm tarball with CI-reverified inner WASM identity;
@@ -103,6 +104,7 @@ See:
 - [`docs/implementation/STATUS.md`](docs/implementation/STATUS.md)
 - [`docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.md`](docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.md)
 - [`docs/production/PRODUCT-SCOPE-AND-CLAIMS.md`](docs/production/PRODUCT-SCOPE-AND-CLAIMS.md)
+- [`docs/production/NETWORK-SECRET-PREVIEW-SECURITY.md`](docs/production/NETWORK-SECRET-PREVIEW-SECURITY.md)
 - [`docs/guides/SDK-QUICKSTART.md`](docs/guides/SDK-QUICKSTART.md)
 - [`docs/guides/STORAGE-AND-EXPORT.md`](docs/guides/STORAGE-AND-EXPORT.md)
 - [`docs/guides/HOSTING-HEADERS.md`](docs/guides/HOSTING-HEADERS.md)

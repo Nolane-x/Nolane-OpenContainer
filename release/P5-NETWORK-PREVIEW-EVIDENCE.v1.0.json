@@ -1,0 +1,160 @@
+{
+  "schema": "opencontainer.p5-network-preview-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P5",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 40,
+  "implementationHead": "fb9e45ac36f17a42c01b1769b37a968d1ed0944a",
+  "ci": {
+    "runNumber": 398,
+    "runId": 36298635509,
+    "testedMergeCommit": "7da85af12ddca1c099fbf5fe027654c9378b5290",
+    "contract": "PASS",
+    "browserProductPath": "PASS",
+    "fullProductPathPasses": 2,
+    "unexplainedFailures": 0
+  },
+  "evidenceProfile": {
+    "id": "desktop-chrome153-ubuntu2404-x64-ci",
+    "browser": "Google Chrome 153.0.8010.52",
+    "os": "Ubuntu 24.04 x64",
+    "deviceClass": "github-hosted-standard-x64",
+    "resourceFloorClaimed": false
+  },
+  "serviceWorkerCompatibilityId": "opencontainer-sw-edge-v2:rpc1:snapshot1:opfs1:preview2",
+  "gates": [
+    {
+      "id": "P5-01",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Real Chrome cross-origin fixture proves readable CORS allow, rejected CORS deny, and opaque no-cors response."
+    },
+    {
+      "id": "P5-02",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Browser and contract courts reject URL credentials, backslashes and encoded-host ambiguity after canonicalization; path capabilities are segment-aware."
+    },
+    {
+      "id": "P5-03",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Browser opaque redirects fail closed; integration court re-authorizes every visible redirect target before fetch and blocks widened target scope."
+    },
+    {
+      "id": "P5-04",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Declared Chrome profile probes Local Network Access behavior and exercises a loopback fixture; canonicalized 127.0.0.1, 127.1, 2130706433 and ::1 spellings fail closed when local access is disabled."
+    },
+    {
+      "id": "P5-05",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Core exposes an explicit broker SSRF requirements contract while implementing no broker/open fetch proxy; direct-browser evidence is kept separate."
+    },
+    {
+      "id": "P5-06",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Chrome streamed response exceeds the decoded-byte budget with OC_OUTPUT_LIMIT; contract court proves misleading Content-Length cannot weaken the limit."
+    },
+    {
+      "id": "P5-07",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Chrome AbortSignal court rejects with AbortError and contract stream court confirms body-reader cancellation."
+    },
+    {
+      "id": "P5-08",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Secret plaintext remains authority-side; browser receives only an opaque handle, injection occurs inside NetworkAuthority, and receipts expose neither plaintext nor handle."
+    },
+    {
+      "id": "P5-09",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Browser enforces session/process/task scope; contract courts additionally enforce scheme/host/method/path/expiry."
+    },
+    {
+      "id": "P5-10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Frozen package install rejects secret handles and lifecycle scripts remain denied by default."
+    },
+    {
+      "id": "P5-11",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Browser diagnostics/support court injects Authorization, Cookie, signed query and response-body canaries and proves no secret leakage."
+    },
+    {
+      "id": "P5-12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Real provider-style HTTP 401 leaves canonical workspace generation and bytes unchanged."
+    },
+    {
+      "id": "P5-13",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "External networking is denied after Offline downgrade while the Service Worker virtual preview route remains operational."
+    },
+    {
+      "id": "P5-14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Service Worker preview proof binds owner+epoch plus workspace/session/version identity; tampering each identity field independently returns 409. Compatibility ID v2 prevents reuse of legacy workers lacking this proof."
+    },
+    {
+      "id": "P5-15",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Real Service Worker virtual HTTP court covers HEAD, Range/206+Content-Range, redirect, response headers and abort."
+    },
+    {
+      "id": "P5-16",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Trusted preview edge strips credential headers before untrusted dispatch; sandboxed hostile srcdoc has opaque origin and cannot read parent canary or host localStorage."
+    },
+    {
+      "id": "P5-17",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Offline, Registry-only, Restricted and Open-web profiles are frozen; an existing authority can only move monotonically to a more restrictive profile."
+    },
+    {
+      "id": "P5-18",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Every allow/deny decision carries deterministic policyVersion and policyHash; browser court verifies retained identity."
+    }
+  ],
+  "boundaries": [
+    "Evidence is for the declared direct-browser Chrome 153 / Ubuntu 24.04 x64 profile only.",
+    "Core does not implement or claim a production broker fetch proxy; broker SSRF requirements remain a separate future trust boundary.",
+    "This is not a cross-browser Windows/macOS/mobile matrix.",
+    "This is not weak-device, long-run plateau, production-CDN/topology, public-release identity, legal/FTO or operations closure."
+  ],
+  "productionClosed": false
+}

@@ -1,6 +1,6 @@
 import { ErrorCodes, ocError } from './index.js';
 
-export const SERVICE_WORKER_COMPATIBILITY_ID='opencontainer-sw-edge-v1:rpc1:snapshot1:opfs1';
+export const SERVICE_WORKER_COMPATIBILITY_ID='opencontainer-sw-edge-v2:rpc1:snapshot1:opfs1:preview2';
 
 function timeoutError(message,details){
   return ocError(ErrorCodes.ESM_EDGE_UNAVAILABLE,message,details);

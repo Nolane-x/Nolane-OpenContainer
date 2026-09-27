@@ -57,7 +57,7 @@ export class OpenContainer {
   mount(files){this._kernel.assertReady();return this.fs.mount(files);}
   registerCommand(name,handler){this._kernel.assertReady();return this.process.register(name,handler);}
   spawn(command,args=[],options={}){this._kernel.assertReady();return this.process.spawn(command,args,options);}
-  listen(port,handler,{owner='runtime'}={}){this._kernel.assertReady();return this.preview.publish({port,owner,handler});}
+  listen(port,handler,{owner='runtime',identity=null}={}){this._kernel.assertReady();return this.preview.publish({port,owner,handler,...(identity?{identity}:{})});}
   installPackageCommands(options={}){this._kernel.assertReady();return this.packages.bindCommands(this.process,options);}
   snapshot(label='snapshot'){this._kernel.assertReady();return this.snapshots.create(label);}
   restore(ref){

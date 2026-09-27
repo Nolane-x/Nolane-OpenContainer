@@ -68,6 +68,17 @@ function normalizeGuestPath(value) {
   return raw.startsWith('/') ? raw : '/' + raw;
 }
 
+const SENSITIVE_PREVIEW_REQUEST_HEADER = /^(?:authorization|proxy-authorization|cookie|x-api-key|x-auth-token)$/i;
+
+export function sanitizePreviewRequestHeaders(headers = {}) {
+  const safe = {};
+  for (const [name, value] of Object.entries(headers ?? {})) {
+    if (SENSITIVE_PREVIEW_REQUEST_HEADER.test(name)) continue;
+    safe[String(name).toLowerCase()] = String(value);
+  }
+  return Object.freeze(safe);
+}
+
 export class BrowserPreviewServiceWorkerBridge {
   #preview;
   #container;
@@ -131,6 +142,10 @@ export class BrowserPreviewServiceWorkerBridge {
     for (const [key, value] of guest.searchParams) url.searchParams.append(key, value);
     url.searchParams.set('__oc_owner', receipt.owner);
     url.searchParams.set('__oc_epoch', String(receipt.epoch));
+    for(const key of ['workspace','session','version']){
+      const value=receipt.identity?.[key];
+      if(value!==null&&value!==undefined)url.searchParams.set('__oc_'+key,String(value));
+    }
     return url.href;
   }
 
@@ -152,10 +167,14 @@ export class BrowserPreviewServiceWorkerBridge {
         {
           url: data.url,
           method: data.method,
-          headers: data.headers ?? {},
+          headers: sanitizePreviewRequestHeaders(data.headers ?? {}),
           body: data.body == null ? null : Uint8Array.from(data.body)
         },
-        { owner: data.owner, epoch: Number(data.epoch) }
+        {
+          owner: data.owner,
+          epoch: Number(data.epoch),
+          identity: data.identity ?? undefined
+        }
       );
       const headers = Object.fromEntries(response.headers.entries());
       const body = String(data.method).toUpperCase() === 'HEAD'

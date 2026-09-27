@@ -1,7 +1,7 @@
 const MODULE_PREFIX = '/__opencontainer__/esm/';
 const PREVIEW_PREFIX = '/__opencontainer__/preview/';
 const REQUEST_TIMEOUT_MS = 5000;
-const SERVICE_WORKER_COMPATIBILITY_ID = 'opencontainer-sw-edge-v1:rpc1:snapshot1:opfs1';
+const SERVICE_WORKER_COMPATIBILITY_ID = 'opencontainer-sw-edge-v2:rpc1:snapshot1:opfs1:preview2';
 
 self.addEventListener('install', () => {
   // Deliberately remain waiting. A compatible client must authorize promotion.
@@ -80,6 +80,17 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
+const SENSITIVE_PREVIEW_REQUEST_HEADER = /^(?:authorization|proxy-authorization|cookie|x-api-key|x-auth-token)$/i;
+
+function sanitizedPreviewHeaders(headers) {
+  const out = {};
+  for (const [name, value] of headers.entries()) {
+    if (SENSITIVE_PREVIEW_REQUEST_HEADER.test(name)) continue;
+    out[name] = value;
+  }
+  return out;
+}
+
 function edgeHeaders(input = {}) {
   const headers = new Headers(input);
   headers.set('cache-control', 'no-store');
@@ -138,6 +149,11 @@ async function routePreview(request, url) {
   const owner = url.searchParams.get('__oc_owner');
   const epochText = url.searchParams.get('__oc_epoch');
   const epoch = Number(epochText);
+  const identity = {
+    workspace: url.searchParams.get('__oc_workspace'),
+    session: url.searchParams.get('__oc_session'),
+    version: url.searchParams.get('__oc_version')
+  };
   if (!owner || !Number.isInteger(epoch)) {
     return new Response('Missing OpenContainer preview proof', { status: 400, headers: edgeHeaders() });
   }
@@ -146,6 +162,9 @@ async function routePreview(request, url) {
   const guestParams = new URLSearchParams(url.searchParams);
   guestParams.delete('__oc_owner');
   guestParams.delete('__oc_epoch');
+  guestParams.delete('__oc_workspace');
+  guestParams.delete('__oc_session');
+  guestParams.delete('__oc_version');
   const query = guestParams.toString();
   const guestURL = guestPath + (query ? '?' + query : '');
 
@@ -164,9 +183,10 @@ async function routePreview(request, url) {
     port,
     owner,
     epoch,
+    identity,
     url: guestURL,
     method,
-    headers: Object.fromEntries(request.headers.entries()),
+    headers: sanitizedPreviewHeaders(request.headers),
     body
   }));
 

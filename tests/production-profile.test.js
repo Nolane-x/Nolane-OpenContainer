@@ -12,7 +12,7 @@ test('production profile identity is immutable and exposed by SDK',async()=>{
   assert.equal(OpenContainerProductionProfile.filesystem.opfsManifestVersion,1);
   assert.equal(OpenContainerProductionProfile.snapshot.portableFormatVersion,1);
   assert.equal(OpenContainerProductionProfile.protocol.workerRpcEnvelopeVersion,1);
-  assert.equal(OpenContainerProductionProfile.browser.serviceWorkerCompatibilityId,'opencontainer-sw-edge-v1:rpc1:snapshot1:opfs1');
+  assert.equal(OpenContainerProductionProfile.browser.serviceWorkerCompatibilityId,'opencontainer-sw-edge-v2:rpc1:snapshot1:opfs1:preview2');
   assert.equal(OpenContainerProductionProfile.productionClosed,false);
   assert.equal(Object.isFrozen(OpenContainerProductionProfile),true);
   assert.equal(Object.isFrozen(OpenContainerProductionProfile.filesystem),true);

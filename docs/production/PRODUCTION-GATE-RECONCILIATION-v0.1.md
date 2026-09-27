@@ -8,8 +8,8 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **120**
-- Minimum-closure satisfied: **63**
+- Seed-reconciled against implementation evidence: **138**
+- Minimum-closure satisfied: **81**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -21,7 +21,7 @@
 | P2 Kernel, RPC, process & stream semantics | 6 | 8 | 14 |
 | P3 VFS, OPFS, persistence & data safety | 9 | 11 | 20 |
 | P4 Packages, resolver, archive & installer | 6 | 12 | 18 |
-| P5 Network, secrets & preview edge | 0 | 18 | 18 |
+| P5 Network, secrets & preview edge | 18 | 0 | 18 |
 | P6 Toolchain, BCR, Vite & framework integration | 8 | 8 | 16 |
 | P7 Resources, performance & weak-device behavior | 2 | 12 | 14 |
 | P8 Diagnostics, supportability & privacy | 14 | 0 | 14 |
@@ -43,6 +43,11 @@
 - Release trust chain now has reproducible artifact/checksum/SBOM/provenance/inventory evidence, but authenticated attestation, public publication, rollback and license/FTO closure remain open.
 
 ## Newly reconciled in this wave
+
+- **P5-01 through P5-18** now meet `PASS-INTEGRATION + declared-profile evidence` for the declared Chrome 153 / Ubuntu 24.04 x64 profile. `NetworkAuthority` now canonicalizes URL capabilities, freezes Offline/Registry-only/Restricted/Open-web profiles with monotonic downgrade, records deterministic policy version/hash, re-authorizes visible redirect hops, limits decoded streamed bytes, propagates cancellation and keeps secret plaintext authority-side behind scoped opaque handles. Package installation rejects secret handles by default, provider failures leave canonical workspace state unchanged, and diagnostics/support paths retain the existing no-secret-output contract.
+- The real browser court uses an independent cross-origin network fixture for CORS allow/deny/opaque, Local Network Access behavior, streaming-budget, cancellation, provider failure and scoped-secret injection. Preview remains independent of external network permission; the trusted Service Worker edge strips credential headers, virtual HTTP covers HEAD/range/redirect/header/abort, hostile sandboxed preview code has an opaque origin and cannot read trusted parent/storage state.
+- **P5-14 is not inferred from owner names:** preview receipts now carry an explicit workspace/session/version identity tuple in addition to owner+epoch. The Service Worker transports that tuple to `PreviewAuthority`; Chrome tampering of each identity field independently returns HTTP 409. Because this changes the preview edge protocol, the canonical Service Worker compatibility ID is now `opencontainer-sw-edge-v2:rpc1:snapshot1:opfs1:preview2`, so a legacy v1 controller cannot silently satisfy the new proof.
+- CI #398 on PR #40 implementation head `fb9e45ac36f17a42c01b1769b37a968d1ed0944a` passed contract and browser-product-path. Google Chrome `153.0.8010.52` on Ubuntu 24.04 x64 passed the browser profile probe, and the installed-distribution critical browser campaign completed **2/2** full product paths with **0 unexplained failures**. The machine evidence map is `release/P5-NETWORK-PREVIEW-EVIDENCE.v1.0.json`. This closure does **not** claim a production broker proxy, cross-browser/OS matrix, weak-device floor, production CDN topology, public release identity, legal/FTO or operations closure; `production_closed=false` remains mandatory.
 
 - **P0-01 through P0-12** now meet their RELEASE-READY minimum closure for the explicitly declared 1.0 product scope. The policy freezes exactly nine Core surfaces and the Node `24.21.0` / npm `11.19.0` oracle; names one P0 evidence profile only (Chrome 153 on Ubuntu 24.04 x64); keeps native addons, arbitrary raw TCP/TLS, full Linux semantics and undeclared browser profiles explicitly unsupported; keeps AI/Git hosting/cloud sync/accounts/billing outside Core; and binds release decisions to GO / REDESIGN / KILL.
 - Scope debt is now machine-readable: six current debts each carry an owner, removal/rehome plan and revisit trigger. Production severity explicitly treats data loss, isolation break, secret exposure and silent semantic corruption as release blockers. Public release/marketing claims must name the production profile and retained evidence, while the critical-gate waiver registry is fail-closed and currently empty.

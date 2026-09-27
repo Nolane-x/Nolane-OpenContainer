@@ -3,7 +3,7 @@ import { BrowserEsmServiceWorkerBridge } from '/packages/package-env/src/browser
 import { OpfsPackageContentStore, PackageArtifactAuthority } from '/packages/package-env/src/index.js';
 import { BrowserGuestWorkerAuthority } from '/packages/process/src/browser-guest-worker.js';
 import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority } from '/packages/vfs/src/index.js';
-import { BrowserPreviewServiceWorkerBridge } from '/packages/preview/src/index.js';
+import { BrowserPreviewServiceWorkerBridge, createSandboxedPreviewFrame } from '/packages/preview/src/index.js';
 import { ResourceGovernor } from '/packages/resources/src/index.js';
 import { OpfsReleaseStorageAuthority } from '/packages/persistence/src/index.js';
 import { checkHostingHeaders } from '/scripts/hosting-self-check-lib.mjs';
@@ -2801,6 +2801,431 @@ async function run() {
 
   viteWorker.close();
   viteBridge.close();
+
+
+  stage('p5-network-secrets-preview-start');
+  const p5FixturePort = Number(location.port) + 1;
+  const p5FixtureOrigin = location.protocol + '//' + location.hostname + ':' + p5FixturePort;
+
+  const p5CorsAllowed = await fetch(p5FixtureOrigin + '/allowed', { mode: 'cors', cache: 'no-store' });
+  assert(p5CorsAllowed.ok && await p5CorsAllowed.text() === 'cors-allowed', 'P5 direct-browser allowed CORS court failed');
+  let p5CorsDenied = false;
+  try {
+    await fetch(p5FixtureOrigin + '/denied', { mode: 'cors', cache: 'no-store' });
+  } catch {
+    p5CorsDenied = true;
+  }
+  assert(p5CorsDenied, 'P5 direct-browser denied CORS response unexpectedly became readable');
+  const p5Opaque = await fetch(p5FixtureOrigin + '/opaque', { mode: 'no-cors', cache: 'no-store' });
+  assert(p5Opaque.type === 'opaque' && p5Opaque.status === 0, 'P5 opaque response court did not stay opaque');
+
+  let p5LnaPermission = 'descriptor-unsupported';
+  try {
+    const permission = await navigator.permissions.query({ name: 'local-network-access' });
+    p5LnaPermission = permission.state;
+  } catch (error) {
+    p5LnaPermission = 'unsupported:' + (error?.name ?? 'Error');
+  }
+  const p5LnaResponse = await fetch(p5FixtureOrigin + '/lna', { mode: 'cors', cache: 'no-store' });
+  assert(p5LnaResponse.ok && await p5LnaResponse.text() === 'lna-allowed', 'P5 declared-profile local network access fixture failed');
+
+  const p5Runtime = await OpenContainer.boot({
+    network: {
+      allowLocal: true,
+      maxResponseBytes: 4096,
+      policyVersion: 'opencontainer-p5-browser-v1'
+    }
+  });
+  p5Runtime.net.allow({
+    origin: p5FixtureOrigin,
+    methods: ['GET'],
+    paths: ['/allowed','/denied','/opaque','/lna','/stream','/slow','/provider-fail','/secret-echo']
+  });
+  p5Runtime.net.allow({
+    origin: location.origin,
+    methods: ['GET'],
+    paths: ['/__p5__/redirect-allowed','/__p5__/redirect-denied','/__p5__/redirect-final']
+  });
+
+  const p5Decision = p5Runtime.net.authorize(p5FixtureOrigin + '/allowed');
+  assert(p5Decision.allowed === true, 'P5 capability decision did not allow explicit fixture path');
+  assert(p5Decision.policyVersion === 'opencontainer-p5-browser-v1', 'P5 policy version was not retained');
+  assert(/^ocnp:[0-9a-f]{16}$/.test(p5Decision.policyHash), 'P5 policy hash was not retained');
+
+  const p5LocalGuard = await OpenContainer.boot({ network: { allowLocal: false } });
+  p5LocalGuard.net.allow({ origin: 'http://127.0.0.1:' + p5FixturePort, paths: ['/allowed'] });
+  p5LocalGuard.net.allow({ origin: 'http://[::1]:' + p5FixturePort, paths: ['/allowed'] });
+  const p5LoopbackCases = [
+    'http://127.0.0.1:' + p5FixturePort + '/allowed',
+    'http://127.1:' + p5FixturePort + '/allowed',
+    'http://2130706433:' + p5FixturePort + '/allowed',
+    'http://[::1]:' + p5FixturePort + '/allowed'
+  ];
+  const p5LoopbackCodes = [];
+  for (const candidate of p5LoopbackCases) {
+    try {
+      p5LocalGuard.net.authorize(candidate);
+      p5LoopbackCodes.push('ALLOWED');
+    } catch (error) {
+      p5LoopbackCodes.push(error?.code ?? error?.name ?? 'ERROR');
+    }
+  }
+  assert(p5LoopbackCodes.every((code) => code === 'OC_NETWORK_DENIED'), 'P5 alternate loopback spellings bypassed local-network deny');
+
+  const p5AmbiguousCodes = [];
+  for (const candidate of [
+    'http://user:pass@127.0.0.1:' + p5FixturePort + '/allowed',
+    'http://127.0.0.1\\@evil.test:' + p5FixturePort + '/allowed',
+    'http://%31%32%37.0.0.1:' + p5FixturePort + '/allowed'
+  ]) {
+    try {
+      p5Runtime.net.authorize(candidate);
+      p5AmbiguousCodes.push('ALLOWED');
+    } catch (error) {
+      p5AmbiguousCodes.push(error?.code ?? error?.name ?? 'ERROR');
+    }
+  }
+  assert(p5AmbiguousCodes.every((code) => code === 'OC_NETWORK_DENIED'), 'P5 ambiguous URL syntax bypassed canonical policy');
+
+  let p5OpaqueRedirectCode = 'ALLOWED';
+  try {
+    await p5Runtime.net.fetch(location.origin + '/__p5__/redirect-allowed');
+  } catch (error) {
+    p5OpaqueRedirectCode = error?.code ?? error?.name ?? 'ERROR';
+  }
+  assert(
+    p5OpaqueRedirectCode === 'OC_NETWORK_DENIED',
+    'P5 browser manual redirect did not fail closed when Location was opaque'
+  );
+  let p5RedirectDeniedCode = 'ALLOWED';
+  try {
+    await p5Runtime.net.fetch(location.origin + '/__p5__/redirect-denied');
+  } catch (error) {
+    p5RedirectDeniedCode = error?.code ?? error?.name ?? 'ERROR';
+  }
+  assert(p5RedirectDeniedCode === 'OC_NETWORK_DENIED', 'P5 redirect widened path capability');
+
+  let p5BudgetCode = 'ALLOWED';
+  try {
+    await p5Runtime.net.fetch(p5FixtureOrigin + '/stream', { maxResponseBytes: 1500 });
+  } catch (error) {
+    p5BudgetCode = error?.code ?? error?.name ?? 'ERROR';
+  }
+  assert(p5BudgetCode === 'OC_OUTPUT_LIMIT', 'P5 decoded response budget did not stop streamed bytes');
+
+  const p5AbortController = new AbortController();
+  const p5SlowFetch = p5Runtime.net.fetch(p5FixtureOrigin + '/slow', { signal: p5AbortController.signal });
+  setTimeout(() => p5AbortController.abort(new DOMException('p5 abort','AbortError')), 30);
+  let p5AbortName = 'ALLOWED';
+  try {
+    await p5SlowFetch;
+  } catch (error) {
+    p5AbortName = error?.name ?? error?.code ?? 'ERROR';
+  }
+  assert(p5AbortName === 'AbortError', 'P5 network cancellation did not propagate to body/fetch');
+
+  const p5SecretValue = 'p5-browser-secret-' + crypto.randomUUID() + '-abcdefghijklmnopqrstuvwxyz';
+  const p5SecretBinding = p5Runtime.net.bindSecret({
+    value: p5SecretValue,
+    header: 'authorization',
+    prefix: 'Bearer ',
+    scope: {
+      schemes: ['http:'],
+      hosts: [location.hostname],
+      methods: ['GET'],
+      paths: ['/secret-echo'],
+      session: 'p5-session',
+      process: 'p5-process',
+      task: 'p5-task'
+    }
+  });
+  assert(!JSON.stringify(p5SecretBinding).includes(p5SecretValue), 'P5 opaque secret binding exposed plaintext');
+  const p5SecretResult = await p5Runtime.net.fetch(p5FixtureOrigin + '/secret-echo', {
+    secretHandles: [p5SecretBinding.handle],
+    context: { session: 'p5-session', process: 'p5-process', task: 'p5-task' }
+  });
+  const p5SecretEcho = await p5SecretResult.response.json();
+  assert(p5SecretEcho.authorizationPresent === true, 'P5 authority did not inject scoped secret');
+  assert(p5SecretEcho.cookiePresent === false, 'P5 authority unexpectedly sent browser cookies');
+  assert(!JSON.stringify(p5SecretResult.receipt).includes(p5SecretValue), 'P5 fetch receipt leaked secret plaintext');
+  assert(!JSON.stringify(p5SecretResult.receipt).includes(p5SecretBinding.handle), 'P5 fetch receipt leaked opaque secret handle');
+
+  let p5WrongTaskCode = 'ALLOWED';
+  try {
+    await p5Runtime.net.fetch(p5FixtureOrigin + '/secret-echo', {
+      secretHandles: [p5SecretBinding.handle],
+      context: { session: 'p5-session', process: 'p5-process', task: 'wrong-task' }
+    });
+  } catch (error) {
+    p5WrongTaskCode = error?.code ?? error?.name ?? 'ERROR';
+  }
+  assert(p5WrongTaskCode === 'OC_NETWORK_DENIED', 'P5 secret task scope was not enforced');
+
+  p5Runtime.packages.compile({
+    name: 'p5-no-secret-install',
+    version: '1.0.0',
+    lockfileVersion: 3,
+    packages: { '': { name: 'p5-no-secret-install', version: '1.0.0' } }
+  });
+  let p5PackageSecretCode = 'ALLOWED';
+  try {
+    await p5Runtime.packages.createFrozenInstaller().installAll({
+      artifactAuthority: { async fetchArtifact() { throw new Error('secret-handle package fetch must not run'); } },
+      secretHandles: [p5SecretBinding.handle]
+    });
+  } catch (error) {
+    p5PackageSecretCode = error?.code ?? error?.name ?? 'ERROR';
+  }
+  assert(p5PackageSecretCode === 'OC_NETWORK_DENIED', 'P5 package installer accepted secret handles');
+
+  p5Runtime.mount({ 'p5-provider-state.txt': 'canonical-before-provider-failure' });
+  const p5ProviderGeneration = p5Runtime.fs.generation;
+  const p5ProviderSecret = p5Runtime.net.bindSecret({
+    value: 'p5-provider-key-' + crypto.randomUUID() + '-abcdefghijklmnop',
+    header: 'authorization',
+    prefix: 'Bearer ',
+    scope: {
+      schemes: ['http:'],
+      hosts: [location.hostname],
+      methods: ['GET'],
+      paths: ['/provider-fail'],
+      session: 'p5-provider-session'
+    }
+  });
+  const p5ProviderFailure = await p5Runtime.net.fetch(p5FixtureOrigin + '/provider-fail', {
+    secretHandles: [p5ProviderSecret.handle],
+    context: { session: 'p5-provider-session' }
+  });
+  assert(p5ProviderFailure.response.status === 401, 'P5 provider failure fixture did not return 401');
+  assert(p5Runtime.fs.generation === p5ProviderGeneration, 'P5 provider/API-key failure mutated canonical project generation');
+  assert(p5Runtime.fs.readFile('p5-provider-state.txt') === 'canonical-before-provider-failure', 'P5 provider failure mutated canonical workspace bytes');
+
+  p5Runtime.diagnostics.record('runtime.network', {
+    authorization: 'Bearer ' + p5SecretValue,
+    cookie: 'sid=' + p5SecretValue,
+    url: p5FixtureOrigin + '/allowed?signature=' + encodeURIComponent(p5SecretValue),
+    responseBody: 'body-' + p5SecretValue
+  });
+  const p5Support = p5Runtime.supportBundle();
+  assert(!JSON.stringify(p5Support).includes(p5SecretValue), 'P5 diagnostics/support bundle leaked auth/cookie/query/body secret material');
+
+  const p5PreviewBridge = new BrowserPreviewServiceWorkerBridge({
+    preview: p5Runtime.preview,
+    diagnostics: p5Runtime.diagnostics
+  });
+  await p5PreviewBridge.start();
+
+  let p5PreviewRoute = null;
+  const p5PreviewHandler = async (request) => {
+    const requestUrl = new URL(request.url, 'http://opencontainer-preview.invalid');
+    if (requestUrl.pathname === '/head') {
+      return new Response('head-body-must-not-cross-edge', {
+        status: 200,
+        headers: { 'content-type': 'text/plain', 'x-p5-preview': 'head' }
+      });
+    }
+    if (requestUrl.pathname === '/range') {
+      const range = request.headers?.range ?? request.headers?.Range ?? '';
+      if (range === 'bytes=1-3') {
+        return new Response('bcd', {
+          status: 206,
+          headers: {
+            'content-type': 'text/plain',
+            'content-range': 'bytes 1-3/6',
+            'accept-ranges': 'bytes',
+            'x-p5-preview': 'range'
+          }
+        });
+      }
+      return new Response('abcdef', { status: 200, headers: { 'accept-ranges': 'bytes' } });
+    }
+    if (requestUrl.pathname === '/redirect') {
+      return new Response(null, {
+        status: 302,
+        headers: { location: p5PreviewBridge.url(p5PreviewRoute, '/final'), 'x-p5-preview': 'redirect' }
+      });
+    }
+    if (requestUrl.pathname === '/slow') {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      return new Response('slow-preview', { status: 200 });
+    }
+    if (requestUrl.pathname === '/credential-check') {
+      const hostCredentialHeaders = Boolean(
+        request.headers?.cookie ||
+        request.headers?.authorization ||
+        request.headers?.['x-api-key'] ||
+        request.headers?.['x-auth-token']
+      );
+      return new Response(JSON.stringify({ hostCredentialHeaders }), {
+        status: 200,
+        headers: { 'content-type': 'application/json; charset=utf-8', 'x-p5-preview': 'credential-check' }
+      });
+    }
+    return new Response('preview-final', {
+      status: 200,
+      headers: { 'content-type': 'text/plain', 'x-p5-preview': 'final' }
+    });
+  };
+  p5PreviewRoute = p5Runtime.listen(4305, p5PreviewHandler, {
+    owner: 'p5-preview-v1',
+    identity: { workspace: 'p5-workspace-a', session: 'p5-session-a', version: 'p5-version-1' }
+  });
+
+  const p5Head = await fetch(p5PreviewBridge.url(p5PreviewRoute, '/head'), { method: 'HEAD', cache: 'no-store' });
+  assert(p5Head.status === 200 && await p5Head.text() === '', 'P5 virtual HTTP HEAD semantics failed');
+  assert(p5Head.headers.get('x-p5-preview') === 'head', 'P5 virtual HTTP response header did not cross preview edge');
+
+  const p5Range = await fetch(p5PreviewBridge.url(p5PreviewRoute, '/range'), {
+    headers: { Range: 'bytes=1-3' },
+    cache: 'no-store'
+  });
+  assert(p5Range.status === 206 && await p5Range.text() === 'bcd', 'P5 virtual HTTP range semantics failed');
+  assert(p5Range.headers.get('content-range') === 'bytes 1-3/6', 'P5 virtual HTTP Content-Range drifted');
+
+  const p5PreviewRedirect = await fetch(p5PreviewBridge.url(p5PreviewRoute, '/redirect'), { cache: 'no-store' });
+  assert(p5PreviewRedirect.status === 200 && await p5PreviewRedirect.text() === 'preview-final', 'P5 virtual HTTP redirect semantics failed');
+  assert(p5PreviewRedirect.headers.get('x-p5-preview') === 'final', 'P5 virtual redirect did not reach final route');
+
+  const p5PreviewAbort = new AbortController();
+  const p5PreviewSlow = fetch(p5PreviewBridge.url(p5PreviewRoute, '/slow'), {
+    signal: p5PreviewAbort.signal,
+    cache: 'no-store'
+  });
+  setTimeout(() => p5PreviewAbort.abort(), 30);
+  let p5PreviewAbortName = 'ALLOWED';
+  try {
+    await p5PreviewSlow;
+  } catch (error) {
+    p5PreviewAbortName = error?.name ?? 'ERROR';
+  }
+  assert(p5PreviewAbortName === 'AbortError', 'P5 virtual HTTP abort semantics failed');
+
+  const p5OldPreviewUrl = p5PreviewBridge.url(p5PreviewRoute, '/final');
+  p5PreviewRoute = p5Runtime.listen(4305, p5PreviewHandler, {
+    owner: 'p5-preview-v2',
+    identity: { workspace: 'p5-workspace-a', session: 'p5-session-a', version: 'p5-version-2' }
+  });
+  const p5StalePreview = await fetch(p5OldPreviewUrl, { redirect: 'manual', cache: 'no-store' });
+  assert(p5StalePreview.status === 409, 'P5 stale Service Worker preview identity did not fail closed');
+  const p5FreshPreviewUrl = p5PreviewBridge.url(p5PreviewRoute, '/final');
+  const p5FreshPreview = await fetch(p5FreshPreviewUrl, { cache: 'no-store' });
+  assert(p5FreshPreview.status === 200 && await p5FreshPreview.text() === 'preview-final', 'P5 fresh preview identity failed');
+
+  const p5IdentityTamperStatus = {};
+  for(const [parameter,value] of [
+    ['__oc_workspace','p5-workspace-b'],
+    ['__oc_session','p5-session-b'],
+    ['__oc_version','p5-version-cross']
+  ]){
+    const tampered=new URL(p5FreshPreviewUrl);
+    tampered.searchParams.set(parameter,value);
+    const response=await fetch(tampered,{redirect:'manual',cache:'no-store'});
+    p5IdentityTamperStatus[parameter]=response.status;
+  }
+  assert(
+    Object.values(p5IdentityTamperStatus).every((status)=>status===409),
+    'P5 Service Worker preview identity tuple allowed a cross workspace/session/version route'
+  );
+
+  const p5OfflineReceipt = p5Runtime.net.setProfile('offline');
+  let p5OfflineCode = 'ALLOWED';
+  try {
+    p5Runtime.net.authorize(p5FixtureOrigin + '/allowed');
+  } catch (error) {
+    p5OfflineCode = error?.code ?? error?.name ?? 'ERROR';
+  }
+  assert(p5OfflineCode === 'OC_NETWORK_DENIED', 'P5 Offline profile still authorized external networking');
+  const p5PreviewWhileOffline = await fetch(p5PreviewBridge.url(p5PreviewRoute, '/final'), { cache: 'no-store' });
+  assert(p5PreviewWhileOffline.ok && await p5PreviewWhileOffline.text() === 'preview-final', 'P5 preview incorrectly depended on external network permission');
+
+  globalThis.__opencontainerTrustedCanary = 'trusted-parent-' + crypto.randomUUID();
+  localStorage.setItem('opencontainer-p5-host', 'trusted-storage-' + crypto.randomUUID());
+  document.cookie = 'opencontainer_p5_host=trusted-cookie-' + crypto.randomUUID() + '; SameSite=Lax; path=/';
+
+  const p5CredentialCheck = await fetch(
+    p5PreviewBridge.url(p5PreviewRoute, '/credential-check'),
+    { cache: 'no-store' }
+  );
+  assert(p5CredentialCheck.ok, 'P5 preview credential-stripping route failed');
+  const p5CredentialReceipt = await p5CredentialCheck.json();
+  assert(
+    p5CredentialReceipt.hostCredentialHeaders === false,
+    'P5 trusted preview edge forwarded host credential headers to untrusted preview authority'
+  );
+
+  const p5MaliciousHtml = '<!doctype html><meta charset="utf-8"><script>' +
+    '(function(){' +
+    'let parentAccess="readable";try{void parent.__opencontainerTrustedCanary;}catch(e){parentAccess=e.name;}' +
+    'let storageAccess="readable";try{localStorage.getItem("opencontainer-p5-host");}catch(e){storageAccess=e.name;}' +
+    'parent.postMessage({type:"opencontainer:p5-frame",parentAccess:parentAccess,storageAccess:storageAccess,locationOrigin:location.origin},"*");' +
+    '})();</script>';
+  const p5Frame = createSandboxedPreviewFrame({
+    html: p5MaliciousHtml,
+    title: 'OpenContainer P5 sandbox court'
+  });
+  assert(!p5Frame.sandbox.contains('allow-same-origin'), 'P5 preview sandbox accidentally grants trusted origin');
+
+  const p5FrameReceiptPromise = new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      window.removeEventListener('message', onMessage);
+      reject(new Error('P5 sandboxed preview frame did not report'));
+    }, 5000);
+    const onMessage = (event) => {
+      if (event.source !== p5Frame.contentWindow || event.data?.type !== 'opencontainer:p5-frame') return;
+      clearTimeout(timer);
+      window.removeEventListener('message', onMessage);
+      resolve({ ...event.data, eventOrigin: event.origin });
+    };
+    window.addEventListener('message', onMessage);
+  });
+  document.body.appendChild(p5Frame);
+  const p5FrameReceipt = await p5FrameReceiptPromise;
+  assert(p5FrameReceipt.eventOrigin === 'null', 'P5 preview frame retained trusted same-origin identity');
+  assert(p5FrameReceipt.parentAccess !== 'readable', 'P5 preview frame reached trusted parent credential state');
+  assert(p5FrameReceipt.storageAccess !== 'readable', 'P5 preview frame reached trusted browser storage');
+  p5Frame.remove();
+  delete globalThis.__opencontainerTrustedCanary;
+  localStorage.removeItem('opencontainer-p5-host');
+  document.cookie = 'opencontainer_p5_host=; Max-Age=0; SameSite=Lax; path=/';
+
+  p5PreviewBridge.close();
+  await p5LocalGuard.teardown();
+  await p5Runtime.teardown();
+
+  stage('p5-network-secrets-preview-pass', {
+    corsAllowed: p5CorsAllowed.status,
+    corsDenied: p5CorsDenied,
+    opaqueType: p5Opaque.type,
+    lnaPermission: p5LnaPermission,
+    lnaFetchStatus: p5LnaResponse.status,
+    loopbackDenyCodes: p5LoopbackCodes,
+    ambiguousUrlCodes: p5AmbiguousCodes,
+    browserOpaqueRedirectCode: p5OpaqueRedirectCode,
+    redirectDeniedCode: p5RedirectDeniedCode,
+    responseBudgetCode: p5BudgetCode,
+    cancellation: p5AbortName,
+    secretTaskScope: p5WrongTaskCode,
+    packageSecretHandles: p5PackageSecretCode,
+    providerStatus: p5ProviderFailure.response.status,
+    providerCanonicalGenerationUnchanged: p5Runtime.fs.generation === p5ProviderGeneration,
+    supportSecretLeak: false,
+    previewHead: p5Head.status,
+    previewRange: p5Range.status,
+    previewRedirect: p5PreviewRedirect.status,
+    previewAbort: p5PreviewAbortName,
+    stalePreview: p5StalePreview.status,
+    identityTamperStatus: p5IdentityTamperStatus,
+    previewOfflineSeparation: p5OfflineCode === 'OC_NETWORK_DENIED' && p5PreviewWhileOffline.status === 200,
+    frameEventOrigin: p5FrameReceipt.eventOrigin,
+    frameLocationOrigin: p5FrameReceipt.locationOrigin,
+    frameParentAccess: p5FrameReceipt.parentAccess,
+    frameStorageAccess: p5FrameReceipt.storageAccess,
+    previewHostCredentialHeaders: p5CredentialReceipt.hostCredentialHeaders,
+    frameCredentialless: 'credentialless' in p5Frame ? p5Frame.credentialless : null,
+    policyVersion: p5Decision.policyVersion,
+    policyHash: p5Decision.policyHash,
+    downgradedProfile: p5OfflineReceipt.profile
+  });
 
   stage('p8-support-bundle-start');
   const hostingDiagnostics = await checkHostingHeaders(location.origin + '/');
