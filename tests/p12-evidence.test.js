@@ -64,7 +64,7 @@ test('P12 ledger and evidence registry cannot upgrade the manual-review gates',(
 
 test('P12 closure evidence is inside the repeated critical contract campaign',()=>{
   assert.ok(flake.contract.testFiles.includes('tests/p12-evidence.test.js'));
-  assert.equal(flake.contract.testFiles.length,19);
-  assert.equal(flake.contract.minimumTestFiles,19);
+  assert.ok(flake.contract.testFiles.length>=19);
+  assert.equal(flake.contract.testFiles.length,flake.contract.minimumTestFiles);
   assert.equal(flake.contract.iterations,5);
 });

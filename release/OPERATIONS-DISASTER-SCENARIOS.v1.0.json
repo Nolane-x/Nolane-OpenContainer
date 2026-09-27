@@ -24,7 +24,8 @@
         "recover-last-valid-generation",
         "offer-portable-export",
         "verify-readability",
-        "retain-regression-test"
+        "retain-regression-test",
+        "notify-user-recovery-status"
       ]
     },
     {

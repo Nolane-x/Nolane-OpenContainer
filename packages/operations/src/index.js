@@ -6,8 +6,9 @@ function assert(condition,message){
 function freeze(value){
   if(Array.isArray(value))return Object.freeze(value.map(freeze));
   if(value&&typeof value==='object'){
-    for(const [key,item] of Object.entries(value))value[key]=freeze(item);
-    return Object.freeze(value);
+    const out={};
+    for(const [key,item] of Object.entries(value))out[key]=freeze(item);
+    return Object.freeze(out);
   }
   return value;
 }
