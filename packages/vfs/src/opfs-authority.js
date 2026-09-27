@@ -300,7 +300,7 @@ export class OpfsCheckpointAuthority {
     const workingBefore = fs.snapshot();
     return this.#withExclusiveLock(async () => {
       const current = await this.#recoverUnlocked();
-      const target = await this.#readCheckpointSnapshotUnlocked(reference);
+      const target = await this.#readCheckpointSnapshotUnlocked(reference,{requireRecoveryRoot:true});
       const workingAfter = fs.snapshot();
       if (workingAfter.generation !== workingBefore.generation) {
         throw ocError(ErrorCodes.STALE_GENERATION, 'Working tree changed while checkpoint restore was being prepared', {
@@ -343,6 +343,12 @@ export class OpfsCheckpointAuthority {
       ErrorCodes.INVALID_ARGUMENT,
       'Checkpoint restore plan has an invalid expectedCanonicalSequence'
     );
+    assertOc(
+      plan.expectedCanonicalGeneration === null ||
+      (Number.isInteger(plan.expectedCanonicalGeneration) && plan.expectedCanonicalGeneration >= 0),
+      ErrorCodes.INVALID_ARGUMENT,
+      'Checkpoint restore plan has an invalid expectedCanonicalGeneration'
+    );
 
     const lease = fs.acquireMutationLease({
       expectedGeneration: plan.expectedWorkingGeneration,
@@ -368,7 +374,7 @@ export class OpfsCheckpointAuthority {
             restoreAborted: true
           });
         }
-        return this.#readCheckpointSnapshotUnlocked(plan.target);
+        return this.#readCheckpointSnapshotUnlocked(plan.target,{requireRecoveryRoot:true});
       });
 
       const working = fs.snapshot();
@@ -477,7 +483,7 @@ export class OpfsCheckpointAuthority {
     }
   }
 
-  async #readCheckpointSnapshotUnlocked(reference) {
+  async #readCheckpointSnapshotUnlocked(reference,{requireRecoveryRoot=false}={}) {
     assertOc(
       reference &&
       Number.isInteger(reference.sequence) &&
@@ -491,6 +497,26 @@ export class OpfsCheckpointAuthority {
       ErrorCodes.INVALID_ARGUMENT,
       'Checkpoint reference must include sequence, generation, payload and sha256'
     );
+    if(requireRecoveryRoot){
+      const roots=[
+        parseManifest(await readText(this.#directory,MANIFEST_A),'a'),
+        parseManifest(await readText(this.#directory,MANIFEST_B),'b')
+      ].filter(Boolean);
+      const retained=roots.some(root=>
+        root.sequence===reference.sequence&&
+        root.generation===reference.generation&&
+        root.payload===reference.payload&&
+        root.sha256===reference.sha256
+      );
+      if(!retained){
+        throw ocError(ErrorCodes.NOT_FOUND,'Checkpoint is not a retained canonical or fallback recovery root',{
+          sequence:reference.sequence,
+          generation:reference.generation,
+          payload:reference.payload,
+          retainedRecoveryRoot:false
+        });
+      }
+    }
     const text = await readText(this.#payloads, reference.payload);
     if (text === null) {
       throw ocError(ErrorCodes.NOT_FOUND, 'Checkpoint payload no longer exists', {
