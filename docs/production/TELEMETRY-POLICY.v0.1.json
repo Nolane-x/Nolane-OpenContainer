@@ -1,0 +1,18 @@
+{
+  "schema": "opencontainer.telemetry-policy.v0.1",
+  "remoteAnalyticsDefault": false,
+  "coreRequiresRemoteTelemetry": false,
+  "crashUpload": {
+    "default": "off",
+    "consent": "explicit-opt-in",
+    "endpointInCore": null
+  },
+  "supportBundle": {
+    "generatedLocally": true,
+    "networkEmissionDefault": false,
+    "aiPromptTranscriptDefault": false,
+    "workspaceContentsDefault": false,
+    "httpBodiesDefault": false
+  },
+  "productRule": "Consumer products may add telemetry only outside Core with explicit policy/consent. Core runtime correctness and support diagnostics must remain functional with no analytics endpoint."
+}
