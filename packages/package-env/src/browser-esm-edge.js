@@ -119,6 +119,11 @@ export class BrowserEsmServiceWorkerBridge {
       timeoutMs: this.#timeoutMs
     });
     const controller = lifecycle.controller;
+    this.#diagnostics?.record('service-worker.update',{
+      status:'compatible',
+      compatibilityId:lifecycle.compatibilityId,
+      activation:lifecycle.activation
+    });
 
     return Object.freeze({
       session: this.session,
