@@ -179,7 +179,7 @@ async function run() {
   const beforeProviderFailure = {
     fsGeneration: runtime.fs.generation,
     previewEpoch: runtime.preview.epoch,
-    processCount: runtime.process.list().length
+    processCount: runtime.resources.usage.processes
   };
   const providerFailure = await runtime.net.fetch(location.origin + '/__p5__/provider-fail', {
     secretHandle: browserSecret.handle,
@@ -190,7 +190,7 @@ async function run() {
   const afterProviderFailure = {
     fsGeneration: runtime.fs.generation,
     previewEpoch: runtime.preview.epoch,
-    processCount: runtime.process.list().length
+    processCount: runtime.resources.usage.processes
   };
   assert(JSON.stringify(afterProviderFailure) === JSON.stringify(beforeProviderFailure), 'P5 provider/API-key failure mutated canonical runtime state');
 
