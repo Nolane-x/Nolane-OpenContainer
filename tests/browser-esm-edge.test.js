@@ -101,10 +101,11 @@ class FakeContainer extends EventTarget {
   }
 }
 
-function publication(session, body='export default 1') {
+function publication(session, body='export default 1', generation='1') {
   return {
     session,
-    async response(){ return new Response(body, { headers: { 'x-session': session } }); }
+    generation,
+    async response(){ return new Response(body, { headers: { 'x-session': session, 'x-opencontainer-generation': generation } }); }
   };
 }
 
@@ -181,7 +182,8 @@ test('non-owner bridge stays silent so current publication owner wins shared por
   container.sendMessage({
     type:'opencontainer:esm-fetch',
     session:'current-session',
-    url:'https://example.test/__opencontainer__/esm/current-session/fs/workspace/main.js'
+    generation:'1',
+    url:'https://example.test/__opencontainer__/esm/current-session/fs/workspace/main.js?__oc_vfs_generation=1'
   },port);
 
   await new Promise((resolve)=>setTimeout(resolve,0));
@@ -191,6 +193,33 @@ test('non-owner bridge stays silent so current publication owner wins shared por
 
   oldBridge.close();
   currentBridge.close();
+});
+
+test('same session with stale workspace generation stays silent at the Service Worker bridge',async()=>{
+  const worker=new FakeWorker('activated');
+  const registration=new FakeRegistration(worker);
+  registration.installing=null;
+  registration.active=worker;
+  const container=new FakeContainer(registration);
+  container.controller=worker;
+  const bridge=new BrowserEsmServiceWorkerBridge({
+    publication:publication('owned-session','export default 1','7'),
+    serviceWorkerContainer:container,
+    timeoutMs:100
+  });
+  await bridge.start();
+
+  const messages=[];
+  container.sendMessage({
+    type:'opencontainer:esm-fetch',
+    session:'owned-session',
+    generation:'6',
+    url:'https://example.test/__opencontainer__/esm/owned-session/fs/workspace/main.js?__oc_vfs_generation=6'
+  },{ postMessage(value){ messages.push(value); } });
+
+  await new Promise((resolve)=>setTimeout(resolve,0));
+  assert.deepEqual(messages,[]);
+  bridge.close();
 });
 
 test('unowned session produces no page-side response',async()=>{
@@ -211,7 +240,8 @@ test('unowned session produces no page-side response',async()=>{
   container.sendMessage({
     type:'opencontainer:esm-fetch',
     session:'stale-session',
-    url:'https://example.test/__opencontainer__/esm/stale-session/fs/workspace/main.js'
+    generation:'1',
+    url:'https://example.test/__opencontainer__/esm/stale-session/fs/workspace/main.js?__oc_vfs_generation=1'
   },{ postMessage(value){ messages.push(value); } });
 
   await new Promise((resolve)=>setTimeout(resolve,0));
@@ -246,7 +276,8 @@ test('browser ESM bridge preserves WASM bytes without UTF-8 transcoding',async()
   container.sendMessage({
     type:'opencontainer:esm-fetch',
     session:'binary-session',
-    url:'https://example.test/__opencontainer__/esm/binary-session/fs/workspace/module.wasm'
+    generation:'1',
+    url:'https://example.test/__opencontainer__/esm/binary-session/fs/workspace/module.wasm?__oc_vfs_generation=1'
   },{postMessage(value){messages.push(value);}});
 
   await new Promise((resolve)=>setTimeout(resolve,0));
