@@ -2867,6 +2867,180 @@ async function run() {
     owner: c2Route.owner,
     epoch: c2Route.epoch
   });
+  assert(
+    c2ServiceWorkerResponse.headers.get('x-opencontainer-preview-sandbox') === 'opaque-origin-v1',
+    'P5 preview edge did not publish opaque-origin sandbox identity'
+  );
+  assert(
+    (c2ServiceWorkerResponse.headers.get('content-security-policy') ?? '').includes('sandbox') &&
+      !(c2ServiceWorkerResponse.headers.get('content-security-policy') ?? '').includes('allow-same-origin'),
+    'P5 preview CSP lost opaque-origin sandbox'
+  );
+
+  stage('p5-preview-security-start');
+  let previewAbortObserved = false;
+  const p5PreviewRoute = runtime.listen(5190, async (request = {}) => {
+    const path = String(request.url ?? '/').split('?')[0];
+    if (path === '/head') {
+      return new Response('head-body-must-not-cross', {
+        headers: { 'content-type': 'text/plain', 'x-p5-preview': 'head' }
+      });
+    }
+    if (path === '/range') {
+      const range = request.headers?.range ?? request.headers?.Range ?? '';
+      if (range === 'bytes=2-5') {
+        return new Response('2345', {
+          status: 206,
+          headers: {
+            'content-type': 'text/plain',
+            'content-range': 'bytes 2-5/10',
+            'accept-ranges': 'bytes',
+            'x-p5-preview': 'range'
+          }
+        });
+      }
+      return new Response('0123456789', { headers: { 'accept-ranges': 'bytes' } });
+    }
+    if (path === '/redirect') {
+      return new Response(null, {
+        status: 302,
+        headers: { location: '/redirect-target', 'x-p5-preview': 'redirect' }
+      });
+    }
+    if (path === '/headers') {
+      return new Response('headers', {
+        headers: {
+          'content-type': 'text/plain',
+          'x-p5-preview': 'preserved',
+          'set-cookie': 'preview_secret=must-not-stick',
+          'content-security-policy': "default-src * 'unsafe-inline'"
+        }
+      });
+    }
+    if (path === '/slow') {
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => resolve(new Response('too-late')), 3000);
+        request.signal?.addEventListener?.('abort', () => {
+          previewAbortObserved = true;
+          clearTimeout(timer);
+          reject(request.signal.reason ?? new DOMException('preview-abort', 'AbortError'));
+        }, { once: true });
+      });
+    }
+    if (path === '/compromise') {
+      return new Response([
+        '<!doctype html><meta charset="utf-8"><script>',
+        '(async()=>{',
+        'let parentDom=false,localStorageAccess=false,cookieAccess=false,opfsAccess=false;',
+        'try{void parent.document.body;parentDom=true}catch{}',
+        'try{localStorage.setItem("p5","x");localStorageAccess=true}catch{}',
+        'try{void document.cookie;document.cookie="p5_preview_cookie=x";cookieAccess=true}catch{}',
+        'try{if(navigator.storage?.getDirectory){await navigator.storage.getDirectory();opfsAccess=true}}catch{}',
+        'parent.postMessage({type:"p5-preview-compromise",parentDom,localStorageAccess,cookieAccess,opfsAccess},"*");',
+        '})();',
+        '<\/script>'
+      ].join(''), { headers: { 'content-type': 'text/html; charset=utf-8' } });
+    }
+    return new Response('not-found', { status: 404 });
+  }, { owner: 'p5-preview-security' });
+
+  const p5HeadUrl = c2PreviewBridge.url(p5PreviewRoute, '/head');
+  const p5HeadResponse = await fetch(p5HeadUrl, { method: 'HEAD', cache: 'no-store' });
+  assert(p5HeadResponse.status === 200, 'P5 preview HEAD failed');
+  assert((await p5HeadResponse.text()) === '', 'P5 preview HEAD exposed response body');
+  assert(p5HeadResponse.headers.get('x-p5-preview') === 'head', 'P5 preview HEAD lost headers');
+
+  const p5RangeResponse = await fetch(c2PreviewBridge.url(p5PreviewRoute, '/range'), {
+    headers: { range: 'bytes=2-5' },
+    cache: 'no-store'
+  });
+  assert(p5RangeResponse.status === 206, 'P5 preview range did not preserve 206');
+  assert(await p5RangeResponse.text() === '2345', 'P5 preview range body drifted');
+  assert(p5RangeResponse.headers.get('content-range') === 'bytes 2-5/10', 'P5 preview range header drifted');
+
+  const p5RedirectDirect = await runtime.preview.dispatch(
+    5190,
+    { url: '/redirect', method: 'GET', headers: {} },
+    p5PreviewRoute
+  );
+  assert(
+    p5RedirectDirect.status === 302 && p5RedirectDirect.headers.get('location') === '/redirect-target',
+    'P5 virtual HTTP redirect semantics drifted'
+  );
+
+  const p5HeaderResponse = await fetch(c2PreviewBridge.url(p5PreviewRoute, '/headers'), { cache: 'no-store' });
+  assert(p5HeaderResponse.headers.get('x-p5-preview') === 'preserved', 'P5 preview stripped safe application header');
+  assert(p5HeaderResponse.headers.get('set-cookie') === null, 'P5 preview exposed credential-setting Set-Cookie');
+  assert(
+    (p5HeaderResponse.headers.get('content-security-policy') ?? '').includes('sandbox') &&
+      !(p5HeaderResponse.headers.get('content-security-policy') ?? '').includes('default-src *'),
+    'P5 preview allowed guest handler to override sandbox CSP'
+  );
+
+  const previewAbortController = new AbortController();
+  const previewAbortFetch = fetch(c2PreviewBridge.url(p5PreviewRoute, '/slow'), {
+    signal: previewAbortController.signal,
+    cache: 'no-store'
+  });
+  setTimeout(() => previewAbortController.abort(new DOMException('p5-preview-browser-abort', 'AbortError')), 100);
+  let previewAbortName = null;
+  try { await previewAbortFetch; } catch (error) { previewAbortName = error?.name ?? null; }
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  assert(previewAbortName === 'AbortError', 'P5 browser preview abort did not reject fetch');
+  assert(previewAbortObserved === true, 'P5 preview abort did not reach authority handler');
+
+  document.cookie = 'p5_host_cookie=host-only; SameSite=Lax; path=/';
+  const iframe = document.createElement('iframe');
+  iframe.src = c2PreviewBridge.url(p5PreviewRoute, '/compromise');
+  const compromise = await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('P5 compromised preview iframe timed out')), 5000);
+    const onMessage = (event) => {
+      if (event.source !== iframe.contentWindow || event.data?.type !== 'p5-preview-compromise') return;
+      clearTimeout(timer);
+      removeEventListener('message', onMessage);
+      resolve({ ...event.data, eventOrigin: event.origin });
+    };
+    addEventListener('message', onMessage);
+    document.body.appendChild(iframe);
+  });
+  iframe.remove();
+  document.cookie = 'p5_host_cookie=; Max-Age=0; path=/';
+  assert(compromise.eventOrigin === 'null', 'P5 preview iframe retained host origin: ' + compromise.eventOrigin);
+  assert(compromise.parentDom === false, 'P5 compromised preview reached trusted parent DOM');
+  assert(compromise.localStorageAccess === false, 'P5 compromised preview reached host localStorage');
+  assert(compromise.cookieAccess === false, 'P5 compromised preview reached host cookies');
+  assert(compromise.opfsAccess === false, 'P5 compromised preview reached origin OPFS authority');
+
+  const offlineRuntime = await OpenContainer.boot({ network: { profile: NetworkProfiles.OFFLINE } });
+  const offlineRoute = offlineRuntime.listen(5191, () => new Response('offline-preview-ok'), { owner: 'p5-offline-preview' });
+  const offlineBridge = new BrowserPreviewServiceWorkerBridge({
+    preview: offlineRuntime.preview,
+    diagnostics: offlineRuntime.diagnostics
+  });
+  await offlineBridge.start();
+  const offlinePreviewResponse = await fetch(offlineBridge.url(offlineRoute, '/'), { cache: 'no-store' });
+  assert(
+    offlinePreviewResponse.status === 200 && await offlinePreviewResponse.text() === 'offline-preview-ok',
+    'P5 preview incorrectly depended on external network permission'
+  );
+  let offlineExternalCode = null;
+  try { offlineRuntime.net.authorize('https://example.com/'); } catch (error) { offlineExternalCode = error?.code ?? null; }
+  assert(offlineExternalCode === 'OC_NETWORK_DENIED', 'P5 offline runtime unexpectedly had external network permission');
+  offlineBridge.close();
+  await offlineRuntime.terminate();
+
+  stage('p5-preview-security-pass', {
+    headStatus: p5HeadResponse.status,
+    rangeStatus: p5RangeResponse.status,
+    redirectStatus: p5RedirectDirect.status,
+    headerSandbox: p5HeaderResponse.headers.get('x-opencontainer-preview-sandbox'),
+    previewAbortName,
+    previewAbortObserved,
+    compromise,
+    offlinePreviewStatus: offlinePreviewResponse.status,
+    offlineExternalCode
+  });
+  runtime.preview.revoke(5190, { owner: 'p5-preview-security' });
   c2PreviewBridge.close();
 
   const c2RestartOwner = 'vite-c2-session-2';
