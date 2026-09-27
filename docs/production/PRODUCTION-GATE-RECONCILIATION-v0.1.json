@@ -268,6 +268,10 @@
     "p5-network-preview": {
       "ref": "CI #398 / PR #40 head fb9e45ac36f17a42c01b1769b37a968d1ed0944a",
       "note": "P5 18-gate network/secret/preview court: Chrome 153/Ubuntu 24.04 x64 declared profile; real CORS/LNA/stream/abort/provider fixtures; canonical URL + redirect capability enforcement; authority-side opaque secrets; diagnostics redaction; virtual HTTP/SW preview isolation; workspace/session/version identity proof with compatibility-ID v2; four frozen network profiles; policy hash/version; contract PASS + 2/2 installed-distribution Chrome paths PASS, zero unexplained failures; production_closed remains false"
+    },
+    "p18-evidence-assurance": {
+      "ref": "CI #401 / PR #41 head bc283647ee9ab04a5ee645eb0a41c8236e97fb40",
+      "note": "P18 executable evidence-assurance court: machine-typed evidence registry; source/docs/local cannot close critical gates; HARNESS_* only exclusion codes; append-only negative results; content-addressed 13-case corpus lock; SHA-256 contract/browser bundles with full iteration logs; programmatic counts; benchmark-validity environment receipt; exact 304/304 stable ledger guard; contract 5/5 over 13 critical files = 65 executions PASS; browser 2/2 installed-distribution product paths PASS on Chrome 153.0.8010.52; both assurance verifiers ok=true; production_closed remains false"
     }
   },
   "overrides": [
@@ -1373,6 +1377,102 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p15-developer-contracts",
+      "closure_met": true
+    },
+    {
+      "id": "P18-01",
+      "domain": "P18",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p18-evidence-assurance",
+      "closure_met": true
+    },
+    {
+      "id": "P18-02",
+      "domain": "P18",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p18-evidence-assurance",
+      "closure_met": true
+    },
+    {
+      "id": "P18-03",
+      "domain": "P18",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p18-evidence-assurance",
+      "closure_met": true
+    },
+    {
+      "id": "P18-04",
+      "domain": "P18",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p18-evidence-assurance",
+      "closure_met": true
+    },
+    {
+      "id": "P18-05",
+      "domain": "P18",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p18-evidence-assurance",
+      "closure_met": true
+    },
+    {
+      "id": "P18-06",
+      "domain": "P18",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p18-evidence-assurance",
+      "closure_met": true
+    },
+    {
+      "id": "P18-07",
+      "domain": "P18",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p18-evidence-assurance",
+      "closure_met": true
+    },
+    {
+      "id": "P18-08",
+      "domain": "P18",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p18-evidence-assurance",
+      "closure_met": true
+    },
+    {
+      "id": "P18-09",
+      "domain": "P18",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p18-evidence-assurance",
+      "closure_met": true
+    },
+    {
+      "id": "P18-10",
+      "domain": "P18",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p18-evidence-assurance",
+      "closure_met": true
+    },
+    {
+      "id": "P18-11",
+      "domain": "P18",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p18-evidence-assurance",
+      "closure_met": true
+    },
+    {
+      "id": "P18-12",
+      "domain": "P18",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p18-evidence-assurance",
       "closure_met": true
     }
   ]

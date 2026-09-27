@@ -50,6 +50,7 @@ test('release policy freezes monotonic canary beta rc stable channels',async()=>
   assert.deepEqual(validateReleasePolicy(policy),[]);
   assert.deepEqual(policy.channels.map((item)=>item.id),['canary','beta','rc','stable']);
   assert.equal(policy.channels.at(-1).requireProductionClosed,true);
+  assert.equal(policy.channels.at(-1).requireCompleteGateLedger,true);
   assert.equal(policy.channels.at(-1).requireZeroUnexplainedCriticalFlakes,true);
   assert.equal(policy.channels.at(-1).allowUnresolvedRisks,false);
 });
@@ -68,6 +69,9 @@ test('current reviewed alpha candidate qualifies only for canary GO',async()=>{
   assert.equal(receipt.eligible,true);
   assert.equal(receipt.channel,'canary');
   assert.equal(receipt.version,'0.1.0-alpha.1');
+  assert.equal(receipt.checks.assurancePolicyValid,true);
+  assert.equal(receipt.checks.evidenceRegistryValid,true);
+  assert.ok(receipt.checks.evidenceLevelCounts.BROWSER>0);
   assert.equal(receipt.checks.versionProfileCoherent,true);
   assert.equal(receipt.checks.reviewedChangesComplete,true);
   assert.equal(receipt.checks.channelEvidenceSatisfied,true);
@@ -157,4 +161,28 @@ test('stable blocks commit-skewed or unexplained critical flake evidence',async(
   assert.equal(receipt.checks.independentCriticalFlakeCampaign,false);
   assert.ok(receipt.failures.redesign.some((item)=>item.includes('contract flake receipt source commit does not match')));
   assert.ok(receipt.failures.redesign.some((item)=>item.includes('browser flake campaign has 1 unexplained failures')));
+});
+
+
+test('stable cannot be manufactured from aggregate percentages or production_closed alone',async()=>{
+  const inputs=clone(await loadReleaseInputs());
+  const sourceCommit=configureStableCandidate(inputs);
+  inputs.ledger.production_closed=true;
+  inputs.candidate.unresolvedRisks=[];
+  inputs.candidate.releaseVerification={verified:true};
+  const receipt=evaluateReleasePreflight(inputs,{sourceCommit});
+  assert.equal(receipt.decision,'REDESIGN');
+  assert.equal(receipt.eligible,false);
+  assert.equal(receipt.checks.productionGateLedgerComplete,false);
+  assert.ok(receipt.failures.redesign.some(item=>item.includes('gate ledger is incomplete')));
+});
+
+test('a closed gate backed only by source confidence is a fatal evidence-integrity failure',async()=>{
+  const inputs=clone(await loadReleaseInputs());
+  const closed=inputs.ledger.overrides.find(item=>item.closure_met===true);
+  closed.evidence='oracle';
+  const receipt=evaluateReleasePreflight(inputs,{sourceCommit:'9'.repeat(40)});
+  assert.equal(receipt.decision,'KILL');
+  assert.equal(receipt.checks.evidenceRegistryValid,false);
+  assert.ok(receipt.failures.fatal.some(item=>item.includes('non-executable evidence')));
 });

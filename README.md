@@ -105,6 +105,7 @@ See:
 - [`docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.md`](docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.md)
 - [`docs/production/PRODUCT-SCOPE-AND-CLAIMS.md`](docs/production/PRODUCT-SCOPE-AND-CLAIMS.md)
 - [`docs/production/NETWORK-SECRET-PREVIEW-SECURITY.md`](docs/production/NETWORK-SECRET-PREVIEW-SECURITY.md)
+- [`docs/production/EVIDENCE-ASSURANCE.md`](docs/production/EVIDENCE-ASSURANCE.md)
 - [`docs/guides/SDK-QUICKSTART.md`](docs/guides/SDK-QUICKSTART.md)
 - [`docs/guides/STORAGE-AND-EXPORT.md`](docs/guides/STORAGE-AND-EXPORT.md)
 - [`docs/guides/HOSTING-HEADERS.md`](docs/guides/HOSTING-HEADERS.md)

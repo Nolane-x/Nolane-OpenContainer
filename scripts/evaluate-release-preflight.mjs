@@ -3,6 +3,12 @@ import { spawnSync } from 'node:child_process';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  evidenceLevelCounts,
+  productionGateLedgerFailures,
+  validateAssurancePolicy,
+  validateEvidenceRegistry
+} from './evidence-assurance-policy.mjs';
 
 const repoRoot=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 
@@ -54,6 +60,7 @@ export function validateReleasePolicy(policy){
   }
   const stable=channels.find((item)=>item.id==='stable');
   if(stable?.requireProductionClosed!==true)errors.push('stable must require production closure');
+  if(stable?.requireCompleteGateLedger!==true)errors.push('stable must require a complete 304/304 gate ledger');
   if(stable?.requireReleaseVerified!==true)errors.push('stable must require release verification');
   if(stable?.requireZeroUnexplainedCriticalFlakes!==true)errors.push('stable must fail on unexplained critical flakiness');
   if(stable?.allowUnresolvedRisks!==false)errors.push('stable cannot allow unresolved risks');
@@ -243,6 +250,12 @@ function channelEvidenceFailures({
   if(target.requireProductionClosed===true&&ledger?.production_closed!==true){
     failures.push(target.id+': production_closed is false');
   }
+  if(target.requireCompleteGateLedger===true){
+    for(const failure of productionGateLedgerFailures(ledger)){
+      if(failure==='production_closed is false'&&target.requireProductionClosed===true)continue;
+      failures.push(target.id+': '+failure);
+    }
+  }
   if(target.requireReleaseVerified===true&&candidate?.releaseVerification?.verified!==true){
     failures.push(target.id+': no verified release receipt is attached');
   }
@@ -283,9 +296,11 @@ export function renderChangelog(candidate){
 }
 
 export function evaluateReleasePreflight(inputs,{sourceCommit='unknown'}={}){
-  const {policy,candidate,rootPackage,sdkPackage,protocolPackage,profile,ledger,criticalFlakePolicy,criticalContractFlakeReceipt,criticalBrowserFlakeReceipt}=inputs;
+  const {policy,candidate,rootPackage,sdkPackage,protocolPackage,profile,ledger,criticalFlakePolicy,criticalContractFlakeReceipt,criticalBrowserFlakeReceipt,assurancePolicy,evidenceRegistry}=inputs;
   const fatal=[];
   fatal.push(...validateReleasePolicy(policy));
+  fatal.push(...validateAssurancePolicy(assurancePolicy).map(item=>'evidence assurance: '+item));
+  fatal.push(...validateEvidenceRegistry({policy:assurancePolicy,registry:evidenceRegistry,ledger}).map(item=>'evidence registry: '+item));
   if(candidate?.schema!=='opencontainer.release-candidate.v0.1')fatal.push('invalid release candidate schema');
   const channels=[...(policy?.channels??[])].sort((a,b)=>a.order-b.order);
   const target=channels.find((item)=>item.id===candidate?.channel)??null;
@@ -320,6 +335,10 @@ export function evaluateReleasePreflight(inputs,{sourceCommit='unknown'}={}){
     productionClosed:ledger?.production_closed===true,
     checks:Object.freeze({
       policyValid:validateReleasePolicy(policy).length===0,
+      assurancePolicyValid:validateAssurancePolicy(assurancePolicy).length===0,
+      evidenceRegistryValid:validateEvidenceRegistry({policy:assurancePolicy,registry:evidenceRegistry,ledger}).length===0,
+      evidenceLevelCounts:Object.freeze(evidenceLevelCounts({registry:evidenceRegistry,ledger})),
+      productionGateLedgerComplete:productionGateLedgerFailures({...ledger,production_closed:true}).length===0,
       versionProfileCoherent:profileVersionFailures({candidate,rootPackage,sdkPackage,protocolPackage,profile}).length===0,
       reviewedChangesComplete:reviewedChangeFailures(candidate,policy).length===0,
       channelEvidenceSatisfied:target?channelEvidenceFailures({candidate,policy,ledger,target,criticalFlakePolicy,criticalContractFlakeReceipt,criticalBrowserFlakeReceipt,sourceCommit}).length===0:false,
@@ -360,7 +379,9 @@ export async function loadReleaseInputs(){
     protocolPackage:'packages/protocol/package.json',
     profile:'docs/production/PRODUCTION-PROFILE.json',
     ledger:'docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.json',
-    criticalFlakePolicy:'release/CRITICAL-FLAKE-POLICY.v0.1.json'
+    criticalFlakePolicy:'release/CRITICAL-FLAKE-POLICY.v0.1.json',
+    assurancePolicy:'release/EVIDENCE-ASSURANCE-POLICY.v1.0.json',
+    evidenceRegistry:'release/EVIDENCE-REGISTRY.v1.0.json'
   };
   const entries=await Promise.all(Object.entries(paths).map(async([key,path])=>[
     key,

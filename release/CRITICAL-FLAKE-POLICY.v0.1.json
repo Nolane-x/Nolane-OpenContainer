@@ -16,10 +16,12 @@
       "tests/browser-esm-edge.test.js",
       "tests/browser-node-compat.test.js",
       "tests/native-esm-publication.test.js",
-      "tests/vite-c1-oracle.test.js"
+      "tests/vite-c1-oracle.test.js",
+      "tests/evidence-assurance.test.js",
+      "tests/p18-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 12
+    "minimumTestFiles": 14
   },
   "browser": {
     "iterations": 2,
@@ -36,6 +38,14 @@
     "requireExpiry": true,
     "requireExactSignature": true,
     "expiredException": "FAIL",
-    "unknownFailure": "UNEXPLAINED"
+    "unknownFailure": "UNEXPLAINED",
+    "requireReasonCode": true,
+    "allowedReasonCodes": [
+      "HARNESS_ENVIRONMENT_UNAVAILABLE",
+      "HARNESS_INFRASTRUCTURE_FAILURE",
+      "HARNESS_CORRUPT_FIXTURE",
+      "HARNESS_TOOLING_BUG"
+    ],
+    "nonHarnessFailure": "OUTCOME_FAILURE"
   }
 }

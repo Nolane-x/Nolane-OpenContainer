@@ -1,0 +1,132 @@
+{
+  "schema": "opencontainer.p18-evidence-assurance-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P18",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "RELEASE-READY evidence",
+  "pullRequest": 41,
+  "implementationHead": "bc283647ee9ab04a5ee645eb0a41c8236e97fb40",
+  "ci": {
+    "runNumber": 401,
+    "runId": 36300606326,
+    "testedMergeCommit": "d2e312d2e66e68a13f73f4de3022fbea68bfce5b",
+    "contract": "PASS",
+    "browserProductPath": "PASS",
+    "contractIterations": 5,
+    "criticalTestFiles": 13,
+    "criticalTestFileExecutions": 65,
+    "contractFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "browserFailures": 0,
+    "unexplainedFailures": 0
+  },
+  "assuranceBundles": {
+    "contract": {
+      "verified": true,
+      "fileCount": 12,
+      "retentionDays": 90
+    },
+    "browser": {
+      "verified": true,
+      "fileCount": 9,
+      "retentionDays": 90
+    }
+  },
+  "evidenceProfile": {
+    "id": "desktop-chrome153-ubuntu2404-x64-ci",
+    "browser": "Google Chrome 153.0.8010.52",
+    "os": "Ubuntu 24.04 x64"
+  },
+  "gates": [
+    {
+      "id": "P18-01",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Contract and browser decisive paths emit manifest/environment/raw-results/summary/logs/failure-cases/corpus-lock/negative-results bundles; full iteration logs are retained and manifest-hashed."
+    },
+    {
+      "id": "P18-02",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Flake exclusions require one predefined HARNESS_* reason code plus issue/expiry/exact signature; non-harness failures remain OUTCOME-FAILURE data."
+    },
+    {
+      "id": "P18-03",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Append-only negative-result registry retains falsified toolchain hypothesis plus P5 harness-invalid failures and their resolutions instead of deleting history."
+    },
+    {
+      "id": "P18-04",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "The 13-case compatibility corpus is frozen by schema/date/count and content-addressed Git blob SHA; byte changes require a new corpus-lock version/change record."
+    },
+    {
+      "id": "P18-05",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Every assurance bundle file except the manifest is SHA-256 + byte-count bound; the verifier re-reads and hashes every file mechanically."
+    },
+    {
+      "id": "P18-06",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Ledger reconciliation/closure/partial counts, evidence-level counts, corpus rows and negative-result rows are computed from artifacts and rechecked by the verifier/tests."
+    },
+    {
+      "id": "P18-07",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Every ledger evidence key has explicit SOURCE/DOCUMENTATION/MODEL/LOCAL/UNIT/INTEGRATION/BROWSER/DEVICE/CROSS-BROWSER/RELEASE-VERIFIED/BLOCKED-HARNESS typing; preflight emits evidence-level counts."
+    },
+    {
+      "id": "P18-08",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "BLOCKED-HARNESS is non-executable/non-closure-eligible and validator tests reject any attempt to mark it PASS or use it for closure."
+    },
+    {
+      "id": "P18-09",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "SOURCE/DOCUMENTATION evidence is explicitly separate from EXECUTABLE evidence; closed critical gates backed by non-executable evidence cause a fatal preflight/registry failure."
+    },
+    {
+      "id": "P18-10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Critical closure requires executable INTEGRATION-or-stronger evidence, so MODEL/LOCAL/UNIT-only claims must be reproduced before release closure."
+    },
+    {
+      "id": "P18-11",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Browser assurance environment records warmup, cache, CPU throttling, GC, thermal, network and DevTools validity conditions instead of hiding uncontrolled factors."
+    },
+    {
+      "id": "P18-12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Stable preflight requires the exact 304 source gate IDs to be reconciled and all closed; a forged production_closed=true with an incomplete ledger remains REDESIGN."
+    }
+  ],
+  "boundaries": [
+    "P18 governs evidence integrity; it does not upgrade SOURCE/DOCUMENTATION/LOCAL evidence for other domains.",
+    "DEVICE and CROSS-BROWSER evidence counts remain zero until real campaigns exist.",
+    "production_closed remains false until every source gate reaches its own required closure."
+  ],
+  "productionClosed": false
+}

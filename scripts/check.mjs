@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 
 const required=[
   'release/PRODUCT-SCOPE.v1.0.json','release/SCOPE-DEBT.v1.0.json','release/PUBLIC-CLAIMS.v1.0.json','release/CRITICAL-GATE-WAIVERS.v1.0.json',
+  'release/EVIDENCE-ASSURANCE-POLICY.v1.0.json','release/EVIDENCE-REGISTRY.v1.0.json','release/EVIDENCE-NEGATIVE-RESULTS.v1.0.json','release/EVIDENCE-CORPUS-LOCK.v1.0.json','release/P18-EVIDENCE-ASSURANCE-EVIDENCE.v1.0.json',
+  'scripts/evidence-assurance-policy.mjs','scripts/evidence-assurance-bundle.mjs','scripts/build-evidence-assurance.mjs','scripts/capture-browser-evidence-assurance.mjs','scripts/verify-evidence-assurance.mjs','tests/evidence-assurance.test.js','tests/p18-evidence.test.js','docs/production/EVIDENCE-ASSURANCE.md',
   'scripts/verify-product-scope.mjs','scripts/verify-browser-profile.mjs','tests/product-scope.test.js','docs/production/PRODUCT-SCOPE-AND-CLAIMS.md',
   'tests/network-security.test.js','tests/p5-evidence.test.js','release/P5-NETWORK-PREVIEW-EVIDENCE.v1.0.json','docs/production/NETWORK-SECRET-PREVIEW-SECURITY.md',
   'packages/sdk/src/index.js','packages/kernel/src/index.js','packages/vfs/src/index.js','packages/process/src/index.js',

@@ -8,8 +8,8 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **138**
-- Minimum-closure satisfied: **81**
+- Seed-reconciled against implementation evidence: **150**
+- Minimum-closure satisfied: **93**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -34,7 +34,7 @@
 | P15 SDK, API, documentation & developer experience | 13 | 1 | 14 |
 | P16 License, FTO, governance & contribution policy | 0 | 14 | 14 |
 | P17 Operations, vulnerability response & long-term maintenance | 0 | 14 | 14 |
-| P18 Evidence, assurance & research integrity | 0 | 12 | 12 |
+| P18 Evidence, assurance & research integrity | 12 | 0 | 12 |
 
 ## Immediate implementation gaps confirmed during reconciliation
 
@@ -43,6 +43,11 @@
 - Release trust chain now has reproducible artifact/checksum/SBOM/provenance/inventory evidence, but authenticated attestation, public publication, rollback and license/FTO closure remain open.
 
 ## Newly reconciled in this wave
+
+- **P18-01 through P18-12** now meet RELEASE-READY evidence through an executable assurance system rather than documentation confidence. Every ledger evidence key is typed by kind and evidence level; closed critical gates must use EXECUTABLE INTEGRATION-or-stronger PASS evidence, while SOURCE/DOCUMENTATION/MODEL/LOCAL/UNIT and BLOCKED-HARNESS cannot be silently promoted into closure.
+- Decisive contract/browser paths now emit SHA-256-manifested bundles containing environment, raw results, programmatic summary, retained full iteration logs, failure cases, frozen corpus lock and append-only negative-result history. Harness exclusions require one predefined HARNESS_* reason code plus issue/expiry/exact signature; application/runtime/product failures remain outcome data.
+- The frozen 13-case compatibility corpus is content-addressed by Git blob identity, and browser environment receipts explicitly preserve warmup/cache/CPU-throttling/GC/thermal/network/DevTools validity conditions. Stable preflight now recomputes the exact 304 source gate IDs and refuses 1.0 if any gate is unreconciled/open even when `production_closed=true` is forged.
+- CI #401 on PR #41 implementation head `bc283647ee9ab04a5ee645eb0a41c8236e97fb40` passed the full contract and browser product path. The contract critical campaign passed **5/5** iterations over **13 critical files = 65 file executions**, with zero failures; the contract assurance bundle verified `ok=true` across 12 files. Chrome `153.0.8010.52` passed **2/2** installed-distribution product paths with zero unexplained failures, and the 9-file browser assurance bundle also verified `ok=true`. P18 closure does not create DEVICE/CROSS-BROWSER evidence and keeps `production_closed=false`.
 
 - **P5-01 through P5-18** now meet `PASS-INTEGRATION + declared-profile evidence` for the declared Chrome 153 / Ubuntu 24.04 x64 profile. `NetworkAuthority` now canonicalizes URL capabilities, freezes Offline/Registry-only/Restricted/Open-web profiles with monotonic downgrade, records deterministic policy version/hash, re-authorizes visible redirect hops, limits decoded streamed bytes, propagates cancellation and keeps secret plaintext authority-side behind scoped opaque handles. Package installation rejects secret handles by default, provider failures leave canonical workspace state unchanged, and diagnostics/support paths retain the existing no-secret-output contract.
 - The real browser court uses an independent cross-origin network fixture for CORS allow/deny/opaque, Local Network Access behavior, streaming-budget, cancellation, provider failure and scoped-secret injection. Preview remains independent of external network permission; the trusted Service Worker edge strips credential headers, virtual HTTP covers HEAD/range/redirect/header/abort, hostile sandboxed preview code has an opaque origin and cannot read trusted parent/storage state.
