@@ -1,7 +1,7 @@
 import { ErrorCodes, assertOc } from '../../protocol/src/index.js';
 import { DiagnosticJournal, SupportBundleAuthority } from '../../diagnostics/src/index.js';
 import { ResourceGovernor } from '../../resources/src/index.js';
-import { MemoryVFS, OpfsCheckpointAuthority } from '../../vfs/src/index.js';
+import { MemoryVFS, OpfsCheckpointAuthority, OpfsWorkspaceLifecycleAuthority } from '../../vfs/src/index.js';
 import { ProcessSupervisor } from '../../process/src/index.js';
 import { OpfsPackageContentStore, PackageGraphAuthority } from '../../package-env/src/index.js';
 import { NetworkAuthority } from '../../network/src/index.js';
@@ -30,6 +30,22 @@ export class OpenContainer {
     Object.defineProperty(this,'_packagePersistenceOptions',{value:options.packagePersistence??null,enumerable:false});
   }
   static async boot(options={}){const runtime=new OpenContainer(options);await runtime.boot();return runtime;}
+  static async inspectWorkspaceLifecycle(workspacePersistence){
+    const authority=await new OpfsWorkspaceLifecycleAuthority(workspacePersistence).open();
+    return authority.inspect();
+  }
+  static async restoreDeletedWorkspace(workspacePersistence,options={}){
+    const authority=await new OpfsWorkspaceLifecycleAuthority(workspacePersistence).open();
+    return authority.restoreRecoverable(options);
+  }
+  static async purgeDeletedWorkspace(workspacePersistence,options={}){
+    const authority=await new OpfsWorkspaceLifecycleAuthority(workspacePersistence).open();
+    return authority.purge(options);
+  }
+  static async reconcileWorkspacePurge(workspacePersistence,options={}){
+    const authority=await new OpfsWorkspaceLifecycleAuthority(workspacePersistence).open();
+    return authority.reconcileMutation(options);
+  }
   async boot(){
     if(this._workspacePersistenceOptions){
       const authority=await new OpfsCheckpointAuthority(this._workspacePersistenceOptions).open();
@@ -103,6 +119,23 @@ export class OpenContainer {
     this._kernel.assertReady();
     assertOc(this.workspacePersistence,ErrorCodes.INVALID_STATE,'Workspace OPFS persistence is not configured');
     return this.workspacePersistence.collectGarbage(options);
+  }
+  async deleteWorkspaceRecoverably({mutationId}={}){
+    this._kernel.assertReady();
+    assertOc(this.workspacePersistence&&this._workspacePersistenceOptions,ErrorCodes.INVALID_STATE,'Workspace OPFS persistence is not configured');
+    const recoveryPoint=await this.workspacePersistence.checkpoint(this.fs);
+    await this.workspacePersistence.readCheckpoint(recoveryPoint);
+    const lifecycle=await new OpfsWorkspaceLifecycleAuthority(this._workspacePersistenceOptions).open();
+    const receipt=await lifecycle.deleteRecoverably({mutationId,recoveryPoint});
+    this._support.recordOutcome('workspace-delete',{
+      status:'tombstoned',
+      mutationId:receipt.mutationId,
+      recoverable:true,
+      recoverySequence:receipt.recoveryPoint.sequence,
+      recoveryGeneration:receipt.recoveryPoint.generation
+    });
+    await this.terminate();
+    return receipt;
   }
   async prepareWorkspaceRestore(checkpoint){
     this._kernel.assertReady();
