@@ -1,0 +1,62 @@
+{
+  "schema": "opencontainer.scope-debt-registry.v1.0",
+  "frozenAt": "2026-09-27",
+  "rule": "Temporary compatibility debt must have an owner plus explicit removal/rehome plan and revisit trigger. Open debt never expands public support claims.",
+  "marker": "OC_SCOPE_DEBT:",
+  "entries": [
+    {
+      "id": "DEBT-BROWSER-MATRIX",
+      "owner": "P1/P15",
+      "status": "OPEN",
+      "kind": "evidence-gap",
+      "summary": "Only the declared Chrome 153 / Ubuntu 24.04 x64 CI evidence profile is P0-supported.",
+      "removalOrRehomePlan": "Run and retain the per-release browser/OS/profile matrix before RC; add profiles only from retained receipts.",
+      "revisitTrigger": "before RC qualification or any broader browser/OS support claim"
+    },
+    {
+      "id": "DEBT-NODE24-BREADTH",
+      "owner": "P4/P11",
+      "status": "OPEN",
+      "kind": "compatibility-boundary",
+      "summary": "Node 24 compatibility is selected/bounded, not full API parity.",
+      "removalOrRehomePlan": "Expand executable/differential corpus per surface; keep unsupported APIs explicit rather than shimming silently.",
+      "revisitTrigger": "before a broader Node compatibility claim"
+    },
+    {
+      "id": "DEBT-WEAK-DEVICE",
+      "owner": "P7",
+      "status": "OPEN",
+      "kind": "resource-evidence-gap",
+      "summary": "Weak-device and long-run resource campaigns are not closed.",
+      "removalOrRehomePlan": "Run frozen 4/8 GiB, long-run plateau and memory-pressure campaigns; derive support floors from results.",
+      "revisitTrigger": "before RC device-floor freeze"
+    },
+    {
+      "id": "DEBT-PUBLICATION-IDENTITY",
+      "owner": "P13/P15",
+      "status": "OPEN",
+      "kind": "release-evidence-gap",
+      "summary": "Publish-equivalent package evidence exists but public npm/GitHub Release identity is not closed.",
+      "removalOrRehomePlan": "Use reviewed release workflow with trusted publication identity, then bind external package/release digest to certified artifact.",
+      "revisitTrigger": "before Beta external distribution claim"
+    },
+    {
+      "id": "DEBT-LEGAL-FTO",
+      "owner": "P16",
+      "status": "OPEN",
+      "kind": "external-decision",
+      "summary": "Dependency/test-corpus license closure and FTO counsel review remain open.",
+      "removalOrRehomePlan": "Complete actual-release dependency notices and jurisdiction-specific FTO review; retain decisions without converting engineering analysis into legal conclusions.",
+      "revisitTrigger": "before public commercial production claim"
+    },
+    {
+      "id": "DEBT-TOOLCHAIN-UNSAFE-EVAL",
+      "owner": "P6/P12",
+      "status": "OPEN",
+      "kind": "temporary-compatibility-profile",
+      "summary": "Vite toolchain Worker uses a separate CSP profile that admits unsafe-eval while strict guest Workers do not.",
+      "removalOrRehomePlan": "Keep the privilege isolated to the frozen toolchain Worker; remove the permission if the promoted toolchain no longer requires dynamic code generation.",
+      "revisitTrigger": "every Vite/Rolldown profile update"
+    }
+  ]
+}

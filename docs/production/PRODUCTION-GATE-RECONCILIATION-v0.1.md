@@ -8,14 +8,15 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **110**
+- Seed-reconciled against implementation evidence: **120**
+- Minimum-closure satisfied: **63**
 - Production closed: **false**
 
 ## Domain reconciliation state
 
 | Domain | Seed evidence/partial | Unreconciled | Total |
 |---|---:|---:|---:|
-| P0 Product scope & production profile | 2 | 10 | 12 |
+| P0 Product scope & production profile | 12 | 0 | 12 |
 | P1 Browser deployment, origin & lifecycle | 7 | 9 | 16 |
 | P2 Kernel, RPC, process & stream semantics | 6 | 8 | 14 |
 | P3 VFS, OPFS, persistence & data safety | 9 | 11 | 20 |
@@ -43,7 +44,9 @@
 
 ## Newly reconciled in this wave
 
-- **P0-02** now has a canonical machine-readable runtime/filesystem/network/snapshot/protocol identity, with a public JSON artifact drift-checked against the SDK and verified in Chrome. Its required `RELEASE-READY` closure is still open.
+- **P0-01 through P0-12** now meet their RELEASE-READY minimum closure for the explicitly declared 1.0 product scope. The policy freezes exactly nine Core surfaces and the Node `24.21.0` / npm `11.19.0` oracle; names one P0 evidence profile only (Chrome 153 on Ubuntu 24.04 x64); keeps native addons, arbitrary raw TCP/TLS, full Linux semantics and undeclared browser profiles explicitly unsupported; keeps AI/Git hosting/cloud sync/accounts/billing outside Core; and binds release decisions to GO / REDESIGN / KILL.
+- Scope debt is now machine-readable: six current debts each carry an owner, removal/rehome plan and revisit trigger. Production severity explicitly treats data loss, isolation break, secret exposure and silent semantic corruption as release blockers. Public release/marketing claims must name the production profile and retained evidence, while the critical-gate waiver registry is fail-closed and currently empty.
+- CI #385 on PR #39 head `6f560a5d96521f0ec2071e8ae0dea3673cdab571` passed the complete contract court and browser product path. The contract receipt reported `ok=true`, nine Core surfaces, six scope-debt entries, six registered public claims, zero critical-gate waivers and `productionClosed=false`. The browser receipt passed on Google Chrome `153.0.8010.52` / Ubuntu 24.04 x64, and the critical browser campaign completed **2/2** full installed-distribution product paths with **0 unexplained failures**. This P0 closure deliberately does not close the broader P15-05 browser/OS matrix, weak-device floors, public publication identity, legal/FTO or operations gates.
 
 - **P3-16** now has Chrome evidence that public SDK export pins one committed generation; minimum production closure is still not claimed.
 - **P15-01** now meets release-ready evidence: the public package surface is frozen by `PUBLIC-SDK.v0.1.json`, the distribution export map is derived from that contract, CI introspects the actual module/class surface, and the installed tarball exposes only `.`, `./profile` and `./package.json` while 12 internal worker/kernel/authority subpaths remain private.
