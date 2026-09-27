@@ -234,3 +234,5 @@ export { WORKSPACE };
 export { OpfsCheckpointAuthority } from './opfs-authority.js';
 
 export { BrowserStoragePolicy } from './browser-storage-policy.js';
+
+export { OpfsWorkspaceLifecycleAuthority, readWorkspaceLifecycleRecord, workspaceLifecycleBlocksPublication } from './workspace-lifecycle.js';
