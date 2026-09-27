@@ -131,14 +131,21 @@ export class OpfsCheckpointAuthority {
     return this;
   }
 
-  async checkpoint(fsOrSnapshot,{crashAt=null}={}) {
+  async checkpoint(fsOrSnapshot,{crashAt=null,quotaFaultAt=null}={}) {
     this.#assertOpen();
     const crashPhases=['after-preflight','after-payload','after-manifest'];
+    const quotaFaultPhases=['after-0-bytes','after-1-byte','after-header','mid-payload','pre-commit','post-payload-pre-manifest'];
     assertOc(
       crashAt===null||crashPhases.includes(crashAt),
       ErrorCodes.INVALID_ARGUMENT,
       'Unknown OPFS checkpoint crash phase',
       {crashAt,crashPhases}
+    );
+    assertOc(
+      quotaFaultAt===null||quotaFaultPhases.includes(quotaFaultAt),
+      ErrorCodes.INVALID_ARGUMENT,
+      'Unknown OPFS checkpoint quota fault phase',
+      {quotaFaultAt,quotaFaultPhases}
     );
     const snapshot = typeof fsOrSnapshot?.snapshot === 'function' ? fsOrSnapshot.snapshot() : fsOrSnapshot;
     assertOc(snapshot?.version === 1 && Number.isInteger(snapshot.generation) && Array.isArray(snapshot.entries), ErrorCodes.INVALID_ARGUMENT, 'Invalid VFS checkpoint snapshot');
@@ -198,8 +205,11 @@ export class OpfsCheckpointAuthority {
       this.#injectCrash(crashAt,'after-preflight',{generation:snapshot.generation,sequence,payload,slot});
 
       // Payload first. A crash here can only leave an unreachable orphan.
-      await this.#writeCheckpointText(this.#payloads, payload, payloadText, 'payload');
+      await this.#writeCheckpointText(this.#payloads, payload, payloadText, 'payload', { quotaFaultAt });
       this.#injectCrash(crashAt,'after-payload',{generation:snapshot.generation,sequence,payload,slot});
+      if (quotaFaultAt === 'post-payload-pre-manifest') {
+        await this.#throwInjectedQuotaFault('post-payload-pre-manifest', manifestName);
+      }
 
       // Canonical identity is switched only by publishing the validated manifest.
       await this.#writeCheckpointText(this.#directory, manifestName, manifestText, 'manifest');
@@ -446,7 +456,49 @@ export class OpfsCheckpointAuthority {
     });
   }
 
-  async #writeCheckpointText(directory, name, content, phase) {
+  async #throwInjectedQuotaFault(phase,name) {
+    let storage = null;
+    if (this.#storagePolicy) {
+      try { storage = await this.#storagePolicy.inspect(); } catch {}
+    }
+    throw ocError(ErrorCodes.RESOURCE_EXHAUSTED, 'Injected OPFS storage quota exhausted during checkpoint', {
+      phase,
+      name,
+      storage,
+      injectedQuota: true
+    });
+  }
+
+  async #writeCheckpointText(directory, name, content, phase, { quotaFaultAt = null } = {}) {
+    const payloadFaults = new Set(['after-0-bytes','after-1-byte','after-header','mid-payload','pre-commit']);
+    if (phase === 'payload' && quotaFaultAt && payloadFaults.has(quotaFaultAt)) {
+      const handle = await directory.getFileHandle(name, { create: true });
+      const writable = await handle.createWritable();
+      try {
+        const text = String(content);
+        if (quotaFaultAt === 'after-1-byte') await writable.write(text.slice(0, 1));
+        if (quotaFaultAt === 'after-header') await writable.write(text.slice(0, Math.min(32, text.length)));
+        if (quotaFaultAt === 'mid-payload') await writable.write(text.slice(0, Math.max(1, Math.floor(text.length / 2))));
+        if (quotaFaultAt === 'pre-commit') await writable.write(text);
+        const error = new Error('Injected quota exhaustion');
+        error.name = 'QuotaExceededError';
+        throw error;
+      } catch (error) {
+        try { await writable.abort?.(); } catch {}
+        if (error?.name !== 'QuotaExceededError') throw error;
+        let storage = null;
+        if (this.#storagePolicy) {
+          try { storage = await this.#storagePolicy.inspect(); } catch {}
+        }
+        throw ocError(ErrorCodes.RESOURCE_EXHAUSTED, 'OPFS storage quota exhausted during checkpoint', {
+          phase: quotaFaultAt,
+          name,
+          storage,
+          injectedQuota: true
+        });
+      }
+    }
+
     try {
       await writeText(directory, name, content);
     } catch (error) {
