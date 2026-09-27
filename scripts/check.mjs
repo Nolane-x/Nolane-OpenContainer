@@ -5,6 +5,7 @@ const required=[
   'packages/sdk/src/index.js','packages/kernel/src/index.js','packages/vfs/src/index.js','packages/process/src/index.js',
   'packages/process/src/sync-rpc.js',
   'tests/production-diagnostics.test.js','scripts/opencontainer-diagnostic.mjs','.github/ISSUE_TEMPLATE/opencontainer_bug.yml',
+  'docs/production/DIAGNOSTICS-POLICY.v0.1.json','docs/production/DIAGNOSTICS-SUPPORT.md',
   'docs/api/PUBLIC-SDK.v0.1.json','docs/api/ERROR-CATALOG.v0.1.json','docs/api/API-REFERENCE.md','docs/api/ERROR-REFERENCE.md',
   'scripts/generate-developer-docs.mjs','tests/developer-docs.test.js','examples/sdk-failure-paths.mjs',
   'docs/guides/LIMITATIONS.md','docs/guides/SECURITY-MODEL.md','docs/guides/AI-CONSUMERS.md','docs/guides/MIGRATION.md','docs/guides/TROUBLESHOOTING.md',
