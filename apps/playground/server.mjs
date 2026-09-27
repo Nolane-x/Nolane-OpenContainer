@@ -8,6 +8,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '../..');
 const publicRoot = join(here, 'public');
 const port = Number(process.env.PORT || 4173);
+const networkFixturePort = Number(process.env.OPENCONTAINER_P5_NETWORK_PORT || (port + 1));
 const lexerPath = fileURLToPath(import.meta.resolve('es-module-lexer/minimal/js'));
 const sourcePackageLockPath = existsSync(join(repoRoot, 'package-lock.json'))
   ? join(repoRoot, 'package-lock.json')
@@ -67,6 +68,87 @@ function safeRepoFile(pathname) {
   return target;
 }
 
+
+function applyP5Cors(response) {
+  response.setHeader('Access-Control-Allow-Origin', 'http://127.0.0.1:' + port);
+  response.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,POST,OPTIONS');
+  response.setHeader('Access-Control-Allow-Headers', 'authorization,content-type,range');
+  response.setHeader('Access-Control-Expose-Headers', 'x-p5-network,content-range');
+  response.setHeader('Access-Control-Allow-Private-Network', 'true');
+  response.setHeader('Vary', 'Origin');
+}
+
+const networkFixture = createServer((request, response) => {
+  const url = new URL(request.url, 'http://127.0.0.1:' + networkFixturePort);
+  response.setHeader('Cache-Control', 'no-store');
+  response.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  response.setHeader('X-P5-Network', 'fixture');
+
+  if (request.method === 'OPTIONS') {
+    applyP5Cors(response);
+    response.statusCode = 204;
+    response.end();
+    return;
+  }
+
+  if (url.pathname === '/allowed' || url.pathname === '/lna') {
+    applyP5Cors(response);
+    response.statusCode = 200;
+    response.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    response.end(url.pathname === '/lna' ? 'lna-allowed' : 'cors-allowed');
+    return;
+  }
+
+  if (url.pathname === '/denied' || url.pathname === '/opaque') {
+    response.statusCode = 200;
+    response.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    response.end(url.pathname === '/opaque' ? 'opaque-body' : 'cors-denied-body');
+    return;
+  }
+
+  if (url.pathname === '/stream') {
+    applyP5Cors(response);
+    response.statusCode = 200;
+    response.setHeader('Content-Type', 'application/octet-stream');
+    response.write(new Uint8Array(1024).fill(65));
+    setTimeout(() => response.write(new Uint8Array(1024).fill(66)), 10);
+    setTimeout(() => response.end(new Uint8Array(1024).fill(67)), 20);
+    return;
+  }
+
+  if (url.pathname === '/slow') {
+    applyP5Cors(response);
+    response.statusCode = 200;
+    response.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    setTimeout(() => {
+      if (!response.writableEnded) response.end('slow-complete');
+    }, 800);
+    return;
+  }
+
+  if (url.pathname === '/provider-fail') {
+    applyP5Cors(response);
+    response.statusCode = 401;
+    response.setHeader('Content-Type', 'application/json; charset=utf-8');
+    response.end(JSON.stringify({ ok: false, code: 'PROVIDER_AUTH_FAILED' }));
+    return;
+  }
+
+  if (url.pathname === '/secret-echo') {
+    applyP5Cors(response);
+    response.statusCode = 200;
+    response.setHeader('Content-Type', 'application/json; charset=utf-8');
+    response.end(JSON.stringify({
+      authorizationPresent: typeof request.headers.authorization === 'string' && request.headers.authorization.length > 0,
+      cookiePresent: typeof request.headers.cookie === 'string' && request.headers.cookie.length > 0
+    }));
+    return;
+  }
+
+  response.statusCode = 404;
+  response.end('P5 network fixture: not found');
+});
+
 const server = createServer(async (request, response) => {
   response.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   response.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
@@ -75,6 +157,32 @@ const server = createServer(async (request, response) => {
 
   try {
     const url = new URL(request.url, 'http://127.0.0.1');
+
+    if (url.pathname === '/__p5__/redirect-allowed') {
+      response.statusCode = 302;
+      response.setHeader('Location', '/__p5__/redirect-final');
+      response.end();
+      return;
+    }
+    if (url.pathname === '/__p5__/redirect-denied') {
+      response.statusCode = 302;
+      response.setHeader('Location', '/__p5__/outside-final');
+      response.end();
+      return;
+    }
+    if (url.pathname === '/__p5__/redirect-final') {
+      response.statusCode = 200;
+      response.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      response.end('redirect-final');
+      return;
+    }
+    if (url.pathname === '/__p5__/outside-final') {
+      response.statusCode = 200;
+      response.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      response.end('outside-capability-should-not-be-fetched');
+      return;
+    }
+
     const upstream = compatibilityUpstream.get(url.pathname);
     if (upstream) {
       const upstreamResponse = await fetch(upstream.url, {
@@ -124,6 +232,9 @@ const server = createServer(async (request, response) => {
   }
 });
 
-server.listen(port, '127.0.0.1', () => {
-  console.log('OpenContainer playground: http://127.0.0.1:' + port);
+networkFixture.listen(networkFixturePort, '127.0.0.1', () => {
+  console.log('OpenContainer P5 network fixture: http://127.0.0.1:' + networkFixturePort);
+  server.listen(port, '127.0.0.1', () => {
+    console.log('OpenContainer playground: http://127.0.0.1:' + port);
+  });
 });

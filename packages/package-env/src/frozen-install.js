@@ -93,8 +93,14 @@ export class FrozenInstallAuthority {
     signal = null,
     onProgress = null,
     locations = null,
-    artifactUrlResolver = null
+    artifactUrlResolver = null,
+    secretHandles = null
   } = {}) {
+    assertOc(
+      secretHandles == null || (Array.isArray(secretHandles) && secretHandles.length === 0),
+      ErrorCodes.NETWORK_DENIED,
+      'Package installation does not accept network secret handles in the promoted profile'
+    );
     const graph = this.#packages.graph;
     assertOc(graph, ErrorCodes.INVALID_STATE, 'Compile a lockfile before installing artifacts');
     assertOc(artifactAuthority && typeof artifactAuthority.fetchArtifact === 'function', ErrorCodes.INVALID_ARGUMENT, 'PackageArtifactAuthority is required');

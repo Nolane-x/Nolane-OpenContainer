@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 const required=[
   'release/PRODUCT-SCOPE.v1.0.json','release/SCOPE-DEBT.v1.0.json','release/PUBLIC-CLAIMS.v1.0.json','release/CRITICAL-GATE-WAIVERS.v1.0.json',
   'scripts/verify-product-scope.mjs','scripts/verify-browser-profile.mjs','tests/product-scope.test.js','docs/production/PRODUCT-SCOPE-AND-CLAIMS.md',
+  'tests/network-security.test.js','docs/production/NETWORK-SECRET-PREVIEW-SECURITY.md',
   'packages/sdk/src/index.js','packages/kernel/src/index.js','packages/vfs/src/index.js','packages/process/src/index.js',
   'packages/process/src/sync-rpc.js',
   'tests/production-diagnostics.test.js','scripts/opencontainer-diagnostic.mjs','.github/ISSUE_TEMPLATE/opencontainer_bug.yml',

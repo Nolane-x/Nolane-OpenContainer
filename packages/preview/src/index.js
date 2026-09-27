@@ -22,3 +22,23 @@ export class PreviewAuthority {
 }
 
 export { BrowserPreviewServiceWorkerBridge } from './browser-service-worker.js';
+
+
+export function createSandboxedPreviewFrame({
+  url,
+  documentRef=globalThis.document,
+  title='OpenContainer preview'
+}={}){
+  if(!documentRef||typeof documentRef.createElement!=='function'){
+    throw ocError(ErrorCodes.INVALID_STATE,'Sandboxed preview frame requires a browser document');
+  }
+  const frame=documentRef.createElement('iframe');
+  frame.src=String(url??'about:blank');
+  frame.title=String(title);
+  frame.referrerPolicy='no-referrer';
+  frame.setAttribute('sandbox','allow-scripts allow-forms allow-modals allow-pointer-lock allow-downloads');
+  frame.setAttribute('allow','');
+  if('credentialless' in frame)frame.credentialless=true;
+  frame.dataset.opencontainerPreview='sandboxed';
+  return frame;
+}
