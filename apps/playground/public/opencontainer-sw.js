@@ -161,6 +161,24 @@ async function routeModule(request, url) {
   }
 }
 
+function rewritePreviewRedirect(location, { port, owner, epoch, guestURL }) {
+  const raw = String(location ?? '');
+  if (!raw) return null;
+  if (/^[A-Za-z][A-Za-z\d+.-]*:/.test(raw) || raw.startsWith('//')) return null;
+  let target;
+  try {
+    target = new URL(raw, 'http://opencontainer-preview.invalid' + guestURL);
+  } catch {
+    return null;
+  }
+  if (target.origin !== 'http://opencontainer-preview.invalid') return null;
+  const rewritten = new URL('/__opencontainer__/preview/' + port + target.pathname, self.location.origin);
+  for (const [key, value] of target.searchParams) rewritten.searchParams.append(key, value);
+  rewritten.searchParams.set('__oc_owner', owner);
+  rewritten.searchParams.set('__oc_epoch', String(epoch));
+  return rewritten.href;
+}
+
 async function routePreview(request, url) {
   const relative = url.pathname.slice(PREVIEW_PREFIX.length);
   const slash = relative.indexOf('/');
@@ -213,11 +231,23 @@ async function routePreview(request, url) {
   try {
     const result = await Promise.any(attempts);
     const headers = previewEdgeHeaders(result.headers);
+    const status = result.status ?? 200;
+    if ([301, 302, 303, 307, 308].includes(status)) {
+      const location = result.headers?.location ?? result.headers?.Location ?? headers.get('location');
+      const rewritten = rewritePreviewRedirect(location, { port, owner, epoch, guestURL });
+      if (!rewritten) {
+        return new Response('External or invalid preview redirect denied', {
+          status: 502,
+          headers: previewEdgeHeaders({ 'content-type': 'text/plain; charset=utf-8' })
+        });
+      }
+      headers.set('location', rewritten);
+    }
     headers.set('x-opencontainer-preview-port', String(port));
     headers.set('x-opencontainer-preview-owner', owner);
     headers.set('x-opencontainer-preview-epoch', String(epoch));
     return new Response(method === 'HEAD' ? null : result.body ?? null, {
-      status: result.status ?? 200,
+      status,
       statusText: result.statusText ?? '',
       headers
     });
