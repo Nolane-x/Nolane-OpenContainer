@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PreviewAuthority, BrowserPreviewServiceWorkerBridge } from '../packages/preview/src/index.js';
+import { sanitizePreviewRequestHeaders } from '../packages/preview/src/browser-service-worker.js';
 import { SERVICE_WORKER_COMPATIBILITY_ID } from '../packages/protocol/src/service-worker-compatibility.js';
 
 class FakeWorker {
@@ -113,5 +114,65 @@ test('browser preview bridge rejects stale owner and epoch proof', async () => {
   for (let index = 0; index < 10 && !posted; index++) await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(posted?.ok, false);
   assert.equal(posted?.code, 'OC_PREVIEW_STALE');
+  bridge.close();
+});
+
+
+test('preview edge strips host credentials before dispatch to untrusted preview', async () => {
+  assert.deepEqual(sanitizePreviewRequestHeaders({
+    Authorization:'Bearer secret',
+    Cookie:'session=secret',
+    'X-API-Key':'secret',
+    'X-Auth-Token':'secret',
+    Range:'bytes=0-3',
+    'X-Demo':'safe'
+  }),{
+    range:'bytes=0-3',
+    'x-demo':'safe'
+  });
+
+  let observedHeaders=null;
+  const preview=new PreviewAuthority();
+  const route=preview.publish({
+    port:5174,
+    owner:'credential-strip',
+    handler:(request)=>{
+      observedHeaders=request.headers;
+      return new Response('ok');
+    }
+  });
+  const container=new FakeServiceWorkerContainer();
+  const bridge=new BrowserPreviewServiceWorkerBridge({
+    preview,
+    serviceWorkerContainer:container,
+    baseURL:'https://example.test'
+  });
+  await bridge.start();
+
+  let posted=null;
+  container.emitMessage({
+    type:'opencontainer:preview-fetch',
+    port:5174,
+    owner:route.owner,
+    epoch:route.epoch,
+    url:'/',
+    method:'GET',
+    headers:{
+      authorization:'Bearer host-secret',
+      cookie:'sid=host-secret',
+      'x-api-key':'host-secret',
+      range:'bytes=0-3',
+      'x-demo':'safe'
+    },
+    body:null
+  },{postMessage(value){posted=value;}});
+
+  for(let index=0;index<10&&!posted;index++)await new Promise((resolve)=>setTimeout(resolve,0));
+  assert.equal(posted?.ok,true);
+  assert.equal(observedHeaders.authorization,undefined);
+  assert.equal(observedHeaders.cookie,undefined);
+  assert.equal(observedHeaders['x-api-key'],undefined);
+  assert.equal(observedHeaders.range,'bytes=0-3');
+  assert.equal(observedHeaders['x-demo'],'safe');
   bridge.close();
 });

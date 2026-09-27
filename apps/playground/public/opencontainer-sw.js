@@ -80,6 +80,17 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
+const SENSITIVE_PREVIEW_REQUEST_HEADER = /^(?:authorization|proxy-authorization|cookie|x-api-key|x-auth-token)$/i;
+
+function sanitizedPreviewHeaders(headers) {
+  const out = {};
+  for (const [name, value] of headers.entries()) {
+    if (SENSITIVE_PREVIEW_REQUEST_HEADER.test(name)) continue;
+    out[name] = value;
+  }
+  return out;
+}
+
 function edgeHeaders(input = {}) {
   const headers = new Headers(input);
   headers.set('cache-control', 'no-store');
@@ -166,7 +177,7 @@ async function routePreview(request, url) {
     epoch,
     url: guestURL,
     method,
-    headers: Object.fromEntries(request.headers.entries()),
+    headers: sanitizedPreviewHeaders(request.headers),
     body
   }));
 

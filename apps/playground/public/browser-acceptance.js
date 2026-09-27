@@ -3121,7 +3121,7 @@ async function run() {
     title: 'OpenContainer P5 sandbox court'
   });
   assert(!p5Frame.sandbox.contains('allow-same-origin'), 'P5 preview sandbox accidentally grants trusted origin');
-  if ('credentialless' in p5Frame) assert(p5Frame.credentialless === true, 'P5 preview frame did not enable credentialless mode');
+  if ('credentialless' in p5Frame) assert(p5Frame.credentialless === false, 'P5 Service-Worker-backed preview unexpectedly enabled credentialless mode');
 
   const p5FrameReceiptPromise = new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -3141,7 +3141,7 @@ async function run() {
   assert(p5FrameReceipt.eventOrigin === 'null', 'P5 preview frame retained trusted same-origin identity');
   assert(p5FrameReceipt.parentAccess !== 'readable', 'P5 preview frame reached trusted parent credential state');
   assert(p5FrameReceipt.storageAccess !== 'readable', 'P5 preview frame reached trusted browser storage');
-  assert(p5FrameReceipt.hostCredentialHeaders === false, 'P5 credentialless preview navigation carried host credentials');
+  assert(p5FrameReceipt.hostCredentialHeaders === false, 'P5 trusted preview edge forwarded host credential headers to untrusted preview');
   p5Frame.remove();
   delete globalThis.__opencontainerTrustedCanary;
   localStorage.removeItem('opencontainer-p5-host');
@@ -3179,6 +3179,7 @@ async function run() {
     frameParentAccess: p5FrameReceipt.parentAccess,
     frameStorageAccess: p5FrameReceipt.storageAccess,
     frameHostCredentialHeaders: p5FrameReceipt.hostCredentialHeaders,
+    frameCredentialless: 'credentialless' in p5Frame ? p5Frame.credentialless : null,
     policyVersion: p5Decision.policyVersion,
     policyHash: p5Decision.policyHash,
     downgradedProfile: p5OfflineReceipt.profile

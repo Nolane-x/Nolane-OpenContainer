@@ -27,7 +27,8 @@ export { BrowserPreviewServiceWorkerBridge } from './browser-service-worker.js';
 export function createSandboxedPreviewFrame({
   url,
   documentRef=globalThis.document,
-  title='OpenContainer preview'
+  title='OpenContainer preview',
+  credentialless=false
 }={}){
   if(!documentRef||typeof documentRef.createElement!=='function'){
     throw ocError(ErrorCodes.INVALID_STATE,'Sandboxed preview frame requires a browser document');
@@ -38,7 +39,7 @@ export function createSandboxedPreviewFrame({
   frame.referrerPolicy='no-referrer';
   frame.setAttribute('sandbox','allow-scripts allow-forms allow-modals allow-pointer-lock allow-downloads');
   frame.setAttribute('allow','');
-  if('credentialless' in frame)frame.credentialless=true;
+  if('credentialless' in frame)frame.credentialless=credentialless===true;
   frame.dataset.opencontainerPreview='sandboxed';
   return frame;
 }

@@ -68,6 +68,17 @@ function normalizeGuestPath(value) {
   return raw.startsWith('/') ? raw : '/' + raw;
 }
 
+const SENSITIVE_PREVIEW_REQUEST_HEADER = /^(?:authorization|proxy-authorization|cookie|x-api-key|x-auth-token)$/i;
+
+export function sanitizePreviewRequestHeaders(headers = {}) {
+  const safe = {};
+  for (const [name, value] of Object.entries(headers ?? {})) {
+    if (SENSITIVE_PREVIEW_REQUEST_HEADER.test(name)) continue;
+    safe[String(name).toLowerCase()] = String(value);
+  }
+  return Object.freeze(safe);
+}
+
 export class BrowserPreviewServiceWorkerBridge {
   #preview;
   #container;
@@ -152,7 +163,7 @@ export class BrowserPreviewServiceWorkerBridge {
         {
           url: data.url,
           method: data.method,
-          headers: data.headers ?? {},
+          headers: sanitizePreviewRequestHeaders(data.headers ?? {}),
           body: data.body == null ? null : Uint8Array.from(data.body)
         },
         { owner: data.owner, epoch: Number(data.epoch) }
