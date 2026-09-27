@@ -1,0 +1,159 @@
+{
+  "schema": "opencontainer.p17-operations-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P17",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "Process exercised before 1.0 or public beta as applicable",
+  "pullRequest": 43,
+  "implementationHead": "631ce3608424a901f74c67e83666f6d14bb87a73",
+  "ci": {
+    "runNumber": 413,
+    "runId": 36306347294,
+    "testedCheckoutCommit": "f8ce13adda66ea95fa1076f87abbd8ffeba857c4",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "processGateCount": 14,
+    "vulnerabilityStates": 6,
+    "incidentScenarios": 4,
+    "knownIssues": 4,
+    "regressionEntries": 12,
+    "localHealthRemoteRequests": 0,
+    "supportSchemas": [
+      "opencontainer.support-bundle.v0.1",
+      "opencontainer.support-bundle.v0.2"
+    ],
+    "blockedRuntimeMutation": true,
+    "operationsRawSha256": "cd79ebf5e20f89f09c87754cbecd124ac72bbf911deabec3f5fab86cdf590833",
+    "contractIterations": 5,
+    "criticalTestFiles": 20,
+    "criticalTestFileExecutions": 100,
+    "contractUnexplainedFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "browserUnexplainedFailures": 0
+  },
+  "evidenceProfile": {
+    "id": "desktop-chrome153-ubuntu2404-x64-ci",
+    "browser": "Google Chrome 153.0.8010.52",
+    "os": "Ubuntu 24.04 x64",
+    "resourceFloorClaimed": false
+  },
+  "periodicMaintenance": {
+    "workflow": ".github/workflows/maintenance.yml",
+    "cadence": "weekly",
+    "exercises": [
+      "dependency audit",
+      "operations drill",
+      "browser profile verification",
+      "critical browser flake campaign"
+    ]
+  },
+  "gates": [
+    {
+      "id": "P17-01",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Versioned pre-1.0 support policy defines main/active-candidate supported lines and severity-specific security-fix behavior; drill proves the active version remains writable and known-bad version is separately blocked."
+    },
+    {
+      "id": "P17-02",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Executable vulnerability lifecycle runs RECEIVED→TRIAGED→EMBARGOED→FIX_READY→ADVISORY_READY→DISCLOSED for critical/high while explicitly preserving the separate missing-private-channel boundary."
+    },
+    {
+      "id": "P17-03",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Incident policy assigns coordinator, security, release, storage and communications roles; every disaster drill records the role set and required containment/recovery actions."
+    },
+    {
+      "id": "P17-04",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Revocation policy freezes promotion, marks known-bad releases, conditionally deprecates/yanks published artifacts, invalidates release notices, publishes warnings and rebuilds clean provenance; publication actions remain conditional until artifacts actually exist."
+    },
+    {
+      "id": "P17-05",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Known-bad runtime drill applies VFS read-only mode with a version-bound reason; mutation fails while existing project reads and portable export remain allowed."
+    },
+    {
+      "id": "P17-06",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Dependency maintenance is exercised through npm audit on every CI plus weekly/monthly update policy and same-day high/critical triage; current security court remains zero-blocker."
+    },
+    {
+      "id": "P17-07",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Browser regression watch freezes OPFS/Web Locks/Service Worker/SharedArrayBuffer/crossOriginIsolated primitives and a weekly maintenance workflow reruns profile + 2-iteration installed-distribution browser court without central telemetry."
+    },
+    {
+      "id": "P17-08",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Telemetry-free local health receipt reports runtime/profile, browser primitives, workspace read-only/generation and diagnostics with remoteRequestCount=0 and centralServiceRequired=false."
+    },
+    {
+      "id": "P17-09",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Support bundle authority now exposes a backward parser for opencontainer.support-bundle.v0.1 and v0.2, rejects unknown schemas and unsafe privacy flags, and current diagnostics remain reproducible/privacy-minimized."
+    },
+    {
+      "id": "P17-10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Backup/export policy explicitly calls browser storage best-effort, recommends portable export before risky events for important projects, and forbids nagging/false durability guarantees."
+    },
+    {
+      "id": "P17-11",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "EOL disposition preserves project readability and portable export, blocks/read-only unsafe mutation and forbids destructive storage downgrade."
+    },
+    {
+      "id": "P17-12",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Issue-to-regression rule mechanically verifies all retained critical/high security fixes have stable IDs, executable tests and FIXED_RETAINED evidence; #413 checked 12 entries."
+    },
+    {
+      "id": "P17-13",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "Known-issues database contains version/profile/browser mapping and only safe-or-null workarounds; #413 validated four current evidence/external gaps."
+    },
+    {
+      "id": "P17-14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "CI #413 executes four disaster drills—bad release rollback, corrupt workspace recovery, compromised publishing credential and browser primitive regression—with containment, recovery, notification, evidence preservation and post-incident regression."
+    }
+  ],
+  "boundaries": [
+    "P17 process closure is pre-1.0 exercised-process evidence, not proof of a staffed 24x7 hosted operations organization.",
+    "The vulnerability workflow does not create or verify a private intake channel; P12-17 remains open.",
+    "Revocation/yank actions are simulated and conditional because no externally published npm/GitHub Release identity is claimed.",
+    "Weekly browser watch uses the declared Chrome profile; it does not close cross-browser, browser-floor or weak-device gates.",
+    "production_closed remains false."
+  ],
+  "productionClosed": false
+}

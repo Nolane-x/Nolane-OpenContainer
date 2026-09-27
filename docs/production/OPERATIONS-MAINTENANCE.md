@@ -44,3 +44,10 @@ CI exercises four scenarios:
 Each must include containment, recovery, user notification, evidence preservation and post-incident regression.
 
 The process is simulation evidence for pre-1.0 operations. It is not proof of a real external advisory channel, public package yank, cross-browser floor, weak-device floor or production CDN operation.
+
+
+## CI #413 evidence boundary
+
+PR #43 implementation head `631ce3608424a901f74c67e83666f6d14bb87a73` passed CI #413. The commit-bound operations receipt reports 14 exercised process areas, four disaster scenarios, four known issues, 12 retained regressions, zero remote health requests, v0.1/v0.2 support-bundle parsing and a successful known-bad-runtime mutation block. The repeated critical campaign ran 100 test-file executions with zero unexplained failures; the declared Chrome 153 profile passed 2/2 installed-distribution product paths.
+
+This closes P17's exercised-process requirement for pre-1.0. It does not close P12-17 or any external publication/cross-browser/weak-device/production-topology requirement.
