@@ -152,6 +152,26 @@ const server = createServer(async (request, response) => {
         response.end(JSON.stringify({ok:false,code:'invalid_api_key'}));
         return;
       }
+      if (url.pathname === '/__p5__/redirect-network-start') {
+        cors();
+        response.statusCode = 302;
+        response.setHeader('Location', '/__p5__/redirect-network-target');
+        response.end();
+        return;
+      }
+      if (url.pathname === '/__p5__/redirect-network-target') {
+        cors();
+        response.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        response.end('redirect-authorized');
+        return;
+      }
+      if (url.pathname === '/__p5__/redirect-network-denied') {
+        cors();
+        response.statusCode = 302;
+        response.setHeader('Location', '/package-lock.json');
+        response.end();
+        return;
+      }
       if (url.pathname === '/__p5__/package-observation') {
         cors();
         response.setHeader('Content-Type', 'application/json');
