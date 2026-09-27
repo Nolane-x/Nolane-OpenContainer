@@ -1,0 +1,73 @@
+{
+  "schema": "opencontainer.p7-resource-wave2-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P7",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 48,
+  "implementationHead": "0f71f7492ae0175d929c98c6e032dd4cf522d728",
+  "ci": {
+    "runNumber": 432,
+    "runId": 36320314642,
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "resourceMeasurement": "PASS",
+    "criticalTestFiles": 30,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 150,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "unexplainedFailures": 0
+  },
+  "closedGates": [
+    {
+      "id": "P7-08",
+      "evidence": [
+        "ResourceGovernor task and in-flight byte budgets",
+        "P8 diagnostic and terminal-history bounds",
+        "zero-default retained source-map byte budget",
+        "repo-wide production-source retention audit",
+        "critical contract campaign"
+      ]
+    },
+    {
+      "id": "P7-13",
+      "evidence": [
+        "pressure-aware background task admission",
+        "serious/critical pressure epoch cancellation",
+        "stale background RPC publication rejection",
+        "critical-pressure admission pause",
+        "normal-pressure resume with fresh publication",
+        "real Chrome product-path court"
+      ]
+    }
+  ],
+  "measurementEvidenceOnly": [
+    "P7-02",
+    "P7-03",
+    "P7-04",
+    "P7-05"
+  ],
+  "preservedOpenOrPartial": [
+    "P7-01",
+    "P7-02",
+    "P7-03",
+    "P7-04",
+    "P7-05",
+    "P7-06",
+    "P7-09",
+    "P7-10",
+    "P7-11",
+    "P7-12"
+  ],
+  "boundaries": {
+    "weakDeviceFloorClaimed": false,
+    "fourGiBCampaignClaimed": false,
+    "eightGiBCampaignClaimed": false,
+    "eightHourPlateauClaimed": false,
+    "crossBrowserClaimed": false,
+    "thermalFloorClaimed": false,
+    "latencyFloorClaimed": false
+  },
+  "productionClosed": false
+}
