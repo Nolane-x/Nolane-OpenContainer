@@ -167,14 +167,14 @@ async function routePreview(request, url) {
   const portText = slash < 0 ? relative : relative.slice(0, slash);
   const port = Number(portText);
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    return new Response('Invalid OpenContainer preview port', { status: 400, headers: edgeHeaders() });
+    return new Response('Invalid OpenContainer preview port', { status: 400, headers: previewEdgeHeaders() });
   }
 
   const owner = url.searchParams.get('__oc_owner');
   const epochText = url.searchParams.get('__oc_epoch');
   const epoch = Number(epochText);
   if (!owner || !Number.isInteger(epoch)) {
-    return new Response('Missing OpenContainer preview proof', { status: 400, headers: edgeHeaders() });
+    return new Response('Missing OpenContainer preview proof', { status: 400, headers: previewEdgeHeaders() });
   }
 
   const guestPath = slash < 0 ? '/' : '/' + relative.slice(slash + 1);
@@ -191,7 +191,7 @@ async function routePreview(request, url) {
 
   const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
   if (!windows.length) {
-    return new Response('No OpenContainer preview authority client', { status: 503, headers: edgeHeaders() });
+    return new Response('No OpenContainer preview authority client', { status: 503, headers: previewEdgeHeaders() });
   }
 
   const requestId = globalThis.crypto?.randomUUID?.() ?? (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
