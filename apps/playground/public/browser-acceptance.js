@@ -3135,7 +3135,7 @@ async function run() {
     'let parentAccess="readable";try{void parent.__opencontainerTrustedCanary;}catch(e){parentAccess=e.name;}' +
     'let storageAccess="readable";try{localStorage.getItem("opencontainer-p5-host");}catch(e){storageAccess=e.name;}' +
     'parent.postMessage({type:"opencontainer:p5-frame",parentAccess:parentAccess,storageAccess:storageAccess,locationOrigin:location.origin},"*");' +
-    '})();<\\/script>';
+    '})();</script>';
   const p5Frame = createSandboxedPreviewFrame({
     html: p5MaliciousHtml,
     title: 'OpenContainer P5 sandbox court'
@@ -3193,7 +3193,7 @@ async function run() {
     stalePreview: p5StalePreview.status,
     previewOfflineSeparation: p5OfflineCode === 'OC_NETWORK_DENIED' && p5PreviewWhileOffline.status === 200,
     frameEventOrigin: p5FrameReceipt.eventOrigin,
-    frameLocationOrigin: p5FrameReceipt.origin,
+    frameLocationOrigin: p5FrameReceipt.locationOrigin,
     frameParentAccess: p5FrameReceipt.parentAccess,
     frameStorageAccess: p5FrameReceipt.storageAccess,
     previewHostCredentialHeaders: p5CredentialReceipt.hostCredentialHeaders,
