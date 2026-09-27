@@ -23,6 +23,20 @@ test('network URL canonicalization rejects credentials backslashes encoded autho
   await expectCode(()=>Promise.resolve(canonicalizeNetworkUrl('https://example.com/api/%2fadmin')),ErrorCodes.NETWORK_DENIED);
 });
 
+test('canonicalization denial is audit-safe and retains policy identity',async()=>{
+  const net=new NetworkAuthority({policyId:'canonicalization-court'});
+  const secretUrl='https://user:super-secret-password@example.com/api?token=secret-query';
+  await expectCode(()=>Promise.resolve(net.authorize(secretUrl)),ErrorCodes.NETWORK_DENIED);
+  const receipt=net.decisions().at(-1);
+  assert.equal(receipt.decision,'deny');
+  assert.equal(receipt.reason,'url-canonicalization');
+  assert.equal(receipt.auditUrl,'[invalid-or-ambiguous-url]');
+  assert.equal(receipt.policyVersion,NETWORK_POLICY_VERSION);
+  assert.equal(receipt.policyHash,net.policyHash);
+  assert.equal(JSON.stringify(receipt).includes('super-secret-password'),false);
+  assert.equal(JSON.stringify(receipt).includes('secret-query'),false);
+});
+
 test('network local classification covers canonical alternate loopback and private spellings',()=>{
   for(const input of [
     'http://localhost/',
