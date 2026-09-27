@@ -125,21 +125,23 @@ export class OpfsCheckpointAuthority {
   }
 
   async open() {
-    const lifecycle=await readWorkspaceLifecycleRecord(this.#root,this.#directoryName);
-    if(workspaceLifecycleBlocksPublication(lifecycle)){
-      throw ocError(ErrorCodes.INVALID_STATE,'Workspace is deleted or being permanently purged',{
-        workspaceLifecycle:lifecycle.state,
-        recoverable:lifecycle.state==='tombstoned'&&lifecycle.recoverable===true,
-        deleteMutationId:lifecycle.deleteMutationId??null,
-        purgeMutationId:lifecycle.purgeMutationId??null,
-        recoverability:lifecycle.recoverability??null
-      });
-    }
-    this.#directory = await this.#root.getDirectoryHandle(this.#directoryName, { create: true });
-    this.#payloads = await this.#directory.getDirectoryHandle(PAYLOAD_DIR, { create: true });
-    this.#writerClaims = await this.#directory.getDirectoryHandle(WRITER_DIR, { create: true });
-    this.#current = await this.#withExclusiveLock(() => this.#recoverUnlocked());
-    return this;
+    return this.#withExclusiveLock(async()=>{
+      const lifecycle=await readWorkspaceLifecycleRecord(this.#root,this.#directoryName);
+      if(workspaceLifecycleBlocksPublication(lifecycle)){
+        throw ocError(ErrorCodes.INVALID_STATE,'Workspace is deleted or being permanently purged',{
+          workspaceLifecycle:lifecycle.state,
+          recoverable:lifecycle.state==='tombstoned'&&lifecycle.recoverable===true,
+          deleteMutationId:lifecycle.deleteMutationId??null,
+          purgeMutationId:lifecycle.purgeMutationId??null,
+          recoverability:lifecycle.recoverability??null
+        });
+      }
+      this.#directory = await this.#root.getDirectoryHandle(this.#directoryName, { create: true });
+      this.#payloads = await this.#directory.getDirectoryHandle(PAYLOAD_DIR, { create: true });
+      this.#writerClaims = await this.#directory.getDirectoryHandle(WRITER_DIR, { create: true });
+      this.#current = await this.#recoverUnlocked();
+      return this;
+    });
   }
 
   async checkpoint(fsOrSnapshot,{crashAt=null,quotaFaultAt=null,expectedCurrentSequence=undefined}={}) {
