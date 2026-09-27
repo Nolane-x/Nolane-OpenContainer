@@ -100,7 +100,8 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
     engines:{...sourceManifest.engines},
     exports:{...publicSdkContract.exportMap},
     bin:{
-      'opencontainer-hosting-self-check':'./scripts/hosting-self-check.mjs'
+      'opencontainer-hosting-self-check':'./scripts/hosting-self-check.mjs',
+      'opencontainer-diagnostic':'./scripts/opencontainer-diagnostic.mjs'
     },
     scripts:{
       'browser:acceptance':'node scripts/browser-acceptance.mjs',
@@ -129,6 +130,8 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
       'scripts/browser-acceptance.mjs',
       'scripts/hosting-self-check.mjs',
       'scripts/hosting-self-check-lib.mjs',
+    'scripts/opencontainer-diagnostic.mjs',
+      'scripts/opencontainer-diagnostic.mjs',
       'metadata/source-package-lock.json',
       'README.md'
     ],
@@ -188,7 +191,8 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
     'package/docs/api/ERROR-CATALOG.v0.1.json',
     'package/docs/api/API-REFERENCE.md',
     'package/docs/api/ERROR-REFERENCE.md',
-    'package/docs/decisions/ADR-003-evidence-boundaries.md'
+    'package/docs/decisions/ADR-003-evidence-boundaries.md',
+    'package/scripts/opencontainer-diagnostic.mjs'
   ];
   const packedFiles=new Set((receipt.files??[]).map((item)=>'package/'+item.path.replace(/^package\//,'')));
   const missing=required.filter((path)=>!packedFiles.has(path));
