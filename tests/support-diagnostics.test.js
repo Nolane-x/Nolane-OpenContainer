@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { DiagnosticJournal, browserCapabilityProbe, buildSupportBundle, probeDeploymentHeaders, supportPreview } from '../packages/diagnostics/src/index.js';
 import { OpenContainer } from '../packages/sdk/src/index.js';
 import { OpenContainerProductionProfile } from '../packages/sdk/src/profile.js';
@@ -154,4 +155,23 @@ test('browser capability probe is deterministic about non-browser feature absenc
   assert.equal(probe.crossOriginIsolated,false);
   assert.equal(probe.serviceWorker,false);
   assert.equal(probe.opfs,false);
+});
+
+
+test('diagnostic self-check is deterministic and safe for headless CI reproduction',()=>{
+  const run=()=>spawnSync(process.execPath,['scripts/diagnostic-self-check.mjs'],{encoding:'utf8'});
+  const first=run();
+  const second=run();
+  assert.equal(first.status,0,first.stderr||first.stdout);
+  assert.equal(second.status,0,second.stderr||second.stdout);
+  const a=JSON.parse(first.stdout);
+  const b=JSON.parse(second.stdout);
+  assert.equal(a.schema,'opencontainer.diagnostic-self-check.v0.1');
+  assert.equal(a.ok,true);
+  assert.equal(a.fingerprint,b.fingerprint);
+  assert.equal(a.errorCode,'OC_COMMAND_NOT_FOUND');
+  assert.equal(a.checks.noSecretLeak,true);
+  assert.equal(a.checks.readOnlyGeneration,true);
+  assert.equal(a.telemetry.remoteAnalytics,false);
+  assert.equal(a.telemetry.networkEmission,false);
 });
