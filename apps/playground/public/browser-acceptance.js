@@ -7,6 +7,7 @@ import { BrowserPreviewServiceWorkerBridge } from '/packages/preview/src/index.j
 import { ResourceGovernor } from '/packages/resources/src/index.js';
 import { OpfsReleaseStorageAuthority } from '/packages/persistence/src/index.js';
 import { checkHostingHeaders } from '/scripts/hosting-self-check-lib.mjs';
+import { NetworkAuthority, NetworkProfiles, NETWORK_POLICY_VERSION, probeLocalNetworkAccess } from '/packages/network/src/index.js';
 
 const resultNode = document.getElementById('result');
 const stages = [];
@@ -52,6 +53,172 @@ async function run() {
     snapshotFormatVersion: runtime.productionProfile.snapshot.portableFormatVersion,
     gateCount: runtime.productionProfile.closure.gateCount,
     productionClosed: runtime.productionProfile.productionClosed
+  });
+
+  stage('p5-network-cors-start');
+  const alternateHost = location.hostname === '127.0.0.1' ? 'localhost' : '127.0.0.1';
+  const corsOrigin = location.protocol + '//' + alternateHost + ':' + location.port;
+  const corsAllowed = await fetch(corsOrigin + '/__p5__/cors-allowed', { mode: 'cors', cache: 'no-store' });
+  assert(corsAllowed.ok, 'P5 allowed CORS response failed');
+  assert((await corsAllowed.json()).mode === 'cors-allowed', 'P5 allowed CORS payload drifted');
+
+  let corsDenied = false;
+  try {
+    await fetch(corsOrigin + '/__p5__/cors-denied', { mode: 'cors', cache: 'no-store' });
+  } catch (error) {
+    corsDenied = error instanceof TypeError || error?.name === 'TypeError';
+  }
+  assert(corsDenied, 'P5 denied CORS response unexpectedly became readable');
+
+  const opaqueResponse = await fetch(corsOrigin + '/__p5__/cors-denied', { mode: 'no-cors', cache: 'no-store' });
+  assert(opaqueResponse.type === 'opaque' && opaqueResponse.status === 0, 'P5 no-cors response was not opaque');
+
+  const lnaProbe = await probeLocalNetworkAccess(navigator);
+  assert(['granted', 'prompt', 'denied', 'unsupported', 'unknown'].includes(lnaProbe.state), 'P5 local-network permission probe returned invalid state');
+
+  const initialPolicyHash = runtime.net.policyHash;
+  runtime.net.allow({
+    id: 'p5-browser-court',
+    origin: location.origin,
+    methods: ['GET'],
+    paths: ['/__p5__/']
+  });
+  assert(runtime.net.policyVersion === NETWORK_POLICY_VERSION, 'P5 network policy version drifted');
+  assert(runtime.net.policyHash !== initialPolicyHash, 'P5 policy hash did not change when authority changed');
+
+  let decodedBudgetCode = null;
+  try {
+    await runtime.net.fetch(location.origin + '/__p5__/compressed', { maxResponseBytes: 512 });
+  } catch (error) {
+    decodedBudgetCode = error?.code ?? null;
+  }
+  assert(decodedBudgetCode === 'OC_OUTPUT_LIMIT', 'P5 decoded-byte budget trusted compressed Content-Length');
+
+  const slowAbort = new AbortController();
+  const slowStart = performance.now();
+  const slowFetch = runtime.net.fetch(location.origin + '/__p5__/slow-stream', { signal: slowAbort.signal });
+  setTimeout(() => slowAbort.abort(new DOMException('p5-browser-abort', 'AbortError')), 80);
+  let slowAbortName = null;
+  try {
+    await slowFetch;
+  } catch (error) {
+    slowAbortName = error?.name ?? null;
+  }
+  assert(slowAbortName === 'AbortError', 'P5 streaming cancellation did not propagate');
+  assert(performance.now() - slowStart < 1500, 'P5 streaming cancellation did not release promptly');
+
+  const browserSecretValue = 'p5-browser-secret';
+  const browserSecret = runtime.net.createSecret({
+    value: browserSecretValue,
+    header: 'authorization',
+    prefix: 'Bearer ',
+    scope: {
+      schemes: [location.protocol],
+      hosts: [location.hostname],
+      methods: ['GET'],
+      paths: ['/__p5__/secret', '/__p5__/provider-fail'],
+      session: 'p5-session',
+      task: 'p5-task'
+    }
+  });
+  assert(browserSecret.plaintextExposed === false, 'P5 secret handle exposed plaintext state');
+  assert(!JSON.stringify(browserSecret).includes(browserSecretValue), 'P5 secret handle serialized plaintext');
+
+  const secretFetch = await runtime.net.fetch(location.origin + '/__p5__/secret', {
+    secretHandle: browserSecret.handle,
+    session: 'p5-session',
+    task: 'p5-task'
+  });
+  assert(secretFetch.response.status === 200, 'P5 authority-side secret injection failed');
+  assert((await secretFetch.response.json()).authorized === true, 'P5 server did not observe authority-side secret');
+  assert(secretFetch.receipt.secretPlaintextExposed === false, 'P5 secret fetch receipt exposed plaintext authority');
+
+  let wrongSecretScope = null;
+  try {
+    await runtime.net.fetch(location.origin + '/__p5__/secret', {
+      secretHandle: browserSecret.handle,
+      session: 'p5-session',
+      task: 'wrong-task'
+    });
+  } catch (error) {
+    wrongSecretScope = error?.code ?? null;
+  }
+  assert(wrongSecretScope === 'OC_NETWORK_DENIED', 'P5 task-scoped secret escaped its authority');
+
+  const beforeProviderFailure = {
+    fsGeneration: runtime.fs.generation,
+    previewEpoch: runtime.preview.epoch,
+    processCount: runtime.process.list().length
+  };
+  const providerFailure = await runtime.net.fetch(location.origin + '/__p5__/provider-fail', {
+    secretHandle: browserSecret.handle,
+    session: 'p5-session',
+    task: 'p5-task'
+  });
+  assert(providerFailure.response.status === 401, 'P5 provider failure court did not return 401');
+  const afterProviderFailure = {
+    fsGeneration: runtime.fs.generation,
+    previewEpoch: runtime.preview.epoch,
+    processCount: runtime.process.list().length
+  };
+  assert(JSON.stringify(afterProviderFailure) === JSON.stringify(beforeProviderFailure), 'P5 provider/API-key failure mutated canonical runtime state');
+
+  runtime.diagnostics.record('p5-secret-redaction', {
+    authorization: 'Bearer ' + browserSecretValue,
+    cookie: 'session=' + browserSecretValue,
+    signedUrl: location.origin + '/x?token=' + encodeURIComponent(browserSecretValue),
+    body: browserSecretValue
+  });
+  const p5Support = runtime.supportBundle();
+  assert(!JSON.stringify(p5Support).includes(browserSecretValue), 'P5 secret leaked into default support bundle');
+
+  const offlineNet = new NetworkAuthority({ profile: NetworkProfiles.OFFLINE, allowLocal: true });
+  let offlineCode = null;
+  try { offlineNet.authorize(location.origin + '/__p5__/cors-allowed'); } catch (error) { offlineCode = error?.code ?? null; }
+  assert(offlineCode === 'OC_NETWORK_DENIED', 'P5 offline profile widened to external fetch');
+
+  const registryNet = new NetworkAuthority({
+    profile: NetworkProfiles.REGISTRY_ONLY,
+    registryOrigins: ['https://registry.npmjs.org']
+  });
+  registryNet.allow({
+    id: 'registry-only-npm',
+    origin: 'https://registry.npmjs.org',
+    methods: ['GET'],
+    paths: ['/'],
+    category: 'registry'
+  });
+  assert(registryNet.authorize('https://registry.npmjs.org/clsx').decision === 'allow', 'P5 registry-only profile rejected registry');
+  let registryWidenCode = null;
+  try { registryNet.authorize('https://example.com/'); } catch (error) { registryWidenCode = error?.code ?? null; }
+  assert(registryWidenCode === 'OC_NETWORK_DENIED', 'P5 registry-only profile widened to open web');
+
+  const openWebNet = new NetworkAuthority({ profile: NetworkProfiles.OPEN_WEB });
+  assert(openWebNet.authorize('https://example.com/path').decision === 'allow', 'P5 open-web profile did not admit public web');
+  let openWebLocalCode = null;
+  try { openWebNet.authorize('http://127.0.0.1/'); } catch (error) { openWebLocalCode = error?.code ?? null; }
+  assert(openWebLocalCode === 'OC_NETWORK_DENIED', 'P5 open-web profile silently widened into local network');
+
+  const decisionReceipt = runtime.net.decisions().at(-1);
+  assert(decisionReceipt?.policyVersion === NETWORK_POLICY_VERSION, 'P5 decision lost policy version');
+  assert(decisionReceipt?.policyHash === runtime.net.policyHash, 'P5 decision lost current policy hash');
+
+  stage('p5-network-cors-pass', {
+    corsAllowed: true,
+    corsDenied,
+    opaqueType: opaqueResponse.type,
+    localNetworkPermission: lnaProbe,
+    decodedBudgetCode,
+    slowAbortName,
+    secretPlaintextExposed: secretFetch.receipt.secretPlaintextExposed,
+    wrongSecretScope,
+    providerFailureStatus: providerFailure.response.status,
+    canonicalStateUnchanged: JSON.stringify(afterProviderFailure) === JSON.stringify(beforeProviderFailure),
+    offlineCode,
+    registryWidenCode,
+    openWebLocalCode,
+    policyVersion: runtime.net.policyVersion,
+    policyHash: runtime.net.policyHash
   });
 
   stage('release-storage-migration-start');
