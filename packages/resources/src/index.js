@@ -1,5 +1,7 @@
 import { ErrorCodes, ocError } from '../../protocol/src/index.js';
 
+const PRESSURE_STATES=Object.freeze(['normal','elevated','serious','critical']);
+
 function positiveInt(value,fallback,{minimum=1}={}){
   const number=Math.floor(Number(value));
   return Number.isFinite(number)&&number>=minimum?number:fallback;
@@ -31,7 +33,7 @@ export function deriveWorkerBudget({hardwareConcurrency=null,configuredWorkers=n
 }
 
 export class ResourceGovernor {
-  #limits; #used; #leases=new Map(); #next=0; #workerPolicy;
+  #limits; #used; #leases=new Map(); #next=0; #workerPolicy; #pressureState='normal'; #pressureEpoch=0;
   constructor(limits={}) {
     this.#workerPolicy=deriveWorkerBudget({
       hardwareConcurrency:limits.hardwareConcurrencyHint??null,
@@ -54,6 +56,57 @@ export class ResourceGovernor {
   get limits(){return this.#limits;}
   get usage(){return Object.freeze({...this.#used});}
   get workerPolicy(){return this.#workerPolicy;}
+  get pressure(){
+    return Object.freeze({
+      state:this.#pressureState,
+      paused:this.#pressureState==='serious'||this.#pressureState==='critical',
+      epoch:this.#pressureEpoch
+    });
+  }
+  setPressure(state='normal'){
+    const normalized=String(state).toLowerCase();
+    if(!PRESSURE_STATES.includes(normalized)){
+      throw ocError(ErrorCodes.INVALID_ARGUMENT,'Unknown resource pressure state',{state});
+    }
+    const wasPaused=this.#pressureState==='serious'||this.#pressureState==='critical';
+    const nextPaused=normalized==='serious'||normalized==='critical';
+    this.#pressureState=normalized;
+    if(nextPaused&&!wasPaused)this.#pressureEpoch+=1;
+    return this.pressure;
+  }
+  acquireTask({background=false,inFlightBytes=0}={}){
+    const isBackground=background===true;
+    if(isBackground&&(this.#pressureState==='serious'||this.#pressureState==='critical')){
+      throw ocError(ErrorCodes.RESOURCE_EXHAUSTED,'Background task admission paused by resource pressure',{
+        pressure:this.#pressureState,
+        pressureEpoch:this.#pressureEpoch
+      });
+    }
+    const pressureEpoch=this.#pressureEpoch;
+    const lease=this.reserve({tasks:1,inFlightBytes});
+    const governor=this;
+    let released=false;
+    return Object.freeze({
+      id:lease.id,
+      background:isBackground,
+      pressureEpoch,
+      assertPublish(){
+        if(isBackground&&governor.#pressureEpoch!==pressureEpoch){
+          throw ocError(ErrorCodes.WORKER_STALE,'Background task result became stale after pressure cancellation',{
+            startedPressureEpoch:pressureEpoch,
+            currentPressureEpoch:governor.#pressureEpoch,
+            pressure:governor.#pressureState
+          });
+        }
+        return true;
+      },
+      release(){
+        if(released)return false;
+        released=true;
+        return lease.release();
+      }
+    });
+  }
   reserve(request={}) {
     const normalized={};
     for (const key of Object.keys(this.#used)) normalized[key]=Math.max(0,Number(request[key]??0));

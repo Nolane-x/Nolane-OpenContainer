@@ -53,9 +53,10 @@
       "minimumClosure": "PASS-INTEGRATION + declared-profile evidence"
     },
     "P7-08": {
-      "machineClosable": false,
-      "state": "PARTIAL",
-      "reason": "Task/in-flight/diagnostic/log budgets are enforced, but all source-map retention paths are not yet globally audited; retained source-map cache remains disabled by default."
+      "machineClosable": true,
+      "state": "CLOSED_BY_WAVE2",
+      "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+      "evidence": "p7-resource-wave2"
     },
     "P7-01": {
       "machineClosable": false,
@@ -71,7 +72,33 @@
       "machineClosable": false,
       "state": "OPEN_DEVICE",
       "reason": "Weak-device regression budgets are not frozen."
+    },
+    "P7-13": {
+      "machineClosable": true,
+      "state": "CLOSED_BY_WAVE2",
+      "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+      "evidence": "p7-resource-wave2"
     }
   },
-  "productionClosed": false
+  "productionClosed": false,
+  "stageMeasurements": {
+    "evidenceOnlyFor": [
+      "P7-02",
+      "P7-03",
+      "P7-04",
+      "P7-05"
+    ],
+    "required": [
+      "runtimeBootMs",
+      "authorityWorkerStartupMs",
+      "authorityWorkerExecutionMs",
+      "packageInstallMs",
+      "viteClosureInstallMs",
+      "publicationGraphMs",
+      "viteBuildMs",
+      "viteDevToHmrMs",
+      "pressurePauseResumeMs"
+    ],
+    "promotionRule": "Measurement existence does not close a gate when the source requirement also demands controlled contention, realistic-project memory, weak-device or regression-budget evidence."
+  }
 }

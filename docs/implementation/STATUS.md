@@ -695,3 +695,12 @@ This closes P13-01, 02, 05, 06, 08, 11, 12, 13, 14, 15 and 19 at RELEASE-VERIFIE
 PR #47 implementation head `506afe66d65c1df71d9fd9e585e1a82bda428ce1` passed CI #428 across contract, CodeQL and the installed-distribution Chrome path. The repeated contract court ran 140/140 test-file executions with zero failures; Chrome passed 2/2 full product paths. The archived P7 measurement receipt identifies Chrome 153.0.8010.52 / Ubuntu 24.04.5 x64, 4 logical CPUs and 16,766,414,848 bytes of runner memory, and retains two full-path durations (45,200 ms and 35,285 ms) together with warmup/cache/CPU-throttling/GC/thermal/network/DevTools validity threats.
 
 P7-07 and P7-14 are closed for the declared CI profile. P7-08 stays PARTIAL pending a global audit of every source-map retention path. No 4/8 GiB device floor, 8-hour plateau, weak-device regression budget, cross-browser floor, thermal floor or latency floor is claimed. `production_closed=false`.
+
+
+## P7 resource evidence wave 2
+
+PR #48 implementation head `0f71f7492ae0175d929c98c6e032dd4cf522d728` passed CI #432 across contract, CodeQL and the installed-distribution Chrome product path. The repeated critical contract court covered 30 files × 5 iterations = 150 file executions. Chrome passed 2/2 full product paths with zero unexplained failures, including the new pressure pause/cancel/resume court and the extended per-stage resource measurement receipt.
+
+P7-08 is closed for the declared Chrome profile by a repo-wide production-source retention audit plus the existing bounded task/in-flight/process/output/diagnostic/terminal budgets. P7-13 is closed by browser evidence that serious/critical pressure pauses background admission, makes a pre-pressure result stale, and permits only fresh publication after resume.
+
+P7-02 through P7-05 receive stage-level measurement evidence only and remain unclosed. P7-01, P7-06, P7-09, P7-10, P7-11 and P7-12 remain open/partial for the stronger device, coexistence, soak, lifecycle/contention, storage-amplification and regression-budget obligations. `production_closed=false`.

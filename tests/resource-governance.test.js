@@ -69,9 +69,52 @@ test('P7 measurement policy preserves hardware and weak-device boundaries',()=>{
   assert.equal(policy.measurementMetadata.claims.latencyFloor,false);
   assert.equal(policy.measurementMetadata.claims.weakDeviceFloor,false);
   assert.equal(policy.gateAuthority['P7-07'].machineClosable,true);
+  assert.equal(policy.gateAuthority['P7-08'].machineClosable,true);
+  assert.equal(policy.gateAuthority['P7-13'].machineClosable,true);
   assert.equal(policy.gateAuthority['P7-14'].machineClosable,true);
-  assert.equal(policy.gateAuthority['P7-08'].machineClosable,false);
   assert.equal(policy.gateAuthority['P7-01'].machineClosable,false);
   assert.equal(policy.gateAuthority['P7-09'].machineClosable,false);
+  assert.equal(policy.gateAuthority['P7-12'].machineClosable,false);
   assert.equal(policy.productionClosed,false);
+});
+
+
+test('P7 pressure pauses background admission and invalidates stale task publication',()=>{
+  const resources=new ResourceGovernor({tasks:2,inFlightBytes:4096});
+  const ticket=resources.acquireTask({background:true,inFlightBytes:64});
+  assert.equal(resources.pressure.state,'normal');
+  assert.equal(ticket.assertPublish(),true);
+  const paused=resources.setPressure('critical');
+  assert.equal(paused.paused,true);
+  assert.throws(()=>ticket.assertPublish(),error=>error.code===ErrorCodes.WORKER_STALE);
+  assert.throws(
+    ()=>resources.acquireTask({background:true,inFlightBytes:64}),
+    error=>error.code===ErrorCodes.RESOURCE_EXHAUSTED
+  );
+  ticket.release();
+  const resumed=resources.setPressure('normal');
+  assert.equal(resumed.paused,false);
+  const fresh=resources.acquireTask({background:true,inFlightBytes:64});
+  assert.equal(fresh.assertPublish(),true);
+  fresh.release();
+  assert.equal(resources.usage.tasks,0);
+  assert.equal(resources.usage.inFlightBytes,0);
+});
+
+test('P7 background Worker RPC cannot publish a stale response after pressure cancellation',async()=>{
+  const resources=new ResourceGovernor({tasks:1,inFlightBytes:4096});
+  const transport=new Transport();
+  const rpc=new WorkerRpcAuthority({transport,resources});
+  const stale=rpc.request('background-probe',{value:'old'},{background:true});
+  const sent=transport.sent[0];
+  resources.setPressure('serious');
+  transport.respond({v:1,type:'response',session:sent.session,epoch:sent.epoch,id:sent.id,ok:true,value:{value:'old'}});
+  await assert.rejects(stale,error=>error.code===ErrorCodes.WORKER_STALE);
+  assert.equal(resources.usage.tasks,0);
+  resources.setPressure('normal');
+  const fresh=rpc.request('background-probe',{value:'fresh'},{background:true});
+  const freshSent=transport.sent[1];
+  transport.respond({v:1,type:'response',session:freshSent.session,epoch:freshSent.epoch,id:freshSent.id,ok:true,value:{value:'fresh'}});
+  assert.deepEqual(await fresh,{value:'fresh'});
+  rpc.close();
 });

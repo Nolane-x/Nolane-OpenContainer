@@ -32,21 +32,22 @@ test('P7 wave-1 evidence binds declared profile and CI #428 without manufacturin
   assert.equal(evidence.productionClosed,false);
 });
 
-test('P7 closes exactly P7-07 and P7-14 while P7-08 stays partial',()=>{
-  const rows=ledger.overrides.filter(x=>x.domain==='P7');
-  assert.deepEqual(rows.map(x=>x.id),['P7-07','P7-08','P7-14']);
-  assert.deepEqual(rows.filter(x=>x.closure_met).map(x=>x.id),['P7-07','P7-14']);
-  assert.deepEqual(rows.filter(x=>x.state==='PARTIAL').map(x=>x.id),['P7-08']);
+test('P7 wave-1 receipt closes exactly P7-07 and P7-14 and preserves its historical boundaries',()=>{
+  assert.deepEqual(evidence.closedGates.map(x=>x.id),['P7-07','P7-14']);
+  assert.deepEqual(
+    evidence.preservedOpenGates.map(x=>x.id),
+    ['P7-01','P7-08','P7-09','P7-12']
+  );
+  assert.equal(evidence.preservedOpenGates.find(x=>x.id==='P7-08').state,'PARTIAL');
   for(const id of ['P7-07','P7-14']){
-    const row=rows.find(x=>x.id===id);
+    const row=ledger.overrides.find(x=>x.id===id);
+    assert.ok(row,id+' current ledger row missing');
     assert.deepEqual(
       {state:row.state,promotion:row.promotion,evidence:row.evidence,closure_met:row.closure_met},
       {state:'EVIDENCE',promotion:'PASS-BROWSER',evidence:'p7-resource-wave1',closure_met:true}
     );
     assert.equal(policy.gateAuthority[id].machineClosable,true,id);
   }
-  assert.equal(rows.find(x=>x.id==='P7-08').closure_met,false);
-  assert.equal(policy.gateAuthority['P7-08'].machineClosable,false);
   const entry=registry.entries.find(x=>x.key==='p7-resource-wave1');
   assert.deepEqual({kind:entry.kind,level:entry.level,status:entry.status},{kind:'EXECUTABLE',level:'BROWSER',status:'PASS'});
   assert.ok(ledger.overrides.length>=185);

@@ -2,6 +2,7 @@ import { OpenContainer } from '/packages/sdk/src/index.js';
 import { BrowserEsmServiceWorkerBridge } from '/packages/package-env/src/browser-esm-edge.js';
 import { OpfsPackageContentStore, PackageArtifactAuthority } from '/packages/package-env/src/index.js';
 import { BrowserGuestWorkerAuthority } from '/packages/process/src/browser-guest-worker.js';
+import { WorkerRpcAuthority } from '/packages/process/src/worker-authority.js';
 import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority } from '/packages/vfs/src/index.js';
 import { BrowserPreviewServiceWorkerBridge, createSandboxedPreviewFrame } from '/packages/preview/src/index.js';
 import { ResourceGovernor } from '/packages/resources/src/index.js';
@@ -38,6 +39,55 @@ async function run() {
   const runtime = await OpenContainer.boot({ network: { allowLocal: true } });
   acceptanceRuntime = runtime;
   stage('runtime-ready', { crossOriginIsolated: globalThis.crossOriginIsolated });
+
+  stage('p7-pressure-start');
+  const p7Resources=new ResourceGovernor({tasks:1,inFlightBytes:4096,workers:1});
+  const p7Channel=new MessageChannel();
+  p7Channel.port1.start();
+  p7Channel.port2.start();
+  p7Channel.port2.addEventListener('message',(event)=>{
+    const request=event.data;
+    if(!request||request.type!=='request')return;
+    setTimeout(()=>{
+      p7Channel.port2.postMessage({
+        v:1,
+        type:'response',
+        session:request.session,
+        epoch:request.epoch,
+        id:request.id,
+        ok:true,
+        value:{echo:request.payload?.value??null}
+      });
+    },25);
+  });
+  const p7Rpc=new WorkerRpcAuthority({
+    transport:p7Channel.port1,
+    resources:p7Resources,
+    diagnostics:runtime.diagnostics,
+    requestTimeoutMs:2000
+  });
+  const p7Stale=p7Rpc.request('pressure-probe',{value:'stale'},{background:true});
+  const p7Critical=p7Resources.setPressure('critical');
+  let p7StaleCode=null;
+  try{await p7Stale;}catch(error){p7StaleCode=error?.code??error?.name??'ERROR';}
+  assert(p7StaleCode==='OC_WORKER_STALE','P7 pressure cancellation allowed stale background RPC publication');
+  let p7PausedCode=null;
+  try{p7Rpc.request('pressure-blocked',{value:'blocked'},{background:true});}
+  catch(error){p7PausedCode=error?.code??error?.name??'ERROR';}
+  assert(p7PausedCode==='OC_RESOURCE_EXHAUSTED','P7 critical pressure did not pause new background admission');
+  const p7Normal=p7Resources.setPressure('normal');
+  const p7Fresh=await p7Rpc.request('pressure-probe',{value:'fresh'},{background:true});
+  assert(p7Fresh.echo==='fresh','P7 resumed background task did not publish fresh result');
+  p7Rpc.close();
+  p7Channel.port1.close();
+  p7Channel.port2.close();
+  stage('p7-pressure-pass',{
+    criticalEpoch:p7Critical.epoch,
+    staleCode:p7StaleCode,
+    pausedCode:p7PausedCode,
+    resumed:p7Normal.paused===false,
+    fresh:p7Fresh.echo
+  });
 
   const productionProfileResponse = await fetch('/docs/production/PRODUCTION-PROFILE.json', { cache: 'no-store' });
   assert(productionProfileResponse.ok, 'machine-readable production profile is not publicly loadable');
