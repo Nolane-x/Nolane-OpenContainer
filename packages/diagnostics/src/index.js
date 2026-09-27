@@ -168,7 +168,7 @@ export class DiagnosticJournal {
   }
 
   record(type, detail={}) {
-    const safeType=typeof type==='string'&&type.length?type:'diagnostic.unknown';
+    const safeType=publicDiagnosticType(typeof type==='string'&&type.length?type:'diagnostic.unknown');
     const safeDetail=redact(detail);
     const fingerprint=diagnosticFingerprint({type:safeType,detail:safeDetail});
     const duplicateCount=this.#duplicateCounts.get(fingerprint)??0;
@@ -419,7 +419,7 @@ export class SupportBundleAuthority{
     });
     const diagnostics=freezeArray(this.#runtime.diagnostics.list().map((entry)=>({
       seq:entry.seq,
-      type:entry.type,
+      type:publicDiagnosticType(entry.type),
       fingerprint:entry.fingerprint
     })));
     const hosting=hostingDiagnostics?Object.freeze({
