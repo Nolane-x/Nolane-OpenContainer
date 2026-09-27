@@ -103,6 +103,7 @@ const server = createServer(async (request, response) => {
         return;
       }
       if (url.pathname === '/__p5__/cors-denied') {
+        response.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
         response.setHeader('Content-Type', 'application/json');
         response.end(JSON.stringify({ok:true,mode:'cors-denied'}));
         return;
