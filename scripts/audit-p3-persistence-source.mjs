@@ -18,6 +18,10 @@ for(const [path,source] of Object.entries(sources)){
 }
 const workspace=sources['packages/vfs/src/opfs-authority.js'];
 const release=sources['packages/persistence/src/release-storage.js'];
+const workspaceUsesExclusiveLock=workspace.includes("this.#lockManager.request(this.#lockName, { mode: 'exclusive' }, callback)");
+const workspaceRequestsSteal=/\bsteal\s*:\s*true\b/.test(workspace);
+if(!workspaceUsesExclusiveLock)violations.push({path:'packages/vfs/src/opfs-authority.js',reason:'workspace writer does not use an exclusive origin-wide Web Lock'});
+if(workspaceRequestsSteal)violations.push({path:'packages/vfs/src/opfs-authority.js',reason:'workspace writer requests steal-based Web Lock ownership'});
 const workspacePayload=workspace.indexOf("await this.#writeCheckpointText(this.#payloads, payload, payloadText, 'payload')");
 const workspaceManifest=workspace.indexOf("await this.#writeCheckpointText(this.#directory, manifestName, manifestText, 'manifest')");
 if(!(workspacePayload>=0&&workspaceManifest>workspacePayload)){
@@ -38,6 +42,8 @@ const receipt={
   status:violations.length===0?'PASS':'FAIL',
   targets,
   renameMoveDependency:false,
+  workspaceExclusiveWebLock:workspaceUsesExclusiveLock,
+  webLockStealRequested:workspaceRequestsSteal,
   workspacePayloadBeforeManifest:workspacePayload>=0&&workspaceManifest>workspacePayload,
   releasePayloadBeforeManifest:releasePayload>=0&&releaseManifest>releasePayload,
   violations
