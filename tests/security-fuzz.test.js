@@ -27,6 +27,7 @@ test('P12 path parser campaign never returns a guest path outside /workspace',()
       const resolved=fs.normalize(path);
       assert.ok(resolved==='/workspace'||resolved.startsWith('/workspace/'),resolved);
       assert.equal(resolved.startsWith('/opencontainer'),false);
+      assert.equal(resolved.includes('\0'),false);
     }catch(error){
       assert.ok([ErrorCodes.PATH_ESCAPE,ErrorCodes.INTERNAL_PATH,ErrorCodes.INVALID_ARGUMENT].includes(error?.code),String(error?.stack??error));
     }

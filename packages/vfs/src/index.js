@@ -10,6 +10,7 @@ function fromBase64(text){const binary=atob(text);return Uint8Array.from(binary,
 
 function normalize(path,{guest=true}={}) {
   assertOc(typeof path==='string'&&path.length>0,ErrorCodes.INVALID_ARGUMENT,'Path must be a non-empty string');
+  assertOc(!path.includes('\0'),ErrorCodes.INVALID_ARGUMENT,'Path must not contain NUL');
   const input=path.startsWith('/')?path:WORKSPACE+'/'+path;
   const parts=[];
   for(const part of input.split('/')){
