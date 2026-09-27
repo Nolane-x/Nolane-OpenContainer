@@ -964,10 +964,36 @@ async function run() {
     await electionReopen.restoreInto(electionRestore);
     assert(['A','B'].includes(electionRestore.readFile('writer.txt')), 'P3 election reopened an unknown winner');
     assert(electionReopen.current?.sequence === 1, 'P3 election produced split canonical sequence');
+    assert(electionReopen.current?.writerEpoch === 1, 'P3 first canonical publisher did not persist WriterEpoch 1');
+    const firstWriter = writerA.writerEpoch === 1 ? writerA : writerB;
+    assert(firstWriter.writerEpoch === 1, 'P3 winning authority did not retain its writer epoch');
+
+    electionRestore.beginTransaction().writeFile('writer.txt','successor').commit();
+    const successorCommit = await electionReopen.checkpoint(electionRestore);
+    assert(successorCommit.writerEpoch === 2, 'P3 successor authority did not advance WriterEpoch');
+    assert(successorCommit.generation === 2, 'P3 StorageGeneration did not advance only on successor commit');
+
+    electionRestore.beginTransaction().writeFile('writer.txt','stale-must-not-publish').commit();
+    let staleWriterEpochCode = null;
+    let staleWriterEpochDetails = null;
+    try {
+      await firstWriter.checkpoint(electionRestore);
+    } catch (error) {
+      staleWriterEpochCode = error?.code ?? null;
+      staleWriterEpochDetails = error?.details ?? null;
+    }
+    assert(staleWriterEpochCode === 'OC_STALE_GENERATION', 'P3 stale WriterEpoch was allowed to publish');
+    assert(staleWriterEpochDetails?.expectedWriterEpoch === 1, 'P3 stale writer did not report its fenced epoch');
+    assert(staleWriterEpochDetails?.currentWriterEpoch === 2, 'P3 stale writer did not observe the successor epoch');
+
     stage('p3-writer-election-pass', {
       fulfilled: writerFulfilled.length,
       staleRejected: writerRejected[0].reason?.code,
-      sequence: electionReopen.current.sequence,
+      sequence: successorCommit.sequence,
+      firstWriterEpoch: 1,
+      successorWriterEpoch: successorCommit.writerEpoch,
+      successorStorageGeneration: successorCommit.generation,
+      staleWriterEpochCode,
       crossContextLocking: electionReopen.crossContextLocking
     });
   } finally {
