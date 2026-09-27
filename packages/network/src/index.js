@@ -518,7 +518,11 @@ export class NetworkAuthority{
   }
 
   #recordDecision(receipt){
-    this.#decisions.push(receipt);
+    const audit=Object.freeze({
+      ...receipt,
+      ...(Object.hasOwn(receipt,'url')?{url:receipt.auditUrl}:null)
+    });
+    this.#decisions.push(audit);
     if(this.#decisions.length>this.#decisionLimit)this.#decisions.splice(0,this.#decisions.length-this.#decisionLimit);
   }
 
