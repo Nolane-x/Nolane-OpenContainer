@@ -32,10 +32,11 @@
       "tests/p15-compatibility-matrix-evidence.test.js",
       "tests/supply-chain-review.test.js",
       "tests/p13-supply-chain-evidence.test.js",
-      "tests/resource-governance.test.js"
+      "tests/resource-governance.test.js",
+      "tests/p7-resource-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 28
+    "minimumTestFiles": 29
   },
   "browser": {
     "iterations": 2,

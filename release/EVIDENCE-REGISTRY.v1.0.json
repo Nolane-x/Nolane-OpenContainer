@@ -394,6 +394,14 @@
       "status": "PASS",
       "ref": "CI #424 / PR #46 head 57a20790c64619ede9a55fe7a76a8424bf62d311",
       "note": "Release-verified P13 court for 11 machine-closable supply-chain gates. Exact artifact digest matches the tested distribution; SBOM/provenance/checksums/inventory/reproducibility/content policy/workflow least privilege/revocation were verified. Published identity, tag, signing, OIDC, registry staging, repo protection, OpenSSF/OSPS and long-term archive gates remain open."
+    },
+    {
+      "key": "p7-resource-wave1",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #428 / PR #47 head 506afe66d65c1df71d9fd9e585e1a82bda428ce1",
+      "note": "Declared-profile P7 resource-governance/measurement court closes P7-07 and P7-14 only. Hardware concurrency is hint-only, Worker/RPC budgets are bounded, measurement metadata retains host-noise validity threats; weak-device, 4/8 GiB, 8-hour, cross-browser and latency-floor claims remain open."
     }
   ]
 }

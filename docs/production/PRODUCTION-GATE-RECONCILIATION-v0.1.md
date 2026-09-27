@@ -8,8 +8,8 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **184**
-- Minimum-closure satisfied: **137**
+- Seed-reconciled against implementation evidence: **185**
+- Minimum-closure satisfied: **139**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -23,7 +23,7 @@
 | P4 Packages, resolver, archive & installer | 6 | 12 | 18 |
 | P5 Network, secrets & preview edge | 18 | 0 | 18 |
 | P6 Toolchain, BCR, Vite & framework integration | 8 | 8 | 16 |
-| P7 Resources, performance & weak-device behavior | 2 | 12 | 14 |
+| P7 Resources, performance & weak-device behavior | 3 | 11 | 14 |
 | P8 Diagnostics, supportability & privacy | 14 | 0 | 14 |
 | P9 UI/UX, accessibility & human safety | 0 | 18 | 18 |
 | P10 AI consumer, authority & data egress | 0 | 18 | 18 |
@@ -44,6 +44,9 @@
 
 ## Newly reconciled in this wave
 
+- **P7-07** now meets declared-profile closure: hardwareConcurrency is only a scheduling hint; the effective worker budget is derived by policy and clamped instead of mapping logical CPUs directly to guest workers. The real-browser quota court rejects an over-budget second Worker, releases the lease on close and permits reuse.
+- **P7-14** now meets declared-profile closure: CI #428 archives a machine-readable Chrome 153 / Ubuntu 24.04 measurement receipt with logical CPU/RAM identity, two complete installed-distribution wall-clock durations and explicit warmup/cache/CPU-throttle/GC/thermal/network/DevTools validity metadata.
+- **P7-08 remains PARTIAL**: tasks/in-flight bytes, process/output limits, diagnostic/terminal history and a zero-default retained source-map cache are bounded, but every source-map retention path is not yet globally audited. P7-01/P7-09/P7-12 remain open for real 4/8 GiB, 8-hour and weak-device budget campaigns.
 - **P13-01, P13-02, P13-05, P13-06, P13-08, P13-11, P13-12, P13-13, P13-14, P13-15 and P13-19** now meet SECURITY-REVIEWED / RELEASE-VERIFIED closure through CI #424. The court audits immutable action pins and least-privilege permissions, binds the exact tested distribution tarball to release evidence, validates independent SHA-256/SHA-512 checksums, SPDX 2.3 SBOM, in-toto/SLSA provenance, exact source/lock/toolchain/environment identity, explicit dependency categories/zero optional-adapter bundle policy, content-exclusion negatives, reproducible builds and compromised-release revocation/user warning.
 - CI #424 reported **130/130** repeated critical contract executions, **2/2** installed-distribution Chrome paths, zero unexplained failures and a SECURITY-REVIEWED supply-chain receipt.
 - **P13-03, P13-04, P13-07, P13-09, P13-10, P13-16, P13-17, P13-18 and P13-20 remain open** because OIDC/trusted publishing, actually published provenance, immutable release-tag builds, signing/verification, registry staging, repository protection state, OpenSSF/OSPS hygiene and long-term historical archive evidence are not yet present.

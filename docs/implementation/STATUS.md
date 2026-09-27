@@ -688,3 +688,10 @@ P15-05 is closed without freezing browser minimums or claiming Windows/macOS/Fir
 PR #46 implementation head `57a20790c64619ede9a55fe7a76a8424bf62d311` passed CI #424 across contract, CodeQL and the installed-distribution Chrome product path. The supply-chain court reached SECURITY-REVIEWED maturity and proved that the exact distribution artifact exercised by certification is the same SHA-256/SHA-512 artifact represented by release evidence; SPDX 2.3 SBOM, in-toto/SLSA provenance, exact source/lock/toolchain/environment identity, independent checksums, explicit dependency categories, zero shipped optional-adapter bundles, content-policy negatives, reproducible builds, immutable action pins, least-privilege workflow permissions and compromised-release revocation/user warning all passed.
 
 This closes P13-01, 02, 05, 06, 08, 11, 12, 13, 14, 15 and 19 at RELEASE-VERIFIED evidence. P13-03/04/07/09/10/16/17/18/20 remain open for real external/publication/tag/signing/repository-hygiene/archive conditions. `production_closed=false`.
+
+
+## P7 resource evidence wave 1
+
+PR #47 implementation head `506afe66d65c1df71d9fd9e585e1a82bda428ce1` passed CI #428 across contract, CodeQL and the installed-distribution Chrome path. The repeated contract court ran 140/140 test-file executions with zero failures; Chrome passed 2/2 full product paths. The archived P7 measurement receipt identifies Chrome 153.0.8010.52 / Ubuntu 24.04.5 x64, 4 logical CPUs and 16,766,414,848 bytes of runner memory, and retains two full-path durations (45,200 ms and 35,285 ms) together with warmup/cache/CPU-throttling/GC/thermal/network/DevTools validity threats.
+
+P7-07 and P7-14 are closed for the declared CI profile. P7-08 stays PARTIAL pending a global audit of every source-map retention path. No 4/8 GiB device floor, 8-hour plateau, weak-device regression budget, cross-browser floor, thermal floor or latency floor is claimed. `production_closed=false`.
