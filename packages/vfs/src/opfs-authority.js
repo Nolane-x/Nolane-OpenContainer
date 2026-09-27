@@ -3,6 +3,8 @@ import { ErrorCodes, assertOc, ocError } from '../../protocol/src/index.js';
 const MANIFEST_A = 'manifest-a.json';
 const MANIFEST_B = 'manifest-b.json';
 const PAYLOAD_DIR = 'generations';
+const WRITER_DIR = 'writer-epochs';
+const WRITER_PREFIX = 'writer-epoch-';
 const encoder = new TextEncoder();
 
 async function sha256Hex(text) {
@@ -56,7 +58,9 @@ export class OpfsCheckpointAuthority {
   #directoryName;
   #directory = null;
   #payloads = null;
+  #writerClaims = null;
   #current = null;
+  #writerEpoch = 0;
   #lockManager;
   #lockName;
   #storagePolicy;
@@ -91,6 +95,18 @@ export class OpfsCheckpointAuthority {
     return this.#current;
   }
 
+  get writerEpoch() {
+    return this.#writerEpoch;
+  }
+
+  get writerState() {
+    return Object.freeze({
+      writerEpoch: this.#writerEpoch,
+      storageGeneration: this.#current?.generation ?? 0,
+      manifestWriterEpoch: this.#current?.writerEpoch ?? null
+    });
+  }
+
   get crossContextLocking() {
     return this.#lockManager !== null;
   }
@@ -110,6 +126,7 @@ export class OpfsCheckpointAuthority {
   async open() {
     this.#directory = await this.#root.getDirectoryHandle(this.#directoryName, { create: true });
     this.#payloads = await this.#directory.getDirectoryHandle(PAYLOAD_DIR, { create: true });
+    this.#writerClaims = await this.#directory.getDirectoryHandle(WRITER_DIR, { create: true });
     this.#current = await this.#withExclusiveLock(() => this.#recoverUnlocked());
     return this;
   }
@@ -132,6 +149,10 @@ export class OpfsCheckpointAuthority {
       // deciding whether this writer is stale or selecting the next sequence.
       await this.#recoverUnlocked();
 
+      if (this.#writerEpoch > 0) {
+        await this.#assertWriterEpochCurrentUnlocked();
+      }
+
       if (this.#current && snapshot.generation < this.#current.generation) {
         throw ocError(ErrorCodes.STALE_GENERATION, 'OPFS checkpoint generation is stale', {
           current: this.#current.generation,
@@ -149,11 +170,16 @@ export class OpfsCheckpointAuthority {
         });
       }
 
+      if (this.#writerEpoch === 0) {
+        this.#writerEpoch = await this.#claimWriterEpochUnlocked();
+      }
+
       const sequence = (this.#current?.sequence ?? 0) + 1;
       const payload = 'generation-' + snapshot.generation + '-' + digest.slice(0, 16) + '.json';
       const manifest = {
         version: 1,
         sequence,
+        writerEpoch: this.#writerEpoch,
         generation: snapshot.generation,
         payload,
         sha256: digest
@@ -224,6 +250,65 @@ export class OpfsCheckpointAuthority {
       const snapshot = JSON.parse(text);
       return fs.restore(snapshot);
     });
+  }
+
+  async #maxWriterEpochUnlocked() {
+    assertOc(
+      this.#writerClaims && typeof this.#writerClaims.entries === 'function',
+      ErrorCodes.INVALID_STATE,
+      'OPFS writer epoch directory does not support enumeration'
+    );
+    let maximum = 0;
+    for await (const [name, handle] of this.#writerClaims.entries()) {
+      if (handle?.kind && handle.kind !== 'file') continue;
+      const match = String(name).match(/^writer-epoch-(\d+)\.json$/);
+      if (!match) continue;
+      const epoch = Number(match[1]);
+      if (Number.isSafeInteger(epoch) && epoch > maximum) maximum = epoch;
+    }
+    return maximum;
+  }
+
+  async #claimWriterEpochUnlocked() {
+    const previous = await this.#maxWriterEpochUnlocked();
+    const writerEpoch = previous + 1;
+    assertOc(Number.isSafeInteger(writerEpoch), ErrorCodes.INVALID_STATE, 'Writer epoch overflow');
+    const name = WRITER_PREFIX + writerEpoch + '.json';
+    const claim = JSON.stringify({
+      version: 1,
+      writerEpoch,
+      storageGeneration: this.#current?.generation ?? 0,
+      manifestSequence: this.#current?.sequence ?? 0
+    });
+    await this.#writeCheckpointText(this.#writerClaims, name, claim, 'writer-epoch');
+
+    // Claims are immutable monotonic fencing tokens. Keep the newest two names:
+    // their filenames alone preserve the monotonic fence even if claim contents
+    // are unreadable after a crash.
+    if (typeof this.#writerClaims.removeEntry === 'function') {
+      for await (const [entryName, handle] of this.#writerClaims.entries()) {
+        if (handle?.kind && handle.kind !== 'file') continue;
+        const match = String(entryName).match(/^writer-epoch-(\d+)\.json$/);
+        if (!match) continue;
+        const epoch = Number(match[1]);
+        if (Number.isSafeInteger(epoch) && epoch < writerEpoch - 1) {
+          try { await this.#writerClaims.removeEntry(entryName); } catch {}
+        }
+      }
+    }
+    return writerEpoch;
+  }
+
+  async #assertWriterEpochCurrentUnlocked() {
+    const currentWriterEpoch = await this.#maxWriterEpochUnlocked();
+    if (currentWriterEpoch !== this.#writerEpoch) {
+      throw ocError(ErrorCodes.STALE_GENERATION, 'OPFS writer epoch is stale', {
+        expectedWriterEpoch: this.#writerEpoch,
+        currentWriterEpoch,
+        storageGeneration: this.#current?.generation ?? 0
+      });
+    }
+    return true;
   }
 
   async #guardStorageWriteUnlocked(additionalBytes) {
@@ -384,7 +469,7 @@ export class OpfsCheckpointAuthority {
   }
 
   #assertOpen() {
-    if (!this.#directory || !this.#payloads) {
+    if (!this.#directory || !this.#payloads || !this.#writerClaims) {
       throw ocError(ErrorCodes.INVALID_STATE, 'OPFS checkpoint authority is not open');
     }
   }
