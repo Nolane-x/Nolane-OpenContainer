@@ -26,6 +26,12 @@ function byteLength(value){
 
 function freezeArray(values){return Object.freeze(values.map((value)=>Object.freeze(value)));}
 
+const PUBLIC_DIAGNOSTIC_TYPE = /^(?:runtime|process|worker|browser-worker|esm-edge|preview-edge)\.[a-z0-9._-]+$/;
+function publicDiagnosticType(value){
+  const redacted=redact(String(value??'diagnostic.unknown'));
+  return PUBLIC_DIAGNOSTIC_TYPE.test(redacted)?redacted:'[custom]';
+}
+
 export function redact(value, seen = new WeakSet()) {
   if (typeof value === 'string'){
     return value
@@ -152,7 +158,7 @@ export class DiagnosticJournal {
         const pending=this.#telemetrySink(Object.freeze({
           schema:'opencontainer.telemetry-event.v0.1',
           seq:entry.seq,
-          type:entry.type,
+          type:publicDiagnosticType(entry.type),
           fingerprint:entry.fingerprint
         }));
         if(pending&&typeof pending.catch==='function')pending.catch(()=>{this.#telemetryErrors++;});
@@ -357,7 +363,8 @@ export class SupportBundleAuthority{
       packageGeneration:this.#runtime.packages.generation,
       workspaceSequence:this.#runtime.workspacePersistence?.current?.sequence??null,
       workspaceGeneration:this.#runtime.workspacePersistence?.current?.generation??null,
-      diagnostics:this.#runtime.diagnostics.list().map((entry)=>({type:entry.type,fingerprint:entry.fingerprint}))
+      diagnostics:this.#runtime.diagnostics.list().map((entry)=>({type:publicDiagnosticType(entry.type),fingerprint:entry.fingerprint})),
+      previewEpoch:this.#runtime.preview?.epoch??null
     });
     const diagnostics=freezeArray(this.#runtime.diagnostics.list().map((entry)=>({
       seq:entry.seq,
