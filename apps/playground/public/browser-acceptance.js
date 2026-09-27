@@ -1849,6 +1849,22 @@ async function run() {
     }
   }
 
+  const p3CorruptionClasses=[
+    p3CorruptionEvidence.canonicalSource,
+    p3CorruptionEvidence.recoveryDraft,
+    p3CorruptionEvidence.checkpoint,
+    p3CorruptionEvidence.packageCache,
+    p3CorruptionEvidence.derivedIndex
+  ];
+  assert(p3CorruptionClasses.every(Boolean),'P3 corruption matrix did not exercise all five artifact classes');
+  assert(new Set(p3CorruptionClasses.map(item=>item.corruptionClass)).size===5,'P3 corruption matrix collapsed distinct artifact classes');
+  assert(new Set(p3CorruptionClasses.map(item=>item.action)).size===5,'P3 corruption matrix collapsed distinct recovery actions');
+  stage('p3-corruption-matrix-pass',{
+    classes:p3CorruptionEvidence,
+    classCount:p3CorruptionClasses.length,
+    distinctActions:new Set(p3CorruptionClasses.map(item=>item.action)).size
+  });
+
   stage('browser-package-corpus-start');
   const corpusLockResponse = await fetch('/package-lock.json', { cache: 'no-store' });
   assert(corpusLockResponse.ok, 'failed to load frozen package corpus lockfile');
