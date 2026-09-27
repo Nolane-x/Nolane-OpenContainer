@@ -49,6 +49,7 @@ test('browser preview bridge encodes authority proof and dispatches through curr
   const route = preview.publish({
     port: 5173,
     owner: 'dev-1',
+    identity:{workspace:'workspace-a',session:'session-a',version:'version-a'},
     handler: (request) => new Response('ok:' + request.url, { headers: { 'x-demo': 'yes' } })
   });
   const container = new FakeServiceWorkerContainer();
@@ -65,6 +66,9 @@ test('browser preview bridge encodes authority proof and dispatches through curr
   assert.equal(url.pathname, '/__opencontainer__/preview/5173/src/main.ts');
   assert.equal(url.searchParams.get('__oc_owner'), 'dev-1');
   assert.equal(url.searchParams.get('__oc_epoch'), String(route.epoch));
+  assert.equal(url.searchParams.get('__oc_workspace'),'workspace-a');
+  assert.equal(url.searchParams.get('__oc_session'),'session-a');
+  assert.equal(url.searchParams.get('__oc_version'),'version-a');
 
   let posted = null;
   container.emitMessage({
@@ -72,6 +76,7 @@ test('browser preview bridge encodes authority proof and dispatches through curr
     port: 5173,
     owner: route.owner,
     epoch: route.epoch,
+    identity:route.identity,
     url: '/src/main.ts?x=1',
     method: 'GET',
     headers: {},
@@ -175,4 +180,31 @@ test('preview edge strips host credentials before dispatch to untrusted preview'
   assert.equal(observedHeaders.range,'bytes=0-3');
   assert.equal(observedHeaders['x-demo'],'safe');
   bridge.close();
+});
+
+
+test('preview authority rejects cross workspace session and version identity',async()=>{
+  const preview=new PreviewAuthority();
+  const route=preview.publish({
+    port:5199,
+    owner:'identity-owner',
+    identity:{workspace:'workspace-a',session:'session-a',version:'version-a'},
+    handler:()=>new Response('identity-ok')
+  });
+  assert.equal(await (await preview.dispatch(5199,{},route)).text(),'identity-ok');
+  for(const [key,value] of [
+    ['workspace','workspace-b'],
+    ['session','session-b'],
+    ['version','version-b']
+  ]){
+    const identity={...route.identity,[key]:value};
+    await assert.rejects(
+      Promise.resolve().then(()=>preview.dispatch(5199,{},{
+        owner:route.owner,
+        epoch:route.epoch,
+        identity
+      })),
+      error=>error?.code==='OC_PREVIEW_STALE'&&error?.details?.key===key
+    );
+  }
 });

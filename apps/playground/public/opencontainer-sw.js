@@ -149,6 +149,11 @@ async function routePreview(request, url) {
   const owner = url.searchParams.get('__oc_owner');
   const epochText = url.searchParams.get('__oc_epoch');
   const epoch = Number(epochText);
+  const identity = {
+    workspace: url.searchParams.get('__oc_workspace'),
+    session: url.searchParams.get('__oc_session'),
+    version: url.searchParams.get('__oc_version')
+  };
   if (!owner || !Number.isInteger(epoch)) {
     return new Response('Missing OpenContainer preview proof', { status: 400, headers: edgeHeaders() });
   }
@@ -157,6 +162,9 @@ async function routePreview(request, url) {
   const guestParams = new URLSearchParams(url.searchParams);
   guestParams.delete('__oc_owner');
   guestParams.delete('__oc_epoch');
+  guestParams.delete('__oc_workspace');
+  guestParams.delete('__oc_session');
+  guestParams.delete('__oc_version');
   const query = guestParams.toString();
   const guestURL = guestPath + (query ? '?' + query : '');
 
@@ -175,6 +183,7 @@ async function routePreview(request, url) {
     port,
     owner,
     epoch,
+    identity,
     url: guestURL,
     method,
     headers: sanitizedPreviewHeaders(request.headers),

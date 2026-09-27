@@ -3066,7 +3066,10 @@ async function run() {
       headers: { 'content-type': 'text/plain', 'x-p5-preview': 'final' }
     });
   };
-  p5PreviewRoute = p5Runtime.listen(4305, p5PreviewHandler, { owner: 'p5-preview-v1' });
+  p5PreviewRoute = p5Runtime.listen(4305, p5PreviewHandler, {
+    owner: 'p5-preview-v1',
+    identity: { workspace: 'p5-workspace-a', session: 'p5-session-a', version: 'p5-version-1' }
+  });
 
   const p5Head = await fetch(p5PreviewBridge.url(p5PreviewRoute, '/head'), { method: 'HEAD', cache: 'no-store' });
   assert(p5Head.status === 200 && await p5Head.text() === '', 'P5 virtual HTTP HEAD semantics failed');
@@ -3098,11 +3101,31 @@ async function run() {
   assert(p5PreviewAbortName === 'AbortError', 'P5 virtual HTTP abort semantics failed');
 
   const p5OldPreviewUrl = p5PreviewBridge.url(p5PreviewRoute, '/final');
-  p5PreviewRoute = p5Runtime.listen(4305, p5PreviewHandler, { owner: 'p5-preview-v2' });
+  p5PreviewRoute = p5Runtime.listen(4305, p5PreviewHandler, {
+    owner: 'p5-preview-v2',
+    identity: { workspace: 'p5-workspace-a', session: 'p5-session-a', version: 'p5-version-2' }
+  });
   const p5StalePreview = await fetch(p5OldPreviewUrl, { redirect: 'manual', cache: 'no-store' });
   assert(p5StalePreview.status === 409, 'P5 stale Service Worker preview identity did not fail closed');
-  const p5FreshPreview = await fetch(p5PreviewBridge.url(p5PreviewRoute, '/final'), { cache: 'no-store' });
+  const p5FreshPreviewUrl = p5PreviewBridge.url(p5PreviewRoute, '/final');
+  const p5FreshPreview = await fetch(p5FreshPreviewUrl, { cache: 'no-store' });
   assert(p5FreshPreview.status === 200 && await p5FreshPreview.text() === 'preview-final', 'P5 fresh preview identity failed');
+
+  const p5IdentityTamperStatus = {};
+  for(const [parameter,value] of [
+    ['__oc_workspace','p5-workspace-b'],
+    ['__oc_session','p5-session-b'],
+    ['__oc_version','p5-version-cross']
+  ]){
+    const tampered=new URL(p5FreshPreviewUrl);
+    tampered.searchParams.set(parameter,value);
+    const response=await fetch(tampered,{redirect:'manual',cache:'no-store'});
+    p5IdentityTamperStatus[parameter]=response.status;
+  }
+  assert(
+    Object.values(p5IdentityTamperStatus).every((status)=>status===409),
+    'P5 Service Worker preview identity tuple allowed a cross workspace/session/version route'
+  );
 
   const p5OfflineReceipt = p5Runtime.net.setProfile('offline');
   let p5OfflineCode = 'ALLOWED';
@@ -3191,6 +3214,7 @@ async function run() {
     previewRedirect: p5PreviewRedirect.status,
     previewAbort: p5PreviewAbortName,
     stalePreview: p5StalePreview.status,
+    identityTamperStatus: p5IdentityTamperStatus,
     previewOfflineSeparation: p5OfflineCode === 'OC_NETWORK_DENIED' && p5PreviewWhileOffline.status === 200,
     frameEventOrigin: p5FrameReceipt.eventOrigin,
     frameLocationOrigin: p5FrameReceipt.locationOrigin,

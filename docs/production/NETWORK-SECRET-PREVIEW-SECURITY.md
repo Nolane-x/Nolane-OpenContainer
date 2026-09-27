@@ -47,7 +47,7 @@ Response budgets count bytes read from the actual response stream. A misleading 
 
 ## Preview isolation
 
-Virtual preview routing is not an external-network capability. Service Worker preview routes require owner + epoch proof and stale receipts fail closed.
+Virtual preview routing is not an external-network capability. Service Worker preview routes require owner + epoch proof plus an optional explicit workspace/session/version identity tuple. When that tuple is bound, each field must match the current authority route exactly; stale or cross-identity receipts fail closed.
 
 The trusted Service Worker/page bridge strips host credential headers (Authorization, Cookie, API-key/token headers) before dispatching preview requests to untrusted preview code. For an embedded hostile-preview security boundary, the promoted sandbox helper also accepts `html` and renders it through sandboxed `srcdoc` without `allow-same-origin`; this gives the nested document an opaque origin so it cannot read the parent or canonical browser storage. Live Service-Worker URL routing and hostile-frame execution are tested as separate properties because opaque sandbox origins and Service Worker control have different browser storage/control semantics.
 

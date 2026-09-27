@@ -142,6 +142,10 @@ export class BrowserPreviewServiceWorkerBridge {
     for (const [key, value] of guest.searchParams) url.searchParams.append(key, value);
     url.searchParams.set('__oc_owner', receipt.owner);
     url.searchParams.set('__oc_epoch', String(receipt.epoch));
+    for(const key of ['workspace','session','version']){
+      const value=receipt.identity?.[key];
+      if(value!==null&&value!==undefined)url.searchParams.set('__oc_'+key,String(value));
+    }
     return url.href;
   }
 
@@ -166,7 +170,11 @@ export class BrowserPreviewServiceWorkerBridge {
           headers: sanitizePreviewRequestHeaders(data.headers ?? {}),
           body: data.body == null ? null : Uint8Array.from(data.body)
         },
-        { owner: data.owner, epoch: Number(data.epoch) }
+        {
+          owner: data.owner,
+          epoch: Number(data.epoch),
+          identity: data.identity ?? undefined
+        }
       );
       const headers = Object.fromEntries(response.headers.entries());
       const body = String(data.method).toUpperCase() === 'HEAD'
