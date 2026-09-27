@@ -60,7 +60,7 @@ test('support bundle is privacy-minimized and excludes workspace, details and cu
   const bundle=runtime.supportBundle(error);
   const serialized=JSON.stringify(bundle);
 
-  assert.equal(bundle.schema,'opencontainer.support-bundle.v0.1');
+  assert.equal(bundle.schema,'opencontainer.support-bundle.v0.2');
   assert.equal(bundle.privacy.workspaceContentsIncluded,false);
   assert.equal(bundle.privacy.diagnosticDetailsIncluded,false);
   assert.equal(bundle.privacy.secretsIncluded,false);
