@@ -733,3 +733,12 @@ CI #475 on PR #51 implementation head `edb93487724046443c73b98cad397ee43ec36f94`
 P3-13 is now closed for the declared Chrome profile. Corruption is classified separately across all five source-gate classes: canonical source fails closed; corrupt recovery drafts are discardable noncanonical state; corrupt checkpoints fall back to an older valid recovery root; corrupt package-cache bytes are rejected/refetched/reverified; and corrupt derived indexes are discarded/rebuilt from canonical source generation. The dedicated browser receipt proves five distinct classes and five distinct recovery actions in both Chrome iterations.
 
 P3-07, P3-09, P3-14, P3-15, P3-17, P3-18 and P3-20 remain open/partial. The production ledger is now 154/304 minimum-closure satisfied; `production_closed=false`.
+
+
+## P3 persistence/data-safety wave 4
+
+CI #491 on PR #52 implementation head `3debec759ac83f5fd5582a211659bb1be623de68` passed 383/383 unit tests, CodeQL, 35 critical files × 5 iterations = 175 repeated executions, and 2/2 installed-distribution Chrome product paths with zero unexplained failures.
+
+P3-14 is now closed for the declared Chrome profile. Low-storage cleanup is explicitly ordered across temporary, derived/rebuildable, public cache and checkpoint-garbage tiers; canonical source and canonical checkpoints are hard-protected. An impossible reclaim target remains unsatisfied instead of authorizing deletion of last-known-good state. The browser court reopens the workspace after cleanup and verifies the current acknowledged generation plus fallback checkpoint remain valid.
+
+All 14 currently reconciled P3 rows are now closed. P3-07, P3-09, P3-15, P3-17, P3-18 and P3-20 remain unreconciled/open, so the domain is not complete. The production ledger is now 155/304 minimum-closure satisfied; `production_closed=false`.
