@@ -1,0 +1,59 @@
+{
+  "schema": "opencontainer.p11-release-compatibility-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P11-14",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "requirement": "Publish known limitations and unsupported classes alongside every release compatibility report.",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 44,
+  "implementationHead": "676fcec1b4b8b1fad108c28ab7d71595d5b368db",
+  "ci": {
+    "runNumber": 417,
+    "runId": 36307350929,
+    "testedCheckoutCommit": "84472457b5e71422323418802268420e42ace2cf",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "reportStatus": "PASS",
+    "limitationCount": 5,
+    "unsupportedClassCount": 4,
+    "knownIssueCount": 4,
+    "sourceDigestCount": 7,
+    "criticalTestFiles": 22,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 110,
+    "contractUnexplainedFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "browserUnexplainedFailures": 0
+  },
+  "report": {
+    "releaseId": "opencontainer-0.1.0-alpha.1-canary",
+    "version": "0.1.0-alpha.1",
+    "profileId": "opencontainer-alpha-chromium-node24-v1",
+    "declaredEvidenceProfile": "desktop-chrome153-ubuntu2404-x64-ci",
+    "machineSource": "release/RELEASE-COMPATIBILITY-REPORT.v1.0.json",
+    "humanSource": "docs/compatibility/RELEASE-COMPATIBILITY-REPORT.md",
+    "archivedArtifact": ".artifacts/compatibility/release-compatibility-report.json",
+    "archiveRetentionDays": 90
+  },
+  "closure": {
+    "id": "P11-14",
+    "state": "EVIDENCE",
+    "promotion": "PASS-BROWSER",
+    "closureMet": true,
+    "evidence": "Every release compatibility report is now generated/verified against the exact compatibility-baseline limitations, product-scope unsupported classes and version/profile/browser known-issues database; omission tests fail closed and the report is archived by CI."
+  },
+  "preservedOpenGates": [
+    {
+      "id": "P11-12",
+      "state": "PARTIAL",
+      "reason": "Actual externally published OpenContainer package/bundle identity remains absent."
+    },
+    {
+      "id": "P11-13",
+      "state": "UNRECONCILED",
+      "reason": "Minimum browser versions remain unfrozen until real cross-browser matrix evidence exists."
+    }
+  ],
+  "productionClosed": false
+}

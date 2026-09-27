@@ -370,6 +370,14 @@
       "status": "PASS",
       "ref": "CI #413 / PR #43 head 631ce3608424a901f74c67e83666f6d14bb87a73",
       "note": "Pre-1.0 operations process exercised in CI: 14 P17 areas, 4 disaster drills, telemetry-free health, backward support-bundle parser, known-bad read-only block, 12 regression entries and weekly maintenance workflow; declared Chrome product path 2/2. External/private/publication/cross-browser claims remain excluded."
+    },
+    {
+      "key": "p11-release-compatibility-report",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #417 / PR #44 head 676fcec1b4b8b1fad108c28ab7d71595d5b368db",
+      "note": "Commit-bound release compatibility report receipt: 5 exact limitations + 4 exact unsupported classes + 4 mapped known issues; seven source digests; omission tests; 2/2 installed Chrome paths. Does not close actual publication or browser minimums."
     }
   ]
 }

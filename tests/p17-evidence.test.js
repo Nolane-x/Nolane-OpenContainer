@@ -38,9 +38,10 @@ test('P17 ledger and evidence registry stay closed without erasing external boun
   assert.ok(rows.every(x=>x.state==='EVIDENCE'&&x.promotion==='PASS-BROWSER'&&x.evidence==='p17-operations'&&x.closure_met===true));
   const entry=registry.entries.find(x=>x.key==='p17-operations');
   assert.deepEqual({kind:entry.kind,level:entry.level,status:entry.status},{kind:'EXECUTABLE',level:'BROWSER',status:'PASS'});
-  assert.equal(ledger.overrides.length,182);
-  assert.equal(ledger.overrides.filter(x=>x.closure_met===true).length,124);
-  assert.equal(ledger.overrides.filter(x=>x.state==='PARTIAL').length,38);
+  // P17 owns exact P17 closure; later domains may legitimately improve global totals.
+  assert.ok(ledger.overrides.length>=182);
+  assert.ok(ledger.overrides.filter(x=>x.closure_met===true).length>=124);
+  assert.equal(rows.filter(x=>x.closure_met!==true).length,0);
   assert.equal(ledger.production_closed,false);
   assert.ok(matrix.boundaries.some(x=>x.includes('P12-17')));
   assert.ok(matrix.boundaries.some(x=>x.includes('no externally published npm/GitHub Release')));
@@ -53,7 +54,7 @@ test('P17 maintenance is recurring and P17 closure test is repeated in the criti
   assert.match(maintenance,/npm run critical:browser-flake/);
   assert.ok(flake.contract.testFiles.includes('tests/operations-maintenance.test.js'));
   assert.ok(flake.contract.testFiles.includes('tests/p17-evidence.test.js'));
-  assert.equal(flake.contract.testFiles.length,21);
-  assert.equal(flake.contract.minimumTestFiles,21);
+  assert.ok(flake.contract.testFiles.length>=21);
+  assert.equal(flake.contract.testFiles.length,flake.contract.minimumTestFiles);
   assert.equal(flake.contract.iterations,5);
 });

@@ -120,6 +120,7 @@ See:
 - [`docs/guides/TROUBLESHOOTING.md`](docs/guides/TROUBLESHOOTING.md)
 - [`docs/compatibility/REAL-REPOSITORY-CORPUS.md`](docs/compatibility/REAL-REPOSITORY-CORPUS.md)
 - [`docs/compatibility/COMPATIBILITY-BASELINE.v0.1.json`](docs/compatibility/COMPATIBILITY-BASELINE.v0.1.json)
+- [`docs/compatibility/RELEASE-COMPATIBILITY-REPORT.md`](docs/compatibility/RELEASE-COMPATIBILITY-REPORT.md)
 - [`docs/compatibility/PROMOTION-GOVERNANCE.md`](docs/compatibility/PROMOTION-GOVERNANCE.md)
 - [`docs/production/DISTRIBUTION-CERTIFICATION.md`](docs/production/DISTRIBUTION-CERTIFICATION.md)
 - [`docs/production/RELEASE-EVIDENCE.md`](docs/production/RELEASE-EVIDENCE.md)

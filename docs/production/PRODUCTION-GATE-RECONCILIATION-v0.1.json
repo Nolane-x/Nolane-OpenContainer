@@ -280,6 +280,10 @@
     "p17-operations": {
       "ref": "CI #413 / PR #43 head 631ce3608424a901f74c67e83666f6d14bb87a73",
       "note": "Executable P17 pre-1.0 operations evidence: supported-line/security-fix policy, vulnerability lifecycle, incident/revocation drills, known-bad runtime read-only block, dependency/browser-watch cadence, telemetry-free health, support-bundle backward parser, backup/EOL rules, issue-regression verification, known-issues DB and four disaster scenarios; 100/100 critical file-executions + 2/2 installed Chrome paths. Does not claim verified private intake/public artifact/cross-browser/weak-device closure."
+    },
+    "p11-release-compatibility-report": {
+      "ref": "CI #417 / PR #44 head 676fcec1b4b8b1fad108c28ab7d71595d5b368db",
+      "note": "P11-14 release compatibility reporting court: canary report exactly mirrors all 5 baseline limitations, all 4 product-scope unsupported classes and 4 version/profile/browser known issues; 7 sources SHA-256 bound; omission tests fail closed; report archived 90 days; 110/110 critical executions + 2/2 installed Chrome paths; P11-12 publication and P11-13 browser-floor gates remain open."
     }
   },
   "overrides": [
@@ -1038,10 +1042,10 @@
     {
       "id": "P11-14",
       "domain": "P11",
-      "state": "PARTIAL",
-      "promotion": "IMPLEMENTED",
-      "evidence": "compat-corpus",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p11-release-compatibility-report",
+      "closure_met": true
     },
     {
       "id": "P12-01",
