@@ -1518,7 +1518,10 @@ export function createRequire(filename){
     const keys=[JSON.stringify([issuer,value])];
     try{
       const normalized=new URL(issuer);
-      normalized.search='';normalized.hash='';
+      const generationProof=normalized.searchParams.get('__oc_vfs_generation');
+      normalized.search='';
+      if(generationProof!==null)normalized.searchParams.set('__oc_vfs_generation',generationProof);
+      normalized.hash='';
       const normalizedKey=JSON.stringify([normalized.href,value]);
       if(normalizedKey!==keys[0])keys.push(normalizedKey);
     }catch{}

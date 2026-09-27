@@ -330,7 +330,9 @@ test('native ESM publication bridges static CommonJS default exports and nested 
     assert.match(cjs.source, /export default __opencontainer_cjs_exports/);
     assert.ok(cjs.dependencies.some((dependency) => dependency.specifier === './inner.js'));
     await materializeGraph(graph);
-    const namespace = await import(entryURL.href + '?oracle=' + Date.now());
+    const oracleURL = new URL(entryURL.href);
+    oracleURL.searchParams.set('oracle', String(Date.now()));
+    const namespace = await import(oracleURL.href);
     assert.equal(namespace.result, 42);
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -626,7 +628,10 @@ test('ESM createRequire literal package edges are prelinked without guest eval',
               const keys=[JSON.stringify([issuer,value])];
               try{
                 const normalized=new URL(issuer);
-                normalized.search='';normalized.hash='';
+                const generationProof=normalized.searchParams.get('__oc_vfs_generation');
+                normalized.search='';
+                if(generationProof!==null)normalized.searchParams.set('__oc_vfs_generation',generationProof);
+                normalized.hash='';
                 keys.push(JSON.stringify([normalized.href,value]));
               }catch{}
               const registry=globalThis.__opencontainer_prelinked_require__;

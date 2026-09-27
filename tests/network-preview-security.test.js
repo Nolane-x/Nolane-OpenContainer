@@ -65,7 +65,7 @@ test('ESM Service Worker routing binds publication session and workspace generat
   ]);
   assert.ok(publication.includes("url.searchParams.set('__oc_vfs_generation', this.generation)"));
   assert.ok(publication.includes("url.searchParams.get('__oc_vfs_generation')"));
-  assert.ok(publication.includes('Published module workspace generation proof is stale or missing'));
+  assert.ok(publication.includes('Published workspace module generation proof is stale or missing'));
   assert.ok(bridge.includes("data.session !== this.session || String(data.generation ?? '') !== String(this.#publication.generation ?? '')"));
   assert.ok(sw.includes("url.searchParams.get('__oc_vfs_generation')"));
   assert.ok(sw.includes('generation,'));
