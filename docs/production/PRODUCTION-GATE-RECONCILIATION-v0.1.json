@@ -288,6 +288,10 @@
     "p15-release-compatibility-matrix": {
       "ref": "CI #421 / PR #45 head 51142c03da23bee52dd85c1beeba40a8184ca00e",
       "note": "P15-05 per-release browser/OS/profile matrix court: 7 rows, exactly 1 evidence-backed Chrome 153/Ubuntu 24.04 x64 profile and 6 explicit unverified rows; browser minimums/resource floors remain unclaimed; 6 source files SHA-256 bound; 120/120 critical executions + 2/2 installed Chrome paths; P11-13/P14-13/P14-14/P7/P15-12 remain open."
+    },
+    "p13-supply-chain-review": {
+      "ref": "CI #424 / PR #46 head 57a20790c64619ede9a55fe7a76a8424bf62d311",
+      "note": "P13 SECURITY-REVIEWED / RELEASE-VERIFIED supply-chain court: immutable action refs + least-privilege workflow audit; exact tested-distribution digest equals release-evidence artifact; independent SHA-256/SHA-512; SPDX 2.3; in-toto/SLSA provenance; exact commit/lock/toolchain/environment; explicit production/optional/dev dependency inventory; zero shipped optional-adapter bundles; content-policy negative court; reproducible build; compromised-release revocation/user-warning drill; 130/130 critical executions + 2/2 installed Chrome paths. Nine external trust/publication/archive gates remain open."
     }
   },
   "overrides": [
@@ -1214,105 +1218,113 @@
     {
       "id": "P13-01",
       "domain": "P13",
-      "state": "PARTIAL",
-      "promotion": "PASS-INTEGRATION",
-      "evidence": "release-evidence",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "evidence": "p13-supply-chain-review",
+      "closure_met": true
     },
     {
       "id": "P13-02",
       "domain": "P13",
-      "state": "PARTIAL",
-      "promotion": "PASS-INTEGRATION",
-      "evidence": "release-evidence",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "evidence": "p13-supply-chain-review",
+      "closure_met": true
     },
     {
       "id": "P13-04",
       "domain": "P13",
       "state": "PARTIAL",
       "promotion": "PASS-INTEGRATION",
-      "evidence": "release-evidence",
+      "evidence": "p13-supply-chain-review",
       "closure_met": false
     },
     {
       "id": "P13-05",
       "domain": "P13",
-      "state": "PARTIAL",
-      "promotion": "PASS-INTEGRATION",
-      "evidence": "release-evidence",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "evidence": "p13-supply-chain-review",
+      "closure_met": true
     },
     {
       "id": "P13-06",
       "domain": "P13",
-      "state": "PARTIAL",
-      "promotion": "PASS-INTEGRATION",
-      "evidence": "release-evidence",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "evidence": "p13-supply-chain-review",
+      "closure_met": true
     },
     {
       "id": "P13-07",
       "domain": "P13",
       "state": "PARTIAL",
       "promotion": "PASS-INTEGRATION",
-      "evidence": "release-evidence",
+      "evidence": "p13-supply-chain-review",
       "closure_met": false
     },
     {
       "id": "P13-08",
       "domain": "P13",
-      "state": "PARTIAL",
-      "promotion": "PASS-BROWSER",
-      "evidence": "release-evidence",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "evidence": "p13-supply-chain-review",
+      "closure_met": true
     },
     {
       "id": "P13-11",
       "domain": "P13",
-      "state": "PARTIAL",
-      "promotion": "PASS-INTEGRATION",
-      "evidence": "release-evidence",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "evidence": "p13-supply-chain-review",
+      "closure_met": true
     },
     {
       "id": "P13-12",
       "domain": "P13",
-      "state": "PARTIAL",
-      "promotion": "PASS-INTEGRATION",
-      "evidence": "release-evidence",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "evidence": "p13-supply-chain-review",
+      "closure_met": true
     },
     {
       "id": "P13-13",
       "domain": "P13",
-      "state": "PARTIAL",
-      "promotion": "PASS-INTEGRATION",
-      "evidence": "release-evidence",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "evidence": "p13-supply-chain-review",
+      "closure_met": true
     },
     {
       "id": "P13-14",
       "domain": "P13",
-      "state": "PARTIAL",
-      "promotion": "PASS-INTEGRATION",
-      "evidence": "release-evidence",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "evidence": "p13-supply-chain-review",
+      "closure_met": true
     },
     {
       "id": "P13-15",
       "domain": "P13",
-      "state": "PARTIAL",
-      "promotion": "PASS-INTEGRATION",
-      "evidence": "release-evidence",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "evidence": "p13-supply-chain-review",
+      "closure_met": true
+    },
+    {
+      "id": "P13-19",
+      "domain": "P13",
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "evidence": "p13-supply-chain-review",
+      "closure_met": true
     },
     {
       "id": "P13-20",
       "domain": "P13",
       "state": "PARTIAL",
       "promotion": "PASS-INTEGRATION",
-      "evidence": "release-evidence",
+      "evidence": "p13-supply-chain-review",
       "closure_met": false
     },
     {

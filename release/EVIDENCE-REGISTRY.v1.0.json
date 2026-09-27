@@ -386,6 +386,14 @@
       "status": "PASS",
       "ref": "CI #421 / PR #45 head 51142c03da23bee52dd85c1beeba40a8184ca00e",
       "note": "Release-bound P15-05 matrix receipt: 1 retained evidence-backed Chrome/Ubuntu row + 6 explicit unverified rows; no browser floor/resource-floor/cross-browser promotion; 120/120 repeated critical executions and 2/2 installed-distribution Chrome paths."
+    },
+    {
+      "key": "p13-supply-chain-review",
+      "kind": "EXECUTABLE",
+      "level": "RELEASE-VERIFIED",
+      "status": "PASS",
+      "ref": "CI #424 / PR #46 head 57a20790c64619ede9a55fe7a76a8424bf62d311",
+      "note": "Release-verified P13 court for 11 machine-closable supply-chain gates. Exact artifact digest matches the tested distribution; SBOM/provenance/checksums/inventory/reproducibility/content policy/workflow least privilege/revocation were verified. Published identity, tag, signing, OIDC, registry staging, repo protection, OpenSSF/OSPS and long-term archive gates remain open."
     }
   ]
 }

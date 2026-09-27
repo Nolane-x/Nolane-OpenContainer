@@ -25,10 +25,22 @@ const rootPackage=spdx.packages?.find((item)=>item.SPDXID==='SPDXRef-Package-Ope
 if(!rootPackage||!rootPackage.checksums?.some((item)=>item.algorithm==='SHA256'&&item.checksumValue===sha256))throw new Error('SBOM is not bound to distribution SHA-256');
 if(provenance._type!=='https://in-toto.io/Statement/v1'||provenance.predicateType!=='https://slsa.dev/provenance/v1')throw new Error('provenance statement type drifted');
 if(provenance.subject?.[0]?.digest?.sha256!==sha256)throw new Error('provenance subject is not bound to artifact');
+for(const key of ['vite','rolldown','rolldownBinding','lightningCss']){
+  if(!manifest.toolchain?.[key])throw new Error('release manifest missing exact toolchain '+key);
+}
+if(JSON.stringify(provenance.predicate?.buildDefinition?.internalParameters?.toolchain)!==JSON.stringify(manifest.toolchain)){
+  throw new Error('provenance toolchain does not match release manifest');
+}
 if(reproducibility.reproducible!==true||reproducibility.first.sha256!==reproducibility.second.sha256||reproducibility.first.sha256!==sha256)throw new Error('reproducibility evidence failed');
 if(manifest.artifact.contentPolicy?.violations!==0)throw new Error('distribution content policy has violations');
 if(inventory.root?.license!=='UNLICENSED')throw new Error('license inventory must surface current root UNLICENSED status explicitly');
 if((inventory.categories?.runtimeTransitive?.length??0)===0)throw new Error('runtime dependency inventory is empty');
+for(const category of ['runtimeDirect','runtimeTransitive','optionalAdapters','sourceDevTestOnly']){
+  if(!Array.isArray(inventory.categories?.[category]))throw new Error('dependency inventory missing category '+category);
+}
+if(inventory.optionalAdapterPolicy?.shipped!==false||inventory.optionalAdapterPolicy?.bundleCount!==0){
+  throw new Error('optional adapter inventory policy drifted');
+}
 if(manifest.productionClosed!==false)throw new Error('release evidence incorrectly claims production closure');
 
 console.log(JSON.stringify({

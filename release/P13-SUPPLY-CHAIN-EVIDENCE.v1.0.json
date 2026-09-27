@@ -1,0 +1,177 @@
+{
+  "schema": "opencontainer.p13-supply-chain-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P13",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "SECURITY-REVIEWED / RELEASE-VERIFIED",
+  "pullRequest": 46,
+  "implementationHead": "57a20790c64619ede9a55fe7a76a8424bf62d311",
+  "ci": {
+    "runNumber": 424,
+    "runId": 36309922350,
+    "testedCheckoutCommit": "09c2bc94bce571edd9a0e3c6822aa584e125bdc7",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "supplyChainReview": "PASS",
+    "maturity": "SECURITY-REVIEWED",
+    "criticalTestFiles": 26,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 130,
+    "contractUnexplainedFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "browserUnexplainedFailures": 0
+  },
+  "releaseArtifact": {
+    "filename": "nolane-opencontainer-0.1.0-alpha.1.tgz",
+    "sha256": "6e3b1502933b898aa66da0f330bf0e06ae55ab345bfb31ed0336c90ea70663ed",
+    "sha512": "e600c7cb3288f3b09a5a6b786888f625eea2a71d511d3c146c60dcd6d908accdd87de620a626cd68662e405e8b1c9ee8bc5f51fbc8343c6f0e334645ea111641",
+    "sameAsTestedDistribution": true,
+    "sbom": "SPDX-2.3",
+    "provenance": "https://slsa.dev/provenance/v1",
+    "reproducible": true,
+    "contentPolicyViolations": 0
+  },
+  "workflow": {
+    "immutableActionRefs": true,
+    "leastPrivilege": true,
+    "releaseCredentialsInUntrustedPr": false
+  },
+  "inventory": {
+    "runtimeDirect": 7,
+    "runtimeTransitive": 37,
+    "optionalAdapters": 0,
+    "optionalAdapterBundlesShipped": 0,
+    "sourceDevTestOnly": 0
+  },
+  "revocation": {
+    "exercisedScenario": "compromised-publishing-credential",
+    "publicationConditional": true,
+    "consumerWarningRequired": true
+  },
+  "closedGates": [
+    {
+      "id": "P13-01",
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "closureMet": true
+    },
+    {
+      "id": "P13-02",
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "closureMet": true
+    },
+    {
+      "id": "P13-05",
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "closureMet": true
+    },
+    {
+      "id": "P13-06",
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "closureMet": true
+    },
+    {
+      "id": "P13-08",
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "closureMet": true
+    },
+    {
+      "id": "P13-11",
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "closureMet": true
+    },
+    {
+      "id": "P13-12",
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "closureMet": true
+    },
+    {
+      "id": "P13-13",
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "closureMet": true
+    },
+    {
+      "id": "P13-14",
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "closureMet": true
+    },
+    {
+      "id": "P13-15",
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "closureMet": true
+    },
+    {
+      "id": "P13-19",
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "closureMet": true
+    }
+  ],
+  "preservedOpenGates": [
+    {
+      "id": "P13-03",
+      "state": "UNRECONCILED",
+      "reason": "No OIDC/trusted npm publishing identity is configured."
+    },
+    {
+      "id": "P13-04",
+      "state": "PARTIAL",
+      "reason": "Provenance exists for the publish-equivalent artifact, but no externally published OpenContainer release/package identity exists."
+    },
+    {
+      "id": "P13-07",
+      "state": "PARTIAL",
+      "reason": "CI uses clean ephemeral commit checkouts, not an immutable release tag."
+    },
+    {
+      "id": "P13-09",
+      "state": "UNRECONCILED",
+      "reason": "No cryptographic signing/keyless attestation identity exists for downloadable bundles."
+    },
+    {
+      "id": "P13-10",
+      "state": "UNRECONCILED",
+      "reason": "No trusted signature/keyless attestation verification policy exists before P13-09."
+    },
+    {
+      "id": "P13-16",
+      "state": "UNRECONCILED",
+      "reason": "No real registry staging/canary publication exists."
+    },
+    {
+      "id": "P13-17",
+      "state": "UNRECONCILED",
+      "reason": "GitHub branch/tag/release protection settings have not been externally certified."
+    },
+    {
+      "id": "P13-18",
+      "state": "UNRECONCILED",
+      "reason": "No retained OpenSSF Scorecard/OSPS Baseline receipt exists."
+    },
+    {
+      "id": "P13-20",
+      "state": "PARTIAL",
+      "reason": "CI evidence is retained 90 days, but long-term historical verification archive policy is not closed."
+    }
+  ],
+  "boundaries": [
+    "P13-03 remains open until OIDC/trusted publishing is actually configured.",
+    "P13-04 remains partial because provenance is not yet tied to an externally published OpenContainer artifact/package.",
+    "P13-07 remains partial because the release artifact is not built from an immutable release tag.",
+    "P13-09/P13-10 remain open until signing/keyless attestation and verification policy exist.",
+    "P13-16/P13-17/P13-18 remain open pending registry canary publication, repository protection certification and OpenSSF/OSPS evidence.",
+    "P13-20 remains partial because 90-day CI retention is not a long-term historical verification archive.",
+    "production_closed remains false."
+  ],
+  "productionClosed": false
+}

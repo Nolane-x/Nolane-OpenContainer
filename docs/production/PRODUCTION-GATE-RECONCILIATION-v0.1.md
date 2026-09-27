@@ -8,8 +8,8 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **183**
-- Minimum-closure satisfied: **126**
+- Seed-reconciled against implementation evidence: **184**
+- Minimum-closure satisfied: **137**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -29,7 +29,7 @@
 | P10 AI consumer, authority & data egress | 0 | 18 | 18 |
 | P11 Compatibility corpus & certification | 13 | 1 | 14 |
 | P12 Product security engineering | 20 | 0 | 20 |
-| P13 Build, supply chain & publication | 13 | 7 | 20 |
+| P13 Build, supply chain & publication | 14 | 6 | 20 |
 | P14 Release, update, migration & rollback | 15 | 3 | 18 |
 | P15 SDK, API, documentation & developer experience | 14 | 0 | 14 |
 | P16 License, FTO, governance & contribution policy | 0 | 14 | 14 |
@@ -44,6 +44,9 @@
 
 ## Newly reconciled in this wave
 
+- **P13-01, P13-02, P13-05, P13-06, P13-08, P13-11, P13-12, P13-13, P13-14, P13-15 and P13-19** now meet SECURITY-REVIEWED / RELEASE-VERIFIED closure through CI #424. The court audits immutable action pins and least-privilege permissions, binds the exact tested distribution tarball to release evidence, validates independent SHA-256/SHA-512 checksums, SPDX 2.3 SBOM, in-toto/SLSA provenance, exact source/lock/toolchain/environment identity, explicit dependency categories/zero optional-adapter bundle policy, content-exclusion negatives, reproducible builds and compromised-release revocation/user warning.
+- CI #424 reported **130/130** repeated critical contract executions, **2/2** installed-distribution Chrome paths, zero unexplained failures and a SECURITY-REVIEWED supply-chain receipt.
+- **P13-03, P13-04, P13-07, P13-09, P13-10, P13-16, P13-17, P13-18 and P13-20 remain open** because OIDC/trusted publishing, actually published provenance, immutable release-tag builds, signing/verification, registry staging, repository protection state, OpenSSF/OSPS hygiene and long-term historical archive evidence are not yet present.
 - **P15-05** now meets release-ready evidence through CI #421: every release publishes a browser/OS/profile matrix with one retained evidence-backed row (Chrome 153.0.8010.52 / Ubuntu 24.04 x64 / `desktop-chrome153-ubuntu2404-x64-ci`) and six explicit unverified rows for Windows, macOS, Firefox, Safari, Android and weak-device profiles. The matrix fails closed if an unverified row is promoted without evidence, retains browser minimums/resource floors as unfrozen, is SHA-256-bound to six source artifacts, and is archived with the compatibility report.
 - P11-13 browser minimums, P14-13 frozen-floor/newest-stable regression, P14-14/P7 weak-device evidence and P15-12 external published-package sample testing remain separate blockers.
 - **P17-01 through P17-14** now meet the pre-1.0 exercised-process minimum closure through an executable operations authority. CI #413 exercised supported-line/security-fix policy, a six-state vulnerability lifecycle, named incident roles, revocation/user-warning rules, known-bad runtime read-only enforcement, dependency and browser-watch cadence, telemetry-free health, v0.1/v0.2 support-bundle parsing, backup/EOL policy, issue-to-regression enforcement, known-issues lookup and four disaster scenarios.

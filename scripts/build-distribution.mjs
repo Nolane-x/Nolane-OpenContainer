@@ -41,7 +41,7 @@ function extension(path){
   return index>=0?path.slice(index).toLowerCase():'';
 }
 
-async function scanDistributionStage(stage){
+export async function scanDistributionStage(stage){
   const entries=await readdir(stage,{recursive:true,withFileTypes:true});
   const files=[];
   const violations=[];

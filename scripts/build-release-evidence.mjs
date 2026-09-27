@@ -137,7 +137,7 @@ function buildSpdx({artifact,installLock,installedManifest,sourceCommit}){
   };
 }
 
-function buildProvenance({artifact,sourceCommit,sourceLockSha256,nodeVersion,npmVersion,runId}){
+function buildProvenance({artifact,sourceCommit,sourceLockSha256,nodeVersion,npmVersion,toolchain,runId}){
   const now=isoNow();
   return {
     _type:'https://in-toto.io/Statement/v1',
@@ -158,7 +158,8 @@ function buildProvenance({artifact,sourceCommit,sourceLockSha256,nodeVersion,npm
           node:nodeVersion,
           npm:npmVersion,
           platform:process.platform,
-          arch:process.arch
+          arch:process.arch,
+          toolchain:{...toolchain}
         },
         resolvedDependencies:[
           {
@@ -233,6 +234,8 @@ export async function buildReleaseEvidence({outputDir=join(repoRoot,'.artifacts'
 
   const {document:spdx,components}=buildSpdx({artifact,installLock,installedManifest,sourceCommit});
   const sourceManifest=JSON.parse(await readFile(join(repoRoot,'package.json'),'utf8'));
+  const productionProfile=JSON.parse(await readFile(join(repoRoot,'docs','production','PRODUCTION-PROFILE.json'),'utf8'));
+  const toolchain={...productionProfile.toolchain};
   const directRuntime=Object.entries(installedManifest.dependencies??{}).map(([name,version])=>({name,version})).sort((a,b)=>a.name.localeCompare(b.name));
   const sourceDevTestOnly=Object.entries(sourceManifest.devDependencies??{})
     .filter(([name])=>!(name in (installedManifest.dependencies??{})))
@@ -247,6 +250,11 @@ export async function buildReleaseEvidence({outputDir=join(repoRoot,'.artifacts'
       optionalAdapters:[],
       sourceDevTestOnly
     },
+    optionalAdapterPolicy:{
+      shipped:false,
+      bundleCount:0,
+      reason:'Core distribution currently ships no separately packaged optional adapter bundle; adapters remain outside Core.'
+    },
     note:'UNLICENSED root status is intentional evidence that project-level license closure remains open.'
   };
 
@@ -256,6 +264,7 @@ export async function buildReleaseEvidence({outputDir=join(repoRoot,'.artifacts'
     sourceLockSha256,
     nodeVersion,
     npmVersion,
+    toolchain,
     runId:process.env.GITHUB_RUN_ID
       ? 'github-actions:'+process.env.GITHUB_RUN_ID+':'+(process.env.GITHUB_RUN_ATTEMPT??'1')
       : 'local:'+randomUUID()
@@ -289,6 +298,7 @@ export async function buildReleaseEvidence({outputDir=join(repoRoot,'.artifacts'
       platform:process.platform,
       arch:process.arch
     },
+    toolchain,
     reproducibility,
     evidenceFiles:[
       'checksums.txt',

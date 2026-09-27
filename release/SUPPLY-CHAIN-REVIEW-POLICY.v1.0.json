@@ -1,0 +1,177 @@
+{
+  "schema": "opencontainer.supply-chain-review-policy.v1.0",
+  "frozenAt": "2026-09-27",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P13",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "SECURITY-REVIEWED / RELEASE-VERIFIED",
+  "workflowFiles": [
+    ".github/workflows/ci.yml",
+    ".github/workflows/maintenance.yml"
+  ],
+  "workflowRules": {
+    "remoteActionRef": "full-40-hex-commit",
+    "topLevelPermissions": {
+      "contents": "read"
+    },
+    "allowedWritePermissions": [
+      "security-events: write"
+    ],
+    "forbiddenUntrustedReleaseSignals": [
+      "${{ secrets.",
+      "NPM_TOKEN",
+      "NODE_AUTH_TOKEN",
+      "npm publish",
+      "gh release",
+      "id-token: write",
+      "packages: write",
+      "contents: write",
+      "write-all"
+    ],
+    "prWorkflowMayHoldReleaseCredentials": false
+  },
+  "releaseEvidence": {
+    "artifactPath": ".artifacts/release/release-manifest.json",
+    "distributionCertificationPath": ".artifacts/distribution/certification.json",
+    "requiredEvidenceFiles": [
+      "checksums.txt",
+      "opencontainer.spdx.json",
+      "provenance.intoto.json",
+      "dependency-license-inventory.json",
+      "reproducibility.json"
+    ],
+    "sbomSchema": "SPDX-2.3",
+    "provenancePredicate": "https://slsa.dev/provenance/v1",
+    "requireArtifactDigestMatchCertification": true,
+    "requireSourceCommit": true,
+    "requirePackageLockSha256": true,
+    "requireExactToolchain": true,
+    "requireEnvironment": true,
+    "requireIndependentChecksums": true,
+    "requireReproducibleBuild": true,
+    "requireZeroContentPolicyViolations": true
+  },
+  "dependencyInventory": {
+    "requiredCategories": [
+      "runtimeDirect",
+      "runtimeTransitive",
+      "optionalAdapters",
+      "sourceDevTestOnly"
+    ],
+    "optionalAdaptersShipped": false,
+    "optionalAdapterBundleCount": 0,
+    "reason": "Core 0.1.0-alpha.1 ships no separately packaged optional adapter bundle; AI/Git/cloud adapters remain outside Core."
+  },
+  "revocation": {
+    "operationsPolicy": "release/OPERATIONS-POLICY.v1.0.json",
+    "disasterScenarios": "release/OPERATIONS-DISASTER-SCENARIOS.v1.0.json",
+    "requiredActions": [
+      "freeze-promotion",
+      "mark-known-bad",
+      "deprecate-or-yank-published-artifact",
+      "invalidate-release-note",
+      "publish-security-advisory",
+      "rebuild-from-clean-provenance"
+    ],
+    "compromisedCredentialActions": [
+      "suspend-publishing",
+      "revoke-credential",
+      "invalidate-untrusted-release",
+      "rebuild-from-clean-provenance",
+      "notify-users",
+      "rotate-credential",
+      "post-incident-review"
+    ]
+  },
+  "gateAuthority": {
+    "P13-01": {
+      "machineClosable": true,
+      "reason": "CI action refs and permission scopes can be mechanically audited."
+    },
+    "P13-02": {
+      "machineClosable": true,
+      "reason": "PR/main CI has no publication credentials and uses least-privilege permissions."
+    },
+    "P13-03": {
+      "machineClosable": false,
+      "state": "OPEN_EXTERNAL",
+      "reason": "No OIDC/trusted npm publishing identity is configured."
+    },
+    "P13-04": {
+      "machineClosable": false,
+      "state": "OPEN_EXTERNAL",
+      "reason": "Provenance exists for the publish-equivalent artifact, but there is no externally published OpenContainer release/package identity yet."
+    },
+    "P13-05": {
+      "machineClosable": true,
+      "reason": "SPDX 2.3 SBOM is digest-bound to the exact release tarball."
+    },
+    "P13-06": {
+      "machineClosable": true,
+      "reason": "Release manifest/provenance bind commit, lock, exact toolchain, environment and artifact digests."
+    },
+    "P13-07": {
+      "machineClosable": false,
+      "state": "OPEN_EXTERNAL",
+      "reason": "Current CI builds clean ephemeral checkouts by commit, not an immutable release tag."
+    },
+    "P13-08": {
+      "machineClosable": true,
+      "reason": "The exact reproducible tarball digest in release evidence must equal the distribution-certification artifact digest that passed SDK/examples/hosting/privacy courts."
+    },
+    "P13-09": {
+      "machineClosable": false,
+      "state": "OPEN_EXTERNAL",
+      "reason": "No cryptographic signing/keyless attestation identity is produced for downloadable bundles."
+    },
+    "P13-10": {
+      "machineClosable": false,
+      "state": "OPEN_EXTERNAL",
+      "reason": "No trusted signature/keyless attestation verification can exist before P13-09."
+    },
+    "P13-11": {
+      "machineClosable": true,
+      "reason": "SHA-256/SHA-512 checksums are independently emitted and mechanically verified."
+    },
+    "P13-12": {
+      "machineClosable": true,
+      "reason": "Inventory is generated from the installed production artifact; current optional adapter bundle count is explicitly zero."
+    },
+    "P13-13": {
+      "machineClosable": true,
+      "reason": "Inventory separates runtime direct/transitive, optional adapters and source dev/test-only dependencies."
+    },
+    "P13-14": {
+      "machineClosable": true,
+      "reason": "Distribution staging fails closed on test namespaces, env/git/github/secret/private-corpus paths, private keys, API-key patterns and host-local paths."
+    },
+    "P13-15": {
+      "machineClosable": true,
+      "reason": "Two independent staging builds must match SHA-256, SHA-512 and byte size."
+    },
+    "P13-16": {
+      "machineClosable": false,
+      "state": "OPEN_EXTERNAL",
+      "reason": "No real package registry staging/canary publication exists yet."
+    },
+    "P13-17": {
+      "machineClosable": false,
+      "state": "OPEN_EXTERNAL",
+      "reason": "Repository branch/tag/release protection settings are external GitHub state and are not yet certified."
+    },
+    "P13-18": {
+      "machineClosable": false,
+      "state": "OPEN_EXTERNAL",
+      "reason": "No retained OpenSSF Scorecard/OSPS Baseline receipt exists yet."
+    },
+    "P13-19": {
+      "machineClosable": true,
+      "reason": "P17 exercises compromised-publishing-credential revocation, rebuild and consumer-warning actions."
+    },
+    "P13-20": {
+      "machineClosable": false,
+      "state": "OPEN_EXTERNAL",
+      "reason": "90-day CI artifacts are retained, but long-term historical verification storage policy is not yet closed."
+    }
+  },
+  "productionClosed": false
+}
