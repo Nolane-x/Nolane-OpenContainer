@@ -1,0 +1,95 @@
+{
+  "schema": "opencontainer.security-resource-dos-review.v1.0",
+  "frozenAt": "2026-09-27",
+  "sourceGate": "P12-07",
+  "profile": "desktop-chrome153-ubuntu2404-x64-ci",
+  "conclusion": "REVIEWED_WITH_RESIDUAL_RISK",
+  "rule": "Resource-DoS review may close the security-review obligation while preserving explicit performance/device-floor gaps under P7/P15. It must not claim browser heap or weak-device guarantees that are not measured.",
+  "surfaces": [
+    {
+      "id": "worker-explosion",
+      "status": "MITIGATED",
+      "review": "Concurrent guest workers are authority-leased and bounded; runaway guest execution has a hard termination path.",
+      "controls": [
+        "ResourceGovernor workers limit",
+        "BrowserGuestWorkerAuthority lease",
+        "hard timeout termination",
+        "WorkerRpcAuthority pending bound"
+      ],
+      "evidence": [
+        "packages/resources/src/index.js",
+        "tests/browser-guest-worker.test.js",
+        "tests/worker-authority.test.js"
+      ]
+    },
+    {
+      "id": "output-floods",
+      "status": "MITIGATED",
+      "review": "Process output is capped independently from process count; oversized guest-to-host results fail closed.",
+      "controls": [
+        "ProcessSupervisor output limit",
+        "ResourceGovernor outputBytes",
+        "OC_OUTPUT_LIMIT"
+      ],
+      "evidence": [
+        "packages/process/src/index.js",
+        "tests/runtime.test.js",
+        "tests/browser-guest-worker.test.js"
+      ]
+    },
+    {
+      "id": "decompression",
+      "status": "MITIGATED",
+      "review": "Compressed package expansion is bounded during streaming before unbounded decompressed buffering; archive file count and unpacked bytes are independently capped.",
+      "controls": [
+        "streaming gzip limit",
+        "maxFiles",
+        "maxUnpackedBytes",
+        "transactional publication"
+      ],
+      "evidence": [
+        "packages/package-env/src/artifact-authority.js",
+        "tests/security-hardening.test.js",
+        "tests/security-malicious-package.test.js"
+      ]
+    },
+    {
+      "id": "source-maps",
+      "status": "REVIEWED_RESIDUAL",
+      "review": "Source maps are generated/handled inside the isolated toolchain path and are not promoted to a new trusted parser or canonical-data authority. Large map generation can still consume toolchain-worker memory.",
+      "controls": [
+        "toolchain Worker isolation",
+        "bounded product execution/output courts",
+        "no source-map authority exposed to guest host capabilities"
+      ],
+      "evidence": [
+        "tests/rolldown-browser-execution.test.js",
+        "tests/lightningcss-js-glue.test.js",
+        "tests/vite-c1-oracle.test.js"
+      ],
+      "residualRisk": "No weak-device source-map memory ceiling is proven; P7 resource/weak-device campaigns remain open."
+    },
+    {
+      "id": "wasm-memory-growth",
+      "status": "REVIEWED_RESIDUAL",
+      "review": "WASM artifacts are exact-byte-length and SHA-256 profile bound before compilation, but browser WebAssembly heap growth is not directly metered by ResourceGovernor.",
+      "controls": [
+        "exact WASM profile byte length",
+        "SHA-256 verification",
+        "import/export shape validation",
+        "toolchain Worker isolation/termination"
+      ],
+      "evidence": [
+        "packages/toolchain/src/wasm-artifact-manager.js",
+        "tests/wasm-artifact-manager.test.js",
+        "tests/browser-guest-worker.test.js"
+      ],
+      "residualRisk": "Actual browser WASM heap growth has no independently proven device-floor ceiling; this remains a P7/P15 evidence limitation rather than being hidden."
+    }
+  ],
+  "boundaries": [
+    "This review is about security DoS boundaries, not throughput or weak-device performance certification.",
+    "A browser heap/WASM memory floor is not claimed.",
+    "P7 weak-device, long-run plateau and memory-pressure campaigns remain open."
+  ]
+}

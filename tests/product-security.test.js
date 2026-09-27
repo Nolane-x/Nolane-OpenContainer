@@ -68,3 +68,15 @@ test('SECURITY.md is honest about supported versions and missing verified privat
   assert.match(security,/P12-17 remains open/i);
   assert.match(security,/not.*substitute.*human product-security review/is);
 });
+
+
+test('P12 resource DoS review covers worker output decompression source-map and WASM growth without claiming a device floor',async()=>{
+  const {resourceDos}=await loadSecurityReviewInputs();
+  assert.equal(resourceDos.schema,'opencontainer.security-resource-dos-review.v1.0');
+  assert.equal(resourceDos.conclusion,'REVIEWED_WITH_RESIDUAL_RISK');
+  assert.deepEqual(resourceDos.surfaces.map(x=>x.id),[
+    'worker-explosion','output-floods','decompression','source-maps','wasm-memory-growth'
+  ]);
+  assert.ok(resourceDos.surfaces.filter(x=>x.status==='REVIEWED_RESIDUAL').every(x=>x.residualRisk.length>20));
+  assert.ok(resourceDos.boundaries.some(x=>x.includes('P7')));
+});

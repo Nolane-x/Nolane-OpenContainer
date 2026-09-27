@@ -62,3 +62,14 @@ The P12 technical court includes:
 CodeQL, npm audit, CI pass percentages, architectural confidence, or AI review must not be used to override those requirements.
 
 `production_closed` remains false.
+
+
+## Resource-DoS review
+
+`release/SECURITY-RESOURCE-DOS-REVIEW.v1.0.json` explicitly reviews worker explosion, output floods, decompression, source-map generation and WASM memory growth. Source-map and WASM heap behavior retain residual-risk language: this security review does not claim a weak-device/browser-heap floor, and P7/P15 resource evidence remains open.
+
+## Static analysis and regression evidence
+
+CodeQL v4.38.2 is pinned by immutable commit. CI retains raw SARIF plus a commit-bound receipt; any unwaived CodeQL finding with security severity >= 7.0 fails the CodeQL job. Waivers must be explicit and unexpired.
+
+The critical/high regression registry is also executable rather than documentary: `security:regressions` derives its test list from every registry entry, runs the union, hashes the log and emits a commit-bound receipt. A registry entry without executable test evidence fails closed.

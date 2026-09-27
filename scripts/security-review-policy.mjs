@@ -7,7 +7,8 @@ export async function loadSecurityReviewInputs(){
     asvs:'release/ASVS-5.0.0-CROSSCHECK.v1.0.json',
     maliciousCorpus:'release/SECURITY-MALICIOUS-PACKAGE-CORPUS.v1.0.json',
     regressions:'release/SECURITY-REGRESSION-REGISTRY.v1.0.json',
-    residualRisks:'release/SECURITY-RESIDUAL-RISKS.v1.0.json'
+    residualRisks:'release/SECURITY-RESIDUAL-RISKS.v1.0.json',
+    resourceDos:'release/SECURITY-RESOURCE-DOS-REVIEW.v1.0.json'
   };
   const values={};
   for(const [key,path] of Object.entries(paths))values[key]=JSON.parse(await readFile(path,'utf8'));
@@ -15,7 +16,7 @@ export async function loadSecurityReviewInputs(){
 }
 
 export function validateSecurityReview(inputs){
-  const {policy,threatModel,asvs,maliciousCorpus,regressions,residualRisks}=inputs;
+  const {policy,threatModel,asvs,maliciousCorpus,regressions,residualRisks,resourceDos}=inputs;
   const errors=[];
   if(policy?.schema!=='opencontainer.security-review-policy.v1.0')errors.push('invalid security review policy schema');
   if(policy?.asvs?.version!=='5.0.0')errors.push('ASVS version is not frozen to 5.0.0');
@@ -63,6 +64,16 @@ export function validateSecurityReview(inputs){
   if(residualRisks?.schema!=='opencontainer.security-residual-risks.v1.0')errors.push('invalid residual risk schema');
   if((residualRisks?.risks??[]).length<8)errors.push('residual risk registry is too narrow');
   if(!(residualRisks?.risks??[]).some(x=>x.id==='RISK-09'&&x.status==='MANUAL_REVIEW_OPEN'))errors.push('manual review residual risk must remain explicit');
+
+  if(resourceDos?.schema!=='opencontainer.security-resource-dos-review.v1.0')errors.push('invalid resource DoS review schema');
+  const expectedDos=['worker-explosion','output-floods','decompression','source-maps','wasm-memory-growth'];
+  const actualDos=(resourceDos?.surfaces??[]).map(x=>x.id);
+  if(JSON.stringify(actualDos)!==JSON.stringify(expectedDos))errors.push('resource DoS review must cover exact P12-07 surfaces');
+  if(resourceDos?.conclusion!=='REVIEWED_WITH_RESIDUAL_RISK')errors.push('resource DoS review must preserve residual-risk conclusion');
+  for(const id of ['source-maps','wasm-memory-growth']){
+    const item=(resourceDos?.surfaces??[]).find(x=>x.id===id);
+    if(item?.status!=='REVIEWED_RESIDUAL'||typeof item?.residualRisk!=='string'||!item.residualRisk)errors.push(id+' residual risk is not explicit');
+  }
   return errors;
 }
 
@@ -72,6 +83,7 @@ export async function validateSecurityEvidencePaths(inputs){
   for(const threat of inputs.threatModel?.threats??[])for(const path of threat.evidence??[])paths.add(path);
   for(const row of inputs.asvs?.requirements??[])for(const path of row.evidence??[])paths.add(path);
   for(const row of inputs.regressions?.entries??[])for(const path of row.evidence??[])paths.add(path);
+  for(const row of inputs.resourceDos?.surfaces??[])for(const path of row.evidence??[])paths.add(path);
   for(const path of paths){
     try{await access(path);}
     catch{errors.push('security evidence path is missing: '+path);}

@@ -14,6 +14,8 @@ const policyErrors=validateSecurityReview(inputs);
 const pathErrors=await validateSecurityEvidencePaths(inputs);
 const dependency=JSON.parse(await readFile(resolve(outDir,'dependency-audit-receipt.json'),'utf8'));
 if(dependency.sourceCommit!==sourceCommit)throw new Error('dependency audit receipt is not commit-bound');
+const regressions=JSON.parse(await readFile(resolve(outDir,'regression-receipt.json'),'utf8'));
+if(regressions.sourceCommit!==sourceCommit)throw new Error('security regression receipt is not commit-bound');
 const testFiles=[
   'tests/product-security.test.js',
   'tests/security-hardening.test.js',
@@ -35,6 +37,7 @@ const failures=[
   ...policyErrors,
   ...pathErrors,
   ...(dependency.status==='PASS'?[]:['dependency vulnerability audit did not PASS']),
+  ...(regressions.status==='PASS'?[]:['security regression court did not PASS']),
   ...(run.status===0?[]:['security test court failed'])
 ];
 const receipt={
@@ -45,6 +48,8 @@ const receipt={
   declaredProfile:inputs.policy.declaredEvidenceProfile,
   asvs:{version:inputs.policy.asvs.version,asset:inputs.policy.asvs.asset,sha256:inputs.policy.asvs.sha256},
   dependencyAudit:{status:dependency.status,blockingFindings:dependency.blockingFindings,includeDevBuildTooling:dependency.includeDevBuildTooling},
+  securityRegressions:{status:regressions.status,registryEntries:regressions.registryEntries,executableTestFiles:regressions.executableTestFiles,logSha256:regressions.logSha256},
+  resourceDosReview:{status:inputs.resourceDos.conclusion,surfaces:inputs.resourceDos.surfaces.map(item=>({id:item.id,status:item.status}))},
   staticAnalysis:{engine:inputs.policy.staticAnalysis.engine,actionCommit:inputs.policy.staticAnalysis.actionCommit,receipt:'separate CI codeql job required'},
   tests:{files:testFiles,count:testFiles.length,exitCode:run.status??1,logSha256},
   reviewBoundary:{

@@ -22,7 +22,9 @@
     "findingsMustBeRetained": true,
     "unwaivedHighCriticalBlockRelease": true,
     "waiverRegistry": "release/SECURITY-STATIC-ANALYSIS-WAIVERS.v1.0.json",
-    "unlistedWaiver": "FAIL"
+    "unlistedWaiver": "FAIL",
+    "sarifReceipt": ".artifacts/security-review/codeql-receipt.json",
+    "sarifRetentionDays": 90
   },
   "dependencyReview": {
     "command": [
@@ -93,6 +95,8 @@
     "threatModel": "release/SECURITY-THREAT-MODEL.v1.0.json",
     "maliciousPackageCorpus": "release/SECURITY-MALICIOUS-PACKAGE-CORPUS.v1.0.json",
     "regressionRegistry": "release/SECURITY-REGRESSION-REGISTRY.v1.0.json",
-    "residualRisks": "release/SECURITY-RESIDUAL-RISKS.v1.0.json"
+    "residualRisks": "release/SECURITY-RESIDUAL-RISKS.v1.0.json",
+    "resourceDos": "release/SECURITY-RESOURCE-DOS-REVIEW.v1.0.json",
+    "regressionReceipt": ".artifacts/security-review/regression-receipt.json"
   }
 }
