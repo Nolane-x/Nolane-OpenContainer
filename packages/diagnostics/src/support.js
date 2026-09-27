@@ -239,6 +239,7 @@ export function buildSupportBundle({
   profile,
   status,
   resources,
+  process,
   diagnostics,
   packages,
   preview,
@@ -323,6 +324,7 @@ export function buildSupportBundle({
       limits:resources?.limits??null,
       usage:resources?.usage??null
     }),
+    terminalBounds:process?.limits??null,
     browserCapabilities:capabilities,
     packageIdentity:packageSummary,
     storage:storageSummary,
