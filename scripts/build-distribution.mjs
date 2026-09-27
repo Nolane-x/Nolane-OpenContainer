@@ -100,7 +100,8 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
     engines:{...sourceManifest.engines},
     exports:{...publicSdkContract.exportMap},
     bin:{
-      'opencontainer-hosting-self-check':'./scripts/hosting-self-check.mjs'
+      'opencontainer-hosting-self-check':'./scripts/hosting-self-check.mjs',
+      'opencontainer-diagnostic-self-check':'./scripts/diagnostic-self-check.mjs'
     },
     scripts:{
       'browser:acceptance':'node scripts/browser-acceptance.mjs',
@@ -129,6 +130,7 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
       'scripts/browser-acceptance.mjs',
       'scripts/hosting-self-check.mjs',
       'scripts/hosting-self-check-lib.mjs',
+      'scripts/diagnostic-self-check.mjs',
       'metadata/source-package-lock.json',
       'README.md'
     ],
@@ -152,7 +154,8 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
     'README.md',
     'scripts/browser-acceptance.mjs',
     'scripts/hosting-self-check.mjs',
-    'scripts/hosting-self-check-lib.mjs'
+    'scripts/hosting-self-check-lib.mjs',
+    'scripts/diagnostic-self-check.mjs'
   ];
   for(const path of copies)await copyInto(stage,path);
   await copyInto(stage,'package-lock.json','metadata/source-package-lock.json');
@@ -180,6 +183,7 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
     'package/apps/playground/server.mjs',
     'package/apps/playground/public/browser-acceptance.js',
     'package/scripts/browser-acceptance.mjs',
+    'package/scripts/diagnostic-self-check.mjs',
     'package/toolchain/vendor/lightningcss-wasm-1.33.0.tgz',
     'package/toolchain/vendor/rolldown-browser-1.2.9.tgz',
     'package/metadata/source-package-lock.json',
