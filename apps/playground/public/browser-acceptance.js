@@ -2887,9 +2887,16 @@ async function run() {
   }
   assert(p5AmbiguousCodes.every((code) => code === 'OC_NETWORK_DENIED'), 'P5 ambiguous URL syntax bypassed canonical policy');
 
-  const p5RedirectAllowed = await p5Runtime.net.fetch(location.origin + '/__p5__/redirect-allowed');
-  assert(p5RedirectAllowed.receipt.redirects === 1, 'P5 redirect court did not record one authorized hop');
-  assert(await p5RedirectAllowed.response.text() === 'redirect-final', 'P5 authorized redirect did not reach final response');
+  let p5OpaqueRedirectCode = 'ALLOWED';
+  try {
+    await p5Runtime.net.fetch(location.origin + '/__p5__/redirect-allowed');
+  } catch (error) {
+    p5OpaqueRedirectCode = error?.code ?? error?.name ?? 'ERROR';
+  }
+  assert(
+    p5OpaqueRedirectCode === 'OC_NETWORK_DENIED',
+    'P5 browser manual redirect did not fail closed when Location was opaque'
+  );
   let p5RedirectDeniedCode = 'ALLOWED';
   try {
     await p5Runtime.net.fetch(location.origin + '/__p5__/redirect-denied');
@@ -3125,13 +3132,13 @@ async function run() {
       if (event.source !== p5Frame.contentWindow || event.data?.type !== 'opencontainer:p5-frame') return;
       clearTimeout(timer);
       window.removeEventListener('message', onMessage);
-      resolve(event.data);
+      resolve({ ...event.data, eventOrigin: event.origin });
     };
     window.addEventListener('message', onMessage);
   });
   document.body.appendChild(p5Frame);
   const p5FrameReceipt = await p5FrameReceiptPromise;
-  assert(p5FrameReceipt.origin === 'null', 'P5 preview frame retained trusted same-origin identity');
+  assert(p5FrameReceipt.eventOrigin === 'null', 'P5 preview frame retained trusted same-origin identity');
   assert(p5FrameReceipt.parentAccess !== 'readable', 'P5 preview frame reached trusted parent credential state');
   assert(p5FrameReceipt.storageAccess !== 'readable', 'P5 preview frame reached trusted browser storage');
   assert(p5FrameReceipt.hostCredentialHeaders === false, 'P5 credentialless preview navigation carried host credentials');
@@ -3152,7 +3159,7 @@ async function run() {
     lnaFetchStatus: p5LnaResponse.status,
     loopbackDenyCodes: p5LoopbackCodes,
     ambiguousUrlCodes: p5AmbiguousCodes,
-    redirectAllowedHops: p5RedirectAllowed.receipt.redirects,
+    browserOpaqueRedirectCode: p5OpaqueRedirectCode,
     redirectDeniedCode: p5RedirectDeniedCode,
     responseBudgetCode: p5BudgetCode,
     cancellation: p5AbortName,
@@ -3167,7 +3174,8 @@ async function run() {
     previewAbort: p5PreviewAbortName,
     stalePreview: p5StalePreview.status,
     previewOfflineSeparation: p5OfflineCode === 'OC_NETWORK_DENIED' && p5PreviewWhileOffline.status === 200,
-    frameOrigin: p5FrameReceipt.origin,
+    frameEventOrigin: p5FrameReceipt.eventOrigin,
+    frameLocationOrigin: p5FrameReceipt.origin,
     frameParentAccess: p5FrameReceipt.parentAccess,
     frameStorageAccess: p5FrameReceipt.storageAccess,
     frameHostCredentialHeaders: p5FrameReceipt.hostCredentialHeaders,
