@@ -185,6 +185,7 @@ async function readBoundedResponse(response,{limit,signal}){
     while(true){
       if(signal?.aborted)throw signal.reason??new DOMException('Aborted','AbortError');
       const {done,value}=await reader.read();
+      if(signal?.aborted)throw signal.reason??new DOMException('Aborted','AbortError');
       if(done)break;
       const bytes=value instanceof Uint8Array?value:new Uint8Array(value);
       total+=bytes.byteLength;
