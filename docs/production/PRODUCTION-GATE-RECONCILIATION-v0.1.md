@@ -8,8 +8,8 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **185**
-- Minimum-closure satisfied: **139**
+- Seed-reconciled against implementation evidence: **186**
+- Minimum-closure satisfied: **141**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -23,7 +23,7 @@
 | P4 Packages, resolver, archive & installer | 6 | 12 | 18 |
 | P5 Network, secrets & preview edge | 18 | 0 | 18 |
 | P6 Toolchain, BCR, Vite & framework integration | 8 | 8 | 16 |
-| P7 Resources, performance & weak-device behavior | 3 | 11 | 14 |
+| P7 Resources, performance & weak-device behavior | 4 | 10 | 14 |
 | P8 Diagnostics, supportability & privacy | 14 | 0 | 14 |
 | P9 UI/UX, accessibility & human safety | 0 | 18 | 18 |
 | P10 AI consumer, authority & data egress | 0 | 18 | 18 |
@@ -46,7 +46,10 @@
 
 - **P7-07** now meets declared-profile closure: hardwareConcurrency is only a scheduling hint; the effective worker budget is derived by policy and clamped instead of mapping logical CPUs directly to guest workers. The real-browser quota court rejects an over-budget second Worker, releases the lease on close and permits reuse.
 - **P7-14** now meets declared-profile closure: CI #428 archives a machine-readable Chrome 153 / Ubuntu 24.04 measurement receipt with logical CPU/RAM identity, two complete installed-distribution wall-clock durations and explicit warmup/cache/CPU-throttle/GC/thermal/network/DevTools validity metadata.
-- **P7-08 remains PARTIAL**: tasks/in-flight bytes, process/output limits, diagnostic/terminal history and a zero-default retained source-map cache are bounded, but every source-map retention path is not yet globally audited. P7-01/P7-09/P7-12 remain open for real 4/8 GiB, 8-hour and weak-device budget campaigns.
+- **P7-08** now meets declared-profile closure through CI #432: task/in-flight, process/output, diagnostic and terminal-history bounds remain enforced, and a repo-wide production-source audit now proves retained source-map caching is zero-default and rejects any ungoverned source-map retention path.
+- **P7-13** now meets declared-profile closure through the real Chrome product path: entering serious/critical pressure increments a cancellation epoch, pauses new background admission, rejects a late result with `OC_WORKER_STALE`, then permits fresh work after pressure returns to normal.
+- CI #432 passed **30 critical files × 5 = 150 executions**, CodeQL and **2/2** complete installed-distribution Chrome product paths with zero unexplained failures. The resource receipt also records stage timings for runtime boot, worker startup/execution, package install, Vite closure install/publication graph, Vite C1 build and Vite C2-to-HMR.
+- **P7-02 through P7-05 remain measurement-evidence only**, because timing samples alone do not satisfy their controlled-contention, realistic-project/toolchain-memory or regression-baseline obligations. P7-01, P7-06, P7-09, P7-10, P7-11 and P7-12 likewise remain open/partial; no 4/8 GiB, 8-hour, thermal, cross-browser or latency-floor claim is manufactured.
 - **P13-01, P13-02, P13-05, P13-06, P13-08, P13-11, P13-12, P13-13, P13-14, P13-15 and P13-19** now meet SECURITY-REVIEWED / RELEASE-VERIFIED closure through CI #424. The court audits immutable action pins and least-privilege permissions, binds the exact tested distribution tarball to release evidence, validates independent SHA-256/SHA-512 checksums, SPDX 2.3 SBOM, in-toto/SLSA provenance, exact source/lock/toolchain/environment identity, explicit dependency categories/zero optional-adapter bundle policy, content-exclusion negatives, reproducible builds and compromised-release revocation/user warning.
 - CI #424 reported **130/130** repeated critical contract executions, **2/2** installed-distribution Chrome paths, zero unexplained failures and a SECURITY-REVIEWED supply-chain receipt.
 - **P13-03, P13-04, P13-07, P13-09, P13-10, P13-16, P13-17, P13-18 and P13-20 remain open** because OIDC/trusted publishing, actually published provenance, immutable release-tag builds, signing/verification, registry staging, repository protection state, OpenSSF/OSPS hygiene and long-term historical archive evidence are not yet present.
