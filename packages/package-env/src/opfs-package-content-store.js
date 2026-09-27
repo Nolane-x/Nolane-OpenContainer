@@ -3,6 +3,7 @@ import { PackageContentStore } from './frozen-install.js';
 
 const MANIFEST = 'manifest.json';
 const ARTIFACT = 'artifact.tgz';
+const encoder = new TextEncoder();
 
 function safeDirectoryName(contentId) {
   return encodeURIComponent(contentId);
@@ -214,6 +215,60 @@ export class OpfsPackageContentStore {
         persisted: true,
         persistentReused: false
       });
+    });
+  }
+
+  async persistedUsage(contentId) {
+    this.#assertOpen();
+    assertOc(typeof contentId === 'string' && contentId.length > 0, ErrorCodes.INVALID_ARGUMENT, 'contentId is required');
+    return this.#withContentLock(contentId, async () => {
+      const directoryName = safeDirectoryName(contentId);
+      let directory;
+      try {
+        directory = await this.#directory.getDirectoryHandle(directoryName);
+      } catch (error) {
+        if (error?.name === 'NotFoundError') {
+          return Object.freeze({ contentId, exists: false, manifestBytes: 0, artifactBytes: 0, totalBytes: 0, rebuildable: true });
+        }
+        throw error;
+      }
+      const manifestText = await readText(directory, MANIFEST);
+      const artifact = await readBytes(directory, ARTIFACT);
+      const manifestBytes = manifestText === null ? 0 : encoder.encode(manifestText).byteLength;
+      const artifactBytes = artifact?.byteLength ?? 0;
+      return Object.freeze({
+        contentId,
+        exists: manifestText !== null || artifact !== null,
+        manifestBytes,
+        artifactBytes,
+        totalBytes: manifestBytes + artifactBytes,
+        rebuildable: true
+      });
+    });
+  }
+
+  async evictPersisted(contentId) {
+    this.#assertOpen();
+    assertOc(typeof contentId === 'string' && contentId.length > 0, ErrorCodes.INVALID_ARGUMENT, 'contentId is required');
+    return this.#withContentLock(contentId, async () => {
+      const directoryName = safeDirectoryName(contentId);
+      let directory;
+      try {
+        directory = await this.#directory.getDirectoryHandle(directoryName);
+      } catch (error) {
+        if (error?.name === 'NotFoundError') {
+          return Object.freeze({ contentId, evicted: false, reclaimedBytes: 0, rebuildable: true });
+        }
+        throw error;
+      }
+      const manifestText = await readText(directory, MANIFEST);
+      const artifact = await readBytes(directory, ARTIFACT);
+      const reclaimedBytes = (manifestText === null ? 0 : encoder.encode(manifestText).byteLength) + (artifact?.byteLength ?? 0);
+      assertOc(typeof this.#directory.removeEntry === 'function', ErrorCodes.INVALID_STATE, 'OPFS package cache directory does not support eviction');
+      await this.#directory.removeEntry(directoryName, { recursive: true });
+      this.#corrupt.delete(contentId);
+      this.#hydrated.delete(contentId);
+      return Object.freeze({ contentId, evicted: true, reclaimedBytes, rebuildable: true });
     });
   }
 
