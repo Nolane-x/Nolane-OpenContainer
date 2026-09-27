@@ -10,6 +10,8 @@ test('P3 canonical publication does not rely on rename or move atomicity',()=>{
   assert.equal(receipt.schema,'opencontainer.p3-publication-source-audit.v1.0');
   assert.equal(receipt.status,'PASS');
   assert.equal(receipt.renameMoveDependency,false);
+  assert.equal(receipt.workspaceExclusiveWebLock,true);
+  assert.equal(receipt.webLockStealRequested,false);
   assert.equal(receipt.workspacePayloadBeforeManifest,true);
   assert.equal(receipt.releasePayloadBeforeManifest,true);
   assert.deepEqual(receipt.violations,[]);
