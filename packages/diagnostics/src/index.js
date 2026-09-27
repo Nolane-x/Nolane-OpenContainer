@@ -3,6 +3,33 @@ const SECRET_VALUE = /\b(?:bearer\s+)?[A-Za-z0-9_\-]{20,}\b/gi;
 const SIGNED_QUERY_VALUE = /([?&](?:token|signature|sig|x-amz-signature|x-goog-signature|key|credential)=)[^&#\s]*/gi;
 const encoder=new TextEncoder();
 
+export const DiagnosticsPolicy=Object.freeze({
+  schema:'opencontainer.diagnostics-policy.v0.1',
+  budgets:Object.freeze({
+    entries:1000,
+    rawBytes:256*1024,
+    duplicatePerFingerprint:25,
+    duplicateFingerprints:512,
+    terminalEntries:200,
+    terminalBytes:64*1024
+  }),
+  telemetry:Object.freeze({
+    remoteEnabledByDefault:false,
+    builtInRemoteTransport:false,
+    optInRequiresExplicitSink:true,
+    eventPayload:'metadata-only'
+  }),
+  supportBundle:Object.freeze({
+    workspaceContentsIncluded:false,
+    privateSourceIncluded:false,
+    httpBodiesIncluded:false,
+    diagnosticDetailsIncluded:false,
+    rawTerminalContentIncluded:false,
+    aiContentIncludedByDefault:false,
+    secretsIncluded:false
+  })
+});
+
 function stableStringify(value){
   if(Array.isArray(value))return '['+value.map(stableStringify).join(',')+']';
   if(value&&typeof value==='object'){
@@ -89,20 +116,20 @@ export class DiagnosticJournal {
   #telemetryErrors=0;
 
   constructor({
-    limit=1000,
-    rawBytesLimit=256*1024,
-    duplicateLimit=25,
-    duplicateFingerprintLimit=512,
-    terminalHistoryLimit=200,
-    terminalBytesLimit=64*1024,
+    limit=DiagnosticsPolicy.budgets.entries,
+    rawBytesLimit=DiagnosticsPolicy.budgets.rawBytes,
+    duplicateLimit=DiagnosticsPolicy.budgets.duplicatePerFingerprint,
+    duplicateFingerprintLimit=DiagnosticsPolicy.budgets.duplicateFingerprints,
+    terminalHistoryLimit=DiagnosticsPolicy.budgets.terminalEntries,
+    terminalBytesLimit=DiagnosticsPolicy.budgets.terminalBytes,
     telemetry=null
   }={}) {
-    this.#limit=Math.max(1,Number(limit)||1);
-    this.#rawBytesLimit=Math.max(1024,Number(rawBytesLimit)||256*1024);
-    this.#duplicateLimit=Math.max(1,Number(duplicateLimit)||25);
-    this.#duplicateFingerprintLimit=Math.max(8,Number(duplicateFingerprintLimit)||512);
-    this.#terminalLimit=Math.max(1,Number(terminalHistoryLimit)||200);
-    this.#terminalBytesLimit=Math.max(1024,Number(terminalBytesLimit)||64*1024);
+    this.#limit=Math.max(1,Number(limit)||DiagnosticsPolicy.budgets.entries);
+    this.#rawBytesLimit=Math.max(1024,Number(rawBytesLimit)||DiagnosticsPolicy.budgets.rawBytes);
+    this.#duplicateLimit=Math.max(1,Number(duplicateLimit)||DiagnosticsPolicy.budgets.duplicatePerFingerprint);
+    this.#duplicateFingerprintLimit=Math.max(8,Number(duplicateFingerprintLimit)||DiagnosticsPolicy.budgets.duplicateFingerprints);
+    this.#terminalLimit=Math.max(1,Number(terminalHistoryLimit)||DiagnosticsPolicy.budgets.terminalEntries);
+    this.#terminalBytesLimit=Math.max(1024,Number(terminalBytesLimit)||DiagnosticsPolicy.budgets.terminalBytes);
     if(telemetry?.enabled===true){
       if(typeof telemetry.sink!=='function')throw new TypeError('Opt-in telemetry requires an explicit sink function');
       this.#telemetryEnabled=true;
@@ -347,13 +374,8 @@ export class SupportBundleAuthority{
       schema:'opencontainer.support-bundle-preview.v0.1',
       categories:Object.freeze(categories),
       privacy:Object.freeze({
-        workspaceContentsIncluded:false,
-        privateSourceIncluded:false,
-        httpBodiesIncluded:false,
-        diagnosticDetailsIncluded:false,
-        rawTerminalContentIncluded:false,
-        aiContentIncluded:includeAi===true,
-        secretsIncluded:false
+        ...DiagnosticsPolicy.supportBundle,
+        aiContentIncluded:includeAi===true
       }),
       estimated:Object.freeze({
         diagnosticEntries:this.#runtime.diagnostics.list().length,
