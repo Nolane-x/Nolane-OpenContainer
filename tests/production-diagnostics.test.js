@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import {
   DiagnosticJournal,
   SupportBundleAuthority,
@@ -140,6 +141,13 @@ test('support bundle preview lists categories and generation is read-only',async
     }
   });
   runtime.listen(4123,()=>new Response('ok'),{owner:'support-fixture'});
+  runtime.registerCommand('support-echo',({stdout,stderr})=>{
+    stdout('public-output');
+    stderr('public-error');
+    return 0;
+  });
+  const supportProcess=runtime.spawn('support-echo');
+  assert.equal(await supportProcess.exit,0);
   runtime.diagnostics.record('custom-'+SECRET,{
     token:SECRET,
     requestBody:'body '+SECRET,
@@ -192,6 +200,10 @@ test('support bundle preview lists categories and generation is read-only',async
   assert.equal(bundle.outcomes.update.compatibilityId,'sw-v1');
   assert.equal(bundle.ai,null);
   assert.equal(bundle.telemetry.remoteEnabled,false);
+  assert.ok(bundle.diagnostics.summary.usage.terminalEntries>=2);
+  assert.ok(bundle.diagnostics.terminalMetadata.length>=2);
+  assert.equal(serialized.includes('public-output'),false);
+  assert.equal(serialized.includes('public-error'),false);
   assert.equal(bundle.diagnostics.events.some((event)=>event.type==='[custom]'),true);
   assert.equal(bundle.preview.privacy.workspaceContentsIncluded,false);
   assert.equal(bundle.preview.privacy.privateSourceIncluded,false);
@@ -227,6 +239,25 @@ test('AI content is absent by default and redacted only on explicit opt-in',asyn
   assert.equal(on.ai.transcript,'[REDACTED]');
   assert.equal(serialized.includes(SECRET),false);
   await runtime.teardown();
+});
+
+test('local diagnostic command is deterministic for the same headless reproduction',()=>{
+  const run=()=>spawnSync(process.execPath,[
+    'scripts/opencontainer-diagnostic.mjs',
+    '--simulate-error','OC_INVALID_STATE'
+  ],{encoding:'utf8'});
+  const first=run();
+  const second=run();
+  assert.equal(first.status,0,first.stderr);
+  assert.equal(second.status,0,second.stderr);
+  const a=JSON.parse(first.stdout);
+  const b=JSON.parse(second.stdout);
+  assert.equal(a.schema,'opencontainer.local-diagnostic.v0.1');
+  assert.equal(a.fingerprint,b.fingerprint);
+  assert.match(a.fingerprint,/^ocfp:[0-9a-f]{16}$/);
+  assert.equal(a.diagnostics.telemetry.remoteEnabled,false);
+  assert.equal(a.privacy.workspaceContentsIncluded,false);
+  assert.equal(a.browser.browser,false);
 });
 
 test('support outcome surface accepts only recovery migration and update categories',async()=>{
