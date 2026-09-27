@@ -1085,6 +1085,58 @@ async function run() {
     await opfsRoot.removeEntry(p3FatalDirectory, { recursive: true }).catch(() => {});
   }
 
+  stage('p3-quota-fault-matrix-start');
+  const p3QuotaFaultResults = [];
+  for (const phase of ['after-0-bytes','after-1-byte','after-header','mid-payload','pre-commit','post-payload-pre-manifest']) {
+    const directoryName = opfsDirectory + '-quota-' + phase;
+    try {
+      const quotaFs = new MemoryVFS();
+      const quotaAuthority = await new OpfsCheckpointAuthority({
+        root: opfsRoot,
+        directoryName,
+        lockManager: navigator.locks
+      }).open();
+      quotaFs.mount({ 'quota.txt': 'stable' });
+      const stable = await quotaAuthority.checkpoint(quotaFs);
+      quotaFs.beginTransaction().writeFile('quota.txt','blocked-'+phase+'-'+'x'.repeat(256)).commit();
+
+      let quotaCode = null;
+      let quotaPhase = null;
+      let injectedQuota = false;
+      try {
+        await quotaAuthority.checkpoint(quotaFs,{ quotaFaultAt: phase });
+      } catch (error) {
+        quotaCode = error?.code ?? null;
+        quotaPhase = error?.details?.phase ?? null;
+        injectedQuota = error?.details?.injectedQuota === true;
+      }
+      assert(quotaCode === 'OC_RESOURCE_EXHAUSTED', 'P3 quota injection did not normalize to OC_RESOURCE_EXHAUSTED at ' + phase);
+      assert(quotaPhase === phase && injectedQuota, 'P3 quota injection receipt drifted at ' + phase);
+
+      const reopened = await new OpfsCheckpointAuthority({
+        root: opfsRoot,
+        directoryName,
+        lockManager: navigator.locks
+      }).open();
+      const restored = new MemoryVFS();
+      await reopened.restoreInto(restored);
+      assert(restored.readFile('quota.txt') === 'stable', 'P3 quota fault changed canonical generation at ' + phase);
+      assert(reopened.current.sequence === stable.sequence, 'P3 quota fault advanced canonical sequence at ' + phase);
+      assert(reopened.current.generation === stable.generation, 'P3 quota fault advanced StorageGeneration at ' + phase);
+      const gc = await reopened.collectGarbage();
+      p3QuotaFaultResults.push({
+        phase,
+        quotaCode,
+        sequence: reopened.current.sequence,
+        generation: reopened.current.generation,
+        garbageRemoved: gc.removed.length
+      });
+    } finally {
+      await opfsRoot.removeEntry(directoryName, { recursive: true }).catch(() => {});
+    }
+  }
+  stage('p3-quota-fault-matrix-pass', { phases: p3QuotaFaultResults });
+
   try {
     assert(navigator.locks?.request, 'Web Locks API is unavailable');
     const storagePolicy = new BrowserStoragePolicy({ storageManager: navigator.storage });
