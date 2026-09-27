@@ -130,7 +130,6 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
       'scripts/browser-acceptance.mjs',
       'scripts/hosting-self-check.mjs',
       'scripts/hosting-self-check-lib.mjs',
-    'scripts/opencontainer-diagnostic.mjs',
       'scripts/opencontainer-diagnostic.mjs',
       'metadata/source-package-lock.json',
       'README.md'
@@ -155,7 +154,8 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
     'README.md',
     'scripts/browser-acceptance.mjs',
     'scripts/hosting-self-check.mjs',
-    'scripts/hosting-self-check-lib.mjs'
+    'scripts/hosting-self-check-lib.mjs',
+    'scripts/opencontainer-diagnostic.mjs'
   ];
   for(const path of copies)await copyInto(stage,path);
   await copyInto(stage,'package-lock.json','metadata/source-package-lock.json');
