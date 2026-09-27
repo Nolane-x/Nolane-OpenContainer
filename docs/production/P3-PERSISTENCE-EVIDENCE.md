@@ -96,3 +96,36 @@ CI #459 passed 33 critical files × 5 iterations = 165 file executions, CodeQL a
 - P3-20 — destructive delete / tombstone / permanent purge recovery.
 
 `production_closed=false` remains mandatory.
+
+
+## Wave 3 — corruption classification
+
+**Implementation evidence:** CI #475 / PR #51 / `edb93487724046443c73b98cad397ee43ec36f94`  
+**Tested checkout:** `36ee07d1a92e1a6e9a6f1140fce0f1eb17f7e7c1`  
+**Closure:** `P3-13`
+
+P3-13 requires corruption to be classified separately rather than treated as one generic error. The declared-profile court now exercises all five required classes with different recovery semantics:
+
+```text
+canonical source → fail closed
+recovery draft   → discard draft/orphan
+checkpoint       → fallback to prior valid checkpoint
+package cache    → discard corrupt bytes and refetch verified content
+derived index    → discard and rebuild from canonical source generation
+```
+
+Canonical-source corruption with no valid recovery root returns `OC_IMPORT_INVALID` and never silently creates an empty project. A corrupt pre-manifest recovery draft remains unreachable and is garbage-collected. Corrupting the newest committed checkpoint causes A/B recovery to select the older valid root. Corrupt package-cache bytes fail integrity hydration, trigger exactly one authoritative refetch and are republished verified. The new digest-bound OPFS derived-index store rejects corrupted index bytes and rebuilds from the canonical source generation.
+
+CI #475 passed 375/375 unit tests, 34 critical files × 5 = 170 repeated file executions, CodeQL and 2/2 installed-distribution Chrome product paths. The dedicated corruption receipt independently verifies 5 classes and 5 distinct actions in both browser iterations.
+
+### Still open after Wave 3
+
+- P3-07 — explicit canonical flush/durability boundary.
+- P3-09 — frozen/background-tab writer failover and stale resume publication.
+- P3-14 — low-storage cleanup must prove rebuildable data is removed before canonical source/checkpoints.
+- P3-15 — restore must protect unrelated newer work.
+- P3-17 — imported-copy / linked-folder / read-only-source semantics.
+- P3-18 — external permission revocation and edit conflict.
+- P3-20 — destructive delete / tombstone / permanent purge recovery.
+
+`production_closed=false` remains mandatory.
