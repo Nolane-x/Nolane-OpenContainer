@@ -34,17 +34,17 @@ export class OpenContainer {
     const authority=await new OpfsWorkspaceLifecycleAuthority(workspacePersistence).open();
     return authority.inspect();
   }
-  static async restoreDeletedWorkspace(workspacePersistence,options={}){
+  static async restoreDeletedWorkspace(workspacePersistence,{deleteMutationId,restoreMutationId}={}){
     const authority=await new OpfsWorkspaceLifecycleAuthority(workspacePersistence).open();
-    return authority.restoreRecoverable(options);
+    return authority.restoreRecoverable({deleteMutationId,restoreMutationId});
   }
-  static async purgeDeletedWorkspace(workspacePersistence,options={}){
+  static async purgeDeletedWorkspace(workspacePersistence,{deleteMutationId,purgeMutationId,confirmation}={}){
     const authority=await new OpfsWorkspaceLifecycleAuthority(workspacePersistence).open();
-    return authority.purge(options);
+    return authority.purge({deleteMutationId,purgeMutationId,confirmation});
   }
-  static async reconcileWorkspacePurge(workspacePersistence,options={}){
+  static async reconcileWorkspacePurge(workspacePersistence,{purgeMutationId}={}){
     const authority=await new OpfsWorkspaceLifecycleAuthority(workspacePersistence).open();
-    return authority.reconcileMutation(options);
+    return authority.reconcileMutation({purgeMutationId});
   }
   async boot(){
     if(this._workspacePersistenceOptions){
