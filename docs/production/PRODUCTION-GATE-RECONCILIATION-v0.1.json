@@ -300,6 +300,10 @@
     "p7-resource-wave2": {
       "ref": "CI #432 / PR #48 head 0f71f7492ae0175d929c98c6e032dd4cf522d728",
       "note": "P7 wave-2 executable resource court: global production-source retention audit closes bounded source-map retention; pressure epochs pause background admission, invalidate stale background RPC publication and permit fresh work after resume; contract, CodeQL and 2x installed Chrome product path all passed. Stage timings are evidence only for P7-02..05 and do not close device/plateau/cross-browser floors."
+    },
+    "p3-persistence-wave1": {
+      "ref": "CI #444 / PR #49 head 1cbc9df096759d4cc4b108c25add5ba0359d7a58",
+      "note": "P3 real-browser persistence court: real OPFS + exclusive no-steal Web Locks; competing writer serialization; WorkspaceFS crash phases; A/B corruption fallback; no rename/move dependency; release-storage migration/crash/rollback; pinned SDK export; fatal no-silent-empty SDK recovery. Contract 32x5, CodeQL and 2x installed Chrome product path passed with zero failures."
     }
   },
   "overrides": [
@@ -508,16 +512,16 @@
       "domain": "P3",
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
-      "evidence": "workspace-sdk",
-      "closure_met": false
+      "evidence": "p3-persistence-wave1",
+      "closure_met": true
     },
     {
       "id": "P3-02",
       "domain": "P3",
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
-      "evidence": "opfs-locks",
-      "closure_met": false
+      "evidence": "p3-persistence-wave1",
+      "closure_met": true
     },
     {
       "id": "P3-03",
@@ -532,8 +536,8 @@
       "domain": "P3",
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
-      "evidence": "workspace-corrupt",
-      "closure_met": false
+      "evidence": "p3-persistence-wave1",
+      "closure_met": true
     },
     {
       "id": "P3-08",
@@ -564,16 +568,56 @@
       "domain": "P3",
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
-      "evidence": "sdk-s7",
-      "closure_met": false
+      "evidence": "p3-persistence-wave1",
+      "closure_met": true
     },
     {
       "id": "P3-19",
       "domain": "P3",
-      "state": "PARTIAL",
-      "promotion": "PASS-LOCAL",
-      "evidence": "recovery",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p3-persistence-wave1",
+      "closure_met": true
+    },
+    {
+      "id": "P3-04",
+      "domain": "P3",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p3-persistence-wave1",
+      "closure_met": true
+    },
+    {
+      "id": "P3-06",
+      "domain": "P3",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p3-persistence-wave1",
+      "closure_met": true
+    },
+    {
+      "id": "P3-10",
+      "domain": "P3",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p3-persistence-wave1",
+      "closure_met": true
+    },
+    {
+      "id": "P3-11",
+      "domain": "P3",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p3-persistence-wave1",
+      "closure_met": true
+    },
+    {
+      "id": "P3-12",
+      "domain": "P3",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p3-persistence-wave1",
+      "closure_met": true
     },
     {
       "id": "P4-01",
