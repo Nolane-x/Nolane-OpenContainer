@@ -8,7 +8,7 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **96**
+- Seed-reconciled against implementation evidence: **110**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -23,7 +23,7 @@
 | P5 Network, secrets & preview edge | 0 | 18 | 18 |
 | P6 Toolchain, BCR, Vite & framework integration | 8 | 8 | 16 |
 | P7 Resources, performance & weak-device behavior | 2 | 12 | 14 |
-| P8 Diagnostics, supportability & privacy | 0 | 14 | 14 |
+| P8 Diagnostics, supportability & privacy | 14 | 0 | 14 |
 | P9 UI/UX, accessibility & human safety | 0 | 18 | 18 |
 | P10 AI consumer, authority & data egress | 0 | 18 | 18 |
 | P11 Compatibility corpus & certification | 13 | 1 | 14 |
@@ -105,6 +105,11 @@
 - CI #356 closes the independent critical-flake campaign: contract receipt 5/5 PASS across 60 frozen test-file executions; browser receipt 2/2 PASS across full installed-distribution Chrome product paths; both reported 0 explained and 0 unexplained failures and were archived for 90 days. Future promoted releases must generate fresh receipts for their exact tested source commit.
 
 
+
+- **P8-01 through P8-14** now meet their RELEASE-READY minimum closure for the declared Chrome production profile. The production runtime uses independently bounded diagnostic entry/raw-byte/duplicate-fingerprint/terminal-metadata budgets; support bundles expose a deterministic version/epoch/generation fingerprint, category preview, browser-capability + deployment-header diagnostics, package graph/content identity, storage generations and last recovery/migration/update outcomes while excluding workspace bytes, private source, HTTP bodies, raw terminal text, secrets and AI prompt/transcript content by default.
+- Support-bundle generation is explicitly read-only with respect to workspace/package/preview/diagnostic canonical state. Core remote telemetry remains disabled by default, has no built-in transport and only delivers metadata-only events to an explicitly configured sink.
+- The support workflow now includes a privacy-first issue template and an installed `opencontainer-diagnostic` command suitable for deterministic CI/headless reproduction. Generated secret sentinels are tested across journal/support export paths, signed URL/body/source fields are redacted, and custom diagnostic labels collapse to `[custom]`.
+- CI #379 on branch head `503988b4eaa3d73644fa98726548a314f92b4060` passed 243/243 contract tests plus 2/2 complete installed-distribution Chrome product paths with zero unexplained failures. The Chrome court proved `crossOriginIsolated`, SharedArrayBuffer, Service Worker, OPFS and Web Locks probe evidence, clean hosting headers, compiled package graph fingerprint, storage generation, recovery status, v1→v2 migration outcome and exact Service Worker compatibility/update identity without leaking the injected secret sentinel.
 
 ## Update discipline
 
