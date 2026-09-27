@@ -53,3 +53,46 @@ The public SDK export court pins one committed VFS generation. A workspace mutat
 - P3-20 — destructive delete / tombstone / permanent purge recoverability.
 
 No open item above is inferred closed from adjacent evidence.
+
+
+## Wave 2 — WriterEpoch fencing and quota fault matrix
+
+**Implementation evidence:** CI #459 / PR #50 / `4c8d5b1fc88ad2db49e0431dbdbd86786f50552a`  
+**Tested checkout:** `e525f2be2671f81b3d416bee23f4aa15afee1e70`  
+**Closure:** `P3-03 P3-08`
+
+### WriterEpoch + StorageGeneration
+
+Writer ownership now has a persistent monotonic fencing token separate from canonical storage generation. A writer claims an epoch only when it needs to publish a new generation. Canonical manifests bind both identities. A successor can therefore acquire a newer WriterEpoch even if a failed publication leaves StorageGeneration unchanged.
+
+The real Chrome OPFS court proves epoch 1 → 2 takeover, successful generation advance by the successor, and rejection of the prior writer with `OC_STALE_GENERATION`. Web Lock `steal:true` remains forbidden.
+
+### Quota failure at every publication boundary
+
+The canonical WorkspaceFS path now injects quota exhaustion after:
+
+```text
+0 bytes
+1 byte
+header prefix
+mid payload
+full payload / pre-commit
+post-payload / pre-manifest
+```
+
+Every arm fails as `OC_RESOURCE_EXHAUSTED`. Reopening real Chrome OPFS returns the previously committed sequence and generation. A fully written payload that never receives a manifest remains unreachable garbage and can be collected; it cannot become canonical.
+
+CI #459 passed 33 critical files × 5 iterations = 165 file executions, CodeQL and 2/2 installed-distribution Chrome product paths with zero unexplained failures. Closure CI additionally generates a P3-specific browser receipt from the raw browser iteration logs and fails if either invariant disappears.
+
+### Still open after Wave 2
+
+- P3-07 — explicit canonical flush/durability boundary.
+- P3-09 — frozen/background-tab failover and resume re-handshake.
+- P3-13 — separate corruption-class matrix.
+- P3-14 — global low-storage cleanup priority.
+- P3-15 — restore versus unrelated newer work.
+- P3-17 — imported-copy / linked-folder / read-only-source modes.
+- P3-18 — external permission revocation and edit conflict.
+- P3-20 — destructive delete / tombstone / permanent purge recovery.
+
+`production_closed=false` remains mandatory.

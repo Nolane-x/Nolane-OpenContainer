@@ -29,7 +29,7 @@ test('P3 wave1 binds exact implementation CI and preserves production boundary',
   assert.equal(ledger.production_closed,false);
 });
 
-test('P3 wave1 closes exactly its ten certified gates',()=>{
+test('P3 wave1 receipt closes exactly its ten certified gates and remains historical',()=>{
   assert.deepEqual(evidence.closedGates.map(item=>item.id),closed);
   for(const id of closed){
     const row=ledger.overrides.find(item=>item.id===id);
@@ -40,18 +40,24 @@ test('P3 wave1 closes exactly its ten certified gates',()=>{
     assert.equal(row.closure_met,true,id);
   }
   assert.equal(ledger.overrides.length,191);
-  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,151);
+  assert.ok(ledger.overrides.filter(item=>item.closure_met===true).length>=151);
 });
 
-test('P3 wave1 cannot erase stronger still-open persistence obligations',()=>{
+test('P3 wave1 preserves its original open-boundary receipt without blocking later stronger evidence',()=>{
   assert.deepEqual(evidence.preservedOpenGates.map(item=>item.id),preserved);
-  for(const id of preserved){
+  for(const id of ['P3-07','P3-09','P3-13','P3-14','P3-15','P3-17','P3-18','P3-20']){
     const row=ledger.overrides.find(item=>item.id===id);
     assert.ok(!row||row.closure_met!==true,id+' was silently promoted');
   }
+  for(const id of ['P3-03','P3-08']){
+    assert.ok(evidence.preservedOpenGates.some(item=>item.id===id),id+' wave1 history drifted');
+    const row=ledger.overrides.find(item=>item.id===id);
+    assert.ok(row?.closure_met===true,id+' was not promoted by later evidence');
+    assert.notEqual(row.evidence,'p3-persistence-wave1',id+' later closure was misattributed to wave1');
+  }
   const p3Rows=ledger.overrides.filter(item=>item.domain==='P3');
   assert.equal(p3Rows.length,14);
-  assert.equal(p3Rows.filter(item=>item.closure_met===true).length,10);
+  assert.equal(p3Rows.filter(item=>item.closure_met===true).length,12);
 });
 
 test('P3 wave1 is typed browser evidence and its courts remain in critical campaign',()=>{

@@ -304,6 +304,10 @@
     "p3-persistence-wave1": {
       "ref": "CI #444 / PR #49 head 1cbc9df096759d4cc4b108c25add5ba0359d7a58",
       "note": "P3 real-browser persistence court: real OPFS + exclusive no-steal Web Locks; competing writer serialization; WorkspaceFS crash phases; A/B corruption fallback; no rename/move dependency; release-storage migration/crash/rollback; pinned SDK export; fatal no-silent-empty SDK recovery. Contract 32x5, CodeQL and 2x installed Chrome product path passed with zero failures."
+    },
+    "p3-persistence-wave2": {
+      "ref": "CI #459 / PR #50 implementation head 4c8d5b1fc88ad2db49e0431dbdbd86786f50552a",
+      "note": "P3 wave-2 real-browser persistence court: monotonic WriterEpoch + StorageGeneration fencing; stale prior writer rejected after successor epoch; deterministic quota faults after 0 bytes, 1 byte, header, mid-payload, pre-commit and post-payload/pre-manifest; all six reopen to the prior committed generation. 165/165 repeated critical executions, CodeQL and 2/2 installed Chrome product paths passed."
     }
   },
   "overrides": [
@@ -528,8 +532,8 @@
       "domain": "P3",
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
-      "evidence": "opfs-locks",
-      "closure_met": false
+      "evidence": "p3-persistence-wave2",
+      "closure_met": true
     },
     {
       "id": "P3-05",
@@ -544,8 +548,8 @@
       "domain": "P3",
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
-      "evidence": "storage",
-      "closure_met": false
+      "evidence": "p3-persistence-wave2",
+      "closure_met": true
     },
     {
       "id": "P3-13",

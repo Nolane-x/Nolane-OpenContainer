@@ -418,6 +418,14 @@
       "status": "PASS",
       "ref": "CI #444 / PR #49 head 1cbc9df096759d4cc4b108c25add5ba0359d7a58",
       "note": "Ten-gate P3 declared-profile closure court. Real Chrome OPFS/Web Locks writer competition, WorkspaceFS crash boundaries, A/B recovery, release migration/rollback, pinned export and SDK fatal recovery all pass. P3-03/07/08/09/13/14/15/17/18/20 remain explicitly open."
+    },
+    {
+      "key": "p3-persistence-wave2",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #459 / PR #50 implementation head 4c8d5b1fc88ad2db49e0431dbdbd86786f50552a",
+      "note": "Declared-profile P3 wave-2 closure for P3-03 and P3-08 only: persistent WriterEpoch + StorageGeneration fencing and six-phase quota fault injection passed 165/165 repeated critical file executions, CodeQL and 2/2 installed-distribution Chrome product paths with zero unexplained failures. P3-07/09/13/14/15/17/18/20 remain open."
     }
   ]
 }

@@ -964,10 +964,36 @@ async function run() {
     await electionReopen.restoreInto(electionRestore);
     assert(['A','B'].includes(electionRestore.readFile('writer.txt')), 'P3 election reopened an unknown winner');
     assert(electionReopen.current?.sequence === 1, 'P3 election produced split canonical sequence');
+    assert(electionReopen.current?.writerEpoch === 1, 'P3 first canonical publisher did not persist WriterEpoch 1');
+    const firstWriter = writerA.writerEpoch === 1 ? writerA : writerB;
+    assert(firstWriter.writerEpoch === 1, 'P3 winning authority did not retain its writer epoch');
+
+    electionRestore.beginTransaction().writeFile('writer.txt','successor').commit();
+    const successorCommit = await electionReopen.checkpoint(electionRestore);
+    assert(successorCommit.writerEpoch === 2, 'P3 successor authority did not advance WriterEpoch');
+    assert(successorCommit.generation === 2, 'P3 StorageGeneration did not advance only on successor commit');
+
+    electionRestore.beginTransaction().writeFile('writer.txt','stale-must-not-publish').commit();
+    let staleWriterEpochCode = null;
+    let staleWriterEpochDetails = null;
+    try {
+      await firstWriter.checkpoint(electionRestore);
+    } catch (error) {
+      staleWriterEpochCode = error?.code ?? null;
+      staleWriterEpochDetails = error?.details ?? null;
+    }
+    assert(staleWriterEpochCode === 'OC_STALE_GENERATION', 'P3 stale WriterEpoch was allowed to publish');
+    assert(staleWriterEpochDetails?.expectedWriterEpoch === 1, 'P3 stale writer did not report its fenced epoch');
+    assert(staleWriterEpochDetails?.currentWriterEpoch === 2, 'P3 stale writer did not observe the successor epoch');
+
     stage('p3-writer-election-pass', {
       fulfilled: writerFulfilled.length,
       staleRejected: writerRejected[0].reason?.code,
-      sequence: electionReopen.current.sequence,
+      sequence: successorCommit.sequence,
+      firstWriterEpoch: 1,
+      successorWriterEpoch: successorCommit.writerEpoch,
+      successorStorageGeneration: successorCommit.generation,
+      staleWriterEpochCode,
       crossContextLocking: electionReopen.crossContextLocking
     });
   } finally {
@@ -1058,6 +1084,58 @@ async function run() {
   } finally {
     await opfsRoot.removeEntry(p3FatalDirectory, { recursive: true }).catch(() => {});
   }
+
+  stage('p3-quota-fault-matrix-start');
+  const p3QuotaFaultResults = [];
+  for (const phase of ['after-0-bytes','after-1-byte','after-header','mid-payload','pre-commit','post-payload-pre-manifest']) {
+    const directoryName = opfsDirectory + '-quota-' + phase;
+    try {
+      const quotaFs = new MemoryVFS();
+      const quotaAuthority = await new OpfsCheckpointAuthority({
+        root: opfsRoot,
+        directoryName,
+        lockManager: navigator.locks
+      }).open();
+      quotaFs.mount({ 'quota.txt': 'stable' });
+      const stable = await quotaAuthority.checkpoint(quotaFs);
+      quotaFs.beginTransaction().writeFile('quota.txt','blocked-'+phase+'-'+'x'.repeat(256)).commit();
+
+      let quotaCode = null;
+      let quotaPhase = null;
+      let injectedQuota = false;
+      try {
+        await quotaAuthority.checkpoint(quotaFs,{ quotaFaultAt: phase });
+      } catch (error) {
+        quotaCode = error?.code ?? null;
+        quotaPhase = error?.details?.phase ?? null;
+        injectedQuota = error?.details?.injectedQuota === true;
+      }
+      assert(quotaCode === 'OC_RESOURCE_EXHAUSTED', 'P3 quota injection did not normalize to OC_RESOURCE_EXHAUSTED at ' + phase);
+      assert(quotaPhase === phase && injectedQuota, 'P3 quota injection receipt drifted at ' + phase);
+
+      const reopened = await new OpfsCheckpointAuthority({
+        root: opfsRoot,
+        directoryName,
+        lockManager: navigator.locks
+      }).open();
+      const restored = new MemoryVFS();
+      await reopened.restoreInto(restored);
+      assert(restored.readFile('quota.txt') === 'stable', 'P3 quota fault changed canonical generation at ' + phase);
+      assert(reopened.current.sequence === stable.sequence, 'P3 quota fault advanced canonical sequence at ' + phase);
+      assert(reopened.current.generation === stable.generation, 'P3 quota fault advanced StorageGeneration at ' + phase);
+      const gc = await reopened.collectGarbage();
+      p3QuotaFaultResults.push({
+        phase,
+        quotaCode,
+        sequence: reopened.current.sequence,
+        generation: reopened.current.generation,
+        garbageRemoved: gc.removed.length
+      });
+    } finally {
+      await opfsRoot.removeEntry(directoryName, { recursive: true }).catch(() => {});
+    }
+  }
+  stage('p3-quota-fault-matrix-pass', { phases: p3QuotaFaultResults });
 
   try {
     assert(navigator.locks?.request, 'Web Locks API is unavailable');

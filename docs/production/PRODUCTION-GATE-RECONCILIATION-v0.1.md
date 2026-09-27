@@ -9,7 +9,7 @@
 - Gates: **304**
 - Domains: **19**
 - Seed-reconciled against implementation evidence: **191**
-- Minimum-closure satisfied: **151**
+- Minimum-closure satisfied: **153**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -43,6 +43,11 @@
 - Release trust chain now has reproducible artifact/checksum/SBOM/provenance/inventory evidence, but authenticated attestation, public publication, rollback and license/FTO closure remain open.
 
 ## Newly reconciled in this wave
+
+- **P3-03** now meets declared-profile closure through CI #459 / PR #50 implementation head `4c8d5b1fc88ad2db49e0431dbdbd86786f50552a`: WriterEpoch is a persistent monotonic fencing token distinct from StorageGeneration; the successor writer advances epoch 1 → 2, successful canonical commit advances StorageGeneration, and the prior epoch is rejected with `OC_STALE_GENERATION` before publication.
+- **P3-08** now meets declared-profile closure through the same court: quota failure is injected after 0 bytes, 1 byte, a header prefix, mid-payload, full payload/pre-commit and post-payload/pre-manifest. Every arm returns `OC_RESOURCE_EXHAUSTED`; real Chrome OPFS reopen exposes the prior committed sequence/generation, and post-payload orphan bytes remain noncanonical/collectable.
+- CI #459 passed **33 critical files × 5 = 165 executions**, CodeQL and **2/2** complete installed-distribution Chrome product paths with zero unexplained failures. The browser-specific P3 receipt generator independently requires both the WriterEpoch and six-phase quota stages on subsequent closure CI.
+- **P3-07, P3-09, P3-13, P3-14, P3-15, P3-17, P3-18 and P3-20 remain open/partial**. In particular, P3-07 is not inferred from async OPFS writes: the source-required explicit canonical flush/durability boundary remains outstanding.
 
 - **P3-01, P3-02, P3-04, P3-05, P3-06, P3-10, P3-11, P3-12, P3-16 and P3-19** now meet `PASS-INTEGRATION + declared-profile evidence` through CI #444 on PR #49 implementation head `1cbc9df096759d4cc4b108c25add5ba0359d7a58`.
 - The real Chrome court now serializes two same-generation OPFS publishers through an exclusive Web Lock with no `steal:true`; exactly one writer publishes and the competitor fails `OC_STALE_GENERATION`. Workspace checkpoint crash injection covers `after-preflight`, `after-payload` and `after-manifest`; reopen returns only the old fully-valid or new fully-valid generation.
