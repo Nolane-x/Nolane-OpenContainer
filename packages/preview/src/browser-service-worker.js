@@ -209,4 +209,5 @@ export class BrowserPreviewServiceWorkerBridge {
     } finally {
       if (requestId) this.#inflight.delete(requestId);
     }
-  }}
+  }
+}
