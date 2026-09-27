@@ -34,10 +34,11 @@
       "tests/p13-supply-chain-evidence.test.js",
       "tests/resource-governance.test.js",
       "tests/p7-resource-evidence.test.js",
-      "tests/resource-retention-audit.test.js"
+      "tests/resource-retention-audit.test.js",
+      "tests/p7-resource-wave2-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 30
+    "minimumTestFiles": 31
   },
   "browser": {
     "iterations": 2,
