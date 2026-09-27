@@ -8,6 +8,8 @@ const required=[
   'release/SECURITY-MALICIOUS-PACKAGE-CORPUS.v1.0.json','release/SECURITY-REGRESSION-REGISTRY.v1.0.json','release/SECURITY-RESIDUAL-RISKS.v1.0.json','release/SECURITY-STATIC-ANALYSIS-WAIVERS.v1.0.json','release/SECURITY-RESOURCE-DOS-REVIEW.v1.0.json','release/P12-PRODUCT-SECURITY-EVIDENCE.v1.0.json',
   'SECURITY.md','docs/production/PRODUCT-SECURITY-REVIEW.md','scripts/security-review-policy.mjs','scripts/security-dependency-audit.mjs','scripts/run-security-regressions.mjs','scripts/security-codeql-receipt.mjs','scripts/run-security-review.mjs',
   'tests/product-security.test.js','tests/security-hardening.test.js','tests/security-fuzz.test.js','tests/security-malicious-package.test.js','tests/p12-evidence.test.js',
+  'release/OPERATIONS-POLICY.v1.0.json','release/KNOWN-ISSUES.v1.0.json','release/OPERATIONS-DISASTER-SCENARIOS.v1.0.json',
+  'packages/operations/src/index.js','scripts/run-operations-drills.mjs','tests/operations-maintenance.test.js','docs/production/OPERATIONS-MAINTENANCE.md',
   'scripts/evidence-assurance-policy.mjs','scripts/evidence-assurance-bundle.mjs','scripts/build-evidence-assurance.mjs','scripts/capture-browser-evidence-assurance.mjs','scripts/verify-evidence-assurance.mjs','tests/evidence-assurance.test.js','tests/p18-evidence.test.js','docs/production/EVIDENCE-ASSURANCE.md',
   'scripts/verify-product-scope.mjs','scripts/verify-browser-profile.mjs','tests/product-scope.test.js','docs/production/PRODUCT-SCOPE-AND-CLAIMS.md',
   'tests/network-security.test.js','tests/p5-evidence.test.js','release/P5-NETWORK-PREVIEW-EVIDENCE.v1.0.json','docs/production/NETWORK-SECRET-PREVIEW-SECURITY.md',

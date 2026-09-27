@@ -1,0 +1,226 @@
+{
+  "schema": "opencontainer.operations-policy.v1.0",
+  "frozenAt": "2026-09-27",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P17",
+  "profile": "desktop-chrome153-ubuntu2404-x64-ci",
+  "releaseSupport": {
+    "pre1_0": true,
+    "supportedLines": [
+      {
+        "id": "main",
+        "kind": "development",
+        "securityFixes": true
+      },
+      {
+        "id": "active-release-candidate",
+        "kind": "candidate",
+        "securityFixes": true
+      }
+    ],
+    "activeVersion": "0.1.0-alpha.1",
+    "olderAlphaDefault": "unsupported-unless-release-note-says-otherwise",
+    "securityFixPolicy": {
+      "critical": "fix-or-disable-immediately-before-promotion",
+      "high": "fix-before-next-promotion",
+      "moderate": "schedule-on-supported-line",
+      "low": "normal-maintenance"
+    }
+  },
+  "vulnerabilityWorkflow": {
+    "states": [
+      "RECEIVED",
+      "TRIAGED",
+      "EMBARGOED",
+      "FIX_READY",
+      "ADVISORY_READY",
+      "DISCLOSED"
+    ],
+    "requiredFields": [
+      "id",
+      "severity",
+      "affectedVersions",
+      "owner",
+      "receivedAt"
+    ],
+    "embargoRequiredFor": [
+      "CRITICAL",
+      "HIGH"
+    ],
+    "advisoryChannels": [
+      "GitHub Security Advisory when available",
+      "SECURITY.md",
+      "release notes"
+    ],
+    "privateChannelVerified": false,
+    "boundary": "The workflow can be exercised without claiming that a verified private intake channel exists; P12-17 remains separate."
+  },
+  "incidentRoles": [
+    {
+      "id": "incident-coordinator",
+      "responsibilities": [
+        "declare severity",
+        "coordinate containment",
+        "close incident"
+      ]
+    },
+    {
+      "id": "security-owner",
+      "responsibilities": [
+        "triage exploitability",
+        "embargo/advisory",
+        "credential rotation decision"
+      ]
+    },
+    {
+      "id": "release-owner",
+      "responsibilities": [
+        "suspend promotion",
+        "revoke/deprecate bad artifacts",
+        "rebuild provenance"
+      ]
+    },
+    {
+      "id": "storage-owner",
+      "responsibilities": [
+        "freeze mutation",
+        "preserve recovery roots",
+        "validate export/recovery"
+      ]
+    },
+    {
+      "id": "communications-owner",
+      "responsibilities": [
+        "user warning",
+        "release note/advisory",
+        "status follow-up"
+      ]
+    }
+  ],
+  "revocation": {
+    "actions": [
+      "freeze-promotion",
+      "mark-known-bad",
+      "deprecate-or-yank-published-artifact",
+      "invalidate-release-note",
+      "publish-security-advisory",
+      "rebuild-from-clean-provenance"
+    ],
+    "notificationChannels": [
+      "GitHub Security Advisory",
+      "GitHub Release notice",
+      "package deprecation notice when published",
+      "SECURITY.md / release notes"
+    ],
+    "publicationConditional": true
+  },
+  "runtimeBlock": {
+    "strategy": "read-only",
+    "blockedVersions": [
+      "0.1.0-alpha.bad"
+    ],
+    "reasonPrefix": "known-bad-runtime:",
+    "allowExport": true,
+    "allowRead": true,
+    "allowMutation": false
+  },
+  "dependencyMaintenance": {
+    "routineAudit": "every CI run",
+    "routineUpdateReview": "weekly",
+    "dependencyRefresh": "monthly while pre-1.0",
+    "emergencyHighCritical": "same-day triage; patch or mitigation before promotion",
+    "evidence": [
+      "npm audit receipt",
+      "CodeQL receipt",
+      "release SBOM/provenance"
+    ]
+  },
+  "browserRegressionWatch": {
+    "primitives": [
+      "OPFS",
+      "Web Locks",
+      "Service Worker",
+      "SharedArrayBuffer",
+      "crossOriginIsolated"
+    ],
+    "cadence": "weekly plus every release-candidate promotion",
+    "declaredProfile": "desktop-chrome153-ubuntu2404-x64-ci",
+    "freezeOnRegression": true,
+    "centralTelemetryRequired": false
+  },
+  "localHealth": {
+    "telemetryFree": true,
+    "centralServiceRequired": false,
+    "requiredSignals": [
+      "runtime/profile identity",
+      "browser primitive probe",
+      "storage/read-only state",
+      "diagnostic summary",
+      "telemetry state"
+    ]
+  },
+  "supportBundles": {
+    "currentSchema": "opencontainer.support-bundle.v0.2",
+    "backwardReadable": [
+      "opencontainer.support-bundle.v0.1",
+      "opencontainer.support-bundle.v0.2"
+    ],
+    "privacyFirst": true,
+    "parserRejectsUnknownMajor": true
+  },
+  "backupExport": {
+    "browserStorageGuarantee": "best-effort",
+    "recommendation": "Keep periodic portable exports for important projects; export before migrations, risky browser cleanup, unsupported runtime changes or EOL.",
+    "nagging": false,
+    "falseDurabilityGuarantee": false
+  },
+  "endOfLife": {
+    "unsupportedRuntimeMutation": "blocked-or-read-only-when-risk-requires",
+    "projectReadability": true,
+    "portableExport": true,
+    "destructiveStorageDowngrade": false
+  },
+  "issueRegressionRule": {
+    "appliesTo": [
+      "confirmed-critical-correctness",
+      "confirmed-critical-security",
+      "confirmed-high-security"
+    ],
+    "requiredBeforeClose": [
+      "stable issue identity",
+      "executable regression test",
+      "severity/classification",
+      "fix evidence"
+    ],
+    "harnessFailureIsNotProductBug": true
+  },
+  "knownIssues": {
+    "path": "release/KNOWN-ISSUES.v1.0.json",
+    "requireVersion": true,
+    "requireProfile": true,
+    "requireBrowser": true,
+    "workaroundMustBeSafeOrNull": true
+  },
+  "disasterExercise": {
+    "scenarios": [
+      "bad-release-rollback",
+      "corrupt-workspace-recovery",
+      "compromised-publishing-credential",
+      "browser-primitive-regression"
+    ],
+    "requiredOnEach": [
+      "containment",
+      "recovery",
+      "user-notification",
+      "evidence-preservation",
+      "post-incident-regression"
+    ],
+    "cadence": "before public beta/1.0 and after material incident-process change"
+  },
+  "boundaries": [
+    "No central telemetry service is introduced.",
+    "No published npm/GitHub Release identity is claimed by this policy.",
+    "No verified private vulnerability intake channel is claimed; P12-17 remains open.",
+    "No browser floor/cross-browser/weak-device claim is created.",
+    "production_closed remains false until the full production ledger closes."
+  ]
+}
