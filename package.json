@@ -30,7 +30,8 @@
     "release:governance": "node scripts/verify-release-governance.mjs",
     "critical:contract-flake": "node scripts/run-critical-flake-campaign.mjs",
     "critical:browser-flake": "node scripts/run-browser-flake-campaign.mjs",
-    "docs:verify": "node scripts/generate-developer-docs.mjs"
+    "docs:verify": "node scripts/generate-developer-docs.mjs",
+    "diagnostics:local": "node scripts/opencontainer-diagnostic.mjs --simulate-error OC_INVALID_STATE"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",
