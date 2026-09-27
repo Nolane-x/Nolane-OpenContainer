@@ -9,7 +9,7 @@
 - Gates: **304**
 - Domains: **19**
 - Seed-reconciled against implementation evidence: **191**
-- Minimum-closure satisfied: **154**
+- Minimum-closure satisfied: **155**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -43,6 +43,11 @@
 - Release trust chain now has reproducible artifact/checksum/SBOM/provenance/inventory evidence, but authenticated attestation, public publication, rollback and license/FTO closure remain open.
 
 ## Newly reconciled in this wave
+
+- **P3-14** now meets declared-profile closure through CI #491 / PR #52 implementation head `3debec759ac83f5fd5582a211659bb1be623de68`. Low-storage cleanup is ordered `temporary → derived/rebuildable → public cache → checkpoint garbage`; canonical source and canonical checkpoint tiers are hard-protected and cannot opt out.
+- The real Chrome OPFS court deliberately requests an impossible reclaim target. Cleanup returns `targetSatisfied=false` after reclaiming only safe tiers, never invokes canonical reclaimers, then reopens and verifies both current and fallback checkpoints plus the acknowledged workspace value. This proves pressure cannot manufacture headroom by sacrificing last-known-good private state.
+- CI #491 passed **383/383 unit tests**, **35 critical files × 5 = 175 repeated executions**, CodeQL and **2/2** installed-distribution Chrome paths with zero unexplained failures. The dedicated P3-14 browser receipt independently checks the exact reclaim/protection order in both iterations.
+- **P3-07, P3-09, P3-15, P3-17, P3-18 and P3-20 remain open**. All 14 currently reconciled P3 rows are now closed, but these six unreconciled source gates keep the P3 domain and production as a whole open.
 
 - **P3-13** now meets declared-profile closure through CI #475 / PR #51 implementation head `edb93487724046443c73b98cad397ee43ec36f94`. The dedicated browser receipt proves **5 corruption classes / 5 distinct recovery actions** in both installed Chrome iterations: canonical source → fail closed; recovery draft → discard; checkpoint → fallback; package cache → discard/refetch; derived index → discard/rebuild.
 - CI #475 passed **375/375 unit tests**, **34 critical files × 5 = 170 repeated executions**, CodeQL and **2/2** installed-distribution Chrome paths with zero unexplained failures. Closure CI adds a 35th critical test, so promotion remains contingent on 175/175 repeated executions plus the same browser matrix.
