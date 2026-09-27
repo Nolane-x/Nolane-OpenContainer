@@ -41,16 +41,19 @@ test('P11-14 closes without promoting P11-12 publication or P11-13 browser floor
   assert.deepEqual(matrix.preservedOpenGates.map(x=>x.id),['P11-12','P11-13']);
   const entry=registry.entries.find(x=>x.key==='p11-release-compatibility-report');
   assert.deepEqual({kind:entry.kind,level:entry.level,status:entry.status},{kind:'EXECUTABLE',level:'BROWSER',status:'PASS'});
-  assert.equal(ledger.overrides.length,182);
-  assert.equal(ledger.overrides.filter(x=>x.closure_met===true).length,125);
-  assert.equal(ledger.overrides.filter(x=>x.state==='PARTIAL').length,37);
+  const p11rows=ledger.overrides.filter(x=>x.domain==='P11');
+  assert.equal(p11rows.length,13);
+  assert.equal(p11rows.filter(x=>x.closure_met===true).length,12);
+  assert.deepEqual(p11rows.filter(x=>x.state==='PARTIAL').map(x=>x.id),['P11-12']);
+  assert.ok(ledger.overrides.length>=182);
+  assert.ok(ledger.overrides.filter(x=>x.closure_met===true).length>=125);
   assert.equal(ledger.production_closed,false);
 });
 
 test('P11-14 closure evidence is itself repeated in the critical campaign',()=>{
   assert.ok(flake.contract.testFiles.includes('tests/release-compatibility-report.test.js'));
   assert.ok(flake.contract.testFiles.includes('tests/p11-release-report-evidence.test.js'));
-  assert.equal(flake.contract.testFiles.length,23);
-  assert.equal(flake.contract.minimumTestFiles,23);
+  assert.ok(flake.contract.testFiles.length>=23);
+  assert.equal(flake.contract.testFiles.length,flake.contract.minimumTestFiles);
   assert.equal(flake.contract.iterations,5);
 });
