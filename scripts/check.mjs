@@ -6,6 +6,7 @@ const required=[
   'packages/process/src/sync-rpc.js',
   'packages/diagnostics/src/support.js','tests/support-diagnostics.test.js','tests/support-policy.test.js',
   'scripts/diagnostic-self-check.mjs','docs/production/TELEMETRY-POLICY.v0.1.json','docs/production/TELEMETRY-POLICY.md',
+  'docs/guides/SUPPORT-DIAGNOSTICS.md',
   '.github/ISSUE_TEMPLATE/opencontainer-bug.yml',
   'docs/api/PUBLIC-SDK.v0.1.json','docs/api/ERROR-CATALOG.v0.1.json','docs/api/API-REFERENCE.md','docs/api/ERROR-REFERENCE.md',
   'scripts/generate-developer-docs.mjs','tests/developer-docs.test.js','examples/sdk-failure-paths.mjs',
