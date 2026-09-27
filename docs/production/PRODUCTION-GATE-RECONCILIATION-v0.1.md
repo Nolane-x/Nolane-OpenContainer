@@ -9,7 +9,7 @@
 - Gates: **304**
 - Domains: **19**
 - Seed-reconciled against implementation evidence: **191**
-- Minimum-closure satisfied: **155**
+- Minimum-closure satisfied: **156**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -43,6 +43,10 @@
 - Release trust chain now has reproducible artifact/checksum/SBOM/provenance/inventory evidence, but authenticated attestation, public publication, rollback and license/FTO closure remain open.
 
 ## Newly reconciled in this wave
+
+- **P3-15** is newly reconciled and meets declared-profile closure through PR #53, implementation CI #509 and dedicated safe-restore CI #512. Restore planning binds the working VFS generation and canonical OPFS sequence; commit creates/reuses a recovery point before rollback and republishes the selected older checkpoint as a **new** canonical generation.
+- Local edits after planning and cross-context canonical publication both abort with `OC_STALE_GENERATION`. If quota prevents the safety checkpoint, restore aborts with `OC_RESOURCE_EXHAUSTED`, `riskDeclared=true`, and leaves the working tree unchanged. Dedicated artifact #10944841419 verifies these invariants in **2/2** installed Chrome iterations.
+- **P3-07, P3-09, P3-17, P3-18 and P3-20 remain unreconciled/open**; P3-15 does not infer flush durability, frozen-tab failover, external-source modes, external permission conflicts or destructive-purge semantics.
 
 - **P3-14** now meets declared-profile closure through CI #491 / PR #52 implementation head `3debec759ac83f5fd5582a211659bb1be623de68`. Low-storage cleanup is ordered `temporary → derived/rebuildable → public cache → checkpoint garbage`; canonical source and canonical checkpoint tiers are hard-protected and cannot opt out.
 - The real Chrome OPFS court deliberately requests an impossible reclaim target. Cleanup returns `targetSatisfied=false` after reclaiming only safe tiers, never invokes canonical reclaimers, then reopens and verifies both current and fallback checkpoints plus the acknowledged workspace value. This proves pressure cannot manufacture headroom by sacrificing last-known-good private state.
