@@ -256,7 +256,7 @@ export class DiagnosticJournal {
 
 function stablePublicIdentifier(key,value){
   if(typeof value!=='string')return null;
-  if(key==='schema'&&/^opencontainer\.[a-z0-9._-]+\.v\d+$/i.test(value))return value;
+  if(key==='schema'&&/^opencontainer\.[a-z0-9._-]+\.v\d+(?:\.\d+)*$/i.test(value))return value;
   if(key==='profileId'&&/^opencontainer-[a-z0-9._:-]+$/i.test(value))return value;
   if(key==='compatibilityId'&&/^opencontainer-[a-z0-9._:-]+$/i.test(value))return value;
   if(key==='version'&&/^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/.test(value))return value;
