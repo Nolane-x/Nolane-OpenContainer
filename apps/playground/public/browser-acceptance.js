@@ -6,7 +6,7 @@ import { WorkerRpcAuthority } from '/packages/process/src/worker-authority.js';
 import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority } from '/packages/vfs/src/index.js';
 import { BrowserPreviewServiceWorkerBridge, createSandboxedPreviewFrame } from '/packages/preview/src/index.js';
 import { ResourceGovernor } from '/packages/resources/src/index.js';
-import { OpfsReleaseStorageAuthority } from '/packages/persistence/src/index.js';
+import { OpfsReleaseStorageAuthority, OpfsDerivedIndexStore, PersistenceCorruptionClass, corruptionDisposition } from '/packages/persistence/src/index.js';
 import { checkHostingHeaders } from '/scripts/hosting-self-check-lib.mjs';
 
 const resultNode = document.getElementById('result');
@@ -928,6 +928,7 @@ async function run() {
   assert(navigator.storage?.getDirectory, 'OPFS API is unavailable');
   const opfsRoot = await navigator.storage.getDirectory();
   const opfsDirectory = 'opencontainer-browser-acceptance-' + crypto.randomUUID();
+  const p3CorruptionEvidence = {};
 
   stage('p3-writer-election-start');
   const p3ElectionDirectory = opfsDirectory + '-writer-election';
@@ -1080,9 +1081,116 @@ async function run() {
     }
     assert(fatalCode === 'OC_IMPORT_INVALID', 'P3 SDK boot silently replaced invalid canonical workspace with an empty project');
     assert(silentEmptyFallback === false, 'P3 fatal recovery did not explicitly reject silent empty fallback');
+    const canonicalDisposition=corruptionDisposition(PersistenceCorruptionClass.CANONICAL_SOURCE);
+    assert(canonicalDisposition.action==='fail-closed','P3 canonical corruption policy drifted');
+    p3CorruptionEvidence.canonicalSource={
+      corruptionClass:canonicalDisposition.kind,
+      action:canonicalDisposition.action,
+      code:fatalCode,
+      silentEmptyFallback
+    };
     stage('p3-no-silent-empty-pass', { fatalCode, silentEmptyFallback, sdkBootRejected: true });
   } finally {
     await opfsRoot.removeEntry(p3FatalDirectory, { recursive: true }).catch(() => {});
+  }
+
+  stage('p3-recovery-draft-corruption-start');
+  const p3DraftDirectory=opfsDirectory+'-corrupt-recovery-draft';
+  try{
+    const draftFs=new MemoryVFS();
+    const draftAuthority=await new OpfsCheckpointAuthority({
+      root:opfsRoot,
+      directoryName:p3DraftDirectory,
+      lockManager:navigator.locks
+    }).open();
+    draftFs.mount({'draft.txt':'stable'});
+    const draftStable=await draftAuthority.checkpoint(draftFs);
+    draftFs.beginTransaction().writeFile('draft.txt','uncommitted').commit();
+    let draftCrashCode=null;
+    let draftCrashDetails=null;
+    try{await draftAuthority.checkpoint(draftFs,{crashAt:'after-payload'});}
+    catch(error){draftCrashCode=error?.code??null;draftCrashDetails=error?.details??null;}
+    assert(draftCrashCode==='OC_INVALID_STATE','P3 recovery draft crash injection did not stop after payload');
+    assert(typeof draftCrashDetails?.payload==='string','P3 recovery draft did not expose orphan payload identity');
+    const draftWorkspace=await opfsRoot.getDirectoryHandle(p3DraftDirectory);
+    const draftGenerations=await draftWorkspace.getDirectoryHandle('generations');
+    const draftPayload=await draftGenerations.getFileHandle(draftCrashDetails.payload);
+    const draftWriter=await draftPayload.createWritable();
+    await draftWriter.write('{"corruptRecoveryDraft":true}');
+    await draftWriter.close();
+
+    const draftReopen=await new OpfsCheckpointAuthority({
+      root:opfsRoot,
+      directoryName:p3DraftDirectory,
+      lockManager:navigator.locks
+    }).open();
+    const draftRestored=new MemoryVFS();
+    await draftReopen.restoreInto(draftRestored);
+    assert(draftRestored.readFile('draft.txt')==='stable','P3 corrupt recovery draft displaced canonical source');
+    assert(draftReopen.current?.sequence===draftStable.sequence,'P3 corrupt recovery draft advanced canonical sequence');
+    const draftGc=await draftReopen.collectGarbage();
+    assert(draftGc.removed.includes(draftCrashDetails.payload),'P3 corrupt recovery draft was not discardable garbage');
+    const draftDisposition=corruptionDisposition(PersistenceCorruptionClass.RECOVERY_DRAFT);
+    assert(draftDisposition.action==='discard-draft','P3 recovery draft corruption policy drifted');
+    p3CorruptionEvidence.recoveryDraft={
+      corruptionClass:draftDisposition.kind,
+      action:draftDisposition.action,
+      recoveredSequence:draftReopen.current.sequence,
+      recoveredGeneration:draftReopen.current.generation,
+      discarded:draftGc.removed.includes(draftCrashDetails.payload)
+    };
+    stage('p3-recovery-draft-corruption-pass',p3CorruptionEvidence.recoveryDraft);
+  }finally{
+    await opfsRoot.removeEntry(p3DraftDirectory,{recursive:true}).catch(()=>{});
+  }
+
+  stage('p3-derived-index-corruption-start');
+  const p3DerivedDirectory=opfsDirectory+'-derived-index';
+  try{
+    const derivedStore=await new OpfsDerivedIndexStore({
+      root:opfsRoot,
+      directoryName:p3DerivedDirectory,
+      lockManager:navigator.locks
+    }).open();
+    await derivedStore.publish({
+      sourceGeneration:runtime.fs.generation,
+      value:{moduleCount:3,files:['src/main.js','src/dep.js','src/sync.js']}
+    });
+    const derivedVerified=await derivedStore.read({sourceGeneration:runtime.fs.generation});
+    assert(derivedVerified.status==='verified','P3 derived index did not verify before corruption');
+
+    const derivedDirectory=await opfsRoot.getDirectoryHandle(p3DerivedDirectory);
+    const derivedPayload=await derivedDirectory.getFileHandle('derived-index.json');
+    const derivedWriter=await derivedPayload.createWritable();
+    await derivedWriter.write('{"corruptDerivedIndex":true}');
+    await derivedWriter.close();
+
+    const derivedCorrupt=await derivedStore.read({sourceGeneration:runtime.fs.generation});
+    assert(derivedCorrupt.status==='corrupt','P3 derived index corruption was not detected');
+    assert(derivedCorrupt.corruptionClass==='derived-index'&&derivedCorrupt.action==='discard-rebuild','P3 derived index corruption classification drifted');
+    const derivedRebuilt=await derivedStore.rebuild({
+      sourceGeneration:runtime.fs.generation,
+      value:{moduleCount:4,files:['src/main.js','src/dep.js','src/sync.js','src/late.js']}
+    });
+    assert(derivedRebuilt.status==='published','P3 derived index did not rebuild after corruption');
+    const derivedReopen=await new OpfsDerivedIndexStore({
+      root:opfsRoot,
+      directoryName:p3DerivedDirectory,
+      lockManager:navigator.locks
+    }).open();
+    const derivedRepaired=await derivedReopen.read({sourceGeneration:runtime.fs.generation});
+    assert(derivedRepaired.status==='verified'&&derivedRepaired.value.moduleCount===4,'P3 derived index rebuild did not survive reopen');
+    p3CorruptionEvidence.derivedIndex={
+      corruptionClass:derivedCorrupt.corruptionClass,
+      action:derivedCorrupt.action,
+      corruptDetected:true,
+      rebuilt:true,
+      reopenedVerified:derivedRepaired.status==='verified',
+      crossContextLocking:derivedReopen.crossContextLocking
+    };
+    stage('p3-derived-index-corruption-pass',p3CorruptionEvidence.derivedIndex);
+  }finally{
+    await opfsRoot.removeEntry(p3DerivedDirectory,{recursive:true}).catch(()=>{});
   }
 
   stage('p3-quota-fault-matrix-start');
@@ -1311,6 +1419,16 @@ async function run() {
     const restored = new MemoryVFS();
     await reopened.restoreInto(restored);
     assert(restored.readFile('value.txt') === 'third', 'OPFS recovery restored the wrong generation after quota guarding');
+    const checkpointDisposition=corruptionDisposition(PersistenceCorruptionClass.CHECKPOINT);
+    assert(checkpointDisposition.action==='fallback-checkpoint','P3 checkpoint corruption policy drifted');
+    p3CorruptionEvidence.checkpoint={
+      corruptionClass:checkpointDisposition.kind,
+      action:checkpointDisposition.action,
+      corruptSequence:fourthCheckpoint.sequence,
+      recoveredSequence:reopened.current.sequence,
+      recoveredGeneration:reopened.current.generation,
+      fallbackValue:restored.readFile('value.txt')
+    };
 
     stage('opfs-real-pass', {
       firstSequence: firstCheckpoint.sequence,
@@ -1565,6 +1683,52 @@ async function run() {
     assert(lightningNode?.contentId, 'browser package graph did not expose immutable content identity');
 
     const packageCacheRoot = await opfsRoot.getDirectoryHandle(packageCacheDirectory);
+
+    stage('p3-package-cache-corruption-start');
+    const packageContentDirectory=await packageCacheRoot.getDirectoryHandle(encodeURIComponent(lightningNode.contentId));
+    const corruptPackageArtifact=await packageContentDirectory.getFileHandle('artifact.tgz');
+    const corruptPackageWriter=await corruptPackageArtifact.createWritable();
+    await corruptPackageWriter.write(new Uint8Array([1,2,3,4]));
+    await corruptPackageWriter.close();
+
+    const corruptPackageStore=await new OpfsPackageContentStore({
+      root:opfsRoot,
+      directoryName:packageCacheDirectory,
+      lockManager:navigator.locks
+    }).open();
+    const corruptHydrated=await corruptPackageStore.hydrate({
+      contentId:lightningNode.contentId,
+      integrity:lightningIntegrity,
+      expectedName:'lightningcss-wasm',
+      expectedVersion:'1.33.0'
+    });
+    assert(corruptHydrated===false,'P3 corrupt package cache was trusted');
+    assert(corruptPackageStore.corruptCount===1,'P3 corrupt package cache was not classified as corrupt');
+    let corruptPackageRefetches=0;
+    const corruptPackageInstaller=runtime.packages.createFrozenInstaller({contentStore:corruptPackageStore});
+    const corruptPackageRepair=await corruptPackageInstaller.installAll({
+      artifactAuthority:{
+        async fetchArtifact(options){
+          corruptPackageRefetches++;
+          return artifactAuthority.fetchArtifact(options);
+        }
+      },
+      concurrency:1
+    });
+    assert(corruptPackageRefetches===1,'P3 corrupt package cache did not refetch exactly once');
+    assert(corruptPackageRepair.fetchedContents===1,'P3 corrupt package cache did not republish verified content');
+    assert(corruptPackageStore.corruptCount===0,'P3 package cache remained corrupt after authoritative repair');
+    const packageDisposition=corruptionDisposition(PersistenceCorruptionClass.PACKAGE_CACHE);
+    assert(packageDisposition.action==='discard-refetch','P3 package cache corruption policy drifted');
+    p3CorruptionEvidence.packageCache={
+      corruptionClass:packageDisposition.kind,
+      action:packageDisposition.action,
+      corruptDetected:true,
+      refetches:corruptPackageRefetches,
+      repaired:true
+    };
+    stage('p3-package-cache-corruption-pass',p3CorruptionEvidence.packageCache);
+
     await packageCacheRoot.removeEntry(encodeURIComponent(lightningNode.contentId), { recursive: true });
 
     const evictedContent = await new OpfsPackageContentStore({
@@ -1684,6 +1848,22 @@ async function run() {
       if (error?.name !== 'NotFoundError') throw error;
     }
   }
+
+  const p3CorruptionClasses=[
+    p3CorruptionEvidence.canonicalSource,
+    p3CorruptionEvidence.recoveryDraft,
+    p3CorruptionEvidence.checkpoint,
+    p3CorruptionEvidence.packageCache,
+    p3CorruptionEvidence.derivedIndex
+  ];
+  assert(p3CorruptionClasses.every(Boolean),'P3 corruption matrix did not exercise all five artifact classes');
+  assert(new Set(p3CorruptionClasses.map(item=>item.corruptionClass)).size===5,'P3 corruption matrix collapsed distinct artifact classes');
+  assert(new Set(p3CorruptionClasses.map(item=>item.action)).size===5,'P3 corruption matrix collapsed distinct recovery actions');
+  stage('p3-corruption-matrix-pass',{
+    classes:p3CorruptionEvidence,
+    classCount:p3CorruptionClasses.length,
+    distinctActions:new Set(p3CorruptionClasses.map(item=>item.action)).size
+  });
 
   stage('browser-package-corpus-start');
   const corpusLockResponse = await fetch('/package-lock.json', { cache: 'no-store' });

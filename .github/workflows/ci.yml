@@ -149,6 +149,14 @@ jobs:
       - run: npm run browser:profile:verify
       - run: npm run critical:browser-flake
       - run: npm run p3:evidence:browser
+      - run: npm run p3:corruption:evidence
+      - name: Archive P3 corruption browser receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-p3-corruption-browser-${{ github.sha }}
+          path: .artifacts/p3-corruption/browser-receipt.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Archive P3 wave2 browser receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

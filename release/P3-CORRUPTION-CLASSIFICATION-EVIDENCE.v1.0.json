@@ -1,0 +1,72 @@
+{
+  "schema": "opencontainer.p3-corruption-classification-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P3-13",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "requirement": "Test corruption classification separately for canonical source, recovery draft, checkpoint, package cache and derived index.",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 51,
+  "implementationHead": "edb93487724046443c73b98cad397ee43ec36f94",
+  "ci": {
+    "runNumber": 475,
+    "runId": 36324559812,
+    "testedCheckoutCommit": "36ee07d1a92e1a6e9a6f1140fce0f1eb17f7e7c1",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "unitTests": 375,
+    "unitPassed": 375,
+    "unitFailed": 0,
+    "criticalTestFiles": 34,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 170,
+    "contractUnexplainedFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "browserUnexplainedFailures": 0
+  },
+  "dedicatedBrowserVerification": {
+    "artifactId": 10933812358,
+    "schema": "opencontainer.p3-corruption-classification-browser.v1.0",
+    "status": "PASS",
+    "iterations": 2,
+    "classCount": 5,
+    "distinctActions": 5
+  },
+  "classes": [
+    {
+      "corruptionClass": "canonical-source",
+      "action": "fail-closed",
+      "proof": "Corrupt canonical metadata with no valid recovery root returns OC_IMPORT_INVALID and silentEmptyFallback=false."
+    },
+    {
+      "corruptionClass": "recovery-draft",
+      "action": "discard-draft",
+      "proof": "Corrupt orphan payload written before manifest publication cannot displace canonical state and is garbage-collected."
+    },
+    {
+      "corruptionClass": "checkpoint",
+      "action": "fallback-checkpoint",
+      "proof": "Corrupt newest committed checkpoint payload reopens the older valid A/B recovery root."
+    },
+    {
+      "corruptionClass": "package-cache",
+      "action": "discard-refetch",
+      "proof": "Corrupt immutable package bytes are rejected, refetched exactly once, integrity-verified and republished."
+    },
+    {
+      "corruptionClass": "derived-index",
+      "action": "discard-rebuild",
+      "proof": "Digest-mismatched derived index is rejected, discarded and rebuilt from the canonical source generation."
+    }
+  ],
+  "preservedOpenGates": [
+    "P3-07",
+    "P3-09",
+    "P3-14",
+    "P3-15",
+    "P3-17",
+    "P3-18",
+    "P3-20"
+  ],
+  "productionClosed": false
+}

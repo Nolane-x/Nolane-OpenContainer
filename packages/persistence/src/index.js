@@ -117,3 +117,6 @@ export class MemoryPersistenceAuthority {
 }
 
 export { OpfsReleaseStorageAuthority, releaseCacheNamespace, assessReleaseStorageCompatibility, applyReleaseStorageCompatibility } from './release-storage.js';
+
+export { OpfsDerivedIndexStore } from './opfs-derived-index-store.js';
+export { PersistenceCorruptionClass, PersistenceCorruptionAction, corruptionDisposition, persistenceCorruptionMatrix } from './corruption.js';

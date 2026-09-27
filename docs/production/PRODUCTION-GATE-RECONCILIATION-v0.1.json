@@ -308,6 +308,10 @@
     "p3-persistence-wave2": {
       "ref": "CI #459 / PR #50 implementation head 4c8d5b1fc88ad2db49e0431dbdbd86786f50552a",
       "note": "P3 wave-2 real-browser persistence court: monotonic WriterEpoch + StorageGeneration fencing; stale prior writer rejected after successor epoch; deterministic quota faults after 0 bytes, 1 byte, header, mid-payload, pre-commit and post-payload/pre-manifest; all six reopen to the prior committed generation. 165/165 repeated critical executions, CodeQL and 2/2 installed Chrome product paths passed."
+    },
+    "p3-corruption-classification": {
+      "ref": "CI #475 / PR #51 implementation head edb93487724046443c73b98cad397ee43ec36f94",
+      "note": "P3-13 five-class corruption court: canonical source fail-closed; recovery draft discard; checkpoint fallback; package cache discard/refetch; derived index discard/rebuild. Dedicated browser receipt proves 5 classes / 5 distinct actions in both installed Chrome iterations."
     }
   },
   "overrides": [
@@ -554,10 +558,10 @@
     {
       "id": "P3-13",
       "domain": "P3",
-      "state": "PARTIAL",
+      "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
-      "evidence": "workspace-corrupt",
-      "closure_met": false
+      "evidence": "p3-corruption-classification",
+      "closure_met": true
     },
     {
       "id": "P3-14",
