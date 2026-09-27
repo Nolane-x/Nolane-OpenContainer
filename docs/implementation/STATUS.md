@@ -713,3 +713,14 @@ CI #444 on PR #49 implementation head `1cbc9df096759d4cc4b108c25add5ba0359d7a58`
 The most material behavior change is fatal canonical recovery: OPFS metadata that exists but has no fully valid recovery payload now raises `OC_IMPORT_INVALID`; public SDK boot cannot reinterpret it as a never-initialized empty workspace. Workspace persistence also exposes deterministic crash-injection boundaries so the browser court can prove payload-before-manifest atomicity.
 
 P3-03, P3-07, P3-08, P3-09, P3-13, P3-14, P3-15, P3-17, P3-18 and P3-20 remain open/partial. `production_closed=false`.
+
+
+## P3 persistence/data-safety wave 2
+
+CI #459 on PR #50 implementation head `4c8d5b1fc88ad2db49e0431dbdbd86786f50552a` passed contract, CodeQL and 2/2 full installed-distribution Chrome product paths with zero unexplained failures. The repeated critical contract court executed 33 files × 5 iterations = 165 file executions.
+
+P3-03 is now closed for the declared Chrome profile: persistent monotonic WriterEpoch fencing is separate from StorageGeneration, canonical manifests bind both identities, successor epoch takeover is explicit, and an older writer cannot publish after failover.
+
+P3-08 is now closed for the declared Chrome profile: deterministic quota faults cover six write boundaries from zero bytes through post-payload/pre-manifest; every arm preserves the previous committed OPFS generation after reopen.
+
+P3-07, P3-09, P3-13, P3-14, P3-15, P3-17, P3-18 and P3-20 remain open/partial. The production ledger is now 153/304 minimum-closure satisfied; `production_closed=false`.
