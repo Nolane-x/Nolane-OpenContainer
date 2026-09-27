@@ -45,7 +45,8 @@
     "security:supply-chain": "node scripts/run-supply-chain-review.mjs",
     "resource:evidence": "node scripts/capture-resource-evidence.mjs",
     "resource:retention:audit": "node scripts/audit-resource-retention.mjs",
-    "p3:evidence:browser": "node scripts/capture-p3-wave2-browser-evidence.mjs"
+    "p3:evidence:browser": "node scripts/capture-p3-wave2-browser-evidence.mjs",
+    "p3:corruption:evidence": "node scripts/capture-p3-corruption-browser-evidence.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",
