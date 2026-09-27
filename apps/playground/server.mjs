@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { gzipSync } from 'node:zlib';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -12,6 +13,8 @@ const lexerPath = fileURLToPath(import.meta.resolve('es-module-lexer/minimal/js'
 const sourcePackageLockPath = existsSync(join(repoRoot, 'package-lock.json'))
   ? join(repoRoot, 'package-lock.json')
   : join(repoRoot, 'metadata/source-package-lock.json');
+
+let p5LastPackageAuthorizationPresent = false;
 
 const compatibilityUpstream = new Map([
   ['/__compat__/yoctocolors/index.js', {
@@ -75,6 +78,95 @@ const server = createServer(async (request, response) => {
 
   try {
     const url = new URL(request.url, 'http://127.0.0.1');
+
+    if (url.pathname.startsWith('/__p5__/')) {
+      const cors = () => {
+        response.setHeader('Access-Control-Allow-Origin', '*');
+        response.setHeader('Access-Control-Expose-Headers', 'X-P5-Court, Content-Range');
+        response.setHeader('Access-Control-Allow-Private-Network', 'true');
+        response.setHeader('X-P5-Court', 'network-preview-v2');
+      };
+
+      if (request.method === 'OPTIONS') {
+        cors();
+        response.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,POST,OPTIONS');
+        response.setHeader('Access-Control-Allow-Headers', 'Authorization,X-API-Key,Range,Content-Type');
+        response.statusCode = 204;
+        response.end();
+        return;
+      }
+
+      if (url.pathname === '/__p5__/cors-allowed') {
+        cors();
+        response.setHeader('Content-Type', 'application/json');
+        response.end(JSON.stringify({ok:true,mode:'cors-allowed'}));
+        return;
+      }
+      if (url.pathname === '/__p5__/cors-denied') {
+        response.setHeader('Content-Type', 'application/json');
+        response.end(JSON.stringify({ok:true,mode:'cors-denied'}));
+        return;
+      }
+      if (url.pathname === '/__p5__/compressed') {
+        cors();
+        const decoded = Buffer.from('x'.repeat(8192));
+        const compressed = gzipSync(decoded);
+        response.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        response.setHeader('Content-Encoding', 'gzip');
+        response.setHeader('Content-Length', String(compressed.byteLength));
+        response.end(compressed);
+        return;
+      }
+      if (url.pathname === '/__p5__/slow-stream') {
+        cors();
+        response.setHeader('Content-Type', 'application/octet-stream');
+        response.writeHead(200);
+        let count = 0;
+        const timer = setInterval(() => {
+          if (response.destroyed) {
+            clearInterval(timer);
+            return;
+          }
+          response.write(Buffer.alloc(256, count++ % 255));
+          if (count >= 100) {
+            clearInterval(timer);
+            response.end();
+          }
+        }, 25);
+        request.on('close', () => clearInterval(timer));
+        return;
+      }
+      if (url.pathname === '/__p5__/secret') {
+        cors();
+        const authorized = request.headers.authorization === 'Bearer p5-browser-secret';
+        response.statusCode = authorized ? 200 : 401;
+        response.setHeader('Content-Type', 'application/json');
+        response.end(JSON.stringify({authorized}));
+        return;
+      }
+      if (url.pathname === '/__p5__/provider-fail') {
+        cors();
+        response.statusCode = 401;
+        response.setHeader('Content-Type', 'application/json');
+        response.end(JSON.stringify({ok:false,code:'invalid_api_key'}));
+        return;
+      }
+      if (url.pathname === '/__p5__/package-observation') {
+        cors();
+        response.setHeader('Content-Type', 'application/json');
+        response.end(JSON.stringify({authorizationPresent:p5LastPackageAuthorizationPresent}));
+        return;
+      }
+
+      response.statusCode = 404;
+      response.end('P5 court route not found');
+      return;
+    }
+
+    if (url.pathname === '/toolchain/vendor/lightningcss-wasm-1.33.0.tgz') {
+      p5LastPackageAuthorizationPresent = typeof request.headers.authorization === 'string';
+    }
+
     const upstream = compatibilityUpstream.get(url.pathname);
     if (upstream) {
       const upstreamResponse = await fetch(upstream.url, {
