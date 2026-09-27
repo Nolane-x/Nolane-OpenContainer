@@ -308,6 +308,26 @@ test('local diagnostic command is deterministic for the same headless reproducti
   assert.equal(a.browser.browser,false);
 });
 
+test('support outcomes preserve schema-approved compatibility identifiers without weakening secret redaction',async()=>{
+  const runtime=await OpenContainer.boot();
+  const compatibilityId=runtime.productionProfile.browser.serviceWorkerCompatibilityId;
+  const secret='this-is-a-long-secret-token-value-abcdefghijklmnopqrstuvwxyz';
+  runtime.recordSupportOutcome('update',{
+    schema:'opencontainer.service-worker-update.v0.1',
+    status:'compatible',
+    compatibilityId,
+    result:secret,
+    privateToken:secret
+  });
+  const bundle=runtime.supportBundle();
+  assert.equal(bundle.outcomes.update.schema,'opencontainer.service-worker-update.v0.1');
+  assert.equal(bundle.outcomes.update.compatibilityId,compatibilityId);
+  assert.equal(bundle.outcomes.update.result,'[REDACTED]');
+  assert.equal(Object.hasOwn(bundle.outcomes.update,'privateToken'),false);
+  assert.equal(JSON.stringify(bundle).includes(secret),false);
+  await runtime.teardown();
+});
+
 test('support outcome surface accepts only recovery migration and update categories',async()=>{
   const runtime=await OpenContainer.boot();
   assert.throws(()=>runtime.recordSupportOutcome('arbitrary',{status:'PASS'}),TypeError);
