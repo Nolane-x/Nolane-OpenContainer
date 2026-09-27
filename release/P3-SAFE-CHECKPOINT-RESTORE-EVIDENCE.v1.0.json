@@ -1,0 +1,57 @@
+{
+  "schema": "opencontainer.p3-safe-checkpoint-restore-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P3-15",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "requirement": "Prove checkpoint restore creates a safe recovery point first when possible and never blind-overwrites newer unrelated work.",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 53,
+  "implementation": {
+    "head": "3c347dc131817c9f4f2ca67b5bed228f7b5d80f4",
+    "ciRunNumber": 509,
+    "ciRunId": 36357972359,
+    "testedCheckoutCommit": "22bc0a26b8bae25c8b677d739884503a44ea70e3",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "unitTests": 394,
+    "unitPassed": 394,
+    "unitFailed": 0,
+    "criticalTestFiles": 37,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 185,
+    "contractUnexplainedFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "browserUnexplainedFailures": 0
+  },
+  "dedicatedBrowserVerification": {
+    "head": "5dd6939dc374e6e4fe3bcb32520c99b5ea3afd0e",
+    "runNumber": 512,
+    "runId": 36358161737,
+    "testedCheckoutCommit": "58b7559a51221800dd9b37e51739e212dcf22a6e",
+    "artifactId": 10944841419,
+    "schema": "opencontainer.p3-safe-checkpoint-restore-browser.v1.0",
+    "status": "PASS",
+    "iterations": 2,
+    "fullProductPathPasses": 2,
+    "unexplainedFailures": 0
+  },
+  "invariants": [
+    "Restore planning binds both working VFS generation and canonical OPFS sequence/generation.",
+    "A VFS mutation lease blocks local transaction publication during the restore commit window.",
+    "Current working state is persisted or reused as a recovery point before older checkpoint content is published.",
+    "Restored content is published as a new canonical generation; canonical generation identity never moves backward.",
+    "Local work created after restore planning aborts with OC_STALE_GENERATION.",
+    "Cross-context canonical publication after planning aborts with OC_STALE_GENERATION.",
+    "Quota failure before the safety point aborts with OC_RESOURCE_EXHAUSTED, riskDeclared=true, and no working-tree mutation.",
+    "The recovery point remains a retained fallback after restored-generation reopen."
+  ],
+  "preservedOpenGates": [
+    "P3-07",
+    "P3-09",
+    "P3-17",
+    "P3-18",
+    "P3-20"
+  ],
+  "productionClosed": false
+}
