@@ -681,3 +681,10 @@ P11-14 is closed. P11-12 remains PARTIAL until the actual externally published O
 PR #45 implementation head `51142c03da23bee52dd85c1beeba40a8184ca00e` passed CI #421 across contract, CodeQL and the installed-distribution Chrome product path. The release matrix publishes seven rows: exactly one evidence-backed profile (Chrome 153.0.8010.52 / Ubuntu 24.04 x64 / `desktop-chrome153-ubuntu2404-x64-ci`) and six explicit unverified rows for broader browser/OS/mobile/weak-device profiles. The matrix receipt binds six source artifacts by SHA-256, the repeated critical court ran 120 test-file executions with zero unexplained failures, and Chrome passed 2/2 full product paths.
 
 P15-05 is closed without freezing browser minimums or claiming Windows/macOS/Firefox/Safari/mobile/weak-device support. P15-12 remains the only open P15 row because documentation samples are not yet tested against an externally published OpenContainer package. `production_closed=false`.
+
+
+## P13 supply-chain security closure wave
+
+PR #46 implementation head `57a20790c64619ede9a55fe7a76a8424bf62d311` passed CI #424 across contract, CodeQL and the installed-distribution Chrome product path. The supply-chain court reached SECURITY-REVIEWED maturity and proved that the exact distribution artifact exercised by certification is the same SHA-256/SHA-512 artifact represented by release evidence; SPDX 2.3 SBOM, in-toto/SLSA provenance, exact source/lock/toolchain/environment identity, independent checksums, explicit dependency categories, zero shipped optional-adapter bundles, content-policy negatives, reproducible builds, immutable action pins, least-privilege workflow permissions and compromised-release revocation/user warning all passed.
+
+This closes P13-01, 02, 05, 06, 08, 11, 12, 13, 14, 15 and 19 at RELEASE-VERIFIED evidence. P13-03/04/07/09/10/16/17/18/20 remain open for real external/publication/tag/signing/repository-hygiene/archive conditions. `production_closed=false`.
