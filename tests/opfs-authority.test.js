@@ -505,3 +505,86 @@ test('P3 canonical metadata corruption fails closed instead of silently opening 
     }
   );
 });
+
+
+test('P3 writer epoch fences stale authorities independently from storage generation',async()=>{
+  const root=new FakeDirectoryHandle();
+  const locks=new FakeLockManager();
+  const directoryName='p3-writer-epoch';
+  const first=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName}).open();
+  const second=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName}).open();
+  assert.equal(first.writerEpoch,0);
+  assert.equal(second.writerEpoch,0);
+
+  const fs=new MemoryVFS();
+  fs.mount({'state.txt':'one'});
+  const firstCommit=await first.checkpoint(fs);
+  assert.equal(firstCommit.writerEpoch,1);
+  assert.equal(first.writerEpoch,1);
+  assert.equal(first.writerState.storageGeneration,firstCommit.generation);
+
+  fs.beginTransaction().writeFile('state.txt','two').commit();
+  const secondCommit=await second.checkpoint(fs);
+  assert.equal(secondCommit.writerEpoch,2);
+  assert.equal(second.writerEpoch,2);
+  assert.equal(secondCommit.generation,firstCommit.generation+1);
+
+  fs.beginTransaction().writeFile('state.txt','three').commit();
+  await assert.rejects(
+    ()=>first.checkpoint(fs),
+    error=>{
+      assert.equal(error.code,ErrorCodes.STALE_GENERATION);
+      assert.equal(error.details?.expectedWriterEpoch,1);
+      assert.equal(error.details?.currentWriterEpoch,2);
+      return true;
+    }
+  );
+
+  const reopened=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName}).open();
+  assert.equal(reopened.current.writerEpoch,2);
+  assert.equal(reopened.writerEpoch,0);
+  const restored=new MemoryVFS();
+  await reopened.restoreInto(restored);
+  assert.equal(restored.readFile('state.txt'),'two');
+});
+
+test('P3 writer epoch can advance without storage generation after failed writer acquisition',async()=>{
+  const root=new FakeDirectoryHandle();
+  const locks=new FakeLockManager();
+  const directoryName='p3-writer-epoch-no-commit';
+  const fs=new MemoryVFS();
+  const first=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName}).open();
+  fs.mount({'state.txt':'one'});
+  const stable=await first.checkpoint(fs);
+  assert.equal(stable.writerEpoch,1);
+
+  fs.beginTransaction().writeFile('state.txt','two').commit();
+  const rejectingPolicy={
+    async inspect(){return {supported:true,usageBytes:999,quotaBytes:1000};},
+    async assertCanWrite(){
+      throw Object.assign(new Error('blocked'),{
+        code:ErrorCodes.RESOURCE_EXHAUSTED,
+        details:{pressure:'critical'}
+      });
+    }
+  };
+  const failedWriter=await new OpfsCheckpointAuthority({
+    root,lockManager:locks,directoryName,storagePolicy:rejectingPolicy
+  }).open();
+  await assert.rejects(
+    ()=>failedWriter.checkpoint(fs),
+    error=>error.code===ErrorCodes.RESOURCE_EXHAUSTED
+  );
+  assert.equal(failedWriter.writerEpoch,2);
+  assert.equal(failedWriter.current.generation,stable.generation);
+
+  await assert.rejects(
+    ()=>first.checkpoint(fs),
+    error=>error.code===ErrorCodes.STALE_GENERATION&&error.details?.currentWriterEpoch===2
+  );
+
+  const successor=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName}).open();
+  const committed=await successor.checkpoint(fs);
+  assert.equal(committed.writerEpoch,3);
+  assert.equal(committed.generation,stable.generation+1);
+});
