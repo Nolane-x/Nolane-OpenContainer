@@ -1545,6 +1545,175 @@ async function run() {
     await opfsRoot.removeEntry(sdkWorkspaceDirectory, { recursive: true });
   }
 
+  stage('p3-safe-restore-start');
+  const p3SafeRestoreDirectory='opencontainer-p3-safe-restore-'+crypto.randomUUID();
+  const p3SafeRestoreCrossDirectory=p3SafeRestoreDirectory+'-cross';
+  const p3SafeRestoreQuotaDirectory=p3SafeRestoreDirectory+'-quota';
+  try{
+    const restoreProfile={
+      root:opfsRoot,
+      directoryName:p3SafeRestoreDirectory,
+      lockManager:navigator.locks,
+      storagePolicy:new BrowserStoragePolicy({storageManager:navigator.storage})
+    };
+    const restoreRuntime=await OpenContainer.boot({workspacePersistence:restoreProfile});
+    restoreRuntime.mount({'project.txt':'old','unrelated.txt':'base'});
+    const restoreTarget=await restoreRuntime.persistWorkspace();
+    restoreRuntime.fs.beginTransaction()
+      .writeFile('project.txt','current')
+      .writeFile('unrelated.txt','newer')
+      .commit();
+    const restoreCurrent=await restoreRuntime.persistWorkspace();
+
+    const stalePlan=await restoreRuntime.prepareWorkspaceRestore(restoreTarget);
+    restoreRuntime.fs.beginTransaction().writeFile('unrelated.txt','after-plan').commit();
+    let localConflictCode=null;
+    try{await restoreRuntime.restoreWorkspaceCheckpoint(stalePlan);}
+    catch(error){localConflictCode=error?.code??null;}
+    assert(localConflictCode==='OC_STALE_GENERATION','P3 restore plan overwrote local work created after planning');
+    assert(restoreRuntime.fs.readFile('project.txt')==='current','P3 local restore conflict changed project state');
+    assert(restoreRuntime.fs.readFile('unrelated.txt')==='after-plan','P3 local restore conflict lost unrelated work');
+
+    restoreRuntime.fs.beginTransaction().writeFile('later.txt','recover-me').commit();
+    const safePlan=await restoreRuntime.prepareWorkspaceRestore(restoreTarget);
+    const restoreReceipt=await restoreRuntime.restoreWorkspaceCheckpoint(safePlan);
+    assert(restoreReceipt.status==='restored','P3 safe restore did not publish');
+    assert(restoreReceipt.recoveryPointCreated===true,'P3 safe restore did not create pre-restore recovery point');
+    assert(restoreReceipt.published.sequence===restoreReceipt.recoveryPoint.sequence+1,'P3 restore did not publish after recovery point');
+    assert(restoreReceipt.published.generation===restoreReceipt.recoveryPoint.generation+1,'P3 restore did not create a new generation');
+    assert(restoreReceipt.blindOverwritePrevented===true&&restoreReceipt.riskDeclared===false,'P3 restore safety receipt drifted');
+    assert(restoreRuntime.fs.readFile('project.txt')==='old','P3 safe restore did not restore target project state');
+    assert(restoreRuntime.fs.readFile('unrelated.txt')==='base','P3 safe restore did not restore target unrelated state');
+    assert(restoreRuntime.fs.exists('later.txt')===false,'P3 safe restore left post-target file active');
+
+    const recoverySnapshot=await restoreRuntime.workspacePersistence.readCheckpoint(restoreReceipt.recoveryPoint);
+    const recoveryFs=new MemoryVFS();
+    recoveryFs.restore(recoverySnapshot);
+    assert(recoveryFs.readFile('project.txt')==='current','P3 recovery point lost pre-restore project state');
+    assert(recoveryFs.readFile('unrelated.txt')==='after-plan','P3 recovery point lost newer unrelated work');
+    assert(recoveryFs.readFile('later.txt')==='recover-me','P3 recovery point lost post-plan work');
+    await restoreRuntime.terminate();
+
+    const restoreReopen=await OpenContainer.boot({workspacePersistence:restoreProfile});
+    assert(restoreReopen.fs.readFile('project.txt')==='old','P3 safe restore did not survive OPFS reopen');
+    assert(restoreReopen.workspacePersistence.current?.sequence===restoreReceipt.published.sequence,'P3 safe restore reopened wrong canonical sequence');
+    const restoreGc=await restoreReopen.collectWorkspaceGarbage({dryRun:true});
+    assert(restoreGc.retained.includes(restoreReceipt.recoveryPoint.payload),'P3 safe restore lost recovery-point fallback');
+    assert(restoreGc.retained.includes(restoreReceipt.published.payload),'P3 safe restore lost restored canonical payload');
+    await restoreReopen.terminate();
+
+    const crossFs=new MemoryVFS();
+    const crossAuthority=await new OpfsCheckpointAuthority({
+      root:opfsRoot,
+      directoryName:p3SafeRestoreCrossDirectory,
+      lockManager:navigator.locks
+    }).open();
+    crossFs.mount({'project.txt':'cross-old'});
+    const crossTarget=await crossAuthority.checkpoint(crossFs);
+    crossFs.beginTransaction().writeFile('project.txt','cross-current').commit();
+    const crossCurrent=await crossAuthority.checkpoint(crossFs);
+    const crossPlan=await crossAuthority.prepareCheckpointRestore(crossFs,crossTarget);
+
+    const remoteFs=new MemoryVFS();
+    remoteFs.restore(crossFs.snapshot());
+    remoteFs.beginTransaction().writeFile('remote.txt','published-after-plan').commit();
+    const remoteAuthority=await new OpfsCheckpointAuthority({
+      root:opfsRoot,
+      directoryName:p3SafeRestoreCrossDirectory,
+      lockManager:navigator.locks
+    }).open();
+    const remotePublished=await remoteAuthority.checkpoint(remoteFs);
+    assert(remotePublished.sequence===crossCurrent.sequence+1,'P3 cross-context court did not advance canonical sequence');
+    let crossConflictCode=null;
+    let crossConflictProtected=false;
+    try{await crossAuthority.restoreCheckpoint(crossFs,crossPlan);}
+    catch(error){
+      crossConflictCode=error?.code??null;
+      crossConflictProtected=error?.details?.blindOverwritePrevented===true&&error?.details?.restoreAborted===true;
+    }
+    assert(crossConflictCode==='OC_STALE_GENERATION'&&crossConflictProtected,'P3 restore overwrote cross-context newer work');
+    assert(crossFs.readFile('project.txt')==='cross-current','P3 cross-context conflict mutated local working tree');
+    const remoteReopen=await new OpfsCheckpointAuthority({
+      root:opfsRoot,
+      directoryName:p3SafeRestoreCrossDirectory,
+      lockManager:navigator.locks
+    }).open();
+    const remoteRestored=new MemoryVFS();
+    await remoteReopen.restoreInto(remoteRestored);
+    assert(remoteRestored.readFile('remote.txt')==='published-after-plan','P3 cross-context conflict damaged newer canonical work');
+
+    let quotaReject=false;
+    const quotaPolicy={
+      async inspect(){return {supported:true,usageBytes:quotaReject?999:100,quotaBytes:1000,pressure:quotaReject?'critical':'normal'};},
+      async assertCanWrite(additionalBytes){
+        if(quotaReject){
+          const error=new Error('quota blocked');
+          error.code='OC_RESOURCE_EXHAUSTED';
+          error.details={additionalBytes,pressure:'critical'};
+          throw error;
+        }
+        return {supported:true,additionalBytes};
+      }
+    };
+    const quotaFs=new MemoryVFS();
+    const quotaAuthority=await new OpfsCheckpointAuthority({
+      root:opfsRoot,
+      directoryName:p3SafeRestoreQuotaDirectory,
+      lockManager:navigator.locks,
+      storagePolicy:quotaPolicy
+    }).open();
+    quotaFs.mount({'project.txt':'quota-old'});
+    const quotaTarget=await quotaAuthority.checkpoint(quotaFs);
+    quotaFs.beginTransaction().writeFile('project.txt','quota-current').commit();
+    const quotaCurrent=await quotaAuthority.checkpoint(quotaFs);
+    quotaFs.beginTransaction().writeFile('unpersisted.txt','must-survive').commit();
+    const quotaPlan=await quotaAuthority.prepareCheckpointRestore(quotaFs,quotaTarget);
+    quotaReject=true;
+    let quotaRestoreCode=null;
+    let quotaRiskDeclared=false;
+    let quotaBlindOverwritePrevented=false;
+    try{await quotaAuthority.restoreCheckpoint(quotaFs,quotaPlan);}
+    catch(error){
+      quotaRestoreCode=error?.code??null;
+      quotaRiskDeclared=error?.details?.riskDeclared===true&&error?.details?.recoveryPointCreated===false;
+      quotaBlindOverwritePrevented=error?.details?.blindOverwritePrevented===true&&error?.details?.restoreAborted===true;
+    }
+    assert(quotaRestoreCode==='OC_RESOURCE_EXHAUSTED','P3 quota-blocked restore did not fail resource-exhausted');
+    assert(quotaRiskDeclared&&quotaBlindOverwritePrevented,'P3 quota-blocked restore did not declare risk and fail closed');
+    assert(quotaFs.readFile('project.txt')==='quota-current','P3 quota-blocked restore changed project state');
+    assert(quotaFs.readFile('unpersisted.txt')==='must-survive','P3 quota-blocked restore lost unpersisted work');
+    quotaReject=false;
+    const quotaReopen=await new OpfsCheckpointAuthority({
+      root:opfsRoot,
+      directoryName:p3SafeRestoreQuotaDirectory,
+      lockManager:navigator.locks,
+      storagePolicy:quotaPolicy
+    }).open();
+    assert(quotaReopen.current?.sequence===quotaCurrent.sequence,'P3 quota-blocked restore changed canonical checkpoint');
+
+    stage('p3-safe-restore-pass',{
+      targetSequence:restoreTarget.sequence,
+      priorCanonicalSequence:restoreCurrent.sequence,
+      recoveryPointSequence:restoreReceipt.recoveryPoint.sequence,
+      restoredSequence:restoreReceipt.published.sequence,
+      restoredGeneration:restoreReceipt.published.generation,
+      recoveryPointCreated:restoreReceipt.recoveryPointCreated,
+      recoveryPointRetained:restoreGc.retained.includes(restoreReceipt.recoveryPoint.payload),
+      localConflictCode,
+      crossConflictCode,
+      crossConflictProtected,
+      remoteSequence:remotePublished.sequence,
+      quotaRestoreCode,
+      quotaRiskDeclared,
+      quotaBlindOverwritePrevented,
+      workingTreeLeaseReleased:restoreRuntime.fs.mutationLease===null
+    });
+  }finally{
+    await opfsRoot.removeEntry(p3SafeRestoreDirectory,{recursive:true}).catch(()=>{});
+    await opfsRoot.removeEntry(p3SafeRestoreCrossDirectory,{recursive:true}).catch(()=>{});
+    await opfsRoot.removeEntry(p3SafeRestoreQuotaDirectory,{recursive:true}).catch(()=>{});
+  }
+
   stage('browser-package-install-start');
   const lightningIntegrity = 'sha512-OLAtqEyInBSVWjPrTjpLzcZUMUHO0q+2PFBXKr86nxZOu0P38givj/ZMtRaZ0d38pMTb9wQx+LtaLtHclv+sEA==';
   const lightningUrl = location.origin + '/toolchain/vendor/lightningcss-wasm-1.33.0.tgz';

@@ -10,6 +10,20 @@ OpenContainer distinguishes **live VFS state**, **in-memory snapshots**, **OPFS 
 
 When booted with `workspacePersistence`, OpenContainer opens the OPFS checkpoint authority before the runtime becomes ready. `persistWorkspace()` publishes a generation through the existing dual-slot / Web-Lock-coordinated authority. Browser storage remains quota- and eviction-sensitive; browser-managed data may be evicted by the browser or removed by a user action. OpenContainer does not promise infinite or permanent local storage.
 
+## Safe OPFS checkpoint restore
+
+In-memory `runtime.restore(ref)` and persistent checkpoint rollback are intentionally different operations. For an OPFS-backed workspace, consumers should use the two-step persistent restore flow:
+
+```js
+const plan = await runtime.prepareWorkspaceRestore(checkpointReceipt);
+// Show/confirm the restore intent while this plan is still current.
+const receipt = await runtime.restoreWorkspaceCheckpoint(plan);
+```
+
+A restore plan binds both the live VFS generation and the canonical OPFS checkpoint sequence. The commit phase acquires an exclusive working-tree mutation lease, persists or reuses a recovery point for the current state, then republishes the selected older checkpoint as a **new** canonical generation. It never moves canonical generation identity backward.
+
+If local work or another browser context publishes after planning, restore fails with `OC_STALE_GENERATION` instead of overwriting it. If storage pressure prevents creation of the pre-restore recovery point, restore fails with `OC_RESOURCE_EXHAUSTED` and declares that risk in the error details; it does not mutate the working tree. Restore targets must still be retained canonical/fallback recovery roots, not arbitrary leftover payload files.
+
 ## Portable export
 
 `runtime.export(ref?)` returns a `ReadableStream<Uint8Array>` containing OpenContainer NDJSON.

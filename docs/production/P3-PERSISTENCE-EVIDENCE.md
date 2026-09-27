@@ -164,3 +164,57 @@ CI #491 passed 383/383 unit tests, 35 critical files × 5 = 175 repeated file ex
 - P3-20 — destructive delete / tombstone / permanent purge recovery.
 
 `production_closed=false` remains mandatory.
+
+
+## Wave 5 — safe checkpoint restore
+
+**Implementation evidence:** CI #509 / PR #53 / `3c347dc131817c9f4f2ca67b5bed228f7b5d80f4`  
+**Dedicated browser verification:** CI #512 / artifact `10944841419`  
+**Closure:** `P3-15`
+
+Persistent checkpoint restore is now a planned, guarded operation rather than a direct in-place rewind.
+
+The plan binds:
+
+```text
+working VFS generation
+canonical OPFS sequence
+canonical OPFS generation
+retained target recovery root
+```
+
+The commit phase acquires an exclusive VFS mutation lease, persists or reuses a recovery point for the current working state, and then publishes the selected older checkpoint contents as a **new** canonical generation. A canonical-sequence compare-and-swap executes under the origin-wide Web Lock, so another context cannot race between validation and publication.
+
+The real Chrome OPFS court proves four paths:
+
+```text
+normal restore:
+  recovery point first
+  -> restored generation second
+  -> recovery point remains fallback after reopen
+
+local edit after restore planning:
+  -> OC_STALE_GENERATION
+  -> no working-tree overwrite
+
+cross-context publication after restore planning:
+  -> OC_STALE_GENERATION
+  -> newer remote canonical state survives
+
+quota prevents safety point:
+  -> OC_RESOURCE_EXHAUSTED
+  -> riskDeclared=true
+  -> no working-tree mutation
+```
+
+CI #509 passed 394/394 unit tests, 37 critical files × 5 = 185 repeated executions, CodeQL and 2/2 installed-distribution Chrome paths. CI #512 independently reran the same product path and the dedicated safe-restore receipt passed both browser iterations.
+
+### Still open after Wave 5
+
+- P3-07 — explicit canonical flush/durability boundary.
+- P3-09 — frozen/background-tab writer failover and stale resume publication.
+- P3-17 — imported-copy / linked-folder / read-only-source semantics.
+- P3-18 — external permission revocation and edit conflict.
+- P3-20 — destructive delete / tombstone / permanent purge recovery.
+
+`production_closed=false` remains mandatory.

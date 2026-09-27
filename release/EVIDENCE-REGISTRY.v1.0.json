@@ -442,6 +442,14 @@
       "status": "PASS",
       "ref": "CI #491 / PR #52 implementation head 3debec759ac83f5fd5582a211659bb1be623de68",
       "note": "Declared-profile P3-14 closure court: temporary -> derived/rebuildable -> public cache -> checkpoint garbage cleanup precedes hard-protected canonical source/checkpoints. Impossible target remains unsatisfied rather than deleting canonical state. 383/383 unit tests, 175/175 repeated critical executions, CodeQL and 2/2 installed-distribution Chrome paths passed; dedicated low-storage browser receipt passed both iterations."
+    },
+    {
+      "key": "p3-safe-checkpoint-restore",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #509 + dedicated CI #512 / PR #53",
+      "note": "Declared-profile P3-15 closure: restore plan binds working generation + canonical sequence; current work is recovery-checkpointed before rollback; old checkpoint content is republished as a new generation; local/cross-context post-plan work aborts stale; quota without a safety point fails resource-exhausted with explicit risk. 394/394 unit tests, 185/185 repeated critical executions, CodeQL, 2/2 installed Chrome and dedicated safe-restore receipt passed."
     }
   ]
 }

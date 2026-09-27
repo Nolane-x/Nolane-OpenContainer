@@ -104,6 +104,16 @@ export class OpenContainer {
     assertOc(this.workspacePersistence,ErrorCodes.INVALID_STATE,'Workspace OPFS persistence is not configured');
     return this.workspacePersistence.collectGarbage(options);
   }
+  async prepareWorkspaceRestore(checkpoint){
+    this._kernel.assertReady();
+    assertOc(this.workspacePersistence,ErrorCodes.INVALID_STATE,'Workspace OPFS persistence is not configured');
+    return this.workspacePersistence.prepareCheckpointRestore(this.fs,checkpoint);
+  }
+  async restoreWorkspaceCheckpoint(plan){
+    this._kernel.assertReady();
+    assertOc(this.workspacePersistence,ErrorCodes.INVALID_STATE,'Workspace OPFS persistence is not configured');
+    return this.workspacePersistence.restoreCheckpoint(this.fs,plan);
+  }
   async teardown(){await this.terminate();}
   async terminate(){await this._kernel.terminate();}
 }

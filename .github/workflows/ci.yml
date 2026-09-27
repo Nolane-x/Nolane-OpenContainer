@@ -151,6 +151,14 @@ jobs:
       - run: npm run p3:evidence:browser
       - run: npm run p3:corruption:evidence
       - run: npm run p3:low-storage:evidence
+      - run: npm run p3:safe-restore:evidence
+      - name: Archive P3 safe restore browser receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-p3-safe-restore-browser-${{ github.sha }}
+          path: .artifacts/p3-safe-restore/browser-receipt.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Archive P3 low-storage browser receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

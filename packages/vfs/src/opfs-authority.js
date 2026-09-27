@@ -131,7 +131,7 @@ export class OpfsCheckpointAuthority {
     return this;
   }
 
-  async checkpoint(fsOrSnapshot,{crashAt=null,quotaFaultAt=null}={}) {
+  async checkpoint(fsOrSnapshot,{crashAt=null,quotaFaultAt=null,expectedCurrentSequence=undefined}={}) {
     this.#assertOpen();
     const crashPhases=['after-preflight','after-payload','after-manifest'];
     const quotaFaultPhases=['after-0-bytes','after-1-byte','after-header','mid-payload','pre-commit','post-payload-pre-manifest'];
@@ -147,6 +147,14 @@ export class OpfsCheckpointAuthority {
       'Unknown OPFS checkpoint quota fault phase',
       {quotaFaultAt,quotaFaultPhases}
     );
+    assertOc(
+      expectedCurrentSequence===undefined||
+      expectedCurrentSequence===null||
+      (Number.isInteger(expectedCurrentSequence)&&expectedCurrentSequence>=1),
+      ErrorCodes.INVALID_ARGUMENT,
+      'expectedCurrentSequence must be undefined, null, or a positive integer',
+      {expectedCurrentSequence}
+    );
     const snapshot = typeof fsOrSnapshot?.snapshot === 'function' ? fsOrSnapshot.snapshot() : fsOrSnapshot;
     assertOc(snapshot?.version === 1 && Number.isInteger(snapshot.generation) && Array.isArray(snapshot.entries), ErrorCodes.INVALID_ARGUMENT, 'Invalid VFS checkpoint snapshot');
 
@@ -155,6 +163,18 @@ export class OpfsCheckpointAuthority {
       // Refresh the shared manifest state under the origin-wide Web Lock before
       // deciding whether this writer is stale or selecting the next sequence.
       await this.#recoverUnlocked();
+
+      if(expectedCurrentSequence!==undefined){
+        const actualCurrentSequence=this.#current?.sequence??null;
+        if(actualCurrentSequence!==expectedCurrentSequence){
+          throw ocError(ErrorCodes.STALE_GENERATION,'Canonical checkpoint changed before guarded publication',{
+            expectedCurrentSequence,
+            currentSequence:actualCurrentSequence,
+            currentGeneration:this.#current?.generation??null,
+            guardedPublication:true
+          });
+        }
+      }
 
       if (this.#writerEpoch > 0) {
         await this.#assertWriterEpochCurrentUnlocked();
@@ -259,6 +279,290 @@ export class OpfsCheckpointAuthority {
 
       const snapshot = JSON.parse(text);
       return fs.restore(snapshot);
+    });
+  }
+
+  async readCheckpoint(reference) {
+    this.#assertOpen();
+    return this.#withExclusiveLock(async () => {
+      const loaded = await this.#readCheckpointSnapshotUnlocked(reference);
+      return loaded.snapshot;
+    });
+  }
+
+  async prepareCheckpointRestore(fs, reference) {
+    this.#assertOpen();
+    assertOc(
+      fs && typeof fs.snapshot === 'function' && typeof fs.acquireMutationLease === 'function',
+      ErrorCodes.INVALID_ARGUMENT,
+      'Safe checkpoint restore requires a VFS with snapshot() and acquireMutationLease()'
+    );
+    const workingBefore = fs.snapshot();
+    return this.#withExclusiveLock(async () => {
+      const current = await this.#recoverUnlocked();
+      const target = await this.#readCheckpointSnapshotUnlocked(reference,{requireRecoveryRoot:true});
+      const workingAfter = fs.snapshot();
+      if (workingAfter.generation !== workingBefore.generation) {
+        throw ocError(ErrorCodes.STALE_GENERATION, 'Working tree changed while checkpoint restore was being prepared', {
+          beforeGeneration: workingBefore.generation,
+          currentGeneration: workingAfter.generation,
+          blindOverwritePrevented: true,
+          restoreAborted: true
+        });
+      }
+      return Object.freeze({
+        version: 1,
+        target: Object.freeze({ ...target.reference }),
+        expectedWorkingGeneration: workingAfter.generation,
+        expectedCanonicalSequence: current?.sequence ?? null,
+        expectedCanonicalGeneration: current?.generation ?? null,
+        conflictProtection: 'working-generation+canonical-sequence'
+      });
+    });
+  }
+
+  async restoreCheckpoint(fs, plan) {
+    this.#assertOpen();
+    assertOc(
+      fs &&
+      typeof fs.snapshot === 'function' &&
+      typeof fs.restore === 'function' &&
+      typeof fs.acquireMutationLease === 'function',
+      ErrorCodes.INVALID_ARGUMENT,
+      'Safe checkpoint restore requires a mutation-lease capable VFS'
+    );
+    assertOc(plan?.version === 1 && plan?.target, ErrorCodes.INVALID_ARGUMENT, 'Checkpoint restore plan is invalid');
+    assertOc(
+      Number.isInteger(plan.expectedWorkingGeneration) && plan.expectedWorkingGeneration >= 0,
+      ErrorCodes.INVALID_ARGUMENT,
+      'Checkpoint restore plan requires expectedWorkingGeneration'
+    );
+    assertOc(
+      plan.expectedCanonicalSequence === null ||
+      (Number.isInteger(plan.expectedCanonicalSequence) && plan.expectedCanonicalSequence >= 1),
+      ErrorCodes.INVALID_ARGUMENT,
+      'Checkpoint restore plan has an invalid expectedCanonicalSequence'
+    );
+    assertOc(
+      plan.expectedCanonicalGeneration === null ||
+      (Number.isInteger(plan.expectedCanonicalGeneration) && plan.expectedCanonicalGeneration >= 0),
+      ErrorCodes.INVALID_ARGUMENT,
+      'Checkpoint restore plan has an invalid expectedCanonicalGeneration'
+    );
+
+    const lease = fs.acquireMutationLease({
+      expectedGeneration: plan.expectedWorkingGeneration,
+      reason: 'checkpoint-restore'
+    });
+
+    let recoveryPoint = null;
+    try {
+      const target = await this.#withExclusiveLock(async () => {
+        const current = await this.#recoverUnlocked();
+        const actualSequence = current?.sequence ?? null;
+        const actualGeneration = current?.generation ?? null;
+        if (
+          actualSequence !== plan.expectedCanonicalSequence ||
+          actualGeneration !== plan.expectedCanonicalGeneration
+        ) {
+          throw ocError(ErrorCodes.STALE_GENERATION, 'Canonical workspace changed after checkpoint restore planning', {
+            expectedCanonicalSequence: plan.expectedCanonicalSequence,
+            currentSequence: actualSequence,
+            expectedCanonicalGeneration: plan.expectedCanonicalGeneration,
+            currentGeneration: actualGeneration,
+            blindOverwritePrevented: true,
+            restoreAborted: true
+          });
+        }
+        return this.#readCheckpointSnapshotUnlocked(plan.target,{requireRecoveryRoot:true});
+      });
+
+      const working = fs.snapshot();
+      if (working.generation !== plan.expectedWorkingGeneration) {
+        throw ocError(ErrorCodes.STALE_GENERATION, 'Working tree changed after checkpoint restore planning', {
+          expectedWorkingGeneration: plan.expectedWorkingGeneration,
+          currentWorkingGeneration: working.generation,
+          blindOverwritePrevented: true,
+          restoreAborted: true
+        });
+      }
+
+      try {
+        recoveryPoint = await this.checkpoint(working, {
+          expectedCurrentSequence: plan.expectedCanonicalSequence
+        });
+      } catch (error) {
+        if (error?.code === ErrorCodes.RESOURCE_EXHAUSTED) {
+          throw ocError(ErrorCodes.RESOURCE_EXHAUSTED, 'Checkpoint restore aborted because a safe recovery point could not be created', {
+            ...(error?.details ?? {}),
+            targetSequence: target.reference.sequence,
+            targetGeneration: target.reference.generation,
+            recoveryPointCreated: false,
+            riskDeclared: true,
+            blindOverwritePrevented: true,
+            restoreAborted: true
+          });
+        }
+        if (error?.code === ErrorCodes.STALE_GENERATION) {
+          throw ocError(ErrorCodes.STALE_GENERATION, 'Checkpoint restore aborted because canonical state advanced before the recovery point', {
+            ...(error?.details ?? {}),
+            recoveryPointCreated: false,
+            riskDeclared: false,
+            blindOverwritePrevented: true,
+            restoreAborted: true
+          });
+        }
+        throw error;
+      }
+
+      const candidate = Object.freeze({
+        version: 1,
+        generation: recoveryPoint.generation + 1,
+        entries: structuredClone(target.snapshot.entries)
+      });
+
+      let published;
+      try {
+        published = await this.checkpoint(candidate, {
+          expectedCurrentSequence: recoveryPoint.sequence
+        });
+      } catch (error) {
+        if (error?.code === ErrorCodes.STALE_GENERATION || error?.code === ErrorCodes.RESOURCE_EXHAUSTED) {
+          throw ocError(error.code, 'Checkpoint restore publication aborted without mutating the working tree', {
+            ...(error?.details ?? {}),
+            recoveryPointCreated: true,
+            recoveryPointSequence: recoveryPoint.sequence,
+            recoveryPointGeneration: recoveryPoint.generation,
+            riskDeclared: false,
+            blindOverwritePrevented: true,
+            restoreAborted: true
+          });
+        }
+        throw error;
+      }
+
+      const latest = await this.recover();
+      if (latest?.sequence !== published.sequence || latest?.sha256 !== published.sha256) {
+        throw ocError(ErrorCodes.STALE_GENERATION, 'Restored checkpoint was superseded before local publication', {
+          restoredSequence: published.sequence,
+          currentSequence: latest?.sequence ?? null,
+          recoveryPointSequence: recoveryPoint.sequence,
+          blindOverwritePrevented: true,
+          restoreAborted: true
+        });
+      }
+
+      const restoredGeneration = fs.restore(candidate, { lease });
+      return Object.freeze({
+        status: 'restored',
+        target: Object.freeze({ ...target.reference }),
+        recoveryPoint: Object.freeze({
+          sequence: recoveryPoint.sequence,
+          generation: recoveryPoint.generation,
+          payload: recoveryPoint.payload,
+          sha256: recoveryPoint.sha256
+        }),
+        recoveryPointCreated:
+          recoveryPoint.sequence !== plan.expectedCanonicalSequence ||
+          recoveryPoint.generation !== plan.expectedCanonicalGeneration,
+        recoveryPointReused:
+          recoveryPoint.sequence === plan.expectedCanonicalSequence &&
+          recoveryPoint.generation === plan.expectedCanonicalGeneration,
+        published: Object.freeze({
+          sequence: published.sequence,
+          generation: published.generation,
+          payload: published.payload,
+          sha256: published.sha256
+        }),
+        restoredGeneration,
+        riskDeclared: false,
+        blindOverwritePrevented: true
+      });
+    } finally {
+      lease.release();
+    }
+  }
+
+  async #readCheckpointSnapshotUnlocked(reference,{requireRecoveryRoot=false}={}) {
+    assertOc(
+      reference &&
+      Number.isInteger(reference.sequence) &&
+      reference.sequence >= 1 &&
+      Number.isInteger(reference.generation) &&
+      reference.generation >= 0 &&
+      typeof reference.payload === 'string' &&
+      reference.payload.length > 0 &&
+      typeof reference.sha256 === 'string' &&
+      reference.sha256.length > 0,
+      ErrorCodes.INVALID_ARGUMENT,
+      'Checkpoint reference must include sequence, generation, payload and sha256'
+    );
+    if(requireRecoveryRoot){
+      const roots=[
+        parseManifest(await readText(this.#directory,MANIFEST_A),'a'),
+        parseManifest(await readText(this.#directory,MANIFEST_B),'b')
+      ].filter(Boolean);
+      const retained=roots.some(root=>
+        root.sequence===reference.sequence&&
+        root.generation===reference.generation&&
+        root.payload===reference.payload&&
+        root.sha256===reference.sha256
+      );
+      if(!retained){
+        throw ocError(ErrorCodes.NOT_FOUND,'Checkpoint is not a retained canonical or fallback recovery root',{
+          sequence:reference.sequence,
+          generation:reference.generation,
+          payload:reference.payload,
+          retainedRecoveryRoot:false
+        });
+      }
+    }
+    const text = await readText(this.#payloads, reference.payload);
+    if (text === null) {
+      throw ocError(ErrorCodes.NOT_FOUND, 'Checkpoint payload no longer exists', {
+        sequence: reference.sequence,
+        generation: reference.generation,
+        payload: reference.payload
+      });
+    }
+    const digest = await sha256Hex(text);
+    if (digest !== reference.sha256) {
+      throw ocError(ErrorCodes.IMPORT_INVALID, 'Checkpoint payload digest does not match its reference', {
+        sequence: reference.sequence,
+        generation: reference.generation,
+        payload: reference.payload
+      });
+    }
+    let snapshot;
+    try {
+      snapshot = JSON.parse(text);
+    } catch (error) {
+      throw ocError(ErrorCodes.IMPORT_INVALID, 'Checkpoint payload is not valid JSON', {
+        sequence: reference.sequence,
+        payload: reference.payload,
+        cause: error?.message ?? String(error)
+      });
+    }
+    assertOc(
+      snapshot?.version === 1 &&
+      snapshot.generation === reference.generation &&
+      Array.isArray(snapshot.entries),
+      ErrorCodes.IMPORT_INVALID,
+      'Checkpoint payload shape disagrees with its reference',
+      { sequence: reference.sequence, generation: reference.generation, payload: reference.payload }
+    );
+    return Object.freeze({
+      reference: Object.freeze({
+        sequence: reference.sequence,
+        generation: reference.generation,
+        payload: reference.payload,
+        sha256: reference.sha256
+      }),
+      snapshot: Object.freeze({
+        version: 1,
+        generation: snapshot.generation,
+        entries: structuredClone(snapshot.entries)
+      })
     });
   }
 

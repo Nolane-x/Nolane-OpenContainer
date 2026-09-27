@@ -316,6 +316,10 @@
     "p3-low-storage-cleanup": {
       "ref": "CI #491 / PR #52 implementation head 3debec759ac83f5fd5582a211659bb1be623de68",
       "note": "P3-14 real-browser low-storage court: temporary, derived/rebuildable, public package cache and checkpoint garbage are reclaimed before hard-protected canonical source/checkpoints. Impossible target remains unsatisfied rather than deleting canonical roots."
+    },
+    "p3-safe-checkpoint-restore": {
+      "ref": "CI #509 + dedicated CI #512 / PR #53",
+      "note": "P3-15 real-browser restore court: pre-restore recovery point, new-generation rollback publication, local working-generation guard, canonical-sequence CAS, cross-context conflict rejection, quota risk declaration and retained fallback after reopen."
     }
   },
   "overrides": [
@@ -1845,6 +1849,14 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p18-evidence-assurance",
+      "closure_met": true
+    },
+    {
+      "id": "P3-15",
+      "domain": "P3",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p3-safe-checkpoint-restore",
       "closure_met": true
     }
   ]

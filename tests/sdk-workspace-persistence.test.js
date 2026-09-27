@@ -207,3 +207,64 @@ test('P3 SDK boot fails closed when canonical metadata exists but all recovery p
     }
   );
 });
+
+
+test('P3 SDK planned workspace restore creates a recoverable safety checkpoint before rollback',async()=>{
+  const root=new FakeDirectoryHandle();
+  const locks=new FakeLockManager();
+  const profile={root,directoryName:'sdk-safe-restore',lockManager:locks};
+
+  const runtime=await OpenContainer.boot({workspacePersistence:profile});
+  runtime.mount({'project.txt':'old','unrelated.txt':'base'});
+  const target=await runtime.persistWorkspace();
+
+  runtime.fs.beginTransaction()
+    .writeFile('project.txt','current')
+    .writeFile('unrelated.txt','newer')
+    .commit();
+  const current=await runtime.persistWorkspace();
+
+  runtime.fs.beginTransaction()
+    .writeFile('unrelated.txt','unpersisted-newer')
+    .writeFile('later.txt','recover-me')
+    .commit();
+
+  const plan=await runtime.prepareWorkspaceRestore(target);
+  assert.equal(plan.expectedCanonicalSequence,current.sequence);
+  const receipt=await runtime.restoreWorkspaceCheckpoint(plan);
+
+  assert.equal(receipt.status,'restored');
+  assert.equal(receipt.recoveryPointCreated,true);
+  assert.equal(receipt.published.sequence,receipt.recoveryPoint.sequence+1);
+  assert.equal(runtime.fs.readFile('project.txt'),'old');
+  assert.equal(runtime.fs.readFile('unrelated.txt'),'base');
+  assert.equal(runtime.fs.exists('later.txt'),false);
+
+  const safety=await runtime.workspacePersistence.readCheckpoint(receipt.recoveryPoint);
+  const safetyFs=new (runtime.fs.constructor)();
+  safetyFs.restore(safety);
+  assert.equal(safetyFs.readFile('project.txt'),'current');
+  assert.equal(safetyFs.readFile('unrelated.txt'),'unpersisted-newer');
+  assert.equal(safetyFs.readFile('later.txt'),'recover-me');
+
+  await runtime.terminate();
+
+  const reopened=await OpenContainer.boot({workspacePersistence:profile});
+  assert.equal(reopened.fs.readFile('project.txt'),'old');
+  assert.equal(reopened.fs.readFile('unrelated.txt'),'base');
+  assert.equal(reopened.workspacePersistence.current.sequence,receipt.published.sequence);
+  await reopened.terminate();
+});
+
+test('P3 SDK safe restore APIs fail closed without workspace persistence',async()=>{
+  const runtime=await OpenContainer.boot();
+  await assert.rejects(
+    ()=>runtime.prepareWorkspaceRestore({}),
+    error=>error.code===ErrorCodes.INVALID_STATE
+  );
+  await assert.rejects(
+    ()=>runtime.restoreWorkspaceCheckpoint({}),
+    error=>error.code===ErrorCodes.INVALID_STATE
+  );
+  await runtime.terminate();
+});

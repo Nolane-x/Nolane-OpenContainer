@@ -32,7 +32,7 @@ function parentOf(path){const index=path.lastIndexOf('/');return index<=0?'/':pa
 function cloneEntry(entry){return entry.type==='file'?{...entry,data:new Uint8Array(entry.data)}:{...entry};}
 
 export class MemoryVFS {
-  #entries=new Map(); #generation=0; #readOnly=false; #readOnlyReason=null;
+  #entries=new Map(); #generation=0; #readOnly=false; #readOnlyReason=null; #mutationLease=null; #nextMutationLease=0;
   constructor(){
     this.#entries.set('/',{type:'dir'});
     this.#entries.set(WORKSPACE,{type:'dir'});
@@ -42,6 +42,42 @@ export class MemoryVFS {
   get generation(){return this.#generation;}
   get readOnly(){return this.#readOnly;}
   get readOnlyReason(){return this.#readOnlyReason;}
+  get mutationLease(){
+    return this.#mutationLease?Object.freeze({
+      id:this.#mutationLease.id,
+      generation:this.#mutationLease.generation,
+      reason:this.#mutationLease.reason
+    }):null;
+  }
+  acquireMutationLease({expectedGeneration=this.#generation,reason='exclusive-mutation'}={}){
+    assertOc(Number.isInteger(expectedGeneration)&&expectedGeneration>=0,ErrorCodes.INVALID_ARGUMENT,'Mutation lease expectedGeneration must be a non-negative integer');
+    if(this.#generation!==expectedGeneration){
+      throw ocError(ErrorCodes.STALE_GENERATION,'Working tree changed before exclusive mutation',{
+        expectedGeneration,
+        currentGeneration:this.#generation,
+        reason:String(reason)
+      });
+    }
+    assertOc(this.#mutationLease===null,ErrorCodes.INVALID_STATE,'Working tree already has an exclusive mutation lease',{
+      activeLease:this.#mutationLease?.id??null,
+      activeReason:this.#mutationLease?.reason??null
+    });
+    const id='vfs-lease-'+(++this.#nextMutationLease);
+    const state={id,generation:this.#generation,reason:String(reason),released:false};
+    this.#mutationLease=state;
+    const fs=this;
+    return Object.freeze({
+      id,
+      generation:state.generation,
+      reason:state.reason,
+      release(){
+        if(state.released)return false;
+        state.released=true;
+        if(fs.#mutationLease?.id===id)fs.#mutationLease=null;
+        return true;
+      }
+    });
+  }
   setReadOnly(value=true,reason='release-storage-compatibility'){
     assertOc(typeof value==='boolean',ErrorCodes.INVALID_ARGUMENT,'Read-only flag must be boolean');
     this.#readOnly=value;
@@ -106,8 +142,16 @@ export class MemoryVFS {
     entries.sort(([a],[b])=>a.localeCompare(b));
     return Object.freeze({version:1,generation:this.#generation,entries});
   }
-  restore(snapshot){
+  restore(snapshot,{lease=null}={}){
     assertOc(snapshot&&snapshot.version===1&&Array.isArray(snapshot.entries),ErrorCodes.IMPORT_INVALID,'Invalid VFS snapshot');
+    if(this.#mutationLease){
+      assertOc(
+        lease&&lease.id===this.#mutationLease.id,
+        ErrorCodes.INVALID_STATE,
+        'Working tree restore requires the active mutation lease',
+        {activeLease:this.#mutationLease.id,providedLease:lease?.id??null}
+      );
+    }
     const next=new Map([['/',{type:'dir'}],[WORKSPACE,{type:'dir'}],['/opencontainer',{type:'dir'}],[INTERNAL,{type:'dir'}]]);
     const restoredPaths=new Set();
     for(const [path,entry] of snapshot.entries){
@@ -139,6 +183,13 @@ export class MemoryVFS {
     return resolved;
   }
   _commit(baseGeneration,operations){
+    if(this.#mutationLease){
+      throw ocError(ErrorCodes.INVALID_STATE,'Working tree mutation is blocked by an exclusive mutation lease',{
+        lease:this.#mutationLease.id,
+        reason:this.#mutationLease.reason,
+        generation:this.#generation
+      });
+    }
     if(this.#readOnly)throw ocError(ErrorCodes.STORAGE_READ_ONLY,'Workspace is read-only under release storage compatibility policy',{reason:this.#readOnlyReason,generation:this.#generation});
     if(baseGeneration!==this.#generation)throw ocError(ErrorCodes.STALE_GENERATION,'VFS transaction is stale',{baseGeneration,currentGeneration:this.#generation});
     const next=new Map([...this.#entries].map(([path,entry])=>[path,cloneEntry(entry)]));

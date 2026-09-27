@@ -116,6 +116,16 @@
       "signature": "runtime.persistWorkspace() -> Promise<CheckpointReceipt>"
     },
     {
+      "name": "prepareWorkspaceRestore",
+      "kind": "method",
+      "signature": "runtime.prepareWorkspaceRestore(checkpoint) -> Promise<WorkspaceRestorePlan>"
+    },
+    {
+      "name": "restoreWorkspaceCheckpoint",
+      "kind": "method",
+      "signature": "runtime.restoreWorkspaceCheckpoint(plan) -> Promise<WorkspaceRestoreReceipt>"
+    },
+    {
       "name": "collectWorkspaceGarbage",
       "kind": "method",
       "signature": "runtime.collectWorkspaceGarbage(options?) -> Promise<GCReceipt>"
