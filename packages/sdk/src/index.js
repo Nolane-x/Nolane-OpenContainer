@@ -1,5 +1,5 @@
 import { ErrorCodes, assertOc } from '../../protocol/src/index.js';
-import { DiagnosticJournal } from '../../diagnostics/src/index.js';
+import { DiagnosticJournal, buildSupportBundle, probeDeploymentHeaders, supportPreview } from '../../diagnostics/src/index.js';
 import { ResourceGovernor } from '../../resources/src/index.js';
 import { MemoryVFS, OpfsCheckpointAuthority } from '../../vfs/src/index.js';
 import { ProcessSupervisor } from '../../process/src/index.js';
@@ -49,8 +49,13 @@ export class OpenContainer {
   async boot(){
     if(this._workspacePersistenceOptions){
       const authority=await new OpfsCheckpointAuthority(this._workspacePersistenceOptions).open();
-      await authority.restoreInto(this.fs);
+      const restoredGeneration=await authority.restoreInto(this.fs);
       this.workspacePersistence=authority;
+      this.diagnostics.record('workspace.recovery',{
+        status:authority.current?'restored':'empty',
+        sequence:authority.current?.sequence??null,
+        generation:authority.current?.generation??restoredGeneration??null
+      });
     }
     if(this._packagePersistenceOptions){
       const store=await new OpfsPackageContentStore(this._packagePersistenceOptions).open();
@@ -94,32 +99,37 @@ export class OpenContainer {
       packagePersistence:this.packageContentStore?Object.freeze({hydratedCount:this.packageContentStore.hydratedCount??0,crossContextLocking:this.packageContentStore.crossContextLocking}):null
     });
   }
-  supportBundle(error=null){
-    const diagnostics=this.diagnostics.list().map((entry)=>Object.freeze({seq:entry.seq,type:supportDiagnosticType(entry.type)}));
-    const errorReceipt=error?Object.freeze({
-      name:typeof error?.name==='string'?error.name:'Error',
-      code:typeof error?.code==='string'?error.code:'OC_INTERNAL'
-    }):null;
-    return Object.freeze({
-      schema:'opencontainer.support-bundle.v0.1',
-      profile:Object.freeze({
-        profileId:OpenContainerProductionProfile.profileId,
-        runtimeVersion:OpenContainerProductionProfile.runtime.version,
-        productionClosed:OpenContainerProductionProfile.productionClosed
-      }),
-      status:this.status(),
-      resources:Object.freeze({
-        limits:this.resources.limits,
-        usage:this.resources.usage
-      }),
-      error:errorReceipt,
-      diagnostics:Object.freeze(diagnostics),
-      privacy:Object.freeze({
-        workspaceContentsIncluded:false,
-        diagnosticDetailsIncluded:false,
-        secretsIncluded:false
-      })
+  supportBundlePreview(options={}){
+    return supportPreview({
+      includeAiContent:options.includeAiContent===true,
+      deploymentProbe:typeof options.deploymentBaseUrl==='string',
+      packageGraph:true,
+      storage:true
     });
+  }
+  supportBundle(error=null,options={}){
+    return buildSupportBundle({
+      profile:OpenContainerProductionProfile,
+      status:this.status(),
+      resources:this.resources,
+      diagnostics:this.diagnostics,
+      packages:this.packages,
+      preview:this.preview,
+      fs:this.fs,
+      workspacePersistence:this.workspacePersistence,
+      packageContentStore:this.packageContentStore,
+      error,
+      includeAiContent:options.includeAiContent===true,
+      aiContent:options.aiContent??null,
+      deployment:options.deployment??null
+    });
+  }
+  async createSupportBundle(error=null,options={}){
+    let deployment=options.deployment??null;
+    if(!deployment&&typeof options.deploymentBaseUrl==='string'){
+      deployment=await probeDeploymentHeaders(options.deploymentBaseUrl,{fetchImpl:options.fetchImpl??globalThis.fetch});
+    }
+    return this.supportBundle(error,{...options,deployment});
   }
   async persistWorkspace(){
     this._kernel.assertReady();
