@@ -16,13 +16,15 @@ function gitHead(){
   return result.stdout.trim();
 }
 
-function activeException(policy,output,scope){
+function activeHarnessException(policy,output,scope){
   const today=Date.now();
+  const allowed=new Set(policy?.exceptionPolicy?.allowedReasonCodes??[]);
   for(const item of policy.knownFlakeExceptions??[]){
     if(item.scope!==scope)continue;
     if(typeof item.issue!=='string'||!item.issue.trim())continue;
     if(typeof item.expires!=='string'||!item.expires.trim())continue;
     if(typeof item.signature!=='string'||!item.signature)continue;
+    if(!allowed.has(item.reasonCode)||!String(item.reasonCode).startsWith('HARNESS_'))continue;
     const expires=Date.parse(item.expires+'T23:59:59Z');
     if(!Number.isFinite(expires)||expires<today)continue;
     if(output.includes(item.signature))return item;
@@ -38,6 +40,7 @@ function tail(text,maxLines=40){
 const policy=JSON.parse(await readFile(join(repoRoot,'release/CRITICAL-FLAKE-POLICY.v0.1.json'),'utf8'));
 const config=policy.contract;
 if(policy.schema!=='opencontainer.critical-flake-policy.v0.1')throw new Error('critical flake policy schema drifted');
+if(policy.exceptionPolicy?.requireReasonCode!==true)throw new Error('critical flake exclusions must require reason codes');
 if(!Number.isInteger(config.iterations)||config.iterations<config.minimumIterations)throw new Error('critical contract iteration count is below frozen minimum');
 if(!Array.isArray(config.testFiles)||config.testFiles.length<config.minimumTestFiles)throw new Error('critical contract test set is below frozen minimum');
 
@@ -49,6 +52,7 @@ const sourceCommit=gitHead();
 const runs=[];
 let unexplainedFailures=0;
 let explainedFailures=0;
+let excludedHarnessFailures=0;
 
 for(let iteration=1;iteration<=config.iterations;iteration++){
   const started=Date.now();
@@ -60,15 +64,18 @@ for(let iteration=1;iteration<=config.iterations;iteration++){
   const durationMs=Date.now()-started;
   const output=(result.stdout??'')+(result.stderr??'');
   const outputSha256=sha256(output);
+  const logFile='contract-iteration-'+iteration+'.log';
+  await writeFile(join(outputDir,logFile),output);
   let classification='PASS';
   let exception=null;
   if(result.status!==0){
-    exception=activeException(policy,output,'contract');
+    exception=activeHarnessException(policy,output,'contract');
     if(exception){
-      classification='EXPLAINED-FAILURE';
+      classification='HARNESS-EXCLUDED';
       explainedFailures++;
+      excludedHarnessFailures++;
     }else{
-      classification='UNEXPLAINED-FAILURE';
+      classification='OUTCOME-FAILURE';
       unexplainedFailures++;
     }
   }
@@ -78,7 +85,9 @@ for(let iteration=1;iteration<=config.iterations;iteration++){
     durationMs,
     classification,
     outputSha256,
+    logFile,
     exceptionId:exception?.id??null,
+    reasonCode:exception?.reasonCode??null,
     failureTail:result.status===0?null:tail(output)
   }));
 }
@@ -94,6 +103,7 @@ const receipt=Object.freeze({
   passedIterations:runs.filter((item)=>item.exitCode===0).length,
   failedIterations:runs.filter((item)=>item.exitCode!==0).length,
   explainedFailures,
+  excludedHarnessFailures,
   unexplainedFailures,
   knownExceptionCount:(policy.knownFlakeExceptions??[]).filter((item)=>item.scope==='contract').length,
   status:unexplainedFailures===0?'PASS':'FAIL',
@@ -102,4 +112,4 @@ const receipt=Object.freeze({
 
 await writeFile(join(outputDir,'contract-receipt.json'),JSON.stringify(receipt,null,2)+'\n');
 console.log(JSON.stringify(receipt,null,2));
-if(unexplainedFailures>0)process.exitCode=1;
+if(receipt.status!=='PASS')process.exitCode=1;

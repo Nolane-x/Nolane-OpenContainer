@@ -1,0 +1,10 @@
+{
+  "schema": "opencontainer.evidence-corpus-lock.v1.0",
+  "frozenAt": "2026-09-27",
+  "corpusPath": "compat/REAL-REPOSITORY-CORPUS.v0.1.json",
+  "corpusSchema": "opencontainer.compatibility-corpus.v0.1",
+  "corpusFrozenAt": "2026-09-26",
+  "gitBlobSha": "c8cc2c3d86074148042e9111d7de5e02805a5f86",
+  "caseCount": 13,
+  "changePolicy": "Any byte change requires a new evidence corpus-lock version and an explicit corpus-version/change record before the changed corpus can be used for promotion evidence."
+}

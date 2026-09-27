@@ -1,0 +1,140 @@
+{
+  "schema": "opencontainer.evidence-assurance-policy.v1.0",
+  "frozenAt": "2026-09-27",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P18",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "evidenceLevels": [
+    {
+      "id": "SOURCE",
+      "rank": 0,
+      "executable": false,
+      "closureEligible": false
+    },
+    {
+      "id": "DOCUMENTATION",
+      "rank": 0,
+      "executable": false,
+      "closureEligible": false
+    },
+    {
+      "id": "MODEL",
+      "rank": 1,
+      "executable": false,
+      "closureEligible": false
+    },
+    {
+      "id": "LOCAL",
+      "rank": 2,
+      "executable": true,
+      "closureEligible": false
+    },
+    {
+      "id": "UNIT",
+      "rank": 3,
+      "executable": true,
+      "closureEligible": false
+    },
+    {
+      "id": "INTEGRATION",
+      "rank": 4,
+      "executable": true,
+      "closureEligible": true
+    },
+    {
+      "id": "BROWSER",
+      "rank": 5,
+      "executable": true,
+      "closureEligible": true
+    },
+    {
+      "id": "DEVICE",
+      "rank": 6,
+      "executable": true,
+      "closureEligible": true
+    },
+    {
+      "id": "CROSS-BROWSER",
+      "rank": 7,
+      "executable": true,
+      "closureEligible": true
+    },
+    {
+      "id": "RELEASE-VERIFIED",
+      "rank": 8,
+      "executable": true,
+      "closureEligible": true
+    },
+    {
+      "id": "BLOCKED-HARNESS",
+      "rank": -1,
+      "executable": false,
+      "closureEligible": false
+    }
+  ],
+  "evidenceKinds": [
+    "SOURCE",
+    "DOCUMENTATION",
+    "EXECUTABLE",
+    "MIXED"
+  ],
+  "promotionToMinimumLevel": {
+    "IMPLEMENTED": "SOURCE",
+    "PASS-LOCAL": "LOCAL",
+    "PASS-UNIT": "UNIT",
+    "PASS-INTEGRATION": "INTEGRATION",
+    "PASS-BROWSER": "BROWSER",
+    "RELEASE-VERIFIED": "RELEASE-VERIFIED"
+  },
+  "exclusionReasonCodes": [
+    "HARNESS_ENVIRONMENT_UNAVAILABLE",
+    "HARNESS_INFRASTRUCTURE_FAILURE",
+    "HARNESS_CORRUPT_FIXTURE",
+    "HARNESS_TOOLING_BUG"
+  ],
+  "exclusionPolicy": {
+    "onlyHarnessInvalidMayBeExcluded": true,
+    "applicationFailureIsOutcomeData": true,
+    "runtimeFailureIsOutcomeData": true,
+    "unknownFailureIsOutcomeData": true,
+    "requireIssue": true,
+    "requireExpiry": true,
+    "requireExactSignature": true,
+    "requireReasonCode": true
+  },
+  "decisiveBundle": {
+    "requiredFiles": [
+      "environment.json",
+      "raw-results.json",
+      "summary.json",
+      "logs.json",
+      "failure-cases.json",
+      "corpus-lock.json",
+      "negative-results.json"
+    ],
+    "digest": "sha256",
+    "manifest": "manifest.json",
+    "manifestSelfHash": false
+  },
+  "benchmarkValidityThreats": [
+    "warmup",
+    "cache",
+    "cpuThrottling",
+    "gc",
+    "thermal",
+    "network",
+    "devtools"
+  ],
+  "criticalClaimPolicy": {
+    "minimumClosureLevel": "INTEGRATION",
+    "localClaimsMustBeReproducedBeforeRelease": true,
+    "sourceOrDocumentationCannotCloseCriticalGate": true,
+    "blockedHarnessCannotPass": true
+  },
+  "finalReleaseDecision": {
+    "gateCount": 304,
+    "requireEveryGateReconciled": true,
+    "requireEveryGateClosed": true,
+    "requireProductionClosedBoolean": true,
+    "aggregatePercentageCannotOverrideOpenGate": true
+  }
+}

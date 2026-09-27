@@ -1,0 +1,351 @@
+{
+  "schema": "opencontainer.evidence-registry.v1.0",
+  "frozenAt": "2026-09-27",
+  "rule": "Every ledger evidence key has an explicit kind and evidence level. Source/documentation confidence is never silently promoted into executable closure evidence.",
+  "entries": [
+    {
+      "key": "oracle",
+      "kind": "SOURCE",
+      "level": "SOURCE",
+      "status": "SOURCE-ONLY",
+      "ref": "package.json",
+      "note": "Node 24.21.0 / npm 11.19.0 pinned; release freeze still open"
+    },
+    {
+      "key": "chrome",
+      "kind": "DOCUMENTATION",
+      "level": "DOCUMENTATION",
+      "status": "REFERENCE",
+      "ref": "docs/implementation/STATUS.md",
+      "note": "clean Chrome browser-product-path evidence"
+    },
+    {
+      "key": "c1",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #197 / C1 merge 47f089e020b5b412f6a4f0880718b8b64963410a",
+      "note": "Vite 8.3 production build court"
+    },
+    {
+      "key": "c2",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #197 / C2 merge 118c84660aa5bae7a7d8d991559cad9ce07a068b",
+      "note": "Vite dev/HMR/restart/SW/dep-opt court"
+    },
+    {
+      "key": "opfs-locks",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #201 / c45ce8e57cb3d5b20c5e78f1dd65aaf57469037a",
+      "note": "cross-context Web Locks + stale writer rejection"
+    },
+    {
+      "key": "opfs-gc",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #203 / PR #5",
+      "note": "two-slot-aware unreachable payload GC"
+    },
+    {
+      "key": "storage",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #205/#207",
+      "note": "storage telemetry, quota preflight, GC retry, fail-closed pressure"
+    },
+    {
+      "key": "workspace-sdk",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #233 / PR #13",
+      "note": "public SDK OPFS workspace persistence profile"
+    },
+    {
+      "key": "workspace-corrupt",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #239 / PR #15",
+      "note": "corrupt-newest fallback, republish and reopen"
+    },
+    {
+      "key": "package-corpus",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #225/#241/#242",
+      "note": "browser npm package corpus: es-module-lexer + nanoid conditional exports"
+    },
+    {
+      "key": "package-policy",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #220",
+      "note": "peer/optional/lifecycle policy"
+    },
+    {
+      "key": "package-integrity",
+      "kind": "SOURCE",
+      "level": "SOURCE",
+      "status": "SOURCE-ONLY",
+      "ref": "packages/package-env",
+      "note": "SRI/content authority has no default install-anyway path"
+    },
+    {
+      "key": "archive-security",
+      "kind": "EXECUTABLE",
+      "level": "LOCAL",
+      "status": "PARTIAL",
+      "ref": "tests/package*.test.js",
+      "note": "hostile archive/path/link/integrity cases; release fuzz review still open"
+    },
+    {
+      "key": "node24",
+      "kind": "EXECUTABLE",
+      "level": "LOCAL",
+      "status": "PARTIAL",
+      "ref": "tests/node24-resolver-differential.test.js",
+      "note": "selected exact Node 24.21.0 resolver differential"
+    },
+    {
+      "key": "node-boundary",
+      "kind": "SOURCE",
+      "level": "SOURCE",
+      "status": "SOURCE-ONLY",
+      "ref": "packages/package-env/src/browser-node-compat.js",
+      "note": "explicit unsupported browser/native boundaries"
+    },
+    {
+      "key": "toolchain",
+      "kind": "DOCUMENTATION",
+      "level": "DOCUMENTATION",
+      "status": "REFERENCE",
+      "ref": "docs/implementation/STATUS.md",
+      "note": "exact Rolldown/LightningCSS browser artifact path promoted"
+    },
+    {
+      "key": "toolchain-profile",
+      "kind": "EXECUTABLE",
+      "level": "INTEGRATION",
+      "status": "PASS",
+      "ref": "toolchain coherence contract + implementation",
+      "note": "exact profile / no silent skew"
+    },
+    {
+      "key": "process",
+      "kind": "EXECUTABLE",
+      "level": "LOCAL",
+      "status": "PARTIAL",
+      "ref": "tests runtime/process suites",
+      "note": "selected terminal/race semantics; release campaign incomplete"
+    },
+    {
+      "key": "errors",
+      "kind": "SOURCE",
+      "level": "SOURCE",
+      "status": "SOURCE-ONLY",
+      "ref": "packages/protocol",
+      "note": "stable machine errors implemented"
+    },
+    {
+      "key": "recovery",
+      "kind": "EXECUTABLE",
+      "level": "LOCAL",
+      "status": "PARTIAL",
+      "ref": "research + implementation tests",
+      "note": "no-silent-empty recovery rule partially reconciled"
+    },
+    {
+      "key": "guest-isolation",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #244 / PR #17",
+      "note": "deny-by-default guest browser capability membrane"
+    },
+    {
+      "key": "guest-timeout",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #248 / PR #18",
+      "note": "runaway guest hard timeout termination"
+    },
+    {
+      "key": "worker-budget",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #251 / PR #19",
+      "note": "ResourceGovernor worker lease enforcement"
+    },
+    {
+      "key": "guest-output",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #268 / PR #22",
+      "note": "bounded guest-to-host result transfer; heap isolation still open"
+    },
+    {
+      "key": "sdk",
+      "kind": "SOURCE",
+      "level": "SOURCE",
+      "status": "SOURCE-ONLY",
+      "ref": "packages/sdk/src/index.js",
+      "note": "small SDK implemented; release freeze/types/examples incomplete"
+    },
+    {
+      "key": "adr",
+      "kind": "DOCUMENTATION",
+      "level": "DOCUMENTATION",
+      "status": "REFERENCE",
+      "ref": "docs/decisions",
+      "note": "initial ADR set exists; coverage incomplete"
+    },
+    {
+      "key": "sdk-s7",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #270 / ce5b2bf496700a1f91971a665eb69ed5efdbac9e",
+      "note": "public SDK snapshot/restore + pinned streaming export/import + teardown passed Chrome product path"
+    },
+    {
+      "key": "production-profile",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #277 / aca2d12ddb729b90bd196731aebb8e54a8a68dbb",
+      "note": "canonical SDK production profile equals published JSON in Chrome; productionClosed remains false"
+    },
+    {
+      "key": "hosting-self-check",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #281 / 09abff58f289758f06c7b75842cdb1331dc2a28a",
+      "note": "executable hosting/header self-check passed promoted playground topology and emitted exact failures against a deliberately broken server"
+    },
+    {
+      "key": "compat-corpus",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #286 / fd8474f3cafe636864253c50d4a9b863266b6d09",
+      "note": "13-repository frozen corpus; online commit/lockfile/license/source pin verification; npm lock v3 graph compile; first pinned real-repository Chrome execution (yoctocolors)"
+    },
+    {
+      "key": "compat-corpus-repeated",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #300 / a3dea9b9948eea49d077261ebaef1478a275ae6c",
+      "note": "9 published corpus tarballs byte-verified against pinned SHA-512/SHA-1; yoctocolors+clsx each executed twice on fresh browser publication/Worker realms with stale-session rejection; exact npm-published clsx@2.1.1 tarball passed SRI -> install -> exports resolve -> isolated Worker execution"
+    },
+    {
+      "key": "compat-governance",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #309 / ba352ff4b1588d06130afe2d06f4dc834334ef8f",
+      "note": "fail-closed Node 24 oracle exception registry + frozen Alpha/Beta/RC/1.0 thresholds + machine evaluator; current level Alpha; Chrome regressions green"
+    },
+    {
+      "key": "distribution-certification",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #314 / 76681847318201aaf942bd1376a95c090fb9070d",
+      "note": "publish-equivalent @nolane/opencontainer tarball installed into clean consumer; public SDK, bundled example and entire Chrome browser-product-path executed from installed artifact; external registry/release publication receipt still absent"
+    },
+    {
+      "key": "release-evidence",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #319 / 144299359225975dc8cf54a10c7704c992ff2215",
+      "note": "immutable-action CI generated reproducible installed-distribution artifact plus independent checksums, SPDX 2.3 SBOM, in-toto/SLSA provenance, categorized dependency/license inventory and content-policy scan; 7 evidence files archived 90 days; unsigned and not release-published"
+    },
+    {
+      "key": "service-worker-release-compatibility",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #331 / 7f5f28395c3d533e2b9df2f70edd6cb693106ef0",
+      "note": "real Chrome installed-distribution court proved compatibility query -> explicit activate -> activated re-query -> explicit claim; first bridge compatibility-authorized, second bridge existing-compatible; no unconditional skipWaiting/clients.claim"
+    },
+    {
+      "key": "release-preflight",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #338 / 522f6501cd355e96c5642dfe8f1544ec46e98fac",
+      "note": "machine-readable canary→beta→rc→stable policy; SemVer/profile coherence; reviewed-change API/storage/security changelog generation; exact GO/REDESIGN/KILL decision; current canary GO; stable fail-closed unit court; decision/changelog archived 90 days; installed-distribution Chrome path remains green"
+    },
+    {
+      "key": "release-storage-migration",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #345 / 11ee7759ca055a8ccddebd0957f2946979ffc084",
+      "note": "real Chrome OPFS dry-run + adjacent migration + four crash phases + dual recovery roots + lazy versioned derived-cache namespaces + non-destructive rollback + VFS-enforced emergency read-only mode"
+    },
+    {
+      "key": "hotfix-deprecation-governance",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #352 / 11bbf821b04ee87ca150d2d3c51abdc4c72af6a6",
+      "note": "machine-enforced hotfix provenance/migration discipline plus 2-stable-release/90-day deprecation windows and audited high/critical security emergency exception; full installed-distribution Chrome regression remained green"
+    },
+    {
+      "key": "critical-flake-campaign",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #356 / tested pull-request merge checkout",
+      "note": "independent zero-tolerance flake evidence: 5/5 critical contract iterations over 12 files (60 executions) + 2/2 full installed-distribution Chrome product-path iterations; zero explained/unexplained failures; separate 90-day archived receipts; stable preflight requires fresh commit-matched receipts"
+    },
+    {
+      "key": "p15-developer-contracts",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #368 / d75449a0df9a33ea8f422526b74d29c8dfe7d1f4",
+      "note": "docs-as-contract + installed distribution evidence: public SDK/export privacy contract, generated API/error refs, 44 stable error outcomes, limitations/storage/security/AI/migration/troubleshooting guides, happy+failure examples, installed hosting self-check, privacy-minimized support bundle; 2/2 full installed-distribution Chrome paths passed with zero unexplained failures"
+    },
+    {
+      "key": "p8-production-diagnostics",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #379 / 503988b4eaa3d73644fa98726548a314f92b4060",
+      "note": "production diagnostics/support/privacy court: 243/243 contract tests; bounded raw/duplicate/terminal diagnostics; deterministic fingerprints; support preview; generated-secret redaction; AI default-out; browser/header/package/storage identity; exact recovery/migration/Service Worker update outcomes; read-only bundle generation; zero-remote-telemetry default; receipt-first issue template; deterministic installed diagnostic command; 2/2 full installed-distribution Chrome product paths with zero unexplained failures"
+    },
+    {
+      "key": "p0-product-scope",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #385 / PR #39 head 6f560a5d96521f0ec2071e8ae0dea3673cdab571",
+      "note": "machine-enforced P0 1.0 scope court: exact nine Core surfaces; Node 24.21.0/npm 11.19.0 oracle; named Chrome 153/Ubuntu 24.04 x64 evidence profile; unsupported/out-of-Core boundaries; six-entry scope-debt register with owner/removal/revisit rules; release-blocking severity taxonomy; profile-bound public claim registry; empty fail-closed critical-waiver registry; contract court PASS; browser profile probe PASS on Google Chrome 153.0.8010.52; 2/2 full installed-distribution Chrome product paths PASS; zero unexplained browser failures; production_closed remains false"
+    },
+    {
+      "key": "p5-network-preview",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #398 / PR #40 head fb9e45ac36f17a42c01b1769b37a968d1ed0944a",
+      "note": "P5 18-gate network/secret/preview court: Chrome 153/Ubuntu 24.04 x64 declared profile; real CORS/LNA/stream/abort/provider fixtures; canonical URL + redirect capability enforcement; authority-side opaque secrets; diagnostics redaction; virtual HTTP/SW preview isolation; workspace/session/version identity proof with compatibility-ID v2; four frozen network profiles; policy hash/version; contract PASS + 2/2 installed-distribution Chrome paths PASS, zero unexplained failures; production_closed remains false"
+    }
+  ]
+}

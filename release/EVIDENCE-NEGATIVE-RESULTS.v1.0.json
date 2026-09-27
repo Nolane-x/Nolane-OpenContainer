@@ -1,0 +1,41 @@
+{
+  "schema": "opencontainer.negative-results.v1.0",
+  "frozenAt": "2026-09-27",
+  "appendOnly": true,
+  "rule": "Negative results, falsified hypotheses and harness-invalid failures remain visible. Corrections add a superseding record or resolution; they do not delete the original outcome.",
+  "results": [
+    {
+      "id": "NEG-001",
+      "date": "2026-09-26",
+      "classification": "HYPOTHESIS_FALSIFIED",
+      "hypothesis": "The retained Vite dependency-optimizer path can run under the strict guest CSP without JavaScript unsafe-eval.",
+      "outcome": "FAIL",
+      "evidence": "non-merged diagnostic CI #257",
+      "finding": "The dependency-optimizer court failed without JavaScript unsafe-eval and passed when unsafe-eval was admitted only to the isolated toolchain profile.",
+      "resolution": "Keep the default strict profile and isolate unsafe-eval to the toolchain authority.",
+      "exclusionReasonCode": null
+    },
+    {
+      "id": "NEG-002",
+      "date": "2026-09-27",
+      "classification": "HARNESS_INVALID",
+      "hypothesis": "The initial P5 network policy unit helper correctly observes synchronous fail-closed authorization errors.",
+      "outcome": "HARNESS-FAIL",
+      "evidence": "CI #391 / PR #40",
+      "finding": "The helper used assert.rejects as though authorize() failed asynchronously; the runtime correctly threw synchronously.",
+      "resolution": "Wrap the action in Promise.resolve().then(action) without weakening synchronous fail-closed runtime semantics.",
+      "exclusionReasonCode": "HARNESS_TOOLING_BUG"
+    },
+    {
+      "id": "NEG-003",
+      "date": "2026-09-27",
+      "classification": "HARNESS_INVALID",
+      "hypothesis": "The initial hostile srcdoc preview fixture executes and reports its isolation result.",
+      "outcome": "HARNESS-FAIL",
+      "evidence": "CI #395 / PR #40",
+      "finding": "The fixture emitted an escaped closing script token into actual HTML, so the HTML parser never closed the script and no postMessage occurred.",
+      "resolution": "Emit a real closing script tag in the external harness source; keep sandbox isolation requirements unchanged.",
+      "exclusionReasonCode": "HARNESS_CORRUPT_FIXTURE"
+    }
+  ]
+}

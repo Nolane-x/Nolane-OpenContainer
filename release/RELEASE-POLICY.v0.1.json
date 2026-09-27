@@ -95,7 +95,8 @@
         "P14-14",
         "P14-15",
         "P14-18"
-      ]
+      ],
+      "requireCompleteGateLedger": true
     }
   ]
 }
