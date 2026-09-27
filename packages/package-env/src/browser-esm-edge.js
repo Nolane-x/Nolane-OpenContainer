@@ -142,10 +142,10 @@ export class BrowserEsmServiceWorkerBridge {
     const port = event.ports?.[0];
     if (!data || data.type !== 'opencontainer:esm-fetch' || !port) return;
 
-    if (data.session !== this.session) {
-      // Multiple publication bridges may coexist on one Window while a new
-      // generation/session is promoted. A non-owner must stay silent so it
-      // cannot win the shared MessagePort race ahead of the actual owner.
+    if (data.session !== this.session || String(data.generation ?? '') !== String(this.#publication.generation ?? '')) {
+      // Multiple publication bridges/generations may coexist on one Window.
+      // A non-owner must stay silent so it cannot win the shared MessagePort
+      // race ahead of the authority matching both session and workspace generation.
       return;
     }
 
