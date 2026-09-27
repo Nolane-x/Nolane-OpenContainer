@@ -296,6 +296,10 @@
     "p7-resource-wave1": {
       "ref": "CI #428 / PR #47 head 506afe66d65c1df71d9fd9e585e1a82bda428ce1",
       "note": "P7 wave-1 executable resource court: hardwareConcurrency is clamped hint-only worker policy; browser quota rejects over-budget Worker and proves lease reuse; Worker RPC task/in-flight leases are bounded; source-map retained cache defaults to zero; 140/140 critical executions + 2/2 installed Chrome paths; resource measurement receipt records Chrome/Ubuntu/device identity, 45.200s/35.285s full-path durations and all P18 host-noise validity threats. No weak-device, 4/8 GiB, 8-hour, thermal, cross-browser or latency-floor claim."
+    },
+    "p7-resource-wave2": {
+      "ref": "CI #432 / PR #48 head 0f71f7492ae0175d929c98c6e032dd4cf522d728",
+      "note": "P7 wave-2 executable resource court: global production-source retention audit closes bounded source-map retention; pressure epochs pause background admission, invalidate stale background RPC publication and permit fresh work after resume; contract, CodeQL and 2x installed Chrome product path all passed. Stage timings are evidence only for P7-02..05 and do not close device/plateau/cross-browser floors."
     }
   },
   "overrides": [
@@ -838,10 +842,18 @@
     {
       "id": "P7-08",
       "domain": "P7",
-      "state": "PARTIAL",
+      "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
-      "evidence": "p7-resource-wave1",
-      "closure_met": false
+      "evidence": "p7-resource-wave2",
+      "closure_met": true
+    },
+    {
+      "id": "P7-13",
+      "domain": "P7",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p7-resource-wave2",
+      "closure_met": true
     },
     {
       "id": "P7-14",
