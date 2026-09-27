@@ -17,6 +17,7 @@ test('diagnostic journal bounds raw bytes duplicates and terminal history indepe
     limit:10,
     rawBytesLimit:1100,
     duplicateLimit:2,
+    duplicateFingerprintLimit:8,
     terminalHistoryLimit:2,
     terminalBytesLimit:1024
   });
@@ -37,6 +38,7 @@ test('diagnostic journal bounds raw bytes duplicates and terminal history indepe
   assert.ok(summary.usage.entries<=summary.limits.entries);
   assert.ok(summary.usage.rawBytes<=summary.limits.rawBytes);
   assert.equal(summary.usage.duplicateSuppressed,1);
+  assert.ok(summary.usage.duplicateFingerprints<=summary.limits.duplicateFingerprints);
   assert.equal(summary.usage.terminalEntries,2);
   assert.ok(summary.usage.terminalBytes<=summary.limits.terminalBytes);
   assert.equal(summary.telemetry.remoteEnabled,false);
@@ -78,6 +80,34 @@ test('redaction removes secret fields signed URL values prompt transcript bodies
   assert.match(safe.url,/\[REDACTED\]/);
 });
 
+test('generated secret sentinels do not survive diagnostic logging or support export paths',async()=>{
+  const runtime=await OpenContainer.boot({
+    diagnostics:{limit:200,rawBytesLimit:64*1024,duplicateLimit:4,duplicateFingerprintLimit:64}
+  });
+  const sentinels=Array.from({length:32},(_,index)=>
+    'generated-secret-'+String(index).padStart(2,'0')+'-'+('z'.repeat(28))
+  );
+  for(const sentinel of sentinels){
+    runtime.diagnostics.record('custom-'+sentinel,{
+      authorization:'Bearer '+sentinel,
+      body:'http-body-'+sentinel,
+      source:'private-source-'+sentinel,
+      prompt:'prompt-'+sentinel,
+      transcript:'transcript-'+sentinel,
+      url:'https://example.test/?signature='+sentinel
+    });
+  }
+  const journalText=JSON.stringify(runtime.diagnostics.list());
+  const bundleText=JSON.stringify(runtime.supportBundle(null,{
+    ai:{prompt:sentinels[0],transcript:sentinels[1]}
+  }));
+  for(const sentinel of sentinels){
+    assert.equal(journalText.includes(sentinel),false,'journal leaked '+sentinel);
+    assert.equal(bundleText.includes(sentinel),false,'bundle leaked '+sentinel);
+  }
+  await runtime.teardown();
+});
+
 test('failure fingerprint is stable and does not contain source content',()=>{
   const value={
     code:'OC_INVALID_STATE',
@@ -108,6 +138,7 @@ test('browser capability probe is structured and deterministic for an injected s
     }
   };
   const receipt=browserCapabilityProbe(fake);
+  assert.equal(receipt.browser,true);
   assert.equal(receipt.crossOriginIsolated,true);
   assert.equal(receipt.sharedArrayBuffer,true);
   assert.equal(receipt.serviceWorker,true);
@@ -195,6 +226,13 @@ test('support bundle preview lists categories and generation is read-only',async
   assert.equal(bundle.packages.compiled,true);
   assert.equal(bundle.packages.nodeCount,1);
   assert.match(bundle.packages.graphFingerprint,/^ocfp:/);
+  assert.equal(bundle.packages.components.length,1);
+  assert.equal(bundle.packages.components[0].name,'dep');
+  assert.match(bundle.packages.components[0].integrity,/^ocfp:|^sha(?:256|384|512)-/);
+  assert.equal(bundle.fingerprintBasis.runtimeVersion,'0.1.0-alpha.1');
+  assert.equal(bundle.fingerprintBasis.previewEpoch,before.preview);
+  assert.equal(bundle.fingerprintBasis.workspaceGeneration,before.fs);
+  assert.equal(bundle.fingerprintBasis.packageGeneration,before.packages);
   assert.equal(bundle.storage.workspaceGeneration,before.fs);
   assert.equal(bundle.outcomes.migration.toVersion,2);
   assert.equal(bundle.outcomes.update.compatibilityId,'sw-v1');
