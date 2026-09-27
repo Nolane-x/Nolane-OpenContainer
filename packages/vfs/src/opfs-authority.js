@@ -378,6 +378,7 @@ export class OpfsCheckpointAuthority {
     const removed = [];
     const retained = [];
     const skipped = [];
+    let reclaimedBytes = 0;
     for await (const [name, handle] of this.#payloads.entries()) {
       if (handle?.kind && handle.kind !== 'file') {
         skipped.push(String(name));
@@ -387,6 +388,8 @@ export class OpfsCheckpointAuthority {
         retained.push(String(name));
         continue;
       }
+      const text = await readText(this.#payloads, name);
+      if (text !== null) reclaimedBytes += encoder.encode(text).byteLength;
       removed.push(String(name));
       if (!dryRun) await this.#payloads.removeEntry(name);
     }
@@ -399,6 +402,8 @@ export class OpfsCheckpointAuthority {
       removed: Object.freeze(removed),
       retained: Object.freeze(retained),
       skipped: Object.freeze(skipped),
+      reclaimedBytes,
+      canonicalRootsProtected: true,
       currentSequence: this.#current?.sequence ?? null,
       currentGeneration: this.#current?.generation ?? null
     });
