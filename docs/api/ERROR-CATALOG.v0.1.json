@@ -109,6 +109,13 @@
       "compatibilityClass": "stale-generation"
     },
     {
+      "code": "OC_EDGE_ABORTED",
+      "cause": "A browser preview or Service Worker edge request was cancelled before the authority completed it.",
+      "consequence": "The in-flight edge request is aborted and the preview handler receives cancellation instead of completing stale work.",
+      "recovery": "Retry only if the caller still needs the preview request; otherwise treat cancellation as a normal terminal request outcome.",
+      "compatibilityClass": "deployment-runtime"
+    },
+    {
       "code": "OC_TOOLCHAIN_UNSUPPORTED",
       "cause": "The requested toolchain/artifact/profile is outside the retained browser-native compatibility profile.",
       "consequence": "Toolchain execution is refused.",
