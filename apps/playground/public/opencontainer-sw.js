@@ -101,6 +101,10 @@ async function routeModule(request, url) {
   } catch {
     return new Response('Invalid OpenContainer publication session', { status: 400 });
   }
+  const generation = url.searchParams.get('__oc_vfs_generation');
+  if (!generation || !/^\d+$/.test(generation)) {
+    return new Response('Missing OpenContainer workspace generation proof', { status: 400 });
+  }
 
   const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
   if (!windows.length) return new Response('No OpenContainer authority client', { status: 503 });
@@ -108,6 +112,7 @@ async function routeModule(request, url) {
   const attempts = windows.map((client) => requestFromClient(client, {
     type: 'opencontainer:esm-fetch',
     session,
+    generation,
     url: request.url
   }));
 
