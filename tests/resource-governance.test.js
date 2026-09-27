@@ -69,10 +69,12 @@ test('P7 measurement policy preserves hardware and weak-device boundaries',()=>{
   assert.equal(policy.measurementMetadata.claims.latencyFloor,false);
   assert.equal(policy.measurementMetadata.claims.weakDeviceFloor,false);
   assert.equal(policy.gateAuthority['P7-07'].machineClosable,true);
+  assert.equal(policy.gateAuthority['P7-08'].machineClosable,true);
+  assert.equal(policy.gateAuthority['P7-13'].machineClosable,true);
   assert.equal(policy.gateAuthority['P7-14'].machineClosable,true);
-  assert.equal(policy.gateAuthority['P7-08'].machineClosable,false);
   assert.equal(policy.gateAuthority['P7-01'].machineClosable,false);
   assert.equal(policy.gateAuthority['P7-09'].machineClosable,false);
+  assert.equal(policy.gateAuthority['P7-12'].machineClosable,false);
   assert.equal(policy.productionClosed,false);
 });
 
