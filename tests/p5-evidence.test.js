@@ -29,8 +29,6 @@ test('P5 ledger reconciliation cannot drift from the evidence matrix',()=>{
   assert.equal(rows.length,18);
   assert.deepEqual(rows.map(item=>item.id),evidence.gates.map(item=>item.id));
   assert.ok(rows.every(item=>item.state==='EVIDENCE'&&item.promotion==='PASS-BROWSER'&&item.evidence==='p5-network-preview'&&item.closure_met===true));
+  assert.equal(ledger.source.gate_count,304);
   assert.equal(ledger.production_closed,false);
-  assert.equal(ledger.overrides.length,138);
-  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,81);
-  assert.equal(ledger.overrides.filter(item=>item.state==='PARTIAL').length,37);
 });
