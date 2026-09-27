@@ -2988,6 +2988,17 @@ async function run() {
         headers: { location: '/redirect-target', 'x-p5-preview': 'redirect' }
       });
     }
+    if (path === '/redirect-target') {
+      return new Response('preview-redirect-ok', {
+        headers: { 'content-type': 'text/plain', 'x-p5-preview': 'redirect-target' }
+      });
+    }
+    if (path === '/external-redirect') {
+      return new Response(null, {
+        status: 302,
+        headers: { location: 'https://example.com/outside-preview' }
+      });
+    }
     if (path === '/headers') {
       return new Response('headers', {
         headers: {
@@ -3039,15 +3050,28 @@ async function run() {
   assert(await p5RangeResponse.text() === '2345', 'P5 preview range body drifted');
   assert(p5RangeResponse.headers.get('content-range') === 'bytes 2-5/10', 'P5 preview range header drifted');
 
-  const p5RedirectDirect = await runtime.preview.dispatch(
-    5190,
-    { url: '/redirect', method: 'GET', headers: {} },
-    p5PreviewRoute
-  );
+  const p5RedirectResponse = await fetch(c2PreviewBridge.url(p5PreviewRoute, '/redirect'), {
+    redirect: 'manual',
+    cache: 'no-store'
+  });
+  assert(p5RedirectResponse.status === 302, 'P5 preview redirect did not preserve 302');
+  const p5RedirectLocation = p5RedirectResponse.headers.get('location');
   assert(
-    p5RedirectDirect.status === 302 && p5RedirectDirect.headers.get('location') === '/redirect-target',
-    'P5 virtual HTTP redirect semantics drifted'
+    p5RedirectLocation?.includes('/__opencontainer__/preview/5190/redirect-target') &&
+      p5RedirectLocation.includes('__oc_owner=p5-preview-security') &&
+      p5RedirectLocation.includes('__oc_epoch=' + p5PreviewRoute.epoch),
+    'P5 preview redirect escaped virtual preview identity: ' + p5RedirectLocation
   );
+  const p5RedirectTarget = await fetch(p5RedirectLocation, { cache: 'no-store' });
+  assert(
+    p5RedirectTarget.status === 200 && await p5RedirectTarget.text() === 'preview-redirect-ok',
+    'P5 rewritten preview redirect target did not stay authoritative'
+  );
+  const externalRedirect = await fetch(c2PreviewBridge.url(p5PreviewRoute, '/external-redirect'), {
+    redirect: 'manual',
+    cache: 'no-store'
+  });
+  assert(externalRedirect.status === 502, 'P5 external preview redirect was not denied');
 
   const p5HeaderResponse = await fetch(c2PreviewBridge.url(p5PreviewRoute, '/headers'), { cache: 'no-store' });
   assert(p5HeaderResponse.headers.get('x-p5-preview') === 'preserved', 'P5 preview stripped safe application header');
@@ -3113,7 +3137,8 @@ async function run() {
   stage('p5-preview-security-pass', {
     headStatus: p5HeadResponse.status,
     rangeStatus: p5RangeResponse.status,
-    redirectStatus: p5RedirectDirect.status,
+    redirectStatus: p5RedirectResponse.status,
+    externalRedirectStatus: externalRedirect.status,
     headerSandbox: p5HeaderResponse.headers.get('x-opencontainer-preview-sandbox'),
     previewAbortName,
     previewAbortObserved,
