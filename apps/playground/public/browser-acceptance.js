@@ -117,6 +117,26 @@ async function run() {
   assert(runtime.net.policyVersion === NETWORK_POLICY_VERSION, 'P5 network policy version drifted');
   assert(runtime.net.policyHash !== initialPolicyHash, 'P5 policy hash did not change when authority changed');
 
+  const redirectAllowed = await runtime.net.fetch(location.origin + '/__p5__/redirect-network-start');
+  assert(redirectAllowed.receipt.redirects === 1, 'P5 allowed redirect did not record exactly one hop');
+  assert(await redirectAllowed.response.text() === 'redirect-authorized', 'P5 allowed redirect target body drifted');
+  assert(redirectAllowed.receipt.hops.length === 1, 'P5 redirect receipt lost source hop');
+  assert(redirectAllowed.receipt.hops[0].policyHash === runtime.net.policyHash, 'P5 redirect hop lost policy identity');
+
+  let deniedRedirectCode = null;
+  const decisionsBeforeDeniedRedirect = runtime.net.decisions().length;
+  try {
+    await runtime.net.fetch(location.origin + '/__p5__/redirect-network-denied');
+  } catch (error) {
+    deniedRedirectCode = error?.code ?? null;
+  }
+  assert(deniedRedirectCode === 'OC_NETWORK_DENIED', 'P5 redirect widened capability to unauthorized target');
+  const deniedRedirectDecisions = runtime.net.decisions().slice(decisionsBeforeDeniedRedirect);
+  assert(
+    deniedRedirectDecisions.some((item) => item.decision === 'deny' && item.auditUrl === location.origin + '/package-lock.json'),
+    'P5 denied redirect target was not independently authorized and audited'
+  );
+
   let decodedBudgetCode = null;
   try {
     await runtime.net.fetch(location.origin + '/__p5__/compressed', { maxResponseBytes: 512 });
@@ -241,6 +261,8 @@ async function run() {
     localNetworkPermission: lnaProbe,
     rejectedCanonicalUrls: rejectedCanonicalUrls.length,
     localLoopbackSpellingsDenied: localDenied.length,
+    redirectAllowedHops: redirectAllowed.receipt.redirects,
+    deniedRedirectCode,
     decodedBudgetCode,
     slowAbortName,
     secretPlaintextExposed: secretFetch.receipt.secretPlaintextExposed,
