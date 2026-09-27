@@ -31,10 +31,11 @@
       "tests/release-compatibility-matrix.test.js",
       "tests/p15-compatibility-matrix-evidence.test.js",
       "tests/supply-chain-review.test.js",
-      "tests/p13-supply-chain-evidence.test.js"
+      "tests/p13-supply-chain-evidence.test.js",
+      "tests/resource-governance.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 27
+    "minimumTestFiles": 28
   },
   "browser": {
     "iterations": 2,

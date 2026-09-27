@@ -135,6 +135,14 @@ jobs:
       - run: npm run browser:profile:verify
       - run: npm run critical:browser-flake
       - run: npm run evidence:assure:browser
+      - run: npm run resource:evidence
+      - name: Archive P7 resource measurement receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-p7-resource-evidence-${{ github.sha }}
+          path: .artifacts/resource-evidence/
+          if-no-files-found: error
+          retention-days: 90
       - name: Archive product scope browser receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

@@ -42,7 +42,8 @@
     "operations:drill": "node scripts/run-operations-drills.mjs",
     "compat:release-report": "node scripts/release-compatibility-report.mjs",
     "compat:matrix": "node scripts/release-compatibility-matrix.mjs",
-    "security:supply-chain": "node scripts/run-supply-chain-review.mjs"
+    "security:supply-chain": "node scripts/run-supply-chain-review.mjs",
+    "resource:evidence": "node scripts/capture-resource-evidence.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",
