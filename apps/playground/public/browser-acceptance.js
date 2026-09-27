@@ -449,6 +449,8 @@ async function run() {
   });
 
   const entryA = publicationA.moduleURL('./main.js', '/workspace/src/entry.mjs').href;
+  const entryAGeneration = new URL(entryA).searchParams.get('__oc_vfs_generation');
+  assert(entryAGeneration === publicationA.generation, 'P5 ESM URL lost workspace generation proof');
   const workerA = new BrowserGuestWorkerAuthority({
     publication: publicationA,
     diagnostics: runtime.diagnostics,
@@ -475,6 +477,30 @@ async function run() {
     .writeFile('src/dep.js', 'export let value=90; export function bump(){ value += 1 }')
     .writeFile('src/sync.txt', 'sync-two')
     .commit();
+
+  assert(publicationA.generation !== entryAGeneration, 'P5 workspace generation did not advance after source edit');
+  const staleGenerationResponse = await fetch(entryA, { cache: 'no-store' });
+  assert(staleGenerationResponse.status === 504, 'P5 stale workspace-generation ESM URL did not fail closed');
+  const refreshedEntryA = publicationA.moduleURL('./main.js', '/workspace/src/entry.mjs').href;
+  assert(refreshedEntryA !== entryA, 'P5 refreshed ESM URL reused stale workspace generation identity');
+  assert(
+    new URL(refreshedEntryA).searchParams.get('__oc_vfs_generation') === publicationA.generation,
+    'P5 refreshed ESM URL carries wrong workspace generation proof'
+  );
+  const refreshedGenerationResponse = await fetch(refreshedEntryA, { cache: 'no-store' });
+  assert(refreshedGenerationResponse.status === 200, 'P5 current workspace-generation ESM URL did not route');
+  assert(
+    refreshedGenerationResponse.headers.get('x-opencontainer-generation') === publicationA.generation,
+    'P5 Service Worker response generation header drifted'
+  );
+  stage('p5-esm-identity-pass', {
+    session: publicationA.session,
+    staleGeneration: entryAGeneration,
+    currentGeneration: publicationA.generation,
+    staleStatus: staleGenerationResponse.status,
+    refreshedStatus: refreshedGenerationResponse.status,
+    serviceWorkerCompatibilityId: bridgeAReceipt.serviceWorkerCompatibilityId
+  });
 
   const publicationB = runtime.packages.createNativeEsmPublication({
     baseURL,
