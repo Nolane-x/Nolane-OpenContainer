@@ -1,0 +1,73 @@
+{
+  "schema": "opencontainer.security-malicious-package-corpus.v1.0",
+  "frozenAt": "2026-09-27",
+  "rule": "Every retained case is a negative security corpus item. A case remains even after the corresponding defense passes.",
+  "cases": [
+    {
+      "id": "MP-01",
+      "class": "tar-traversal",
+      "attack": "package/../../escape.js",
+      "expected": "OC_ARCHIVE_UNSAFE"
+    },
+    {
+      "id": "MP-02",
+      "class": "tar-absolute",
+      "attack": "/package/escape.js",
+      "expected": "OC_ARCHIVE_UNSAFE"
+    },
+    {
+      "id": "MP-03",
+      "class": "tar-backslash",
+      "attack": "package\\\\..\\\\escape.js",
+      "expected": "OC_ARCHIVE_UNSAFE"
+    },
+    {
+      "id": "MP-04",
+      "class": "tar-symlink",
+      "attack": "type=2",
+      "expected": "OC_ARCHIVE_UNSAFE"
+    },
+    {
+      "id": "MP-05",
+      "class": "tar-hardlink",
+      "attack": "type=1",
+      "expected": "OC_ARCHIVE_UNSAFE"
+    },
+    {
+      "id": "MP-06",
+      "class": "tar-duplicate-path",
+      "attack": "same path twice",
+      "expected": "OC_ARCHIVE_UNSAFE"
+    },
+    {
+      "id": "MP-07",
+      "class": "tar-expansion-budget",
+      "attack": "gzip expansion beyond decompression budget",
+      "expected": "OC_ARTIFACT_TOO_LARGE"
+    },
+    {
+      "id": "MP-08",
+      "class": "install-script",
+      "attack": "lockfile hasInstallScript=true",
+      "expected": "OC_INVALID_PACKAGE_CONFIG"
+    },
+    {
+      "id": "MP-09",
+      "class": "artifact-identity",
+      "attack": "package.json name/version differs from frozen lock",
+      "expected": "OC_INVALID_PACKAGE_CONFIG"
+    },
+    {
+      "id": "MP-10",
+      "class": "missing-integrity",
+      "attack": "frozen package lacks integrity",
+      "expected": "OC_ARTIFACT_INTEGRITY"
+    },
+    {
+      "id": "MP-11",
+      "class": "redirect-capability",
+      "attack": "package redirect target outside network capability",
+      "expected": "OC_NETWORK_DENIED"
+    }
+  ]
+}

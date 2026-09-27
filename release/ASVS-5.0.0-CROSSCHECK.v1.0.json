@@ -1,0 +1,176 @@
+{
+  "schema": "opencontainer.asvs-crosscheck.v1.0",
+  "standard": {
+    "name": "OWASP Application Security Verification Standard",
+    "version": "5.0.0",
+    "asset": "OWASP_Application_Security_Verification_Standard_5.0.0_en.json",
+    "sha256": "bcdbec214d70abcfad9284a31d4f9e5134305831d628aad3aa85d7e26626cb35"
+  },
+  "scope": "Browser-native self-hosted runtime controls relevant to OpenContainer Core; server account/auth controls outside Core are not silently marked PASS.",
+  "requirements": [
+    {
+      "id": "v5.0.0-1.1.1",
+      "topic": "canonicalization",
+      "status": "COVERED",
+      "evidence": [
+        "packages/network/src/index.js",
+        "packages/vfs/src/index.js",
+        "tests/network-security.test.js",
+        "tests/security-fuzz.test.js"
+      ]
+    },
+    {
+      "id": "v5.0.0-1.2.2",
+      "topic": "safe URL protocols/context",
+      "status": "COVERED",
+      "evidence": [
+        "packages/network/src/index.js",
+        "tests/network-security.test.js"
+      ]
+    },
+    {
+      "id": "v5.0.0-1.3.6",
+      "topic": "SSRF allowlisting",
+      "status": "COVERED",
+      "evidence": [
+        "packages/network/src/index.js",
+        "tests/network-security.test.js",
+        "packages/package-env/src/artifact-authority.js"
+      ]
+    },
+    {
+      "id": "v5.0.0-1.5.2",
+      "topic": "untrusted deserialization",
+      "status": "COVERED",
+      "evidence": [
+        "packages/persistence/src/index.js",
+        "packages/vfs/src/index.js",
+        "tests/security-fuzz.test.js"
+      ]
+    },
+    {
+      "id": "v5.0.0-1.5.3",
+      "topic": "parser consistency",
+      "status": "COVERED",
+      "evidence": [
+        "tests/security-fuzz.test.js",
+        "release/SECURITY-MALICIOUS-PACKAGE-CORPUS.v1.0.json"
+      ]
+    },
+    {
+      "id": "v5.0.0-3.1.1",
+      "topic": "document browser security features",
+      "status": "COVERED",
+      "evidence": [
+        "docs/guides/HOSTING-HEADERS.md",
+        "scripts/hosting-self-check-lib.mjs",
+        "tests/hosting-self-check.test.js"
+      ]
+    },
+    {
+      "id": "v5.0.0-3.4.2",
+      "topic": "CORS origins",
+      "status": "COVERED",
+      "evidence": [
+        "tests/network-security.test.js",
+        "apps/playground/server.mjs"
+      ]
+    },
+    {
+      "id": "v5.0.0-3.4.3",
+      "topic": "CSP object/base restrictions",
+      "status": "COVERED",
+      "evidence": [
+        "apps/playground/server.mjs",
+        "scripts/hosting-self-check-lib.mjs"
+      ]
+    },
+    {
+      "id": "v5.0.0-3.4.4",
+      "topic": "nosniff",
+      "status": "COVERED",
+      "evidence": [
+        "apps/playground/server.mjs",
+        "scripts/hosting-self-check-lib.mjs"
+      ]
+    },
+    {
+      "id": "v5.0.0-3.4.5",
+      "topic": "Referrer-Policy",
+      "status": "COVERED",
+      "evidence": [
+        "apps/playground/server.mjs",
+        "scripts/hosting-self-check-lib.mjs"
+      ]
+    },
+    {
+      "id": "v5.0.0-3.4.6",
+      "topic": "frame-ancestors",
+      "status": "COVERED",
+      "evidence": [
+        "apps/playground/server.mjs",
+        "scripts/hosting-self-check-lib.mjs"
+      ]
+    },
+    {
+      "id": "v5.0.0-3.4.8",
+      "topic": "COOP",
+      "status": "COVERED",
+      "evidence": [
+        "apps/playground/server.mjs",
+        "scripts/hosting-self-check-lib.mjs",
+        "tests/hosting-self-check.test.js"
+      ]
+    },
+    {
+      "id": "v5.0.0-5.2.4",
+      "topic": "file count/size quotas",
+      "status": "COVERED",
+      "evidence": [
+        "packages/package-env/src/artifact-authority.js",
+        "tests/security-hardening.test.js"
+      ]
+    },
+    {
+      "id": "v5.0.0-5.2.5",
+      "topic": "archive symlink rejection",
+      "status": "COVERED",
+      "evidence": [
+        "packages/package-env/src/artifact-authority.js",
+        "tests/artifact-authority.test.js",
+        "tests/security-malicious-package.test.js"
+      ]
+    },
+    {
+      "id": "v5.0.0-5.3.2",
+      "topic": "trusted file paths/traversal",
+      "status": "COVERED",
+      "evidence": [
+        "packages/vfs/src/index.js",
+        "packages/package-env/src/resolver.js",
+        "packages/package-env/src/artifact-authority.js",
+        "tests/security-fuzz.test.js"
+      ]
+    },
+    {
+      "id": "v5.0.0-5.3.3",
+      "topic": "decompression path safety",
+      "status": "COVERED",
+      "evidence": [
+        "packages/package-env/src/artifact-authority.js",
+        "tests/security-hardening.test.js"
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "area": "server authentication/session/account controls",
+      "reason": "Accounts and identity are explicitly outside OpenContainer Core 1.0; embedding products remain responsible."
+    },
+    {
+      "area": "TLS/HSTS on final public origin",
+      "reason": "The local CI playground uses loopback HTTP. Final CDN/public topology remains a separate release/deployment evidence requirement and is not marked PASS here."
+    }
+  ],
+  "humanReviewRequired": true
+}

@@ -14,6 +14,18 @@ Cross-Origin-Resource-Policy: same-origin
 
 These headers are necessary for the SharedArrayBuffer/Worker execution path used by the current profile. The browser acceptance court additionally requires `globalThis.crossOriginIsolated === true`.
 
+The shipping document also requires:
+
+```http
+X-Content-Type-Options: nosniff
+Referrer-Policy: no-referrer
+Permissions-Policy: camera=(), microphone=(), geolocation=(), display-capture=(), usb=(), serial=(), hid=(), payment=()
+Content-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self'; worker-src 'self'; img-src 'self' data:; style-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+X-OpenContainer-Document-Profile: strict
+```
+
+The strict shipping document contains no inline script. The browser acceptance harness remains a test-only profile because its import map is inline; it is not the production document CSP claim.
+
 ## Worker CSP profiles
 
 The default guest Worker is intentionally stricter than the toolchain Worker.

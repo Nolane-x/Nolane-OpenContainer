@@ -1,0 +1,98 @@
+{
+  "schema": "opencontainer.security-review-policy.v1.0",
+  "frozenAt": "2026-09-27",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P12",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "targetRelease": "1.0",
+  "declaredEvidenceProfile": "desktop-chrome153-ubuntu2404-x64-ci",
+  "rule": "Security evidence is fail-closed. Scanner, test, AI or architecture confidence cannot impersonate independent or human security review.",
+  "asvs": {
+    "version": "5.0.0",
+    "asset": "OWASP_Application_Security_Verification_Standard_5.0.0_en.json",
+    "sha256": "bcdbec214d70abcfad9284a31d4f9e5134305831d628aad3aa85d7e26626cb35",
+    "mapping": "release/ASVS-5.0.0-CROSSCHECK.v1.0.json"
+  },
+  "staticAnalysis": {
+    "engine": "GitHub CodeQL",
+    "actionVersion": "v4.38.2",
+    "actionCommit": "2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2",
+    "languages": [
+      "javascript-typescript"
+    ],
+    "findingsMustBeRetained": true,
+    "unwaivedHighCriticalBlockRelease": true,
+    "waiverRegistry": "release/SECURITY-STATIC-ANALYSIS-WAIVERS.v1.0.json",
+    "unlistedWaiver": "FAIL"
+  },
+  "dependencyReview": {
+    "command": [
+      "npm",
+      "audit",
+      "--json",
+      "--audit-level=high"
+    ],
+    "includeDevBuildTooling": true,
+    "blockSeverities": [
+      "high",
+      "critical"
+    ],
+    "unavailableAudit": "FAIL"
+  },
+  "severitySla": {
+    "CRITICAL": {
+      "acknowledgeHours": 24,
+      "remediateDays": 7,
+      "releaseBlocking": true
+    },
+    "HIGH": {
+      "acknowledgeHours": 48,
+      "remediateDays": 14,
+      "releaseBlocking": true
+    },
+    "MODERATE": {
+      "acknowledgeHours": 120,
+      "remediateDays": 30,
+      "releaseBlocking": false
+    },
+    "LOW": {
+      "acknowledgeHours": 240,
+      "remediateDays": 90,
+      "releaseBlocking": false
+    }
+  },
+  "releasePolicy": {
+    "unresolvedCriticalOrHigh": "REDESIGN_OR_KILL",
+    "silentWaiverAllowed": false,
+    "waiverRegistry": "release/CRITICAL-GATE-WAIVERS.v1.0.json",
+    "scannerScoreIsSecurityClaim": false
+  },
+  "gateAuthority": {
+    "P12-17": {
+      "machineClosable": false,
+      "state": "EXTERNAL_CHANNEL_REQUIRED",
+      "requirement": "A verified responsible-disclosure/private vulnerability channel must exist; documentation alone does not create the channel."
+    },
+    "P12-18": {
+      "machineClosable": false,
+      "state": "SECOND_PARTY_REQUIRED",
+      "requirement": "Independent or second-party review evidence must name the reviewer/review artifact and scope critical isolation/storage/network changes."
+    },
+    "P12-20": {
+      "machineClosable": false,
+      "state": "HUMAN_REVIEW_REQUIRED",
+      "requirement": "A human security review is required. Scanner, CodeQL, dependency audit, AI review and CI test scores are supporting evidence only."
+    }
+  },
+  "reviewStatus": {
+    "humanSecurityReviewCompleted": false,
+    "independentSecondPartyReviewCompleted": false,
+    "verifiedPrivateDisclosureChannel": false,
+    "machineSecurityCourtMayClaimProductSecure": false
+  },
+  "artifacts": {
+    "threatModel": "release/SECURITY-THREAT-MODEL.v1.0.json",
+    "maliciousPackageCorpus": "release/SECURITY-MALICIOUS-PACKAGE-CORPUS.v1.0.json",
+    "regressionRegistry": "release/SECURITY-REGRESSION-REGISTRY.v1.0.json",
+    "residualRisks": "release/SECURITY-RESIDUAL-RISKS.v1.0.json"
+  }
+}

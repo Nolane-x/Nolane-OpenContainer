@@ -1,0 +1,70 @@
+{
+  "schema": "opencontainer.security-residual-risks.v1.0",
+  "frozenAt": "2026-09-27",
+  "profile": "desktop-chrome153-ubuntu2404-x64-ci",
+  "risks": [
+    {
+      "id": "RISK-01",
+      "severity": "HIGH",
+      "status": "ACCEPTANCE_REQUIRED",
+      "risk": "Any credential delivered to browser JavaScript is observable by the local user or a compromised trusted page.",
+      "mitigation": "Prefer trusted server exchange and narrowly scoped short-lived tokens; guest code receives no credential by default."
+    },
+    {
+      "id": "RISK-02",
+      "severity": "HIGH",
+      "status": "CONTAINED_PROFILE",
+      "risk": "The isolated toolchain Worker permits JavaScript unsafe-eval because the retained Vite dependency-optimizer path requires dynamic code generation.",
+      "mitigation": "Never reuse toolchain Worker policy for ordinary guest code; strict guest CSP forbids unsafe-eval."
+    },
+    {
+      "id": "RISK-03",
+      "severity": "HIGH",
+      "status": "EVIDENCE_LIMIT",
+      "risk": "Current production evidence is Chrome 153 on Ubuntu 24.04 x64 CI only.",
+      "mitigation": "Do not claim cross-browser/Windows/macOS/mobile support until explicit campaigns exist."
+    },
+    {
+      "id": "RISK-04",
+      "severity": "MODERATE",
+      "status": "EVIDENCE_LIMIT",
+      "risk": "No weak-device/thermal/memory-pressure production floor is currently proven.",
+      "mitigation": "Resource limits are enforced but performance/resource-floor claims remain open under P7/P15."
+    },
+    {
+      "id": "RISK-05",
+      "severity": "HIGH",
+      "status": "DEPLOYMENT_DEPENDENCY",
+      "risk": "A reverse proxy/CDN can strip or alter CSP/COOP/COEP/CORP/Permissions-Policy after the app server.",
+      "mitigation": "Run hosting self-check and browser acceptance against final release topology before production claim."
+    },
+    {
+      "id": "RISK-06",
+      "severity": "HIGH",
+      "status": "THIRD_PARTY_CODE",
+      "risk": "Integrity-valid third-party package code may still be malicious within the capabilities granted to guest/toolchain execution.",
+      "mitigation": "Least capability, Worker isolation, lifecycle-script deny, package corpus review and dependency/security policy."
+    },
+    {
+      "id": "RISK-07",
+      "severity": "CRITICAL",
+      "status": "OUT_OF_CORE",
+      "risk": "Future AI/provider adapters may introduce long-lived credentials or broader network authority if they bypass Core capability rules.",
+      "mitigation": "Keep AI/provider behavior outside Core until separately versioned adapter threat model and credential policy exist."
+    },
+    {
+      "id": "RISK-08",
+      "severity": "HIGH",
+      "status": "NOT_IMPLEMENTED",
+      "risk": "A future server broker could introduce SSRF if implemented as an arbitrary URL proxy.",
+      "mitigation": "Core has no broker; frozen broker requirements demand destination policy, redirect reauthorization and no arbitrary proxy."
+    },
+    {
+      "id": "RISK-09",
+      "severity": "MODERATE",
+      "status": "MANUAL_REVIEW_OPEN",
+      "risk": "Machine security courts and scanners cannot establish that the product is secure or replace independent/human review.",
+      "mitigation": "Keep P12-18 and P12-20 open until named second-party and human review evidence exists."
+    }
+  ]
+}

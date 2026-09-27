@@ -1,0 +1,306 @@
+{
+  "schema": "opencontainer.security-threat-model.v1.0",
+  "frozenAt": "2026-09-27",
+  "profile": "desktop-chrome153-ubuntu2404-x64-ci",
+  "assumptions": [
+    "Guest/application JavaScript may be hostile relative to the trusted host page.",
+    "Package bytes and metadata are untrusted until integrity, archive and identity checks succeed.",
+    "Browser origin storage is trusted only through OpenContainer authorities; guest code receives no origin-wide storage authority.",
+    "Anything delivered to browser JavaScript is observable by the local user; long-lived provider credentials must not be treated as secret from that user.",
+    "Future AI/provider integrations are outside Core and must enter through separately versioned capability adapters."
+  ],
+  "trustZones": [
+    {
+      "id": "trusted-host",
+      "name": "Trusted host/page authority",
+      "trust": "trusted",
+      "assets": [
+        "runtime authorities",
+        "capability policy",
+        "support/evidence"
+      ],
+      "entryPoints": [
+        "SDK",
+        "browser bridge"
+      ]
+    },
+    {
+      "id": "guest-js",
+      "name": "Guest JavaScript/Workers",
+      "trust": "untrusted",
+      "assets": [
+        "guest code",
+        "guest messages"
+      ],
+      "entryPoints": [
+        "ESM publication",
+        "worker RPC",
+        "sync RPC"
+      ]
+    },
+    {
+      "id": "package-bytes",
+      "name": "Package bytes/metadata",
+      "trust": "untrusted",
+      "assets": [
+        "tarballs",
+        "package.json",
+        "lockfile graph"
+      ],
+      "entryPoints": [
+        "registry fetch",
+        "frozen installer",
+        "resolver"
+      ]
+    },
+    {
+      "id": "preview",
+      "name": "Virtual preview/service-worker edge",
+      "trust": "untrusted-content boundary",
+      "assets": [
+        "preview HTTP content",
+        "route proofs"
+      ],
+      "entryPoints": [
+        "Service Worker fetch",
+        "preview handler"
+      ]
+    },
+    {
+      "id": "storage",
+      "name": "Workspace/package persistence",
+      "trust": "canonical-data boundary",
+      "assets": [
+        "VFS",
+        "OPFS checkpoints",
+        "snapshots",
+        "imports"
+      ],
+      "entryPoints": [
+        "transactions",
+        "restore/import",
+        "multi-tab writers"
+      ]
+    },
+    {
+      "id": "future-ai-credentials",
+      "name": "Future AI/provider credentials",
+      "trust": "out-of-Core privileged",
+      "assets": [
+        "tokens",
+        "provider requests"
+      ],
+      "entryPoints": [
+        "future adapters only"
+      ]
+    }
+  ],
+  "threats": [
+    {
+      "id": "TM-01",
+      "zones": [
+        "guest-js",
+        "trusted-host"
+      ],
+      "threat": "Guest escapes Worker/capability boundary or invokes undeclared host authority.",
+      "severity": "CRITICAL",
+      "controls": [
+        "Dedicated Worker execution",
+        "explicit host RPC methods",
+        "ResourceGovernor worker leases",
+        "browser strict Worker CSP"
+      ],
+      "evidence": [
+        "tests/browser-guest-worker.test.js",
+        "tests/worker-authority.test.js",
+        "tests/browser-node-compat.test.js"
+      ]
+    },
+    {
+      "id": "TM-02",
+      "zones": [
+        "package-bytes",
+        "storage"
+      ],
+      "threat": "Archive traversal, link abuse, duplicate paths, decompression growth or lifecycle scripts mutate trusted state.",
+      "severity": "CRITICAL",
+      "controls": [
+        "SRI",
+        "bounded streaming decompression",
+        "TAR type/path/duplicate checks",
+        "transactional publication",
+        "lifecycle scripts deny-by-default"
+      ],
+      "evidence": [
+        "tests/artifact-authority.test.js",
+        "tests/frozen-install.test.js",
+        "tests/security-hardening.test.js",
+        "tests/security-malicious-package.test.js"
+      ]
+    },
+    {
+      "id": "TM-03",
+      "zones": [
+        "package-bytes",
+        "trusted-host"
+      ],
+      "threat": "Malicious lockfile/exports/imports graph causes capability escape or resource exhaustion.",
+      "severity": "HIGH",
+      "controls": [
+        "lockfile byte/node budgets",
+        "resolver package-root checks",
+        "native addon deny",
+        "frozen integrity"
+      ],
+      "evidence": [
+        "tests/resolver.test.js",
+        "tests/security-fuzz.test.js",
+        "tests/security-hardening.test.js"
+      ]
+    },
+    {
+      "id": "TM-04",
+      "zones": [
+        "preview",
+        "trusted-host"
+      ],
+      "threat": "Preview content inherits host credentials, stale route authority, unsafe navigation or host storage access.",
+      "severity": "CRITICAL",
+      "controls": [
+        "credential stripping",
+        "owner+epoch+workspace+session+version route proof",
+        "sandboxed hostile frame court",
+        "no-store edge"
+      ],
+      "evidence": [
+        "tests/browser-preview-edge.test.js",
+        "tests/network-security.test.js",
+        "release/P5-NETWORK-PREVIEW-EVIDENCE.v1.0.json"
+      ]
+    },
+    {
+      "id": "TM-05",
+      "zones": [
+        "storage",
+        "trusted-host"
+      ],
+      "threat": "Split brain/stale writer, corrupt newest checkpoint or unsafe import silently replaces canonical data.",
+      "severity": "CRITICAL",
+      "controls": [
+        "Web Locks/stale generation rejection",
+        "dual recovery roots",
+        "duplicate snapshot rejection",
+        "import byte/entry quotas"
+      ],
+      "evidence": [
+        "tests/opfs-authority.test.js",
+        "tests/sdk-workspace-persistence.test.js",
+        "tests/release-storage-migration.test.js",
+        "tests/security-hardening.test.js"
+      ]
+    },
+    {
+      "id": "TM-06",
+      "zones": [
+        "trusted-host",
+        "preview"
+      ],
+      "threat": "Service Worker update/routing is poisoned or incompatible worker seizes clients.",
+      "severity": "CRITICAL",
+      "controls": [
+        "versioned compatibility query",
+        "explicit activate",
+        "second compatibility query",
+        "explicit claim",
+        "no unconditional lifecycle takeover"
+      ],
+      "evidence": [
+        "tests/browser-esm-edge.test.js",
+        "docs/production/SERVICE-WORKER-RELEASE-COMPATIBILITY.md"
+      ]
+    },
+    {
+      "id": "TM-07",
+      "zones": [
+        "trusted-host",
+        "future-ai-credentials",
+        "guest-js"
+      ],
+      "threat": "Credential plaintext reaches guest code, diagnostics, support bundle, package install or preview.",
+      "severity": "CRITICAL",
+      "controls": [
+        "opaque authority-side secret handles",
+        "scope/expiry",
+        "diagnostic redaction",
+        "package installer rejects secret handles",
+        "preview credential stripping"
+      ],
+      "evidence": [
+        "tests/network-security.test.js",
+        "tests/production-diagnostics.test.js",
+        "tests/browser-preview-edge.test.js"
+      ]
+    },
+    {
+      "id": "TM-08",
+      "zones": [
+        "trusted-host",
+        "guest-js",
+        "package-bytes"
+      ],
+      "threat": "CPU/memory/output/worker/decompression/WASM inputs cause denial of service.",
+      "severity": "HIGH",
+      "controls": [
+        "process/output/worker budgets",
+        "hard worker timeout termination",
+        "artifact and decompression budgets",
+        "WASM exact byte-length/hash profiles"
+      ],
+      "evidence": [
+        "tests/worker-authority.test.js",
+        "tests/browser-guest-worker.test.js",
+        "tests/security-hardening.test.js",
+        "tests/wasm-artifact-manager.test.js"
+      ]
+    },
+    {
+      "id": "TM-09",
+      "zones": [
+        "trusted-host"
+      ],
+      "threat": "Deployment headers widen browser authority or disable isolation.",
+      "severity": "CRITICAL",
+      "controls": [
+        "COOP/COEP/CORP",
+        "strict document CSP",
+        "Permissions-Policy deny list",
+        "nosniff",
+        "no-referrer",
+        "executable hosting self-check"
+      ],
+      "evidence": [
+        "tests/hosting-self-check.test.js",
+        "docs/guides/HOSTING-HEADERS.md"
+      ]
+    },
+    {
+      "id": "TM-10",
+      "zones": [
+        "future-ai-credentials"
+      ],
+      "threat": "Future AI integration assumes Core makes provider secrets safe in browser JavaScript.",
+      "severity": "CRITICAL",
+      "controls": [
+        "AI out-of-Core boundary",
+        "no default AI content in support bundles",
+        "short-lived scoped token guidance"
+      ],
+      "evidence": [
+        "release/PRODUCT-SCOPE.v1.0.json",
+        "docs/guides/AI-CONSUMERS.md",
+        "docs/guides/SECURITY-MODEL.md"
+      ]
+    }
+  ],
+  "residualRiskRegistry": "release/SECURITY-RESIDUAL-RISKS.v1.0.json"
+}
