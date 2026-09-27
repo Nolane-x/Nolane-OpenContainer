@@ -76,6 +76,37 @@ async function run() {
   const lnaProbe = await probeLocalNetworkAccess(navigator);
   assert(['granted', 'prompt', 'denied', 'unsupported', 'unknown'].includes(lnaProbe.state), 'P5 local-network permission probe returned invalid state');
 
+  const canonicalCourt = new NetworkAuthority();
+  const rejectedCanonicalUrls = [];
+  for (const bad of [
+    'https://user:pass@example.com/api',
+    'https:\\example.com\\api',
+    'https://exa%6dple.com/api',
+    'https://example.com/api/%2fadmin'
+  ]) {
+    try { canonicalCourt.authorize(bad); } catch (error) {
+      if (error?.code === 'OC_NETWORK_DENIED') rejectedCanonicalUrls.push(bad);
+    }
+  }
+  assert(rejectedCanonicalUrls.length === 4, 'P5 browser canonicalization court accepted ambiguous URL');
+
+  const localCourt = new NetworkAuthority();
+  const localSpellings = [
+    'http://localhost/',
+    'http://127.0.0.1/',
+    'http://127.1/',
+    'http://2130706433/',
+    'http://0x7f000001/',
+    'http://[::1]/'
+  ];
+  const localDenied = [];
+  for (const target of localSpellings) {
+    try { localCourt.authorize(target); } catch (error) {
+      if (error?.code === 'OC_NETWORK_DENIED') localDenied.push(target);
+    }
+  }
+  assert(localDenied.length === localSpellings.length, 'P5 alternate loopback spelling bypassed local-network denial');
+
   const initialPolicyHash = runtime.net.policyHash;
   runtime.net.allow({
     id: 'p5-browser-court',
@@ -208,6 +239,8 @@ async function run() {
     corsDenied,
     opaqueType: opaqueResponse.type,
     localNetworkPermission: lnaProbe,
+    rejectedCanonicalUrls: rejectedCanonicalUrls.length,
+    localLoopbackSpellingsDenied: localDenied.length,
     decodedBudgetCode,
     slowAbortName,
     secretPlaintextExposed: secretFetch.receipt.secretPlaintextExposed,
