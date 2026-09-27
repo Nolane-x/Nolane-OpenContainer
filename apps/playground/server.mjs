@@ -35,6 +35,7 @@ const compatibilityUpstream = new Map([
 const publicAliases = new Map([
   ['/', join(publicRoot, 'index.html')],
   ['/index.html', join(publicRoot, 'index.html')],
+  ['/index.js', join(publicRoot, 'index.js')],
   ['/browser-acceptance.html', join(publicRoot, 'browser-acceptance.html')],
   ['/browser-acceptance.js', join(publicRoot, 'browser-acceptance.js')],
   ['/opencontainer-sw.js', join(publicRoot, 'opencontainer-sw.js')],
@@ -153,6 +154,12 @@ const server = createServer(async (request, response) => {
   response.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   response.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
   response.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+  response.setHeader('X-Content-Type-Options', 'nosniff');
+  response.setHeader('Referrer-Policy', 'no-referrer');
+  response.setHeader(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=(), display-capture=(), usb=(), serial=(), hid=(), payment=()'
+  );
   response.setHeader('Cache-Control', 'no-store');
 
   try {
@@ -208,6 +215,16 @@ const server = createServer(async (request, response) => {
       return;
     }
 
+    if (url.pathname === '/' || url.pathname === '/index.html') {
+      response.setHeader(
+        'Content-Security-Policy',
+        "default-src 'self'; script-src 'self'; connect-src 'self'; worker-src 'self'; img-src 'self' data:; style-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+      );
+      response.setHeader('X-OpenContainer-Document-Profile', 'strict');
+    }
+    if (url.pathname === '/browser-acceptance.html') {
+      response.setHeader('X-OpenContainer-Document-Profile', 'acceptance-harness');
+    }
     if (url.pathname === '/opencontainer-sw.js') response.setHeader('Service-Worker-Allowed', '/');
     if (url.pathname === '/opencontainer-guest-worker.mjs') {
       response.setHeader(

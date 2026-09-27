@@ -8,6 +8,8 @@ import { PackageCommandBridge } from './command-bridge.js';
 import { NativeEsmPublicationAuthority } from './native-esm-publication.js';
 import { createBrowserNodeCompatBridge } from './browser-node-compat.js';
 
+const PACKAGE_GRAPH_ENCODER=new TextEncoder();
+
 function stableId(prefix,value){
   let h1=0x811c9dc5,h2=0x9e3779b9;
   for(const byte of new TextEncoder().encode(value)){h1=Math.imul(h1^byte,0x01000193)>>>0;h2=Math.imul(h2^byte,0x85ebca6b)>>>0;}
@@ -30,9 +32,16 @@ function dependencyLocation(nodesByLocation,issuerLocation,name){
 }
 
 export class PackageGraphAuthority {
-  #generation=0;#graph=null;#baseFs=null;#nodeModules=null;#resolver=null;#contentStore=null;
+  #generation=0;#graph=null;#baseFs=null;#nodeModules=null;#resolver=null;#contentStore=null;#maxLockfileBytes;#maxGraphNodes;
 
-  constructor({fs=null,contentStore=null}={}){this.#baseFs=fs;if(contentStore)this.setContentStore(contentStore);}
+  constructor({fs=null,contentStore=null,maxLockfileBytes=16*1024*1024,maxGraphNodes=100000}={}){
+    this.#baseFs=fs;
+    assertOc(Number.isFinite(Number(maxLockfileBytes))&&Number(maxLockfileBytes)>0,ErrorCodes.INVALID_ARGUMENT,'maxLockfileBytes must be positive');
+    assertOc(Number.isInteger(Number(maxGraphNodes))&&Number(maxGraphNodes)>0,ErrorCodes.INVALID_ARGUMENT,'maxGraphNodes must be a positive integer');
+    this.#maxLockfileBytes=Math.floor(Number(maxLockfileBytes));
+    this.#maxGraphNodes=Math.floor(Number(maxGraphNodes));
+    if(contentStore)this.setContentStore(contentStore);
+  }
   get generation(){return this.#generation;}
   get graph(){return this.#graph;}
   get nodeModules(){return this.#nodeModules;}
@@ -50,10 +59,21 @@ export class PackageGraphAuthority {
   }
 
   compile(lockfile){
-    const doc=typeof lockfile==='string'?JSON.parse(lockfile):structuredClone(lockfile);
+    let doc;
+    if(typeof lockfile==='string'){
+      const bytes=PACKAGE_GRAPH_ENCODER.encode(lockfile).byteLength;
+      assertOc(bytes<=this.#maxLockfileBytes,ErrorCodes.RESOURCE_EXHAUSTED,'Lockfile exceeds byte budget',{bytes,limit:this.#maxLockfileBytes});
+      try{doc=JSON.parse(lockfile);}
+      catch(error){throw Object.assign(ocError(ErrorCodes.INVALID_PACKAGE_CONFIG,'Lockfile JSON is invalid'),{cause:error});}
+    }else{
+      try{doc=structuredClone(lockfile);}
+      catch(error){throw Object.assign(ocError(ErrorCodes.INVALID_PACKAGE_CONFIG,'Lockfile cannot be cloned'),{cause:error});}
+    }
     assertOc(doc&&[2,3].includes(doc.lockfileVersion),ErrorCodes.INVALID_ARGUMENT,'Only package-lock v2/v3 is supported in Wave 1');
+    const packageEntries=Object.entries(doc.packages??{});
+    assertOc(packageEntries.length<=this.#maxGraphNodes,ErrorCodes.RESOURCE_EXHAUSTED,'Lockfile graph exceeds node budget',{nodes:packageEntries.length,limit:this.#maxGraphNodes});
     const nodes=[];const bins={};
-    for(const [location,meta] of Object.entries(doc.packages??{})){
+    for(const [location,meta] of packageEntries){
       if(!location||!location.includes('node_modules/'))continue;
       const name=meta.name??packageNameFromPath(location);const version=meta.version??'0.0.0-link';
       const contentKey=meta.integrity??meta.resolved??(name+'@'+version);

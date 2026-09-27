@@ -69,13 +69,40 @@ function safeRelativePath(path) {
   return parts.join('/');
 }
 
-async function gunzipIfNeeded(bytes) {
+async function gunzipIfNeeded(bytes, { maxInflatedBytes = 512 * 1024 * 1024 } = {}) {
   if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) return bytes;
   if (typeof DecompressionStream !== 'function') {
     throw ocError(ErrorCodes.INVALID_STATE, 'gzip artifact requires DecompressionStream');
   }
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
+  const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')).getReader();
+  const chunks = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = value instanceof Uint8Array ? value : new Uint8Array(value);
+      total += chunk.byteLength;
+      if (total > maxInflatedBytes) {
+        try { await reader.cancel('OpenContainer inflated archive budget exceeded'); } catch {}
+        throw ocError(ErrorCodes.ARTIFACT_TOO_LARGE, 'Compressed archive expansion limit exceeded before publication', {
+          phase: 'decompression',
+          inflatedBytes: total,
+          maxInflatedBytes
+        });
+      }
+      chunks.push(new Uint8Array(chunk));
+    }
+  } finally {
+    try { reader.releaseLock(); } catch {}
+  }
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return out;
 }
 
 export async function inspectTarArchive(input, {
@@ -83,8 +110,11 @@ export async function inspectTarArchive(input, {
   maxUnpackedBytes = 256 * 1024 * 1024,
   requiredPrefix = 'package/'
 } = {}) {
-  const bytes = await gunzipIfNeeded(input);
+  assertOc(input instanceof Uint8Array, ErrorCodes.INVALID_ARGUMENT, 'Archive bytes must be Uint8Array');
+  const maxInflatedBytes = maxUnpackedBytes + (Math.max(0, Number(maxFiles) || 0) * 1024) + 1024;
+  const bytes = await gunzipIfNeeded(input, { maxInflatedBytes });
   const entries = [];
+  const seenPaths = new Set();
   let offset = 0;
   let totalBytes = 0;
 
@@ -102,6 +132,10 @@ export async function inspectTarArchive(input, {
     const path = safeRelativePath(prefix ? prefix + '/' + name : name);
     const type = String.fromCharCode(bytes[offset + 156] || 48);
     const size = parseOctal(readNullTerminated(bytes, offset + 124, 12), 'size');
+    if (seenPaths.has(path)) {
+      throw ocError(ErrorCodes.ARCHIVE_UNSAFE, 'Duplicate archive entry path rejected', { path });
+    }
+    seenPaths.add(path);
 
     const prefixRoot = requiredPrefix?.replace(/\/$/, '');
     if (requiredPrefix && path !== prefixRoot && !path.startsWith(requiredPrefix)) {

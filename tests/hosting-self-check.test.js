@@ -63,6 +63,9 @@ test('hosting self-check reports exact header failures instead of a generic depl
     const receipt=await checkHostingHeaders('http://127.0.0.1:'+port+'/');
     assert.equal(receipt.ok,false);
     assert.ok(receipt.failures.some(item=>item.header==='cross-origin-opener-policy'&&item.expected==='same-origin'));
+    assert.ok(receipt.failures.some(item=>item.header==='x-content-type-options'&&item.expected==='nosniff'));
+    assert.ok(receipt.failures.some(item=>item.kind==='permissions-policy'));
+    assert.ok(receipt.failures.some(item=>item.kind==='csp'&&item.expectedContains==="object-src 'none'"));
     assert.ok(receipt.failures.some(item=>item.path==='/opencontainer-guest-worker.mjs'&&item.kind==='header'));
     assert.ok(receipt.failures.some(item=>item.header==='service-worker-allowed'));
   }finally{

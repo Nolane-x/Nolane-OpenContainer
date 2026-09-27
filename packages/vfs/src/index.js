@@ -108,8 +108,11 @@ export class MemoryVFS {
   restore(snapshot){
     assertOc(snapshot&&snapshot.version===1&&Array.isArray(snapshot.entries),ErrorCodes.IMPORT_INVALID,'Invalid VFS snapshot');
     const next=new Map([['/',{type:'dir'}],[WORKSPACE,{type:'dir'}],['/opencontainer',{type:'dir'}],[INTERNAL,{type:'dir'}]]);
+    const restoredPaths=new Set();
     for(const [path,entry] of snapshot.entries){
       const resolved=normalize(path);
+      assertOc(!restoredPaths.has(resolved),ErrorCodes.IMPORT_INVALID,'Duplicate snapshot path',{path:resolved});
+      restoredPaths.add(resolved);
       if(entry.type==='file')next.set(resolved,{type:'file',data:fromBase64(entry.data)});
       else if(entry.type==='dir')next.set(resolved,{type:'dir'});
       else if(entry.type==='symlink')next.set(resolved,{type:'symlink',target:normalize(entry.target)});
