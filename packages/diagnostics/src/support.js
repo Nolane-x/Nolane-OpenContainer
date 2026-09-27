@@ -1,4 +1,20 @@
-import { redact } from './index.js';
+const SUPPORT_SECRET_KEYS=/(?:authorization|cookie|token|secret|password|api[-_]?key|credential|session[-_]?key)/i;
+const SUPPORT_PRIVATE_KEYS=/^(?:body|source|sourceText|content|fileContents)$/i;
+const SUPPORT_SECRET_VALUE=/\b(?:bearer\s+)?[A-Za-z0-9_\-]{20,}\b/gi;
+const SUPPORT_SIGNED_QUERY=/([?&](?:token|access_token|api[-_]?key|signature|sig|x-amz-signature|x-goog-signature|credential)=)[^&#\s]+/gi;
+
+function sanitizeOptIn(value,seen=new WeakSet()){
+  if(typeof value==='string')return value.replace(SUPPORT_SIGNED_QUERY,'$1[REDACTED]').replace(SUPPORT_SECRET_VALUE,'[REDACTED]');
+  if(value===null||typeof value!=='object')return value;
+  if(seen.has(value))return '[Circular]';
+  seen.add(value);
+  if(Array.isArray(value))return value.map((item)=>sanitizeOptIn(item,seen));
+  const out={};
+  for(const [key,item] of Object.entries(value)){
+    out[key]=(SUPPORT_SECRET_KEYS.test(key)||SUPPORT_PRIVATE_KEYS.test(key))?'[REDACTED]':sanitizeOptIn(item,seen);
+  }
+  return out;
+}
 
 const SUPPORT_TYPES=new Set([
   'runtime.state','process.spawn','process.error','process.exit',
@@ -315,7 +331,7 @@ export function buildSupportBundle({
     diagnostics:safeDiagnostics,
     diagnosticBounds:diagnosticStats,
     deployment,
-    ai:includeAiContent?Object.freeze({included:true,content:redact(aiContent)}):Object.freeze({included:false}),
+    ai:includeAiContent?Object.freeze({included:true,content:sanitizeOptIn(aiContent)}):Object.freeze({included:false}),
     telemetry:Object.freeze({
       remoteAnalytics:false,
       crashUpload:false,
