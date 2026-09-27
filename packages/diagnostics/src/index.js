@@ -55,7 +55,8 @@ export function browserCapabilityProbe(scope=globalThis){
   const navigator=scope?.navigator??null;
   return Object.freeze({
     schema:'opencontainer.browser-capability-probe.v0.1',
-    browser:typeof scope?.document!=='undefined'||navigator!==null,
+    browser:typeof scope?.document!=='undefined',
+    secureContext:scope?.isSecureContext===true,
     crossOriginIsolated:scope?.crossOriginIsolated===true,
     sharedArrayBuffer:typeof scope?.SharedArrayBuffer==='function',
     webAssembly:typeof scope?.WebAssembly==='object',
@@ -76,6 +77,7 @@ export class DiagnosticJournal {
   #rawBytes=0;
   #entryBytes=new Map();
   #duplicateLimit;
+  #duplicateFingerprintLimit;
   #duplicateCounts=new Map();
   #duplicateSuppressed=0;
   #terminal=[];
@@ -90,6 +92,7 @@ export class DiagnosticJournal {
     limit=1000,
     rawBytesLimit=256*1024,
     duplicateLimit=25,
+    duplicateFingerprintLimit=512,
     terminalHistoryLimit=200,
     terminalBytesLimit=64*1024,
     telemetry=null
@@ -97,6 +100,7 @@ export class DiagnosticJournal {
     this.#limit=Math.max(1,Number(limit)||1);
     this.#rawBytesLimit=Math.max(1024,Number(rawBytesLimit)||256*1024);
     this.#duplicateLimit=Math.max(1,Number(duplicateLimit)||25);
+    this.#duplicateFingerprintLimit=Math.max(8,Number(duplicateFingerprintLimit)||512);
     this.#terminalLimit=Math.max(1,Number(terminalHistoryLimit)||200);
     this.#terminalBytesLimit=Math.max(1024,Number(terminalBytesLimit)||64*1024);
     if(telemetry?.enabled===true){
@@ -111,6 +115,7 @@ export class DiagnosticJournal {
       entries:this.#limit,
       rawBytes:this.#rawBytesLimit,
       duplicatePerFingerprint:this.#duplicateLimit,
+      duplicateFingerprints:this.#duplicateFingerprintLimit,
       terminalEntries:this.#terminalLimit,
       terminalBytes:this.#terminalBytesLimit
     });
@@ -140,6 +145,10 @@ export class DiagnosticJournal {
     const safeDetail=redact(detail);
     const fingerprint=diagnosticFingerprint({type:safeType,detail:safeDetail});
     const duplicateCount=this.#duplicateCounts.get(fingerprint)??0;
+    if(duplicateCount===0&&!this.#duplicateCounts.has(fingerprint)&&this.#duplicateCounts.size>=this.#duplicateFingerprintLimit){
+      const oldest=this.#duplicateCounts.keys().next().value;
+      if(oldest!==undefined)this.#duplicateCounts.delete(oldest);
+    }
     this.#duplicateCounts.set(fingerprint,duplicateCount+1);
     if(duplicateCount>=this.#duplicateLimit){
       this.#duplicateSuppressed++;
