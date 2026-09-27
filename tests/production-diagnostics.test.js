@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
 import {
   DiagnosticJournal,
+  DiagnosticsPolicy,
   SupportBundleAuthority,
   browserCapabilityProbe,
   diagnosticFingerprint,
@@ -11,6 +13,14 @@ import {
 import { OpenContainer } from '../packages/sdk/src/index.js';
 
 const SECRET='sentinel-secret-value-abcdefghijklmnopqrstuvwxyz-0123456789';
+
+test('published diagnostics policy cannot drift from implementation defaults',async()=>{
+  const published=JSON.parse(await readFile('docs/production/DIAGNOSTICS-POLICY.v0.1.json','utf8'));
+  assert.deepEqual(published,DiagnosticsPolicy);
+  assert.equal(published.telemetry.remoteEnabledByDefault,false);
+  assert.equal(published.telemetry.builtInRemoteTransport,false);
+  assert.equal(published.supportBundle.aiContentIncludedByDefault,false);
+});
 
 test('diagnostic journal bounds raw bytes duplicates and terminal history independently',()=>{
   const journal=new DiagnosticJournal({
