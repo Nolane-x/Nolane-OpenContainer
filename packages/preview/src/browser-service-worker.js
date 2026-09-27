@@ -78,6 +78,7 @@ export class BrowserPreviewServiceWorkerBridge {
   #baseURL;
   #registration = null;
   #listener = null;
+  #inflight = new Map();
   #closed = false;
 
   constructor({
@@ -139,13 +140,27 @@ export class BrowserPreviewServiceWorkerBridge {
     this.#closed = true;
     if (this.#listener) this.#container.removeEventListener('message', this.#listener);
     this.#listener = null;
+    for (const controller of this.#inflight.values()) controller.abort();
+    this.#inflight.clear();
     return true;
   }
 
   async #receive(event) {
     const data = event.data;
+    if (!data) return;
+
+    if (data.type === 'opencontainer:preview-abort') {
+      const controller = this.#inflight.get(String(data.requestId ?? ''));
+      controller?.abort(new DOMException('Preview request aborted', 'AbortError'));
+      return;
+    }
+
     const port = event.ports?.[0];
-    if (!data || data.type !== 'opencontainer:preview-fetch' || !port) return;
+    if (data.type !== 'opencontainer:preview-fetch' || !port) return;
+    const requestId = String(data.requestId ?? '');
+    const controller = new AbortController();
+    if (requestId) this.#inflight.set(requestId, controller);
+
     try {
       const response = await this.#preview.dispatch(
         Number(data.port),
@@ -153,7 +168,9 @@ export class BrowserPreviewServiceWorkerBridge {
           url: data.url,
           method: data.method,
           headers: data.headers ?? {},
-          body: data.body == null ? null : Uint8Array.from(data.body)
+          body: data.body == null ? null : Uint8Array.from(data.body),
+          signal: controller.signal,
+          requestId
         },
         { owner: data.owner, epoch: Number(data.epoch) }
       );
@@ -185,10 +202,11 @@ export class BrowserPreviewServiceWorkerBridge {
       });
       port.postMessage({
         ok: false,
-        code: error?.code ?? ErrorCodes.INVALID_STATE,
+        code: error?.code ?? (error?.name === 'AbortError' ? 'OC_EDGE_ABORTED' : ErrorCodes.INVALID_STATE),
         message: error?.message ?? String(error),
         details: error?.details
       });
+    } finally {
+      if (requestId) this.#inflight.delete(requestId);
     }
-  }
-}
+  }}
