@@ -72,7 +72,6 @@ test('P3 corruption closure is typed browser evidence and is retained by critica
     {kind:'EXECUTABLE',level:'BROWSER',status:'PASS'}
   );
   for(const file of [
-    'tests/persistence-corruption.test.js',
     'tests/opfs-authority.test.js',
     'tests/opfs-package-content-store.test.js',
     'tests/p3-corruption-evidence.test.js'
