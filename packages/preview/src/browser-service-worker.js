@@ -202,7 +202,7 @@ export class BrowserPreviewServiceWorkerBridge {
       });
       port.postMessage({
         ok: false,
-        code: error?.code ?? (error?.name === 'AbortError' ? 'OC_EDGE_ABORTED' : ErrorCodes.INVALID_STATE),
+        code: error?.code ?? (error?.name === 'AbortError' ? ErrorCodes.EDGE_ABORTED : ErrorCodes.INVALID_STATE),
         message: error?.message ?? String(error),
         details: error?.details
       });
