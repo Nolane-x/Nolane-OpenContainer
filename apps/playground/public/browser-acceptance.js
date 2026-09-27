@@ -1366,6 +1366,8 @@ async function run() {
       concurrency: 2
     });
     assert(installReceipt.redirects === 0, 'same-origin retained package unexpectedly redirected');
+    const packageObservation = await (await fetch('/__p5__/package-observation', { cache: 'no-store' })).json();
+    assert(packageObservation.authorizationPresent === false, 'P5 package artifact fetch inherited an opaque secret handle by default');
     const mountedPackages = frozenInstaller.mountFrozenGraph();
     const resolvedLightning = runtime.packages.resolve(
       'lightningcss-wasm',
@@ -1379,7 +1381,12 @@ async function run() {
     assert(lightningPackageJson.version === '1.33.0', 'browser-installed package version mismatch');
     assert(resolvedLightning.path.includes('/workspace/node_modules/lightningcss-wasm/'), 'browser resolver did not target installed immutable package');
 
-    stage('sdk-package-persistence-start');
+    stage('p5-package-secret-isolation-pass', {
+      packageAuthorizationPresent: packageObservation.authorizationPresent,
+      packageSecretHandlesGrantedByDefault: false
+    });
+
+        stage('sdk-package-persistence-start');
     const packageProductRuntime = await OpenContainer.boot({
       packagePersistence: {
         root: opfsRoot,
