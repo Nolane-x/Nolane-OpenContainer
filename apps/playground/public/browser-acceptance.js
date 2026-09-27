@@ -1683,6 +1683,52 @@ async function run() {
     assert(lightningNode?.contentId, 'browser package graph did not expose immutable content identity');
 
     const packageCacheRoot = await opfsRoot.getDirectoryHandle(packageCacheDirectory);
+
+    stage('p3-package-cache-corruption-start');
+    const packageContentDirectory=await packageCacheRoot.getDirectoryHandle(encodeURIComponent(lightningNode.contentId));
+    const corruptPackageArtifact=await packageContentDirectory.getFileHandle('artifact.tgz');
+    const corruptPackageWriter=await corruptPackageArtifact.createWritable();
+    await corruptPackageWriter.write(new Uint8Array([1,2,3,4]));
+    await corruptPackageWriter.close();
+
+    const corruptPackageStore=await new OpfsPackageContentStore({
+      root:opfsRoot,
+      directoryName:packageCacheDirectory,
+      lockManager:navigator.locks
+    }).open();
+    const corruptHydrated=await corruptPackageStore.hydrate({
+      contentId:lightningNode.contentId,
+      integrity:lightningIntegrity,
+      expectedName:'lightningcss-wasm',
+      expectedVersion:'1.33.0'
+    });
+    assert(corruptHydrated===false,'P3 corrupt package cache was trusted');
+    assert(corruptPackageStore.corruptCount===1,'P3 corrupt package cache was not classified as corrupt');
+    let corruptPackageRefetches=0;
+    const corruptPackageInstaller=runtime.packages.createFrozenInstaller({contentStore:corruptPackageStore});
+    const corruptPackageRepair=await corruptPackageInstaller.installAll({
+      artifactAuthority:{
+        async fetchArtifact(options){
+          corruptPackageRefetches++;
+          return artifactAuthority.fetchArtifact(options);
+        }
+      },
+      concurrency:1
+    });
+    assert(corruptPackageRefetches===1,'P3 corrupt package cache did not refetch exactly once');
+    assert(corruptPackageRepair.fetchedContents===1,'P3 corrupt package cache did not republish verified content');
+    assert(corruptPackageStore.corruptCount===0,'P3 package cache remained corrupt after authoritative repair');
+    const packageDisposition=corruptionDisposition(PersistenceCorruptionClass.PACKAGE_CACHE);
+    assert(packageDisposition.action==='discard-refetch','P3 package cache corruption policy drifted');
+    p3CorruptionEvidence.packageCache={
+      corruptionClass:packageDisposition.kind,
+      action:packageDisposition.action,
+      corruptDetected:true,
+      refetches:corruptPackageRefetches,
+      repaired:true
+    };
+    stage('p3-package-cache-corruption-pass',p3CorruptionEvidence.packageCache);
+
     await packageCacheRoot.removeEntry(encodeURIComponent(lightningNode.contentId), { recursive: true });
 
     const evictedContent = await new OpfsPackageContentStore({
