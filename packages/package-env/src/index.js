@@ -1,4 +1,4 @@
-import { ErrorCodes, assertOc } from '../../protocol/src/index.js';
+import { ErrorCodes, assertOc, ocError } from '../../protocol/src/index.js';
 import { VirtualNodeModulesFS } from './virtual-node-modules.js';
 import { NodeResolver } from './resolver.js';
 import { CommonJsLoader } from './commonjs-loader.js';
