@@ -179,3 +179,31 @@ test('SDK workspace persistence APIs fail closed when no OPFS profile is configu
   );
   await runtime.terminate();
 });
+
+
+test('P3 SDK boot fails closed when canonical metadata exists but all recovery payloads are invalid',async()=>{
+  const root=new FakeDirectoryHandle();
+  const locks=new FakeLockManager();
+  const directoryName='p3-sdk-fatal-recovery';
+  const profile={root,directoryName,lockManager:locks};
+
+  const runtime=await OpenContainer.boot({workspacePersistence:profile});
+  runtime.mount({'state.txt':'one'});
+  const first=await runtime.persistWorkspace();
+  runtime.fs.beginTransaction().writeFile('state.txt','two').commit();
+  const second=await runtime.persistWorkspace();
+  await runtime.terminate();
+
+  const generations=root.dirs.get(directoryName).dirs.get('generations');
+  generations.files.get(first.payload).data='{"corrupt":true}';
+  generations.files.get(second.payload).data='{"corrupt":true}';
+
+  await assert.rejects(
+    ()=>OpenContainer.boot({workspacePersistence:profile}),
+    error=>{
+      assert.equal(error.code,ErrorCodes.IMPORT_INVALID);
+      assert.equal(error.details?.silentEmptyFallback,false);
+      return true;
+    }
+  );
+});
