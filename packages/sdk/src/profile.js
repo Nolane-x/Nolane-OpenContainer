@@ -24,7 +24,12 @@ export const OpenContainerProductionProfile=deepFreeze({
     opfsManifestVersion:1
   },
   network:{
-    capabilityProfile:'deny-by-default-http-v1',
+    capabilityProfile:'deny-by-default-http-v2',
+    policyVersion:'opencontainer-network-policy-v2',
+    profiles:Object.freeze(['offline','registry-only','restricted','open-web']),
+    localNetwork:'deny-unless-explicit-browser-permission-probed',
+    secretBinding:'opaque-authority-handle-v1',
+    broker:'disabled-no-open-proxy',
     externalProtocols:Object.freeze(['http:','https:']),
     rawTcpUdp:false
   },
