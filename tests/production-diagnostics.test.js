@@ -6,7 +6,9 @@ import {
   DiagnosticJournal,
   DiagnosticsPolicy,
   SupportBundleAuthority,
+  SupportBundleSchemas,
   browserCapabilityProbe,
+  parseSupportBundle,
   diagnosticFingerprint,
   redact
 } from '../packages/diagnostics/src/index.js';
@@ -338,4 +340,31 @@ test('support outcome surface accepts only recovery migration and update categor
   assert.equal(bundle.outcomes.recovery.generation,4);
   assert.equal(Object.hasOwn(bundle.outcomes.recovery,'private'),false);
   await runtime.teardown();
+});
+
+
+test('support bundle backward parser normalizes v0.1/v0.2 and rejects unsafe or unknown schemas',()=>{
+  assert.deepEqual(SupportBundleSchemas,['opencontainer.support-bundle.v0.1','opencontainer.support-bundle.v0.2']);
+  const legacy=parseSupportBundle({
+    schema:'opencontainer.support-bundle.v0.1',
+    fingerprint:'ocfp:0123456789abcdef',
+    profile:{runtimeVersion:'0.0.9-alpha.1'},
+    browser:{browser:true},
+    privacy:{workspaceContentsIncluded:false,secretsIncluded:false}
+  });
+  assert.equal(legacy.sourceSchema,'opencontainer.support-bundle.v0.1');
+  assert.equal(legacy.runtimeVersion,'0.0.9-alpha.1');
+  const current=parseSupportBundle({
+    schema:'opencontainer.support-bundle.v0.2',
+    fingerprint:'ocfp:fedcba9876543210',
+    profile:{runtimeVersion:'0.1.0-alpha.1',profileId:'opencontainer-alpha-chromium-node24-v1'},
+    browser:{browser:true,opfs:true},
+    privacy:{workspaceContentsIncluded:false,secretsIncluded:false}
+  });
+  assert.equal(current.profileId,'opencontainer-alpha-chromium-node24-v1');
+  assert.throws(()=>parseSupportBundle({schema:'opencontainer.support-bundle.v9.0'}),/Unsupported support bundle schema/);
+  assert.throws(()=>parseSupportBundle({
+    schema:'opencontainer.support-bundle.v0.2',
+    privacy:{workspaceContentsIncluded:true,secretsIncluded:false}
+  }),/Unsafe support bundle privacy flags/);
 });

@@ -495,3 +495,37 @@ export class SupportBundleAuthority{
     });
   }
 }
+
+
+export const SupportBundleSchemas=Object.freeze([
+  'opencontainer.support-bundle.v0.1',
+  'opencontainer.support-bundle.v0.2'
+]);
+
+export function parseSupportBundle(input){
+  let value=input;
+  if(typeof input==='string'){
+    try{value=JSON.parse(input);}
+    catch{throw new TypeError('Support bundle must be valid JSON');}
+  }
+  if(!value||typeof value!=='object')throw new TypeError('Support bundle must be an object');
+  if(!SupportBundleSchemas.includes(value.schema))throw new TypeError('Unsupported support bundle schema: '+String(value.schema??'missing'));
+  const privacy=value.privacy&&typeof value.privacy==='object'?value.privacy:{};
+  if(privacy.secretsIncluded===true||privacy.workspaceContentsIncluded===true){
+    throw new TypeError('Unsafe support bundle privacy flags are not accepted');
+  }
+  const runtimeVersion=value.profile?.runtimeVersion??value.runtimeVersion??null;
+  const profileId=value.profile?.profileId??value.profileId??null;
+  return Object.freeze({
+    schema:'opencontainer.support-bundle-normalized.v1.0',
+    sourceSchema:value.schema,
+    fingerprint:typeof value.fingerprint==='string'?value.fingerprint:null,
+    runtimeVersion:typeof runtimeVersion==='string'?runtimeVersion:null,
+    profileId:typeof profileId==='string'?profileId:null,
+    browser:value.browser&&typeof value.browser==='object'?Object.freeze(redact(value.browser)):null,
+    privacy:Object.freeze({
+      workspaceContentsIncluded:privacy.workspaceContentsIncluded===true,
+      secretsIncluded:privacy.secretsIncluded===true
+    })
+  });
+}

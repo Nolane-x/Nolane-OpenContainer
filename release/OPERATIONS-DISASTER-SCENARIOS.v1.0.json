@@ -1,0 +1,57 @@
+{
+  "schema": "opencontainer.operations-disaster-scenarios.v1.0",
+  "frozenAt": "2026-09-27",
+  "scenarios": [
+    {
+      "id": "bad-release-rollback",
+      "trigger": "promoted runtime produces critical correctness/security regression",
+      "required": [
+        "freeze-promotion",
+        "mark-known-bad",
+        "block-mutation-if-needed",
+        "preserve-export",
+        "rollback-runtime-without-storage-downgrade",
+        "notify-users",
+        "retain-regression-test"
+      ]
+    },
+    {
+      "id": "corrupt-workspace-recovery",
+      "trigger": "canonical workspace generation is corrupt or fails integrity checks",
+      "required": [
+        "stop-writes",
+        "preserve-corrupt-evidence",
+        "recover-last-valid-generation",
+        "offer-portable-export",
+        "verify-readability",
+        "retain-regression-test",
+        "notify-user-recovery-status"
+      ]
+    },
+    {
+      "id": "compromised-publishing-credential",
+      "trigger": "publishing credential/workflow identity is suspected compromised",
+      "required": [
+        "suspend-publishing",
+        "revoke-credential",
+        "invalidate-untrusted-release",
+        "rebuild-from-clean-provenance",
+        "notify-users",
+        "rotate-credential",
+        "post-incident-review"
+      ]
+    },
+    {
+      "id": "browser-primitive-regression",
+      "trigger": "required OPFS/Web Locks/Service Worker/SAB behavior regresses on watched browser",
+      "required": [
+        "freeze-browser-promotion",
+        "fail-closed-or-disable-affected-path",
+        "preserve-project-export",
+        "record-known-issue",
+        "run-regression-court",
+        "notify-users-if-shipped"
+      ]
+    }
+  ]
+}

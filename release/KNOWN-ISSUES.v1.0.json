@@ -1,0 +1,67 @@
+{
+  "schema": "opencontainer.known-issues.v1.0",
+  "frozenAt": "2026-09-27",
+  "entries": [
+    {
+      "id": "KI-001",
+      "status": "OPEN_EVIDENCE_GAP",
+      "version": "0.1.0-alpha.1",
+      "profile": "desktop-chrome153-ubuntu2404-x64-ci",
+      "browser": "Chrome 153.0.8010.52 / Ubuntu 24.04 x64",
+      "area": "browser-matrix",
+      "summary": "Minimum browser floors and cross-browser matrix are not frozen.",
+      "workaround": null,
+      "safeWorkaround": true,
+      "relatedGates": [
+        "P11-13",
+        "P14-13",
+        "P15-05"
+      ]
+    },
+    {
+      "id": "KI-002",
+      "status": "OPEN_EVIDENCE_GAP",
+      "version": "0.1.0-alpha.1",
+      "profile": "desktop-chrome153-ubuntu2404-x64-ci",
+      "browser": "Chrome 153.0.8010.52 / Ubuntu 24.04 x64",
+      "area": "weak-device",
+      "summary": "4/8 GiB weak-device floor, long-run plateau and memory-pressure evidence remain open.",
+      "workaround": "Use the declared CI profile for evidence; do not infer weak-device guarantees.",
+      "safeWorkaround": true,
+      "relatedGates": [
+        "P7-01",
+        "P7-14",
+        "P14-14"
+      ]
+    },
+    {
+      "id": "KI-003",
+      "status": "OPEN_EXTERNAL_DEPENDENCY",
+      "version": "0.1.0-alpha.1",
+      "profile": "distribution-certification",
+      "browser": "N/A",
+      "area": "publication",
+      "summary": "No external npm publication/GitHub Release identity is certified yet.",
+      "workaround": "Use repository-built certified tarballs only for development evidence; do not call them published artifacts.",
+      "safeWorkaround": true,
+      "relatedGates": [
+        "P11-12",
+        "P15-12"
+      ]
+    },
+    {
+      "id": "KI-004",
+      "status": "OPEN_EXTERNAL_DEPENDENCY",
+      "version": "0.1.0-alpha.1",
+      "profile": "product-security",
+      "browser": "N/A",
+      "area": "security-reporting",
+      "summary": "A verified private vulnerability disclosure channel is not yet recorded.",
+      "workaround": "Do not publish a private-channel claim until the channel is configured and independently verified.",
+      "safeWorkaround": true,
+      "relatedGates": [
+        "P12-17"
+      ]
+    }
+  ]
+}

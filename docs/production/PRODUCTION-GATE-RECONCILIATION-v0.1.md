@@ -8,8 +8,8 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **168**
-- Minimum-closure satisfied: **110**
+- Seed-reconciled against implementation evidence: **182**
+- Minimum-closure satisfied: **124**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -33,7 +33,7 @@
 | P14 Release, update, migration & rollback | 15 | 3 | 18 |
 | P15 SDK, API, documentation & developer experience | 13 | 1 | 14 |
 | P16 License, FTO, governance & contribution policy | 0 | 14 | 14 |
-| P17 Operations, vulnerability response & long-term maintenance | 0 | 14 | 14 |
+| P17 Operations, vulnerability response & long-term maintenance | 14 | 0 | 14 |
 | P18 Evidence, assurance & research integrity | 12 | 0 | 12 |
 
 ## Immediate implementation gaps confirmed during reconciliation
@@ -44,6 +44,9 @@
 
 ## Newly reconciled in this wave
 
+- **P17-01 through P17-14** now meet the pre-1.0 exercised-process minimum closure through an executable operations authority. CI #413 exercised supported-line/security-fix policy, a six-state vulnerability lifecycle, named incident roles, revocation/user-warning rules, known-bad runtime read-only enforcement, dependency and browser-watch cadence, telemetry-free health, v0.1/v0.2 support-bundle parsing, backup/EOL policy, issue-to-regression enforcement, known-issues lookup and four disaster scenarios.
+- CI #413 produced an operations receipt with **14 process areas**, **4/4 disaster drills**, **4 known issues**, **12 retained critical/high regressions**, **0 remote health requests**, a successful known-bad mutation block and SHA-256-bound raw results. The repeated critical court ran **20 files × 5 = 100 executions** with zero unexplained failures, and the declared Chrome profile passed **2/2** installed-distribution product paths.
+- A weekly maintenance workflow now reruns dependency audit, operations drills, browser-profile verification and the repeated browser court. This does **not** create a verified private disclosure channel (P12-17), an externally published package/release, a cross-browser floor or weak-device evidence; those remain separate blockers.
 - **P12-01 through P12-16 and P12-19** now meet their SECURITY-REVIEWED / RELEASE-VERIFIED technical closure for the declared Chrome profile. CI #409 combined the versioned six-zone threat model, OWASP ASVS 5.0.0 cross-check, strict document/Worker CSP and Permissions-Policy review, capability mediation, complete hostile-parser court, traversal/symlink review, explicit resource-DoS review, Service Worker/preview/stale-writer isolation, secret-redaction review, dependency audit, retained CodeQL SARIF, malicious-package corpus, registry-driven critical/high regressions, severity/SLA policy and residual-risk register.
 - CI #409 reported **0 npm vulnerabilities**, **0 CodeQL findings**, **0 CodeQL waivers**, **12/12 retained critical/high regression entries** exercised by 11 executable test files, and **2/2** installed-distribution Chrome product paths with zero unexplained failures.
 - **P12-17, P12-18 and P12-20 remain PARTIAL by design**: no verified private disclosure channel, no independent/second-party review artifact and no human product-security review artifact exist yet. Scanner, CI or AI confidence cannot override them; `production_closed=false` remains explicit.

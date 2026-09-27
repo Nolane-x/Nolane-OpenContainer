@@ -660,3 +660,10 @@ This lets build/config code reason about addresses without expanding OpenContain
 P12 now has an executable product-security court on PR #42. CI #409 at implementation head `4e05b3cf1ca27d6bb5f3e33fda69ebc6411d67af` passed contract, pinned CodeQL and the installed-distribution Chrome product path. The court retains OWASP ASVS 5.0.0 identity, zero-vulnerability npm audit, zero-finding/zero-waiver CodeQL SARIF, an 11-case malicious-package corpus, a 12-entry critical/high regression registry and explicit resource-DoS residual risks for source maps/WASM heap behavior.
 
 The production ledger closes P12-01..P12-16 and P12-19 only. P12-17 (verified private disclosure channel), P12-18 (independent/second-party review) and P12-20 (human product-security review) remain PARTIAL and non-machine-closable. This does not close P7 weak-device/resource-floor work, cross-browser evidence, legal/FTO or operations. `production_closed=false`.
+
+
+## P17 operations and maintenance closure
+
+PR #43 implementation head `631ce3608424a901f74c67e83666f6d14bb87a73` passed CI #413 across contract, CodeQL and the installed-distribution Chrome product path. The operations drill exercised all 14 P17 process areas, four disaster scenarios, four version/profile/browser known issues, 12 retained critical/high regressions, telemetry-free health with zero remote requests, support-bundle v0.1/v0.2 backward parsing and a real VFS mutation block for a known-bad runtime. The repeated critical court ran 100 test-file executions with zero unexplained failures; Chrome passed 2/2 full paths.
+
+P17 is process-closed for the current pre-1.0 scope, not a claim of a staffed hosted operations organization. P12-17 private intake, public package/release identity, cross-browser/browser-floor, weak-device and production-topology evidence remain open. `production_closed=false`.
