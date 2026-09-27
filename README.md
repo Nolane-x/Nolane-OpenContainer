@@ -110,6 +110,8 @@ See:
 - [`docs/guides/AI-CONSUMERS.md`](docs/guides/AI-CONSUMERS.md)
 - [`docs/guides/MIGRATION.md`](docs/guides/MIGRATION.md)
 - [`docs/guides/TROUBLESHOOTING.md`](docs/guides/TROUBLESHOOTING.md)
+- [`docs/guides/SUPPORT-DIAGNOSTICS.md`](docs/guides/SUPPORT-DIAGNOSTICS.md)
+- [`docs/production/TELEMETRY-POLICY.md`](docs/production/TELEMETRY-POLICY.md)
 - [`docs/compatibility/REAL-REPOSITORY-CORPUS.md`](docs/compatibility/REAL-REPOSITORY-CORPUS.md)
 - [`docs/compatibility/COMPATIBILITY-BASELINE.v0.1.json`](docs/compatibility/COMPATIBILITY-BASELINE.v0.1.json)
 - [`docs/compatibility/PROMOTION-GOVERNANCE.md`](docs/compatibility/PROMOTION-GOVERNANCE.md)
