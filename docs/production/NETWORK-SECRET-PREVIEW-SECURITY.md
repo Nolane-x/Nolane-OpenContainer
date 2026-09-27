@@ -49,7 +49,7 @@ Response budgets count bytes read from the actual response stream. A misleading 
 
 Virtual preview routing is not an external-network capability. Service Worker preview routes require owner + epoch proof and stale receipts fail closed.
 
-Browser products should embed untrusted preview documents using the promoted sandbox helper without `allow-same-origin`. Service-Worker-backed preview frames keep `credentialless` disabled so the trusted preview edge remains active; instead, the Service Worker and page bridge strip host credential headers (Authorization, Cookie, API-key/token headers) before dispatching a request to untrusted preview code. The frame may execute scripts, but it must not gain the trusted page origin, parent credentials or canonical storage authority.
+The trusted Service Worker/page bridge strips host credential headers (Authorization, Cookie, API-key/token headers) before dispatching preview requests to untrusted preview code. For an embedded hostile-preview security boundary, the promoted sandbox helper also accepts `html` and renders it through sandboxed `srcdoc` without `allow-same-origin`; this gives the nested document an opaque origin so it cannot read the parent or canonical browser storage. Live Service-Worker URL routing and hostile-frame execution are tested as separate properties because opaque sandbox origins and Service Worker control have different browser storage/control semantics.
 
 ## Evidence boundary
 

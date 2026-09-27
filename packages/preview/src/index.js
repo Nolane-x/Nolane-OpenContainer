@@ -25,7 +25,8 @@ export { BrowserPreviewServiceWorkerBridge } from './browser-service-worker.js';
 
 
 export function createSandboxedPreviewFrame({
-  url,
+  url='about:blank',
+  html=null,
   documentRef=globalThis.document,
   title='OpenContainer preview',
   credentialless=false
@@ -35,6 +36,7 @@ export function createSandboxedPreviewFrame({
   }
   const frame=documentRef.createElement('iframe');
   frame.src=String(url??'about:blank');
+  if(typeof html==='string')frame.srcdoc=html;
   frame.title=String(title);
   frame.referrerPolicy='no-referrer';
   frame.setAttribute('sandbox','allow-scripts allow-forms allow-modals allow-pointer-lock allow-downloads');

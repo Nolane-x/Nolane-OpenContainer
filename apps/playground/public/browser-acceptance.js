@@ -3049,15 +3049,17 @@ async function run() {
       await new Promise((resolve) => setTimeout(resolve, 600));
       return new Response('slow-preview', { status: 200 });
     }
-    if (requestUrl.pathname === '/frame') {
-      const hostCredentialHeaders = Boolean(request.headers?.cookie || request.headers?.authorization);
-      const html = '<!doctype html><meta charset="utf-8"><script>' +
-        '(function(){' +
-        'let parentAccess="readable";try{void parent.__opencontainerTrustedCanary;}catch(e){parentAccess=e.name;}' +
-        'let storageAccess="readable";try{localStorage.getItem("opencontainer-p5-host");}catch(e){storageAccess=e.name;}' +
-        'parent.postMessage({type:"opencontainer:p5-frame",parentAccess:parentAccess,storageAccess:storageAccess,origin:location.origin,hostCredentialHeaders:' + JSON.stringify(hostCredentialHeaders) + '},"*");' +
-        '})();<\\/script>';
-      return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'x-p5-preview': 'frame' } });
+    if (requestUrl.pathname === '/credential-check') {
+      const hostCredentialHeaders = Boolean(
+        request.headers?.cookie ||
+        request.headers?.authorization ||
+        request.headers?.['x-api-key'] ||
+        request.headers?.['x-auth-token']
+      );
+      return new Response(JSON.stringify({ hostCredentialHeaders }), {
+        status: 200,
+        headers: { 'content-type': 'application/json; charset=utf-8', 'x-p5-preview': 'credential-check' }
+      });
     }
     return new Response('preview-final', {
       status: 200,
@@ -3116,12 +3118,29 @@ async function run() {
   globalThis.__opencontainerTrustedCanary = 'trusted-parent-' + crypto.randomUUID();
   localStorage.setItem('opencontainer-p5-host', 'trusted-storage-' + crypto.randomUUID());
   document.cookie = 'opencontainer_p5_host=trusted-cookie-' + crypto.randomUUID() + '; SameSite=Lax; path=/';
+
+  const p5CredentialCheck = await fetch(
+    p5PreviewBridge.url(p5PreviewRoute, '/credential-check'),
+    { cache: 'no-store' }
+  );
+  assert(p5CredentialCheck.ok, 'P5 preview credential-stripping route failed');
+  const p5CredentialReceipt = await p5CredentialCheck.json();
+  assert(
+    p5CredentialReceipt.hostCredentialHeaders === false,
+    'P5 trusted preview edge forwarded host credential headers to untrusted preview authority'
+  );
+
+  const p5MaliciousHtml = '<!doctype html><meta charset="utf-8"><script>' +
+    '(function(){' +
+    'let parentAccess="readable";try{void parent.__opencontainerTrustedCanary;}catch(e){parentAccess=e.name;}' +
+    'let storageAccess="readable";try{localStorage.getItem("opencontainer-p5-host");}catch(e){storageAccess=e.name;}' +
+    'parent.postMessage({type:"opencontainer:p5-frame",parentAccess:parentAccess,storageAccess:storageAccess,locationOrigin:location.origin},"*");' +
+    '})();<\\/script>';
   const p5Frame = createSandboxedPreviewFrame({
-    url: p5PreviewBridge.url(p5PreviewRoute, '/frame'),
+    html: p5MaliciousHtml,
     title: 'OpenContainer P5 sandbox court'
   });
   assert(!p5Frame.sandbox.contains('allow-same-origin'), 'P5 preview sandbox accidentally grants trusted origin');
-  if ('credentialless' in p5Frame) assert(p5Frame.credentialless === false, 'P5 Service-Worker-backed preview unexpectedly enabled credentialless mode');
 
   const p5FrameReceiptPromise = new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -3141,7 +3160,6 @@ async function run() {
   assert(p5FrameReceipt.eventOrigin === 'null', 'P5 preview frame retained trusted same-origin identity');
   assert(p5FrameReceipt.parentAccess !== 'readable', 'P5 preview frame reached trusted parent credential state');
   assert(p5FrameReceipt.storageAccess !== 'readable', 'P5 preview frame reached trusted browser storage');
-  assert(p5FrameReceipt.hostCredentialHeaders === false, 'P5 trusted preview edge forwarded host credential headers to untrusted preview');
   p5Frame.remove();
   delete globalThis.__opencontainerTrustedCanary;
   localStorage.removeItem('opencontainer-p5-host');
@@ -3178,7 +3196,7 @@ async function run() {
     frameLocationOrigin: p5FrameReceipt.origin,
     frameParentAccess: p5FrameReceipt.parentAccess,
     frameStorageAccess: p5FrameReceipt.storageAccess,
-    frameHostCredentialHeaders: p5FrameReceipt.hostCredentialHeaders,
+    previewHostCredentialHeaders: p5CredentialReceipt.hostCredentialHeaders,
     frameCredentialless: 'credentialless' in p5Frame ? p5Frame.credentialless : null,
     policyVersion: p5Decision.policyVersion,
     policyHash: p5Decision.policyHash,
