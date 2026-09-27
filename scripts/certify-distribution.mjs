@@ -117,7 +117,7 @@ console.log(JSON.stringify(receipt));
   if(receipt.state!=='READY'||receipt.exitCode!==0||receipt.stdout!=='distribution ok')throw new Error('distribution SDK/process court failed: '+JSON.stringify(receipt));
   if(receipt.previewText!=='distribution-preview'||receipt.restored!=='one'||receipt.imported!=='one')throw new Error('distribution preview/persistence court failed: '+JSON.stringify(receipt));
   if(
-    receipt.supportBundle?.schema!=='opencontainer.support-bundle.v0.1'||
+    receipt.supportBundle?.schema!=='opencontainer.support-bundle.v0.2'||
     receipt.supportBundle?.errorCode!=='OC_INVALID_STATE'||
     receipt.supportBundle?.customDiagnosticRedacted!==true||
     receipt.supportBundle?.workspaceContentsIncluded!==false||
@@ -184,6 +184,16 @@ console.log(JSON.stringify(receipt));
     ]);
   }
 
+  const diagnosticResult=run(process.execPath,[join(installedRoot,'scripts','diagnostic-self-check.mjs')],{cwd:installedRoot});
+  const diagnosticReceipt=JSON.parse(diagnosticResult.stdout.trim());
+  if(
+    diagnosticReceipt.schema!=='opencontainer.diagnostic-self-check.v0.1'||
+    diagnosticReceipt.ok!==true||
+    diagnosticReceipt.checks?.noSecretLeak!==true||
+    diagnosticReceipt.checks?.readOnlyGeneration!==true||
+    diagnosticReceipt.telemetry?.remoteAnalytics!==false
+  )throw new Error('installed diagnostic self-check failed: '+JSON.stringify(diagnosticReceipt));
+
   console.log(JSON.stringify({
     schema:'opencontainer.distribution-certification.v0.1',
     build,
@@ -204,6 +214,10 @@ console.log(JSON.stringify(receipt));
       source:'node_modules/@nolane/opencontainer/docs/api/PUBLIC-SDK.v0.1.json',
       exportMap:installedManifest.exports,
       forbiddenInternalSubpaths:installedSdkContract.privacyBoundary.noPublicPackageSubpaths.length
+    },
+    diagnosticSelfCheck:{
+      source:'node_modules/@nolane/opencontainer/scripts/diagnostic-self-check.mjs',
+      receipt:diagnosticReceipt
     }
   },null,2));
 }finally{
