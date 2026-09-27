@@ -30,6 +30,10 @@ The compatibility baseline reports filesystem, module, process, HTTP, package an
 - **KI-003 publication:** no external npm publication/GitHub Release identity is certified yet.
 - **KI-004 security reporting:** a verified private vulnerability disclosure channel is not yet recorded.
 
+## Browser / OS / profile matrix
+
+The per-release browser/OS/profile matrix is published separately in `docs/compatibility/RELEASE-COMPATIBILITY-MATRIX.md`. It carries one evidence-backed Chrome/Ubuntu row and explicit unverified rows for broader profiles; it does not freeze browser minimums.
+
 ## Release boundaries
 
 P11-12 remains open until the actual published OpenContainer package/bundle is exercised. P11-13 remains open until real browser-matrix evidence exists and minimum versions can be frozen. Weak-device/resource, private disclosure, public publication and full production closure remain separate gates.

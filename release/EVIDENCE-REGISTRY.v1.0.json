@@ -378,6 +378,14 @@
       "status": "PASS",
       "ref": "CI #417 / PR #44 head 676fcec1b4b8b1fad108c28ab7d71595d5b368db",
       "note": "Commit-bound release compatibility report receipt: 5 exact limitations + 4 exact unsupported classes + 4 mapped known issues; seven source digests; omission tests; 2/2 installed Chrome paths. Does not close actual publication or browser minimums."
+    },
+    {
+      "key": "p15-release-compatibility-matrix",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #421 / PR #45 head 51142c03da23bee52dd85c1beeba40a8184ca00e",
+      "note": "Release-bound P15-05 matrix receipt: 1 retained evidence-backed Chrome/Ubuntu row + 6 explicit unverified rows; no browser floor/resource-floor/cross-browser promotion; 120/120 repeated critical executions and 2/2 installed-distribution Chrome paths."
     }
   ]
 }

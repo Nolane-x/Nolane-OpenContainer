@@ -1,0 +1,175 @@
+{
+  "schema": "opencontainer.release-compatibility-matrix.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P15-05",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "releaseId": "opencontainer-0.1.0-alpha.1-canary",
+  "version": "0.1.0-alpha.1",
+  "channel": "canary",
+  "productionProfileId": "opencontainer-alpha-chromium-node24-v1",
+  "browserMinimumsFrozen": false,
+  "crossBrowserReleaseMatrixClosed": false,
+  "resourceFloorClaimed": false,
+  "rows": [
+    {
+      "id": "chrome-linux-declared",
+      "browser": {
+        "product": "Google Chrome",
+        "version": "153.0.8010.52",
+        "minimumVersionClaimed": false
+      },
+      "os": {
+        "family": "Linux",
+        "distribution": "Ubuntu",
+        "version": "24.04",
+        "arch": "x64"
+      },
+      "device": {
+        "class": "github-hosted-standard-x64",
+        "memoryFloorGiB": null
+      },
+      "evidenceProfile": "desktop-chrome153-ubuntu2404-x64-ci",
+      "status": "SUPPORTED-EVIDENCE-BACKED",
+      "claim": "Supported only for the named retained CI evidence profile.",
+      "evidence": "P0 browser profile receipt + repeated installed-distribution Chrome product path"
+    },
+    {
+      "id": "chrome-windows",
+      "browser": {
+        "product": "Google Chrome",
+        "version": null,
+        "minimumVersionClaimed": false
+      },
+      "os": {
+        "family": "Windows",
+        "distribution": null,
+        "version": null,
+        "arch": "x64"
+      },
+      "device": {
+        "class": "desktop",
+        "memoryFloorGiB": null
+      },
+      "evidenceProfile": null,
+      "status": "UNVERIFIED-NOT-CLAIMED",
+      "claim": "No Windows support claim yet.",
+      "evidence": null
+    },
+    {
+      "id": "chrome-macos",
+      "browser": {
+        "product": "Google Chrome",
+        "version": null,
+        "minimumVersionClaimed": false
+      },
+      "os": {
+        "family": "macOS",
+        "distribution": null,
+        "version": null,
+        "arch": "arm64"
+      },
+      "device": {
+        "class": "desktop",
+        "memoryFloorGiB": null
+      },
+      "evidenceProfile": null,
+      "status": "UNVERIFIED-NOT-CLAIMED",
+      "claim": "No macOS Chrome support claim yet.",
+      "evidence": null
+    },
+    {
+      "id": "firefox-linux",
+      "browser": {
+        "product": "Mozilla Firefox",
+        "version": null,
+        "minimumVersionClaimed": false
+      },
+      "os": {
+        "family": "Linux",
+        "distribution": "Ubuntu",
+        "version": null,
+        "arch": "x64"
+      },
+      "device": {
+        "class": "desktop",
+        "memoryFloorGiB": null
+      },
+      "evidenceProfile": null,
+      "status": "UNVERIFIED-NOT-CLAIMED",
+      "claim": "No Firefox support or minimum-version claim yet.",
+      "evidence": null
+    },
+    {
+      "id": "safari-macos",
+      "browser": {
+        "product": "Safari",
+        "version": null,
+        "minimumVersionClaimed": false
+      },
+      "os": {
+        "family": "macOS",
+        "distribution": null,
+        "version": null,
+        "arch": "arm64"
+      },
+      "device": {
+        "class": "desktop",
+        "memoryFloorGiB": null
+      },
+      "evidenceProfile": null,
+      "status": "UNVERIFIED-NOT-CLAIMED",
+      "claim": "No Safari support or minimum-version claim yet.",
+      "evidence": null
+    },
+    {
+      "id": "chrome-android",
+      "browser": {
+        "product": "Google Chrome",
+        "version": null,
+        "minimumVersionClaimed": false
+      },
+      "os": {
+        "family": "Android",
+        "distribution": null,
+        "version": null,
+        "arch": "arm64"
+      },
+      "device": {
+        "class": "mobile",
+        "memoryFloorGiB": null
+      },
+      "evidenceProfile": null,
+      "status": "UNVERIFIED-NOT-CLAIMED",
+      "claim": "No mobile support claim yet.",
+      "evidence": null
+    },
+    {
+      "id": "chrome-linux-weak-device",
+      "browser": {
+        "product": "Google Chrome",
+        "version": null,
+        "minimumVersionClaimed": false
+      },
+      "os": {
+        "family": "Linux",
+        "distribution": "Ubuntu",
+        "version": null,
+        "arch": "x64"
+      },
+      "device": {
+        "class": "weak-device",
+        "memoryFloorGiB": null
+      },
+      "evidenceProfile": null,
+      "status": "UNVERIFIED-RESOURCE-FLOOR",
+      "claim": "No 4 GiB/8 GiB weak-device support or performance-floor claim yet.",
+      "evidence": null
+    }
+  ],
+  "openBoundaries": [
+    "P11-13 remains open: minimum browser versions are not frozen from this publication matrix.",
+    "P14-13 remains open: frozen-floor-versus-newest-stable regression evidence is not created here.",
+    "P14-14/P7 weak-device resource floors remain open.",
+    "Rows without retained receipts are publication transparency, not support evidence."
+  ],
+  "productionClosed": false
+}

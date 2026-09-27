@@ -56,5 +56,6 @@
     "externally published @nolane/opencontainer package",
     "production closed"
   ],
-  "productionClosed": false
+  "productionClosed": false,
+  "browserOsProfileMatrix": "release/RELEASE-COMPATIBILITY-MATRIX.v1.0.json"
 }

@@ -284,6 +284,10 @@
     "p11-release-compatibility-report": {
       "ref": "CI #417 / PR #44 head 676fcec1b4b8b1fad108c28ab7d71595d5b368db",
       "note": "P11-14 release compatibility reporting court: canary report exactly mirrors all 5 baseline limitations, all 4 product-scope unsupported classes and 4 version/profile/browser known issues; 7 sources SHA-256 bound; omission tests fail closed; report archived 90 days; 110/110 critical executions + 2/2 installed Chrome paths; P11-12 publication and P11-13 browser-floor gates remain open."
+    },
+    "p15-release-compatibility-matrix": {
+      "ref": "CI #421 / PR #45 head 51142c03da23bee52dd85c1beeba40a8184ca00e",
+      "note": "P15-05 per-release browser/OS/profile matrix court: 7 rows, exactly 1 evidence-backed Chrome 153/Ubuntu 24.04 x64 profile and 6 explicit unverified rows; browser minimums/resource floors remain unclaimed; 6 source files SHA-256 bound; 120/120 critical executions + 2/2 installed Chrome paths; P11-13/P14-13/P14-14/P7/P15-12 remain open."
     }
   },
   "overrides": [
@@ -1461,6 +1465,14 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p15-developer-contracts",
+      "closure_met": true
+    },
+    {
+      "id": "P15-05",
+      "domain": "P15",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p15-release-compatibility-matrix",
       "closure_met": true
     },
     {
