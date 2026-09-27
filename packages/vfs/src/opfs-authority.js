@@ -114,8 +114,15 @@ export class OpfsCheckpointAuthority {
     return this;
   }
 
-  async checkpoint(fsOrSnapshot) {
+  async checkpoint(fsOrSnapshot,{crashAt=null}={}) {
     this.#assertOpen();
+    const crashPhases=['after-preflight','after-payload','after-manifest'];
+    assertOc(
+      crashAt===null||crashPhases.includes(crashAt),
+      ErrorCodes.INVALID_ARGUMENT,
+      'Unknown OPFS checkpoint crash phase',
+      {crashAt,crashPhases}
+    );
     const snapshot = typeof fsOrSnapshot?.snapshot === 'function' ? fsOrSnapshot.snapshot() : fsOrSnapshot;
     assertOc(snapshot?.version === 1 && Number.isInteger(snapshot.generation) && Array.isArray(snapshot.entries), ErrorCodes.INVALID_ARGUMENT, 'Invalid VFS checkpoint snapshot');
 
@@ -162,10 +169,15 @@ export class OpfsCheckpointAuthority {
           encoder.encode(payloadText).byteLength + encoder.encode(manifestText).byteLength
         );
       }
+      this.#injectCrash(crashAt,'after-preflight',{generation:snapshot.generation,sequence,payload,slot});
 
       // Payload first. A crash here can only leave an unreachable orphan.
       await this.#writeCheckpointText(this.#payloads, payload, payloadText, 'payload');
+      this.#injectCrash(crashAt,'after-payload',{generation:snapshot.generation,sequence,payload,slot});
+
+      // Canonical identity is switched only by publishing the validated manifest.
       await this.#writeCheckpointText(this.#directory, manifestName, manifestText, 'manifest');
+      this.#injectCrash(crashAt,'after-manifest',{generation:snapshot.generation,sequence,payload,slot});
 
       this.#current = Object.freeze({ ...manifest, slot });
       return this.#current;
@@ -298,9 +310,12 @@ export class OpfsCheckpointAuthority {
   }
 
   async #recoverUnlocked() {
+    const manifestAText=await readText(this.#directory,MANIFEST_A);
+    const manifestBText=await readText(this.#directory,MANIFEST_B);
+    const hasCanonicalMetadata=manifestAText!==null||manifestBText!==null;
     const candidates = [
-      parseManifest(await readText(this.#directory, MANIFEST_A), 'a'),
-      parseManifest(await readText(this.#directory, MANIFEST_B), 'b')
+      parseManifest(manifestAText, 'a'),
+      parseManifest(manifestBText, 'b')
     ]
       .filter(Boolean)
       .sort((a, b) => b.sequence - a.sequence);
@@ -322,7 +337,28 @@ export class OpfsCheckpointAuthority {
     }
 
     this.#current = null;
+    if(hasCanonicalMetadata){
+      throw ocError(
+        ErrorCodes.IMPORT_INVALID,
+        'Canonical OPFS workspace metadata exists but no fully valid checkpoint can be opened',
+        {
+          manifestA:manifestAText===null?'missing':'present',
+          manifestB:manifestBText===null?'missing':'present',
+          structurallyValidCandidates:candidates.length,
+          silentEmptyFallback:false
+        }
+      );
+    }
     return null;
+  }
+
+  #injectCrash(crashAt,phase,details){
+    if(crashAt!==phase)return;
+    throw ocError(ErrorCodes.INVALID_STATE,'Injected OPFS checkpoint crash at '+phase,{
+      injectedCrash:true,
+      phase,
+      ...details
+    });
   }
 
   async #writeCheckpointText(directory, name, content, phase) {
