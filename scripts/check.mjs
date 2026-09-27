@@ -28,7 +28,7 @@ const required=[
   'docs/guides/LIMITATIONS.md','docs/guides/SECURITY-MODEL.md','docs/guides/AI-CONSUMERS.md','docs/guides/MIGRATION.md','docs/guides/TROUBLESHOOTING.md',
   'docs/decisions/ADR-004-guest-capability-membrane.md','docs/decisions/ADR-005-service-worker-compatible-promotion.md','docs/decisions/ADR-006-release-storage-publication.md','docs/decisions/ADR-007-release-evidence-and-promotion.md',
   'release/CRITICAL-FLAKE-POLICY.v0.1.json','scripts/run-critical-flake-campaign.mjs','scripts/run-browser-flake-campaign.mjs',
-  'packages/persistence/src/release-storage.js','tests/release-storage-migration.test.js',
+  'packages/persistence/src/release-storage.js','tests/release-storage-migration.test.js','scripts/audit-p3-persistence-source.mjs','tests/p3-persistence-source-audit.test.js',
   'release/RELEASE-POLICY.v0.1.json','release/RELEASE-CANDIDATE.v0.1.json','scripts/evaluate-release-preflight.mjs','tests/release-preflight.test.js',
   'release/HOTFIX-POLICY.v0.1.json','release/DEPRECATION-POLICY.v0.1.json','release/DEPRECATIONS.v0.1.json','scripts/verify-release-governance.mjs','tests/release-governance.test.js',
   'packages/protocol/src/service-worker-compatibility.js',
