@@ -346,6 +346,14 @@
       "status": "PASS",
       "ref": "CI #398 / PR #40 head fb9e45ac36f17a42c01b1769b37a968d1ed0944a",
       "note": "P5 18-gate network/secret/preview court: Chrome 153/Ubuntu 24.04 x64 declared profile; real CORS/LNA/stream/abort/provider fixtures; canonical URL + redirect capability enforcement; authority-side opaque secrets; diagnostics redaction; virtual HTTP/SW preview isolation; workspace/session/version identity proof with compatibility-ID v2; four frozen network profiles; policy hash/version; contract PASS + 2/2 installed-distribution Chrome paths PASS, zero unexplained failures; production_closed remains false"
+    },
+    {
+      "key": "p18-evidence-assurance",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #401 / PR #41 head bc283647ee9ab04a5ee645eb0a41c8236e97fb40",
+      "note": "Contract/browser P18 assurance bundles, evidence registry enforcement, reason-coded harness exclusions, negative-result preservation, corpus lock, environment validity threats and exact 304-gate stable decision guard."
     }
   ]
 }

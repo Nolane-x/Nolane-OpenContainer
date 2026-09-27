@@ -17,10 +17,11 @@
       "tests/browser-node-compat.test.js",
       "tests/native-esm-publication.test.js",
       "tests/vite-c1-oracle.test.js",
-      "tests/evidence-assurance.test.js"
+      "tests/evidence-assurance.test.js",
+      "tests/p18-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 13
+    "minimumTestFiles": 14
   },
   "browser": {
     "iterations": 2,
