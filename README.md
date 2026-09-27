@@ -116,6 +116,7 @@ See:
 - [`docs/production/DISTRIBUTION-CERTIFICATION.md`](docs/production/DISTRIBUTION-CERTIFICATION.md)
 - [`docs/production/RELEASE-EVIDENCE.md`](docs/production/RELEASE-EVIDENCE.md)
 - [`docs/production/RELEASE-PROMOTION.md`](docs/production/RELEASE-PROMOTION.md)
+- [`docs/production/DIAGNOSTICS-SUPPORT.md`](docs/production/DIAGNOSTICS-SUPPORT.md)
 - [`docs/production/SERVICE-WORKER-RELEASE-COMPATIBILITY.md`](docs/production/SERVICE-WORKER-RELEASE-COMPATIBILITY.md)
 - [`docs/production/STORAGE-MIGRATION-ROLLBACK.md`](docs/production/STORAGE-MIGRATION-ROLLBACK.md)
 - [`research/reference/W5-HANDOFF-v1.33.md`](research/reference/W5-HANDOFF-v1.33.md)

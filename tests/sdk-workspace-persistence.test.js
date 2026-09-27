@@ -102,6 +102,10 @@ test('SDK OPFS workspace profile reopens at persisted generation and continues c
   assert.equal(reopened.fs.generation,secondReceipt.generation);
   assert.equal(reopened.workspacePersistence.current.sequence,secondReceipt.sequence);
   assert.equal(reopened.workspacePersistence.crossContextLocking,true);
+  const reopenedSupport=reopened.supportBundle();
+  assert.equal(reopenedSupport.outcomes.recovery.status,'restored');
+  assert.equal(reopenedSupport.outcomes.recovery.sequence,secondReceipt.sequence);
+  assert.equal(reopenedSupport.outcomes.recovery.generation,secondReceipt.generation);
 
   reopened.fs.beginTransaction().writeFile('state.txt','three').commit();
   const thirdReceipt=await reopened.persistWorkspace();
@@ -142,6 +146,10 @@ test('SDK workspace profile falls back from corrupt newest payload and can repub
   assert.equal(recovered.fs.readFile('state.txt'),'stable');
   assert.equal(recovered.fs.generation,stable.generation);
   assert.equal(recovered.workspacePersistence.current.sequence,stable.sequence);
+  const recoverySupport=recovered.supportBundle();
+  assert.equal(recoverySupport.outcomes.recovery.status,'restored');
+  assert.equal(recoverySupport.outcomes.recovery.sequence,stable.sequence);
+  assert.equal(recoverySupport.outcomes.recovery.generation,stable.generation);
 
   recovered.fs.beginTransaction().writeFile('state.txt','recovered').commit();
   const republished=await recovered.persistWorkspace();

@@ -1,0 +1,26 @@
+{
+  "schema": "opencontainer.diagnostics-policy.v0.1",
+  "budgets": {
+    "entries": 1000,
+    "rawBytes": 262144,
+    "duplicatePerFingerprint": 25,
+    "duplicateFingerprints": 512,
+    "terminalEntries": 200,
+    "terminalBytes": 65536
+  },
+  "telemetry": {
+    "remoteEnabledByDefault": false,
+    "builtInRemoteTransport": false,
+    "optInRequiresExplicitSink": true,
+    "eventPayload": "metadata-only"
+  },
+  "supportBundle": {
+    "workspaceContentsIncluded": false,
+    "privateSourceIncluded": false,
+    "httpBodiesIncluded": false,
+    "diagnosticDetailsIncluded": false,
+    "rawTerminalContentIncluded": false,
+    "aiContentIncludedByDefault": false,
+    "secretsIncluded": false
+  }
+}

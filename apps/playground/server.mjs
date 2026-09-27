@@ -43,7 +43,8 @@ const publicAliases = new Map([
   ['/toolchain/vendor/lightningcss-wasm-1.33.0.tgz', join(repoRoot, 'toolchain/vendor/lightningcss-wasm-1.33.0.tgz')],
   ['/toolchain/vendor/rolldown-browser-1.2.9.tgz', join(repoRoot, 'toolchain/vendor/rolldown-browser-1.2.9.tgz')],
   ['/package-lock.json', sourcePackageLockPath],
-  ['/docs/production/PRODUCTION-PROFILE.json', join(repoRoot, 'docs/production/PRODUCTION-PROFILE.json')]
+  ['/docs/production/PRODUCTION-PROFILE.json', join(repoRoot, 'docs/production/PRODUCTION-PROFILE.json')],
+  ['/scripts/hosting-self-check-lib.mjs', join(repoRoot, 'scripts/hosting-self-check-lib.mjs')]
 ]);
 
 function contentType(path) {

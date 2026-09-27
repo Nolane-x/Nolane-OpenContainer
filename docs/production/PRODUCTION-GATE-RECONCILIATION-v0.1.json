@@ -256,6 +256,10 @@
     "p15-developer-contracts": {
       "ref": "CI #368 / d75449a0df9a33ea8f422526b74d29c8dfe7d1f4",
       "note": "docs-as-contract + installed distribution evidence: public SDK/export privacy contract, generated API/error refs, 44 stable error outcomes, limitations/storage/security/AI/migration/troubleshooting guides, happy+failure examples, installed hosting self-check, privacy-minimized support bundle; 2/2 full installed-distribution Chrome paths passed with zero unexplained failures"
+    },
+    "p8-production-diagnostics": {
+      "ref": "CI #379 / 503988b4eaa3d73644fa98726548a314f92b4060",
+      "note": "production diagnostics/support/privacy court: 243/243 contract tests; bounded raw/duplicate/terminal diagnostics; deterministic fingerprints; support preview; generated-secret redaction; AI default-out; browser/header/package/storage identity; exact recovery/migration/Service Worker update outcomes; read-only bundle generation; zero-remote-telemetry default; receipt-first issue template; deterministic installed diagnostic command; 2/2 full installed-distribution Chrome product paths with zero unexplained failures"
     }
   },
   "overrides": [
@@ -578,6 +582,118 @@
       "promotion": "PASS-BROWSER",
       "evidence": "guest-output",
       "closure_met": false
+    },
+    {
+      "id": "P8-01",
+      "domain": "P8",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p8-production-diagnostics",
+      "closure_met": true
+    },
+    {
+      "id": "P8-02",
+      "domain": "P8",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p8-production-diagnostics",
+      "closure_met": true
+    },
+    {
+      "id": "P8-03",
+      "domain": "P8",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p8-production-diagnostics",
+      "closure_met": true
+    },
+    {
+      "id": "P8-04",
+      "domain": "P8",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p8-production-diagnostics",
+      "closure_met": true
+    },
+    {
+      "id": "P8-05",
+      "domain": "P8",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p8-production-diagnostics",
+      "closure_met": true
+    },
+    {
+      "id": "P8-06",
+      "domain": "P8",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p8-production-diagnostics",
+      "closure_met": true
+    },
+    {
+      "id": "P8-07",
+      "domain": "P8",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p8-production-diagnostics",
+      "closure_met": true
+    },
+    {
+      "id": "P8-08",
+      "domain": "P8",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p8-production-diagnostics",
+      "closure_met": true
+    },
+    {
+      "id": "P8-09",
+      "domain": "P8",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p8-production-diagnostics",
+      "closure_met": true
+    },
+    {
+      "id": "P8-10",
+      "domain": "P8",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p8-production-diagnostics",
+      "closure_met": true
+    },
+    {
+      "id": "P8-11",
+      "domain": "P8",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p8-production-diagnostics",
+      "closure_met": true
+    },
+    {
+      "id": "P8-12",
+      "domain": "P8",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p8-production-diagnostics",
+      "closure_met": true
+    },
+    {
+      "id": "P8-13",
+      "domain": "P8",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p8-production-diagnostics",
+      "closure_met": true
+    },
+    {
+      "id": "P8-14",
+      "domain": "P8",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p8-production-diagnostics",
+      "closure_met": true
     },
     {
       "id": "P11-01",

@@ -100,7 +100,8 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
     engines:{...sourceManifest.engines},
     exports:{...publicSdkContract.exportMap},
     bin:{
-      'opencontainer-hosting-self-check':'./scripts/hosting-self-check.mjs'
+      'opencontainer-hosting-self-check':'./scripts/hosting-self-check.mjs',
+      'opencontainer-diagnostic':'./scripts/opencontainer-diagnostic.mjs'
     },
     scripts:{
       'browser:acceptance':'node scripts/browser-acceptance.mjs',
@@ -129,6 +130,7 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
       'scripts/browser-acceptance.mjs',
       'scripts/hosting-self-check.mjs',
       'scripts/hosting-self-check-lib.mjs',
+      'scripts/opencontainer-diagnostic.mjs',
       'metadata/source-package-lock.json',
       'README.md'
     ],
@@ -152,7 +154,8 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
     'README.md',
     'scripts/browser-acceptance.mjs',
     'scripts/hosting-self-check.mjs',
-    'scripts/hosting-self-check-lib.mjs'
+    'scripts/hosting-self-check-lib.mjs',
+    'scripts/opencontainer-diagnostic.mjs'
   ];
   for(const path of copies)await copyInto(stage,path);
   await copyInto(stage,'package-lock.json','metadata/source-package-lock.json');
@@ -184,11 +187,14 @@ export async function buildDistribution({outputDir=join(repoRoot,'.artifacts','d
     'package/toolchain/vendor/rolldown-browser-1.2.9.tgz',
     'package/metadata/source-package-lock.json',
     'package/docs/production/PRODUCTION-PROFILE.json',
+    'package/docs/production/DIAGNOSTICS-POLICY.v0.1.json',
+    'package/docs/production/DIAGNOSTICS-SUPPORT.md',
     'package/docs/api/PUBLIC-SDK.v0.1.json',
     'package/docs/api/ERROR-CATALOG.v0.1.json',
     'package/docs/api/API-REFERENCE.md',
     'package/docs/api/ERROR-REFERENCE.md',
-    'package/docs/decisions/ADR-003-evidence-boundaries.md'
+    'package/docs/decisions/ADR-003-evidence-boundaries.md',
+    'package/scripts/opencontainer-diagnostic.mjs'
   ];
   const packedFiles=new Set((receipt.files??[]).map((item)=>'package/'+item.path.replace(/^package\//,'')));
   const missing=required.filter((path)=>!packedFiles.has(path));

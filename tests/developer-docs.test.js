@@ -60,17 +60,30 @@ test('support bundle is privacy-minimized and excludes workspace, details and cu
   const bundle=runtime.supportBundle(error);
   const serialized=JSON.stringify(bundle);
 
-  assert.equal(bundle.schema,'opencontainer.support-bundle.v0.1');
+  assert.equal(bundle.schema,'opencontainer.support-bundle.v0.2');
   assert.equal(bundle.privacy.workspaceContentsIncluded,false);
   assert.equal(bundle.privacy.diagnosticDetailsIncluded,false);
   assert.equal(bundle.privacy.secretsIncluded,false);
   assert.equal(bundle.error.code,'OC_INVALID_STATE');
-  assert.equal(bundle.diagnostics.some((entry)=>entry.type==='[custom]'),true);
+  assert.equal(bundle.diagnostics.events.some((entry)=>entry.type==='[custom]'),true);
   assert.equal(serialized.includes(secret),false);
   assert.equal(serialized.includes('private.txt'),false);
   assert.equal(serialized.includes('authorization'),false);
   assert.equal(serialized.includes('workspaceText'),false);
   await runtime.teardown();
+});
+
+test('receipt-first issue template and local diagnostic command preserve privacy guidance',async()=>{
+  const [issue,command,troubleshooting]=await Promise.all([
+    readFile('.github/ISSUE_TEMPLATE/opencontainer_bug.yml','utf8'),
+    readFile('scripts/opencontainer-diagnostic.mjs','utf8'),
+    readFile('docs/guides/TROUBLESHOOTING.md','utf8')
+  ]);
+  for(const term of ['Failure fingerprint','Privacy-minimized diagnostic receipt','Do not paste API keys','removed secrets'])assert.ok(issue.includes(term),term);
+  assert.ok(command.includes('opencontainer.local-diagnostic.v0.1'));
+  assert.ok(command.includes('supportBundlePreview'));
+  assert.ok(troubleshooting.includes('opencontainer-diagnostic'));
+  assert.ok(troubleshooting.includes('supportBundlePreview'));
 });
 
 test('generated API and error references cannot drift from machine contracts',async()=>{

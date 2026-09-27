@@ -252,14 +252,22 @@ try {
 
   const state = await waitForAcceptance(cdp);
   if (state.status !== 'pass') {
+    let parsedResult = null;
+    try { parsedResult = state.result ? JSON.parse(state.result) : null; } catch {}
+    const lastStage = Array.isArray(parsedResult?.stages) ? parsedResult.stages.at(-1) : null;
+    const conciseResult = parsedResult ? JSON.stringify({
+      error: parsedResult.error ?? null,
+      lastStage,
+      stageCount: Array.isArray(parsedResult.stages) ? parsedResult.stages.length : null,
+      diagnosticCount: Array.isArray(parsedResult.diagnostics) ? parsedResult.diagnostics.length : null
+    }) : String(state.result ?? '').slice(0, 8000);
     throw new Error([
       'Browser acceptance failed',
       'status=' + state.status,
       'stage=' + (state.stage ?? 'unknown'),
-      'result=' + (state.result ?? ''),
+      'result=' + conciseResult,
       'events=' + JSON.stringify(cdp.events.slice(-20)),
-      'dom=' + (state.html ?? ''),
-      'chrome-stderr=' + devtools.stderr()
+      'chrome-stderr=' + devtools.stderr().slice(-8000)
     ].join('\n'));
   }
 

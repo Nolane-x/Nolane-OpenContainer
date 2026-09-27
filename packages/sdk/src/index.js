@@ -1,5 +1,5 @@
 import { ErrorCodes, assertOc } from '../../protocol/src/index.js';
-import { DiagnosticJournal } from '../../diagnostics/src/index.js';
+import { DiagnosticJournal, SupportBundleAuthority } from '../../diagnostics/src/index.js';
 import { ResourceGovernor } from '../../resources/src/index.js';
 import { MemoryVFS, OpfsCheckpointAuthority } from '../../vfs/src/index.js';
 import { ProcessSupervisor } from '../../process/src/index.js';
@@ -9,24 +9,6 @@ import { PreviewAuthority } from '../../preview/src/index.js';
 import { MemoryPersistenceAuthority } from '../../persistence/src/index.js';
 import { OpenContainerKernel } from '../../kernel/src/index.js';
 import { OpenContainerProductionProfile } from './profile.js';
-
-const SUPPORT_DIAGNOSTIC_TYPES=new Set([
-  'runtime.state',
-  'process.error',
-  'process.exit',
-  'worker.session',
-  'worker.timeout',
-  'browser-worker.guest-diagnostic',
-  'browser-worker.error',
-  'esm-edge.binary-response',
-  'esm-edge.fetch-failure',
-  'preview-edge.response',
-  'preview-edge.failure'
-]);
-
-function supportDiagnosticType(value){
-  return SUPPORT_DIAGNOSTIC_TYPES.has(value)?value:'[custom]';
-}
 
 export class OpenContainer {
   static get productionProfile(){return OpenContainerProductionProfile;}
@@ -41,6 +23,8 @@ export class OpenContainer {
     const snapshots=new MemoryPersistenceAuthority({fs});
     const kernel=new OpenContainerKernel({diagnostics});
     Object.assign(this,{fs,process,packages,net,preview,snapshots,resources,diagnostics,workspacePersistence:null,packageContentStore:null});
+    const support=new SupportBundleAuthority({runtime:this,profile:OpenContainerProductionProfile,browserScope:options.browserScope??globalThis});
+    Object.defineProperty(this,'_support',{value:support,enumerable:false});
     Object.defineProperty(this,'_kernel',{value:kernel,enumerable:false});
     Object.defineProperty(this,'_workspacePersistenceOptions',{value:options.workspacePersistence??null,enumerable:false});
     Object.defineProperty(this,'_packagePersistenceOptions',{value:options.packagePersistence??null,enumerable:false});
@@ -49,8 +33,15 @@ export class OpenContainer {
   async boot(){
     if(this._workspacePersistenceOptions){
       const authority=await new OpfsCheckpointAuthority(this._workspacePersistenceOptions).open();
-      await authority.restoreInto(this.fs);
+      const restoredGeneration=await authority.restoreInto(this.fs);
       this.workspacePersistence=authority;
+      this._support.recordOutcome('recovery',{
+        status:restoredGeneration===null?'empty':'restored',
+        sequence:authority.current?.sequence??null,
+        generation:authority.current?.generation??restoredGeneration??null
+      });
+    }else{
+      this._support.recordOutcome('recovery',{status:'not-configured',generation:this.fs.generation});
     }
     if(this._packagePersistenceOptions){
       const store=await new OpfsPackageContentStore(this._packagePersistenceOptions).open();
@@ -94,32 +85,14 @@ export class OpenContainer {
       packagePersistence:this.packageContentStore?Object.freeze({hydratedCount:this.packageContentStore.hydratedCount??0,crossContextLocking:this.packageContentStore.crossContextLocking}):null
     });
   }
-  supportBundle(error=null){
-    const diagnostics=this.diagnostics.list().map((entry)=>Object.freeze({seq:entry.seq,type:supportDiagnosticType(entry.type)}));
-    const errorReceipt=error?Object.freeze({
-      name:typeof error?.name==='string'?error.name:'Error',
-      code:typeof error?.code==='string'?error.code:'OC_INTERNAL'
-    }):null;
-    return Object.freeze({
-      schema:'opencontainer.support-bundle.v0.1',
-      profile:Object.freeze({
-        profileId:OpenContainerProductionProfile.profileId,
-        runtimeVersion:OpenContainerProductionProfile.runtime.version,
-        productionClosed:OpenContainerProductionProfile.productionClosed
-      }),
-      status:this.status(),
-      resources:Object.freeze({
-        limits:this.resources.limits,
-        usage:this.resources.usage
-      }),
-      error:errorReceipt,
-      diagnostics:Object.freeze(diagnostics),
-      privacy:Object.freeze({
-        workspaceContentsIncluded:false,
-        diagnosticDetailsIncluded:false,
-        secretsIncluded:false
-      })
-    });
+  supportBundlePreview(options={}){
+    return this._support.preview(options);
+  }
+  supportBundle(error=null,options={}){
+    return this._support.build(error,options);
+  }
+  recordSupportOutcome(kind,outcome){
+    return this._support.recordOutcome(kind,outcome);
   }
   async persistWorkspace(){
     this._kernel.assertReady();
