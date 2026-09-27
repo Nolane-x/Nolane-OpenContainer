@@ -90,6 +90,36 @@ function edgeHeaders(input = {}) {
   return headers;
 }
 
+function previewEdgeHeaders(input = {}) {
+  const headers = new Headers(input);
+  for (const name of [
+    'set-cookie',
+    'set-cookie2',
+    'clear-site-data',
+    'www-authenticate',
+    'proxy-authenticate',
+    'content-security-policy',
+    'permissions-policy',
+    'cross-origin-opener-policy',
+    'cross-origin-embedder-policy',
+    'cross-origin-resource-policy'
+  ]) headers.delete(name);
+  headers.set('cache-control', 'no-store');
+  headers.set('cross-origin-opener-policy', 'same-origin');
+  headers.set('cross-origin-embedder-policy', 'require-corp');
+  headers.set('cross-origin-resource-policy', 'cross-origin');
+  headers.set('access-control-allow-origin', '*');
+  headers.set('referrer-policy', 'no-referrer');
+  headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=(), usb=(), serial=(), hid=(), payment=()');
+  headers.set(
+    'content-security-policy',
+    "sandbox allow-scripts allow-forms allow-modals allow-pointer-lock allow-popups; default-src 'none'; script-src * 'unsafe-inline' 'unsafe-eval' blob: data:; style-src * 'unsafe-inline' blob: data:; img-src * data: blob:; font-src * data: blob:; connect-src *; worker-src * blob:; child-src * blob:; frame-src *; media-src * data: blob:; form-action *"
+  );
+  headers.set('x-opencontainer-edge', 'service-worker');
+  headers.set('x-opencontainer-preview-sandbox', 'opaque-origin-v1');
+  return headers;
+}
+
 async function routeModule(request, url) {
   const relative = url.pathname.slice(MODULE_PREFIX.length);
   const encodedSession = relative.split('/')[0];
@@ -126,7 +156,7 @@ async function routeModule(request, url) {
   } catch {
     return new Response('OpenContainer publication session is unavailable', {
       status: 504,
-      headers: edgeHeaders({ 'content-type': 'text/plain; charset=utf-8' })
+      headers: previewEdgeHeaders({ 'content-type': 'text/plain; charset=utf-8' })
     });
   }
 }
@@ -164,8 +194,10 @@ async function routePreview(request, url) {
     return new Response('No OpenContainer preview authority client', { status: 503, headers: edgeHeaders() });
   }
 
+  const requestId = globalThis.crypto?.randomUUID?.() ?? (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
   const attempts = windows.map((client) => requestFromClient(client, {
     type: 'opencontainer:preview-fetch',
+    requestId,
     port,
     owner,
     epoch,
@@ -173,11 +205,14 @@ async function routePreview(request, url) {
     method,
     headers: Object.fromEntries(request.headers.entries()),
     body
+  }, {
+    signal: request.signal,
+    onAbort: () => client.postMessage({ type: 'opencontainer:preview-abort', requestId })
   }));
 
   try {
     const result = await Promise.any(attempts);
-    const headers = edgeHeaders(result.headers);
+    const headers = previewEdgeHeaders(result.headers);
     headers.set('x-opencontainer-preview-port', String(port));
     headers.set('x-opencontainer-preview-owner', owner);
     headers.set('x-opencontainer-preview-epoch', String(epoch));
@@ -196,28 +231,46 @@ async function routePreview(request, url) {
   }
 }
 
-function requestFromClient(client, message) {
+function requestFromClient(client, message, { signal = null, onAbort = null } = {}) {
   return new Promise((resolve, reject) => {
     const channel = new MessageChannel();
-    const timer = setTimeout(() => {
+    let settled = false;
+    const cleanup = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener?.('abort', abort);
       channel.port1.close();
-      reject(Object.assign(new Error('OpenContainer authority timeout'), { code: 'OC_EDGE_TIMEOUT' }));
+    };
+    const finish = (action) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      action();
+    };
+    const abort = () => {
+      try { onAbort?.(); } catch {}
+      finish(() => reject(signal?.reason ?? Object.assign(new Error('OpenContainer request aborted'), { code: 'OC_EDGE_ABORTED' })));
+    };
+    const timer = setTimeout(() => {
+      finish(() => reject(Object.assign(new Error('OpenContainer authority timeout'), { code: 'OC_EDGE_TIMEOUT' })));
     }, REQUEST_TIMEOUT_MS);
 
     channel.port1.onmessage = (event) => {
-      clearTimeout(timer);
-      channel.port1.close();
       const data = event.data;
       if (!data?.ok) {
-        reject(Object.assign(new Error(data?.message ?? data?.code ?? 'Authority not owned'), {
+        finish(() => reject(Object.assign(new Error(data?.message ?? data?.code ?? 'Authority not owned'), {
           code: data?.code,
           details: data?.details
-        }));
+        })));
         return;
       }
-      resolve(data);
+      finish(() => resolve(data));
     };
 
+    if (signal?.aborted) {
+      abort();
+      return;
+    }
+    signal?.addEventListener?.('abort', abort, { once: true });
     client.postMessage(message, [channel.port2]);
   });
 }
