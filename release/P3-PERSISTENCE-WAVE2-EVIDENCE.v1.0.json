@@ -1,0 +1,98 @@
+{
+  "schema": "opencontainer.p3-persistence-wave2-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P3",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 50,
+  "implementationHead": "4c8d5b1fc88ad2db49e0431dbdbd86786f50552a",
+  "ci": {
+    "runNumber": 459,
+    "runId": 36323228270,
+    "testedCheckoutCommit": "e525f2be2671f81b3d416bee23f4aa15afee1e70",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "criticalTestFiles": 33,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 165,
+    "contractUnexplainedFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "browserDurationsMs": [
+      38741,
+      35060
+    ],
+    "browserUnexplainedFailures": 0
+  },
+  "closedGates": [
+    {
+      "id": "P3-03",
+      "evidence": [
+        "persistent monotonic WriterEpoch claims under exclusive same-origin Web Lock",
+        "canonical checkpoint manifest binds writerEpoch and StorageGeneration",
+        "StorageGeneration advances only on successful canonical publication",
+        "successor WriterEpoch fences the prior writer with OC_STALE_GENERATION",
+        "real Chrome OPFS court proves WriterEpoch 1 -> 2 takeover and stale-writer rejection"
+      ]
+    },
+    {
+      "id": "P3-08",
+      "evidence": [
+        "deterministic quota faults after 0 bytes, 1 byte, header, mid-payload, pre-commit and post-payload/pre-manifest",
+        "every fault returns OC_RESOURCE_EXHAUSTED",
+        "real Chrome OPFS reopen preserves the last committed sequence/generation for all six phases",
+        "post-payload pre-manifest bytes remain unreachable garbage and never become canonical"
+      ]
+    }
+  ],
+  "preservedOpenGates": [
+    {
+      "id": "P3-07",
+      "reason": "WorkspaceFS canonical publication still lacks the source-required explicit SyncAccessHandle flush/durability boundary."
+    },
+    {
+      "id": "P3-09",
+      "reason": "Real frozen/background-tab failover and resume re-handshake remains unclosed."
+    },
+    {
+      "id": "P3-13",
+      "reason": "Corruption classes are not yet separately certified across canonical source, draft/checkpoint, package cache and derived index."
+    },
+    {
+      "id": "P3-14",
+      "reason": "Low-storage cleanup priority across rebuildable versus canonical data is not yet globally proven."
+    },
+    {
+      "id": "P3-15",
+      "reason": "Restore still lacks an explicit unrelated-newer-work safety court."
+    },
+    {
+      "id": "P3-17",
+      "reason": "Imported-copy, linked-folder and read-only-source mode semantics are not yet certified."
+    },
+    {
+      "id": "P3-18",
+      "reason": "External permission revocation and edit-conflict court remains open."
+    },
+    {
+      "id": "P3-20",
+      "reason": "Destructive delete, tombstone and permanent-purge recoverability remains open."
+    }
+  ],
+  "browserReceiptAuthority": {
+    "generator": "scripts/capture-p3-wave2-browser-evidence.mjs",
+    "requiredStages": [
+      "p3-writer-election-pass",
+      "p3-quota-fault-matrix-pass"
+    ],
+    "quotaFaultPhases": [
+      "after-0-bytes",
+      "after-1-byte",
+      "after-header",
+      "mid-payload",
+      "pre-commit",
+      "post-payload-pre-manifest"
+    ]
+  },
+  "productionClosed": false
+}
