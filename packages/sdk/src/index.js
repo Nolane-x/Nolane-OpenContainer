@@ -14,7 +14,7 @@ export class OpenContainer {
   static get productionProfile(){return OpenContainerProductionProfile;}
   constructor(options={}){
     const diagnostics=new DiagnosticJournal(options.diagnostics);
-    const resources=new ResourceGovernor(options.resources);
+    const resources=new ResourceGovernor({...options.resources,hardwareConcurrencyHint:options.resources?.hardwareConcurrencyHint??globalThis.navigator?.hardwareConcurrency??null});
     const fs=new MemoryVFS();
     const process=new ProcessSupervisor({resources,diagnostics,outputLimitBytes:options.processOutputLimitBytes});
     const packages=new PackageGraphAuthority({fs});

@@ -292,6 +292,10 @@
     "p13-supply-chain-review": {
       "ref": "CI #424 / PR #46 head 57a20790c64619ede9a55fe7a76a8424bf62d311",
       "note": "P13 SECURITY-REVIEWED / RELEASE-VERIFIED supply-chain court: immutable action refs + least-privilege workflow audit; exact tested-distribution digest equals release-evidence artifact; independent SHA-256/SHA-512; SPDX 2.3; in-toto/SLSA provenance; exact commit/lock/toolchain/environment; explicit production/optional/dev dependency inventory; zero shipped optional-adapter bundles; content-policy negative court; reproducible build; compromised-release revocation/user-warning drill; 130/130 critical executions + 2/2 installed Chrome paths. Nine external trust/publication/archive gates remain open."
+    },
+    "p7-resource-wave1": {
+      "ref": "CI #428 / PR #47 head 506afe66d65c1df71d9fd9e585e1a82bda428ce1",
+      "note": "P7 wave-1 executable resource court: hardwareConcurrency is clamped hint-only worker policy; browser quota rejects over-budget Worker and proves lease reuse; Worker RPC task/in-flight leases are bounded; source-map retained cache defaults to zero; 140/140 critical executions + 2/2 installed Chrome paths; resource measurement receipt records Chrome/Ubuntu/device identity, 45.200s/35.285s full-path durations and all P18 host-noise validity threats. No weak-device, 4/8 GiB, 8-hour, thermal, cross-browser or latency-floor claim."
     }
   },
   "overrides": [
@@ -826,18 +830,26 @@
     {
       "id": "P7-07",
       "domain": "P7",
-      "state": "PARTIAL",
-      "promotion": "IMPLEMENTED",
-      "evidence": "worker-budget",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p7-resource-wave1",
+      "closure_met": true
     },
     {
       "id": "P7-08",
       "domain": "P7",
       "state": "PARTIAL",
       "promotion": "PASS-BROWSER",
-      "evidence": "guest-output",
+      "evidence": "p7-resource-wave1",
       "closure_met": false
+    },
+    {
+      "id": "P7-14",
+      "domain": "P7",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p7-resource-wave1",
+      "closure_met": true
     },
     {
       "id": "P8-01",

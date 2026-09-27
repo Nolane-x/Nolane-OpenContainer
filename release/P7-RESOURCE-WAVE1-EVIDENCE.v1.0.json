@@ -1,0 +1,114 @@
+{
+  "schema": "opencontainer.p7-resource-wave1-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P7",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 47,
+  "implementationHead": "506afe66d65c1df71d9fd9e585e1a82bda428ce1",
+  "ci": {
+    "runNumber": 428,
+    "runId": 36315031410,
+    "testedCheckoutCommit": "e93898c941d582e4b9ae2be5e6bc6adff7aaf771",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "resourceMeasurement": "PASS",
+    "criticalTestFiles": 28,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 140,
+    "contractUnexplainedFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "browserUnexplainedFailures": 0
+  },
+  "evidenceProfile": {
+    "id": "desktop-chrome153-ubuntu2404-x64-ci",
+    "browser": "Google Chrome 153.0.8010.52",
+    "os": "Ubuntu 24.04.5 LTS",
+    "arch": "x64",
+    "deviceClass": "github-hosted-standard-x64",
+    "logicalCpuCount": 4,
+    "totalMemoryBytes": 16766414848,
+    "resourceFloorClaimed": false
+  },
+  "workerBudget": {
+    "hardwareConcurrencyHint": 4,
+    "directHardwareMappingForbidden": true,
+    "hardCap": 8,
+    "rule": "ceil(hint/2), clamped to hard cap when no explicit worker limit is configured"
+  },
+  "boundedResources": {
+    "processes": 32,
+    "outputBytes": 4194304,
+    "memoryBytes": 268435456,
+    "tasks": 128,
+    "inFlightBytes": 16777216,
+    "sourceMapBytes": 0,
+    "sourceMapCacheMode": "disabled-by-default"
+  },
+  "measurement": {
+    "kind": "full-product-path-wall-clock",
+    "durationsMs": [
+      45200,
+      35285
+    ],
+    "minimumMs": 35285,
+    "maximumMs": 45200,
+    "meanMs": 40243,
+    "validityThreats": {
+      "warmup": "RECORDED",
+      "cache": "MIXED",
+      "cpuThrottling": "NOT-CONTROLLED",
+      "gc": "NOT-FORCED",
+      "thermal": "NOT-OBSERVABLE",
+      "network": "RECORDED-MIXED",
+      "devtools": "ATTACHED-HARNESS"
+    }
+  },
+  "closedGates": [
+    {
+      "id": "P7-07",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "hardwareConcurrency is a clamped scheduling hint; real-browser worker quota enforces and releases leases."
+    },
+    {
+      "id": "P7-14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "closureMet": true,
+      "evidence": "measurement receipt binds profile/device/run durations and records warmup/cache/CPU/GC/thermal/network/DevTools validity threats."
+    }
+  ],
+  "preservedOpenGates": [
+    {
+      "id": "P7-01",
+      "state": "UNRECONCILED",
+      "reason": "No frozen 4 GiB / 8 GiB device campaign exists."
+    },
+    {
+      "id": "P7-08",
+      "state": "PARTIAL",
+      "reason": "Task/in-flight/diagnostic/log budgets are bounded and retained source-map cache defaults to zero, but every source-map retention path is not yet globally audited."
+    },
+    {
+      "id": "P7-09",
+      "state": "UNRECONCILED",
+      "reason": "No 8-hour plateau campaign exists."
+    },
+    {
+      "id": "P7-12",
+      "state": "UNRECONCILED",
+      "reason": "Weak-device regression budgets are not frozen."
+    }
+  ],
+  "claims": {
+    "latencyFloor": false,
+    "weakDeviceFloor": false,
+    "thermalFloor": false,
+    "crossBrowser": false,
+    "eightHourPlateau": false
+  },
+  "productionClosed": false
+}

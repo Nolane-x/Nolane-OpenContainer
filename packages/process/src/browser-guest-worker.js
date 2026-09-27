@@ -128,7 +128,8 @@ export class BrowserGuestWorkerAuthority {
       transport: this.#worker,
       maxPending: this.#maxPending,
       diagnostics: this.#diagnostics,
-      requestTimeoutMs: this.requestTimeoutMs
+      requestTimeoutMs: this.requestTimeoutMs,
+      resources: this.#resources
     });
     return this.identity;
   }

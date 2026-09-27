@@ -126,6 +126,7 @@ See:
 - [`docs/production/DISTRIBUTION-CERTIFICATION.md`](docs/production/DISTRIBUTION-CERTIFICATION.md)
 - [`docs/production/RELEASE-EVIDENCE.md`](docs/production/RELEASE-EVIDENCE.md)
 - [`docs/production/SUPPLY-CHAIN-SECURITY-REVIEW.md`](docs/production/SUPPLY-CHAIN-SECURITY-REVIEW.md)
+- [`docs/production/P7-RESOURCE-EVIDENCE.md`](docs/production/P7-RESOURCE-EVIDENCE.md)
 - [`docs/production/RELEASE-PROMOTION.md`](docs/production/RELEASE-PROMOTION.md)
 - [`docs/production/DIAGNOSTICS-SUPPORT.md`](docs/production/DIAGNOSTICS-SUPPORT.md)
 - [`docs/production/SERVICE-WORKER-RELEASE-COMPATIBILITY.md`](docs/production/SERVICE-WORKER-RELEASE-COMPATIBILITY.md)

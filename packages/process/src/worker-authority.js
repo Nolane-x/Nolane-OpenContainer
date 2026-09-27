@@ -1,5 +1,21 @@
 import { ErrorCodes, ocError } from '../../protocol/src/index.js';
 
+const byteEncoder=new TextEncoder();
+function estimateEnvelopeBytes(value,seen=new WeakSet(),depth=0){
+  if(value===null||value===undefined)return 4;
+  if(typeof value==='string')return byteEncoder.encode(value).byteLength;
+  if(typeof value==='number'||typeof value==='boolean'||typeof value==='bigint')return 16;
+  if(value instanceof ArrayBuffer)return value.byteLength;
+  if(ArrayBuffer.isView(value))return value.byteLength;
+  if(typeof value!=='object')return 16;
+  if(depth>=8||seen.has(value))return 32;
+  seen.add(value);
+  if(Array.isArray(value))return value.reduce((sum,item)=>sum+estimateEnvelopeBytes(item,seen,depth+1),16);
+  let total=16;
+  for(const [key,item] of Object.entries(value))total+=byteEncoder.encode(key).byteLength+estimateEnvelopeBytes(item,seen,depth+1);
+  return total;
+}
+
 function workerErrorFromEnvelope(error) {
   if (!error) return ocError(ErrorCodes.INVALID_STATE, 'Worker request failed');
   return ocError(error.code || ErrorCodes.INVALID_STATE, error.message || 'Worker request failed', error.details);
@@ -16,11 +32,13 @@ export class WorkerRpcAuthority {
   #nextId = 0;
   #closed = false;
   #requestTimeoutMs;
+  #resources;
 
-  constructor({ transport = null, maxPending = 64, requestTimeoutMs = 0, diagnostics } = {}) {
+  constructor({ transport = null, maxPending = 64, requestTimeoutMs = 0, diagnostics, resources = null } = {}) {
     this.#diagnostics = diagnostics;
     this.#maxPending = Math.max(1, Number(maxPending) || 1);
     this.#requestTimeoutMs = Math.max(0, Number(requestTimeoutMs) || 0);
+    this.#resources = resources;
     if (transport) this.restart(transport);
   }
 
@@ -81,6 +99,9 @@ export class WorkerRpcAuthority {
       payload
     });
 
+    const inFlightBytes=estimateEnvelopeBytes(envelope);
+    const lease=this.#resources?.reserve({tasks:1,inFlightBytes})??null;
+
     let resolve;
     let reject;
     const response = new Promise((res, rej) => {
@@ -94,6 +115,7 @@ export class WorkerRpcAuthority {
         const pending = this.#pending.get(id);
         if (!pending) return;
         this.#pending.delete(id);
+        pending.lease?.release();
         const error = ocError(ErrorCodes.WORKER_TIMEOUT, 'Worker RPC request timed out', {
           session: this.#session,
           epoch: this.#epoch,
@@ -106,13 +128,14 @@ export class WorkerRpcAuthority {
       }, this.#requestTimeoutMs);
     }
 
-    this.#pending.set(id, { resolve, reject, method, timer });
+    this.#pending.set(id, { resolve, reject, method, timer, lease, inFlightBytes });
     try {
       if (transfer !== undefined) this.#transport.postMessage(envelope, transfer);
       else this.#transport.postMessage(envelope);
     } catch (error) {
       this.#pending.delete(id);
       if (timer) clearTimeout(timer);
+      lease?.release();
       reject(error);
     }
 
@@ -144,6 +167,7 @@ export class WorkerRpcAuthority {
     if (!pending) return false;
     this.#pending.delete(message.id);
     if (pending.timer) clearTimeout(pending.timer);
+    pending.lease?.release();
 
     if (message.ok === false) pending.reject(workerErrorFromEnvelope(message.error));
     else pending.resolve(message.value);
@@ -172,6 +196,7 @@ export class WorkerRpcAuthority {
   #rejectPending(error) {
     for (const pending of this.#pending.values()) {
       if (pending.timer) clearTimeout(pending.timer);
+      pending.lease?.release();
       pending.reject(error);
     }
     this.#pending.clear();

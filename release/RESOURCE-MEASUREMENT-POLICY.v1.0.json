@@ -1,0 +1,77 @@
+{
+  "schema": "opencontainer.resource-measurement-policy.v1.0",
+  "frozenAt": "2026-09-27",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P7",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "declaredEvidenceProfile": "desktop-chrome153-ubuntu2404-x64-ci",
+  "workerBudget": {
+    "rule": "hardwareConcurrency is a hint only; absent an explicit worker limit, effective guest-worker capacity is ceil(hint/2) clamped to a hard cap.",
+    "hardCap": 8,
+    "directHardwareMappingForbidden": true
+  },
+  "boundedResources": {
+    "processes": 32,
+    "outputBytes": 4194304,
+    "memoryBytes": 268435456,
+    "tasks": 128,
+    "inFlightBytes": 16777216,
+    "sourceMapBytes": 0,
+    "sourceMapCacheMode": "disabled-by-default"
+  },
+  "measurementMetadata": {
+    "requiredValidityThreats": [
+      "warmup",
+      "cache",
+      "cpuThrottling",
+      "gc",
+      "thermal",
+      "network",
+      "devtools"
+    ],
+    "requiredDeviceFields": [
+      "class",
+      "logicalCpuCount",
+      "totalMemoryBytes",
+      "resourceFloorClaimed"
+    ],
+    "timingSource": "critical browser full-product-path iteration durations",
+    "claims": {
+      "latencyFloor": false,
+      "weakDeviceFloor": false,
+      "thermalFloor": false,
+      "crossBrowser": false,
+      "eightHourPlateau": false
+    }
+  },
+  "gateAuthority": {
+    "P7-07": {
+      "machineClosable": true,
+      "minimumClosure": "PASS-INTEGRATION + declared-profile evidence"
+    },
+    "P7-14": {
+      "machineClosable": true,
+      "minimumClosure": "PASS-INTEGRATION + declared-profile evidence"
+    },
+    "P7-08": {
+      "machineClosable": false,
+      "state": "PARTIAL",
+      "reason": "Task/in-flight/diagnostic/log budgets are enforced, but all source-map retention paths are not yet globally audited; retained source-map cache remains disabled by default."
+    },
+    "P7-01": {
+      "machineClosable": false,
+      "state": "OPEN_DEVICE",
+      "reason": "4/8 GiB reference-device campaigns do not exist."
+    },
+    "P7-09": {
+      "machineClosable": false,
+      "state": "OPEN_LONG_RUN",
+      "reason": "8-hour plateau evidence does not exist."
+    },
+    "P7-12": {
+      "machineClosable": false,
+      "state": "OPEN_DEVICE",
+      "reason": "Weak-device regression budgets are not frozen."
+    }
+  },
+  "productionClosed": false
+}
