@@ -129,3 +129,38 @@ CI #475 passed 375/375 unit tests, 34 critical files × 5 = 170 repeated file ex
 - P3-20 — destructive delete / tombstone / permanent purge recovery.
 
 `production_closed=false` remains mandatory.
+
+
+## Wave 4 — low-storage cleanup priority
+
+**Implementation evidence:** CI #491 / PR #52 / `3debec759ac83f5fd5582a211659bb1be623de68`  
+**Tested checkout:** `55a15f97f7ba7e5b31f508f865c1d659aa397fab`  
+**Closure:** `P3-14`
+
+The production cleanup coordinator freezes the low-storage order:
+
+```text
+temporary
+→ derived / rebuildable
+→ public cache
+→ checkpoint garbage
+→ canonical source [protected]
+→ canonical checkpoint [protected]
+```
+
+Canonical tiers are not simply lower priority: they are hard-protected and cannot be registered with protection disabled. If reclaimable bytes are insufficient, cleanup reports `targetSatisfied=false`; it does not delete canonical state to make an uncommitted replacement fit.
+
+The real Chrome OPFS court persists temporary scratch, a digest-bound derived index, immutable package-cache bytes, a checkpoint orphan, a current checkpoint and a fallback checkpoint. It forces an impossible target so every reclaimable tier executes. The receipt proves the exact four-tier reclaim order, both canonical callbacks remain uncalled, package/derived bytes are rebuildable, the checkpoint orphan is removed, and reopen still restores the current acknowledged workspace while retaining its fallback checkpoint.
+
+CI #491 passed 383/383 unit tests, 35 critical files × 5 = 175 repeated file executions, CodeQL and 2/2 installed-distribution Chrome product paths. Dedicated artifact #10935380632 verifies the low-storage invariants in both browser iterations.
+
+### Still open after Wave 4
+
+- P3-07 — explicit canonical flush/durability boundary.
+- P3-09 — frozen/background-tab writer failover and stale resume publication.
+- P3-15 — restore safety point and unrelated newer-work protection.
+- P3-17 — imported-copy / linked-folder / read-only-source semantics.
+- P3-18 — external permission revocation and edit conflict.
+- P3-20 — destructive delete / tombstone / permanent purge recovery.
+
+`production_closed=false` remains mandatory.
