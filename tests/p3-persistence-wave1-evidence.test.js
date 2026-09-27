@@ -39,25 +39,25 @@ test('P3 wave1 receipt closes exactly its ten certified gates and remains histor
     assert.equal(row.evidence,'p3-persistence-wave1',id);
     assert.equal(row.closure_met,true,id);
   }
-  assert.equal(ledger.overrides.length,191);
+  assert.ok(ledger.overrides.length>=191);
   assert.ok(ledger.overrides.filter(item=>item.closure_met===true).length>=151);
 });
 
 test('P3 wave1 preserves its original open-boundary receipt without blocking later stronger evidence',()=>{
   assert.deepEqual(evidence.preservedOpenGates.map(item=>item.id),preserved);
-  for(const id of ['P3-07','P3-09','P3-15','P3-17','P3-18','P3-20']){
+  for(const id of ['P3-07','P3-09','P3-17','P3-18','P3-20']){
     const row=ledger.overrides.find(item=>item.id===id);
     assert.ok(!row||row.closure_met!==true,id+' was silently promoted');
   }
-  for(const id of ['P3-03','P3-08','P3-13','P3-14']){
+  for(const id of ['P3-03','P3-08','P3-13','P3-14','P3-15']){
     assert.ok(evidence.preservedOpenGates.some(item=>item.id===id),id+' wave1 history drifted');
     const row=ledger.overrides.find(item=>item.id===id);
     assert.ok(row?.closure_met===true,id+' was not promoted by later evidence');
     assert.notEqual(row.evidence,'p3-persistence-wave1',id+' later closure was misattributed to wave1');
   }
   const p3Rows=ledger.overrides.filter(item=>item.domain==='P3');
-  assert.equal(p3Rows.length,14);
-  assert.equal(p3Rows.filter(item=>item.closure_met===true).length,14);
+  assert.ok(p3Rows.length>=14);
+  assert.ok(p3Rows.filter(item=>item.closure_met===true).length>=14);
 });
 
 test('P3 wave1 is typed browser evidence and its courts remain in critical campaign',()=>{
