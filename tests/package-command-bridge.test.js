@@ -66,3 +66,93 @@ test('unimplemented ESM bins fail as process errors without host execution',asyn
   assert.match(child.stderr.toString(),/Synchronous require\(ESM\)/);
   assert.equal(globalThis.__SHOULD_NOT_RUN__,undefined);
 });
+
+
+test('P4 contextual .bin resolution selects nearest graph candidate by cwd',async()=>{
+  const runtime=await OpenContainer.boot();
+  runtime.packages.compile({
+    name:'app',
+    version:'1',
+    lockfileVersion:3,
+    packages:{
+      '':{name:'app',version:'1',dependencies:{a:'1',rootTool:'1'}},
+      'node_modules/a':{name:'a',version:'1'},
+      'node_modules/root-tool':{
+        name:'root-tool',
+        version:'1',
+        bin:{tool:'bin/tool.cjs'}
+      },
+      'node_modules/a/node_modules/nested-tool':{
+        name:'nested-tool',
+        version:'1',
+        bin:{tool:'bin/tool.cjs'}
+      }
+    }
+  });
+  runtime.mount({'package.json':'{"name":"app","type":"commonjs"}'});
+  runtime.packages.mountCatalog({
+    packages:[
+      {
+        location:'node_modules/a',
+        packageJson:{name:'a',version:'1',type:'commonjs'},
+        files:{'index.js':'module.exports=1'}
+      },
+      {
+        location:'node_modules/root-tool',
+        packageJson:{name:'root-tool',version:'1',type:'commonjs'},
+        files:{'bin/tool.cjs':'console.log("root:"+process.cwd())'}
+      },
+      {
+        location:'node_modules/a/node_modules/nested-tool',
+        packageJson:{name:'nested-tool',version:'1',type:'commonjs'},
+        files:{'bin/tool.cjs':'console.log("nested:"+process.cwd())'}
+      }
+    ]
+  });
+
+  const root=runtime.packages.resolveBin('tool',{cwd:'/workspace'});
+  const nested=runtime.packages.resolveBin('tool',{cwd:'/workspace/node_modules/a/src'});
+  assert.equal(root.package,'root-tool');
+  assert.equal(root.location,'node_modules/root-tool');
+  assert.equal(nested.package,'nested-tool');
+  assert.equal(nested.location,'node_modules/a/node_modules/nested-tool');
+
+  const linked=runtime.installPackageCommands({allowDynamicCode:true});
+  assert.deepEqual(linked.commands.map(item=>({
+    command:item.command,
+    contextual:item.contextual,
+    candidateCount:item.candidateCount
+  })),[{command:'tool',contextual:true,candidateCount:2}]);
+
+  const rootChild=runtime.spawn('tool',[],{cwd:'/workspace'});
+  assert.equal(await rootChild.exit,0);
+  assert.equal(rootChild.stdout.toString(),'root:/workspace\n');
+
+  const nestedChild=runtime.spawn('tool',[],{cwd:'/workspace/node_modules/a/src'});
+  assert.equal(await nestedChild.exit,0);
+  assert.equal(nestedChild.stdout.toString(),'nested:/workspace/node_modules/a/src\n');
+  linked.bridge.dispose();
+});
+
+test('P4 contextual .bin resolution fails closed on same-scope command ambiguity',async()=>{
+  const runtime=await OpenContainer.boot();
+  runtime.packages.compile({
+    lockfileVersion:3,
+    packages:{
+      'node_modules/a-tool':{name:'a-tool',version:'1',bin:{tool:'a.cjs'}},
+      'node_modules/b-tool':{name:'b-tool',version:'1',bin:{tool:'b.cjs'}}
+    }
+  });
+  runtime.mount({'package.json':'{"type":"commonjs"}'});
+  runtime.packages.mountCatalog({
+    packages:[
+      {location:'node_modules/a-tool',packageJson:{name:'a-tool',type:'commonjs'},files:{'a.cjs':'module.exports=1'}},
+      {location:'node_modules/b-tool',packageJson:{name:'b-tool',type:'commonjs'},files:{'b.cjs':'module.exports=1'}}
+    ]
+  });
+
+  assert.throws(
+    ()=>runtime.packages.resolveBin('tool',{cwd:'/workspace'}),
+    error=>error?.code==='OC_INVALID_PACKAGE_CONFIG'&&/ambiguous/.test(error.message)
+  );
+});
