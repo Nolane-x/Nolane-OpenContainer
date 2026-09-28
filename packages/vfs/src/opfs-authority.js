@@ -1,5 +1,6 @@
 import { ErrorCodes, assertOc, ocError } from '../../protocol/src/index.js';
 import { readWorkspaceLifecycleRecord, workspaceLifecycleBlocksPublication } from './workspace-lifecycle.js';
+import { browserOpfsSyncWriterAvailable, writeOpfsTextWithExplicitFlush } from './opfs-sync-writer.js';
 
 const MANIFEST_A = 'manifest-a.json';
 const MANIFEST_B = 'manifest-b.json';
@@ -66,6 +67,7 @@ export class OpfsCheckpointAuthority {
   #lockName;
   #storagePolicy;
   #lastStorageGuard = null;
+  #lastDurabilityBoundary = null;
 
   constructor({
     root,
@@ -122,6 +124,10 @@ export class OpfsCheckpointAuthority {
 
   get lastStorageGuard() {
     return this.#lastStorageGuard;
+  }
+
+  get lastDurabilityBoundary() {
+    return this.#lastDurabilityBoundary;
   }
 
   async open() {
@@ -248,14 +254,42 @@ export class OpfsCheckpointAuthority {
       this.#injectCrash(crashAt,'after-preflight',{generation:snapshot.generation,sequence,payload,slot});
 
       // Payload first. A crash here can only leave an unreachable orphan.
-      await this.#writeCheckpointText(this.#payloads, payload, payloadText, 'payload', { quotaFaultAt });
+      const payloadDurability = await this.#writeCheckpointText(
+        this.#payloads,
+        payload,
+        payloadText,
+        'payload',
+        { quotaFaultAt }
+      );
       this.#injectCrash(crashAt,'after-payload',{generation:snapshot.generation,sequence,payload,slot});
       if (quotaFaultAt === 'post-payload-pre-manifest') {
         await this.#throwInjectedQuotaFault('post-payload-pre-manifest', manifestName);
       }
 
       // Canonical identity is switched only by publishing the validated manifest.
-      await this.#writeCheckpointText(this.#directory, manifestName, manifestText, 'manifest');
+      const manifestDurability = await this.#writeCheckpointText(
+        this.#directory,
+        manifestName,
+        manifestText,
+        'manifest'
+      );
+      this.#lastDurabilityBoundary = Object.freeze({
+        schema:'opencontainer.opfs-checkpoint-durability.v1.0',
+        sequence,
+        generation:snapshot.generation,
+        writerEpoch:this.#writerEpoch,
+        payload:Object.freeze({name:payload,...payloadDurability}),
+        manifest:Object.freeze({name:manifestName,...manifestDurability}),
+        canonicalSwitchAfterPayloadFlush:
+          payloadDurability.flushCompleted===true &&
+          manifestDurability.flushCompleted===true,
+        explicitFlush:
+          payloadDurability.explicitFlush===true &&
+          manifestDurability.explicitFlush===true,
+        browserSyncAccessHandle:
+          payloadDurability.writer==='sync-access-handle' &&
+          manifestDurability.writer==='sync-access-handle'
+      });
       this.#injectCrash(crashAt,'after-manifest',{generation:snapshot.generation,sequence,payload,slot});
 
       this.#current = Object.freeze({ ...manifest, slot });
@@ -832,7 +866,34 @@ export class OpfsCheckpointAuthority {
     }
 
     try {
+      const handle = await directory.getFileHandle(name, { create: true });
+      if (browserOpfsSyncWriterAvailable()) {
+        const receipt = await writeOpfsTextWithExplicitFlush(handle, content);
+        return Object.freeze({
+          writer:'sync-access-handle',
+          mode:receipt.mode,
+          bytes:receipt.bytes,
+          written:receipt.written,
+          steps:Object.freeze([...receipt.steps]),
+          flushCompleted:receipt.flushCompleted===true,
+          closeCompleted:receipt.closeCompleted===true,
+          explicitFlush:true,
+          boundary:'flush-returned-before-close'
+        });
+      }
+
       await writeText(directory, name, content);
+      return Object.freeze({
+        writer:'async-file-system-writable',
+        mode:'readwrite',
+        bytes:encoder.encode(String(content)).byteLength,
+        written:encoder.encode(String(content)).byteLength,
+        steps:Object.freeze(['createWritable','write','close']),
+        flushCompleted:false,
+        closeCompleted:true,
+        explicitFlush:false,
+        boundary:'writable-close-no-explicit-flush'
+      });
     } catch (error) {
       if (error?.name !== 'QuotaExceededError') throw error;
       let storage = null;
