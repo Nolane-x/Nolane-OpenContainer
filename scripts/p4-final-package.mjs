@@ -28,20 +28,22 @@ function percentile(values,p){
   const sorted=[...values].sort((a,b)=>a-b);
   return sorted[Math.min(sorted.length-1,Math.max(0,Math.ceil((p/100)*sorted.length)-1))];
 }
-function measureGraph(lock,expectedNodes,iterations=50){
+function measureGraph(lockText,expectedNodes,iterations=50){
   for(let i=0;i<5;i++){
-    const graph=new PackageGraphAuthority().compile(lock);
+    const graph=new PackageGraphAuthority().compile(lockText);
     assert(graph.nodes.length===expectedNodes,'P4 Node graph warmup node count drifted',{expectedNodes,actual:graph.nodes.length});
   }
   const durations=[];
   for(let i=0;i<iterations;i++){
     const start=performance.now();
-    const graph=new PackageGraphAuthority().compile(lock);
+    const graph=new PackageGraphAuthority().compile(lockText);
     durations.push(performance.now()-start);
     assert(graph.nodes.length===expectedNodes,'P4 Node graph measurement node count drifted',{expectedNodes,actual:graph.nodes.length});
   }
   return Object.freeze({
     nodes:expectedNodes,
+    lockfileBytes:new TextEncoder().encode(lockText).byteLength,
+    path:'raw-package-lock-text-to-graph',
     iterations,
     p50Ms:percentile(durations,50),
     p95Ms:percentile(durations,95),
@@ -260,16 +262,16 @@ process.stdout.write(contract.stdout??'');
 process.stderr.write(contract.stderr??'');
 assert(contract.status===0,'Final P4 package Node contract court failed',{status:contract.status});
 
-const [viteLock,chokidarLock,storage]=await Promise.all([
-  readFile(resolve('compat/p4/vite-react-tiny.package-lock.json'),'utf8').then(JSON.parse),
-  readFile(resolve('compat/p4/chokidar.package-lock.json'),'utf8').then(JSON.parse),
+const [viteLockText,chokidarLockText,storage]=await Promise.all([
+  readFile(resolve('compat/p4/vite-react-tiny.package-lock.json'),'utf8'),
+  readFile(resolve('compat/p4/chokidar.package-lock.json'),'utf8'),
   measureStorageAmplification()
 ]);
 const nodeGraphLoad=Object.freeze({
   clock:'node-performance.now',
   warmupIterations:5,
-  viteReactTiny:measureGraph(viteLock,219),
-  chokidar:measureGraph(chokidarLock,8),
+  viteReactTiny:measureGraph(viteLockText,219),
+  chokidar:measureGraph(chokidarLockText,8),
   thresholdClaimed:false
 });
 assert(nodeGraphLoad.viteReactTiny.p95Ms<5000,'P4 Node Vite graph-load measurement invalid',{nodeGraphLoad});
