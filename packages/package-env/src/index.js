@@ -58,7 +58,21 @@ export class PackageGraphAuthority {
     return this;
   }
 
-  compile(lockfile){
+  compile(lockfile,{expectedGeneration=null}={}){
+    if(expectedGeneration!==null){
+      assertOc(
+        Number.isInteger(expectedGeneration)&&expectedGeneration>=0,
+        ErrorCodes.INVALID_ARGUMENT,
+        'expectedGeneration must be a non-negative integer',
+        {expectedGeneration}
+      );
+      if(expectedGeneration!==this.#generation){
+        throw ocError(ErrorCodes.STALE_GENERATION,'Package graph generation precondition failed',{
+          expectedGeneration,
+          currentGeneration:this.#generation
+        });
+      }
+    }
     let doc;
     if(typeof lockfile==='string'){
       const bytes=PACKAGE_GRAPH_ENCODER.encode(lockfile).byteLength;
@@ -110,8 +124,26 @@ export class PackageGraphAuthority {
     this.#generation++;return this.#graph;
   }
 
-  mountCatalog({packages=[],symlinks=[]}={}){
+  assertGraphGeneration(expectedGeneration){
+    assertOc(
+      Number.isInteger(expectedGeneration)&&expectedGeneration>=0,
+      ErrorCodes.INVALID_ARGUMENT,
+      'expected package graph generation must be a non-negative integer',
+      {expectedGeneration}
+    );
+    if(this.#generation!==expectedGeneration){
+      throw ocError(ErrorCodes.STALE_GENERATION,'Package graph changed before publication',{
+        expectedGeneration,
+        currentGeneration:this.#generation
+      });
+    }
+    assertOc(this.#graph,ErrorCodes.INVALID_STATE,'Package graph is not compiled');
+    return this.#graph;
+  }
+
+  mountCatalog({packages=[],symlinks=[],expectedGraphGeneration=null}={}){
     assertOc(this.#baseFs,ErrorCodes.INVALID_STATE,'Package catalog requires a bound workspace VFS');
+    if(expectedGraphGeneration!==null)this.assertGraphGeneration(expectedGraphGeneration);
     this.#nodeModules=new VirtualNodeModulesFS({baseFs:this.#baseFs,packages,symlinks});
     this.#resolver=new NodeResolver({fs:this.#nodeModules});
     return Object.freeze({fs:this.#nodeModules,resolver:this.#resolver});
