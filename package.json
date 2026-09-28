@@ -57,7 +57,8 @@
     "p4:publication-atomicity:evidence": "node scripts/p4-publication-atomicity.mjs",
     "p4:artifact-boundary:evidence": "node scripts/capture-p4-artifact-boundary-browser-evidence.mjs",
     "p4:ecosystem-layout:evidence": "node scripts/p4-ecosystem-layout.mjs",
-    "p4:command-diagnostics:evidence": "node scripts/p4-command-diagnostics.mjs"
+    "p4:command-diagnostics:evidence": "node scripts/p4-command-diagnostics.mjs",
+    "p4:final-package:evidence": "node scripts/p4-final-package.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",
