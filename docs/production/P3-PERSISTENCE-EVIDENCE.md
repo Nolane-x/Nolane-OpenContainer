@@ -344,3 +344,57 @@ CI #565 passed 419/419 unit tests, 42 critical files × 5 = 210 repeated executi
 - P3-18 — native `showDirectoryPicker()` permission revocation on a real selected external handle.
 
 `production_closed=false` remains mandatory.
+
+
+## Wave 9 — explicit OPFS durability boundary
+
+**Implementation evidence:** CI #586 / PR #57 / `57e7ee4b9733cfbbceff582160a284999124f2ff`  
+**Tested checkout:** `682705a7a177e07a4f6d49e2d8770697e2eb794e`  
+**Dedicated browser artifact:** `10956533718`  
+**Closure:** `P3-07`
+
+Canonical browser checkpoint publication now uses a dedicated worker and `FileSystemSyncAccessHandle` for both payload and manifest. The production sequence is:
+
+```text
+createSyncAccessHandle({ mode: 'readwrite' })
+→ truncate
+→ write complete bytes
+→ truncate to final byte length
+→ flush
+→ close
+```
+
+The payload completes this explicit flush/close boundary before canonical manifest publication begins. The manifest then uses the same explicit flush/close path.
+
+The real Chrome court publishes two generations and records exact machine receipts for both payload and manifest. The second generation writes a 131,257-byte serialized payload, then a fresh checkpoint authority reopens the workspace and verifies:
+
+```text
+sequence    = 2
+generation  = 2
+sha256      = af480198b2991f900344418551bfad052296ca0b0f2e5b43e548778ad1d1709e
+durable.txt = flush-two
+bulk bytes  = 98,304
+```
+
+Dedicated artifact #10956533718 passed both browser iterations. CI #586 passed 427/427 unit tests, 43 critical files × 5 = 215 repeated executions, CodeQL and 2/2 installed-distribution Chrome product paths.
+
+### Exact durability claim
+
+OpenContainer claims only the boundary it can execute and observe:
+
+```text
+SyncAccessHandle.flush() returned
+→ handle.close() completed
+→ fresh authority reopened
+→ canonical sequence/digest/full bytes verified
+```
+
+This is **not** a claim of power-loss durability stronger than the browser API contract. It does not assert hardware-controller cache persistence, filesystem implementation guarantees unavailable through the Web API, immunity to browser-managed eviction, user deletion or device failure.
+
+Node/fake-OPFS courts use the async writable fallback and explicitly record `explicitFlush=false`; those receipts cannot satisfy P3-07.
+
+### Still open after Wave 9
+
+- P3-18 — native `showDirectoryPicker()` permission revocation after real user selection, plus the already-implemented external-edit conflict boundary on that selected handle.
+
+P3 now has 19/20 gates reconciled and closed for the declared Chrome profile. `production_closed=false` remains mandatory because P3-18 and non-P3 production obligations remain open.

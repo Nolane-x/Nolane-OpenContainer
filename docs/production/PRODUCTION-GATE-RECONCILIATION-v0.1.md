@@ -44,6 +44,11 @@
 
 ## Newly reconciled in this wave
 
+- **P3-07** now meets declared-profile closure through CI #586 / PR #57 implementation head `57e7ee4b9733cfbbceff582160a284999124f2ff`. Normal browser canonical payload and manifest writes execute in a dedicated worker through `createSyncAccessHandle({mode:'readwrite'}) → truncate → write → truncate-final → flush → close`; a fresh authority then reopens and verifies the same canonical sequence, digest and complete bytes.
+- Dedicated artifact **#10956533718** passed **2/2** installed-distribution Chrome iterations. CI #586 also passed **427/427** unit tests, **43 critical files × 5 = 215** repeated executions and CodeQL with zero unexplained failures. Final closure CI retains two additional P3-07 invariants, raising the repeated campaign to **45 files × 5 = 225 executions**.
+- The durability claim is deliberately bounded to the Web API evidence: OpenContainer does **not** claim power-loss, hardware-cache, filesystem-controller or browser-eviction guarantees beyond the observable `SyncAccessHandle.flush() → close() → fresh reopen` contract.
+- **P3-18 remains open** because current evidence still does not exercise native `showDirectoryPicker()` permission revocation on a real selected handle. `production_closed=false` remains mandatory.
+
 - **P3-17** is newly reconciled and meets declared-profile closure through PR #55 / CI #547 on implementation head `1f5a9f0ddfc814193658a9f36117a6f088d93ce8`. External source mode is explicit and immutable: imported-copy stages bytes into one local VFS transaction then detaches; read-only-source never widens external write authority; linked-folder remains linked across permission and conflict states instead of silently changing mode.
 - CI #547 passed **415/415 unit tests**, **40 critical files × 5 = 200 repeated executions**, CodeQL and **2/2** installed-distribution Chrome paths. Dedicated artifact #10953546693 passed both iterations over real Chrome/OPFS bytes and a File-System-Access-compatible permission adapter.
 - **P3-18 remains unreconciled/open.** The dedicated receipt explicitly records `nativePickerPermissionRevocationExercised=false`: the current headless court proves write-time permission recheck and external revision conflict handling, but does not claim a real `showDirectoryPicker()` handle whose permission was later revoked by the browser/user.
@@ -183,4 +188,4 @@ Every substantive PR should update the JSON ledger only for gate IDs it directly
 
 
 - **P3-09** now meets its declared-profile minimum closure. CI #565 / PR #56 runs a real two-page Chrome court: Writer A publishes WriterEpoch 1, Chrome freezes A with `Page.setWebLifecycleState(frozen)`, Writer B claims WriterEpoch 2 and publishes sequence 2, Chrome resumes A, and A's original authority is fenced with `OC_STALE_GENERATION` before stale publication. Both iterations observe real freeze/resume lifecycle events; a fresh canonical read remains Writer B value `B1` at sequence 2 / WriterEpoch 2. Dedicated artifact #10954814739 retains the machine receipt.
-- P3-07 and P3-18 remain open. The P3-18 external-source implementation evidence still does not include native `showDirectoryPicker()` permission revocation, and P3-07 still requires exact browser durability-boundary closure.
+- **P3-07 is now closed** for the declared Chrome profile through explicit SyncAccessHandle flush/close/fresh-reopen evidence. **P3-18 remains open** because native `showDirectoryPicker()` permission revocation has not yet been exercised.

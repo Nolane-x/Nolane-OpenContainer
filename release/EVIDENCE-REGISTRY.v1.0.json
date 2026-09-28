@@ -474,6 +474,14 @@
       "status": "PASS",
       "ref": "CI #565 / PR #56 implementation head 74b1fb598e652f2650b0c37e28e67deab3db6d8b",
       "note": "Declared-profile P3-09 closure: two independent same-origin Chrome targets; A frozen/resumed with Page.setWebLifecycleState, B claims WriterEpoch 2 while A is frozen, resumed A publication is fenced OC_STALE_GENERATION expected epoch 1/current epoch 2, canonical B state remains intact. Dedicated two-iteration browser receipt passed."
+    },
+    {
+      "key": "p3-opfs-durability-boundary",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #586 / PR #57 implementation head 57e7ee4b9733cfbbceff582160a284999124f2ff",
+      "note": "Declared-profile P3-07 closure evidence: canonical payload and manifest writes use dedicated-worker FileSystemSyncAccessHandle readwrite -> truncate -> write -> truncate-final -> flush -> close; fresh authority reopen verifies canonical sequence/digest/full bytes. 427/427 unit tests, 215/215 repeated critical executions, CodeQL and 2/2 installed-distribution Chrome paths passed. Evidence explicitly does not claim power-loss or hardware-cache durability beyond the browser API contract."
     }
   ]
 }

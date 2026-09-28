@@ -930,6 +930,94 @@ async function run() {
   const opfsDirectory = 'opencontainer-browser-acceptance-' + crypto.randomUUID();
   const p3CorruptionEvidence = {};
 
+  stage('p3-durability-boundary-start');
+  const p3DurabilityDirectory=opfsDirectory+'-durability-boundary';
+  try{
+    const durabilityFs=new MemoryVFS();
+    const durabilityAuthority=await new OpfsCheckpointAuthority({
+      root:opfsRoot,
+      directoryName:p3DurabilityDirectory,
+      lockManager:navigator.locks
+    }).open();
+
+    durabilityFs.mount({
+      'durable.txt':'flush-one',
+      'bulk.txt':'x'.repeat(64*1024)
+    });
+    const durabilityFirst=await durabilityAuthority.checkpoint(durabilityFs);
+    const firstBoundary=durabilityAuthority.lastDurabilityBoundary;
+    assert(firstBoundary?.explicitFlush===true,'P3 canonical checkpoint did not use explicit flush');
+    assert(firstBoundary?.browserSyncAccessHandle===true,'P3 canonical checkpoint did not use SyncAccessHandle');
+    assert(firstBoundary?.canonicalSwitchAfterPayloadFlush===true,'P3 manifest switched before payload/manifest flush completed');
+    assert(
+      JSON.stringify(firstBoundary.payload.steps)===
+      JSON.stringify(['truncate','write','truncate-final','flush','close']),
+      'P3 payload durability step order drifted'
+    );
+    assert(
+      JSON.stringify(firstBoundary.manifest.steps)===
+      JSON.stringify(['truncate','write','truncate-final','flush','close']),
+      'P3 manifest durability step order drifted'
+    );
+    assert(firstBoundary.payload.boundary==='flush-returned-before-close','P3 payload durability boundary drifted');
+    assert(firstBoundary.manifest.boundary==='flush-returned-before-close','P3 manifest durability boundary drifted');
+
+    durabilityFs.beginTransaction()
+      .writeFile('durable.txt','flush-two')
+      .writeFile('bulk.txt','y'.repeat(96*1024))
+      .commit();
+    const durabilitySecond=await durabilityAuthority.checkpoint(durabilityFs);
+    const secondBoundary=durabilityAuthority.lastDurabilityBoundary;
+    assert(secondBoundary?.sequence===durabilitySecond.sequence,'P3 durability receipt sequence drifted');
+    assert(secondBoundary?.generation===durabilitySecond.generation,'P3 durability receipt generation drifted');
+    assert(secondBoundary?.explicitFlush===true&&secondBoundary?.browserSyncAccessHandle===true,'P3 second canonical checkpoint lost explicit SyncAccessHandle flush');
+
+    const durabilityReopen=await new OpfsCheckpointAuthority({
+      root:opfsRoot,
+      directoryName:p3DurabilityDirectory,
+      lockManager:navigator.locks
+    }).open();
+    const durabilityRestored=new MemoryVFS();
+    await durabilityReopen.restoreInto(durabilityRestored);
+    assert(durabilityRestored.readFile('durable.txt')==='flush-two','P3 fresh reopen did not observe explicitly flushed canonical bytes');
+    assert(durabilityRestored.readFile('bulk.txt')==='y'.repeat(96*1024),'P3 fresh reopen observed truncated or stale flushed payload');
+    assert(durabilityReopen.current?.sequence===durabilitySecond.sequence,'P3 fresh reopen canonical sequence drifted after flush');
+    assert(durabilityReopen.current?.sha256===durabilitySecond.sha256,'P3 fresh reopen canonical digest drifted after flush');
+
+    stage('p3-durability-boundary-pass',{
+      first:{
+        sequence:durabilityFirst.sequence,
+        generation:durabilityFirst.generation,
+        payload:firstBoundary.payload,
+        manifest:firstBoundary.manifest,
+        explicitFlush:firstBoundary.explicitFlush,
+        browserSyncAccessHandle:firstBoundary.browserSyncAccessHandle
+      },
+      second:{
+        sequence:durabilitySecond.sequence,
+        generation:durabilitySecond.generation,
+        payload:secondBoundary.payload,
+        manifest:secondBoundary.manifest,
+        explicitFlush:secondBoundary.explicitFlush,
+        browserSyncAccessHandle:secondBoundary.browserSyncAccessHandle
+      },
+      reopen:{
+        sequence:durabilityReopen.current.sequence,
+        generation:durabilityReopen.current.generation,
+        sha256:durabilityReopen.current.sha256,
+        value:durabilityRestored.readFile('durable.txt'),
+        bulkBytes:new TextEncoder().encode(durabilityRestored.readFile('bulk.txt')).byteLength
+      },
+      exactBoundary:'SyncAccessHandle.flush() returned, then handle.close() completed, then a fresh authority reopened and verified the same canonical bytes/digest',
+      notClaimed:[
+        'power-loss durability beyond the browser SyncAccessHandle flush contract',
+        'hardware cache persistence guarantees not exposed by the Web API'
+      ]
+    });
+  }finally{
+    await opfsRoot.removeEntry(p3DurabilityDirectory,{recursive:true}).catch(()=>{});
+  }
+
   stage('p3-writer-election-start');
   const p3ElectionDirectory = opfsDirectory + '-writer-election';
   try {

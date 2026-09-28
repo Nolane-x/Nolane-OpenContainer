@@ -780,3 +780,12 @@ PR #56 implementation head `74b1fb598e652f2650b0c37e28e67deab3db6d8b` passed CI 
 P3-09 is now reconciled and closed for the declared Chrome profile. Writer A publishes at WriterEpoch 1, Chrome freezes its real page target, Writer B claims WriterEpoch 2 and publishes while A is frozen, then Chrome resumes A. A's original authority re-handshakes shared state and its stale publication fails `OC_STALE_GENERATION` with expected epoch 1/current epoch 2. Canonical sequence/value remain Writer B's acknowledged state.
 
 The production ledger candidate is now 159/304 minimum-closure satisfied with 195 reconciliation rows. P3-07 and P3-18 remain open; `production_closed=false`.
+
+
+## P3 persistence/data-safety wave 9
+
+PR #57 implementation head `57e7ee4b9733cfbbceff582160a284999124f2ff` passed CI #586 with 427/427 unit tests, CodeQL, 43 critical files × 5 = 215 repeated executions, and 2/2 installed-distribution Chrome product paths. Dedicated durability artifact #10956533718 passed both browser iterations.
+
+P3-07 is now reconciled and closed for the declared Chrome profile. Canonical checkpoint payload and manifest writes use a dedicated-worker `FileSystemSyncAccessHandle` path with explicit `flush()` before `close()`; a fresh authority then reopens and verifies the same canonical sequence, digest and full bytes. The claim is intentionally limited to that browser-visible API boundary and excludes stronger power-loss/hardware-cache/eviction guarantees not exposed by the Web API.
+
+The production ledger candidate is now 160/304 minimum-closure satisfied with 196 reconciliation rows. P3 has 19/20 gates closed; only P3-18 native `showDirectoryPicker()` permission revocation remains open. `production_closed=false`.

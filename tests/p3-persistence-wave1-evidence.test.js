@@ -45,11 +45,11 @@ test('P3 wave1 receipt closes exactly its ten certified gates and remains histor
 
 test('P3 wave1 preserves its original open-boundary receipt without blocking later stronger evidence',()=>{
   assert.deepEqual(evidence.preservedOpenGates.map(item=>item.id),preserved);
-  for(const id of ['P3-07','P3-18']){
+  for(const id of ['P3-18']){
     const row=ledger.overrides.find(item=>item.id===id);
     assert.ok(!row||row.closure_met!==true,id+' was silently promoted');
   }
-  for(const id of ['P3-03','P3-08','P3-09','P3-13','P3-14','P3-15','P3-17','P3-20']){
+  for(const id of ['P3-03','P3-07','P3-08','P3-09','P3-13','P3-14','P3-15','P3-17','P3-20']){
     assert.ok(evidence.preservedOpenGates.some(item=>item.id===id),id+' wave1 history drifted');
     const row=ledger.overrides.find(item=>item.id===id);
     assert.ok(row?.closure_met===true,id+' was not promoted by later evidence');

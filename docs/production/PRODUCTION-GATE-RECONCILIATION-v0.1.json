@@ -332,6 +332,10 @@
     "p3-freeze-writer-failover": {
       "ref": "CI #565 / PR #56 implementation head 74b1fb598e652f2650b0c37e28e67deab3db6d8b",
       "note": "P3-09 declared-profile real multi-tab freeze/resume writer-failover court: Writer A freezes at epoch 1, Writer B claims epoch 2 and publishes, resumed A is fenced OC_STALE_GENERATION before stale publication, canonical B state remains intact."
+    },
+    "p3-opfs-durability-boundary": {
+      "ref": "CI #586 / PR #57 implementation head 57e7ee4b9733cfbbceff582160a284999124f2ff",
+      "note": "P3-07 real Chrome OPFS explicit flush court: payload + manifest both use SyncAccessHandle readwrite/flush/close, then a fresh authority reopens the same canonical sequence/digest/full bytes. Claim is limited to the browser-visible flush/close/reopen boundary."
     }
   },
   "overrides": [
@@ -1893,6 +1897,14 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p3-freeze-writer-failover",
+      "closure_met": true
+    },
+    {
+      "id": "P3-07",
+      "domain": "P3",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p3-opfs-durability-boundary",
       "closure_met": true
     }
   ]

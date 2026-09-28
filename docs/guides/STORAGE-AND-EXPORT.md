@@ -10,6 +10,29 @@ OpenContainer distinguishes **live VFS state**, **in-memory snapshots**, **OPFS 
 
 When booted with `workspacePersistence`, OpenContainer opens the OPFS checkpoint authority before the runtime becomes ready. `persistWorkspace()` publishes a generation through the existing dual-slot / Web-Lock-coordinated authority. Browser storage remains quota- and eviction-sensitive; browser-managed data may be evicted by the browser or removed by a user action. OpenContainer does not promise infinite or permanent local storage.
 
+## Explicit OPFS flush boundary
+
+Normal browser checkpoint publication uses a dedicated worker because `FileSystemSyncAccessHandle` is worker-only. For each canonical checkpoint, OpenContainer writes the payload first and the manifest second with this sequence:
+
+```text
+createSyncAccessHandle({ mode: 'readwrite' })
+-> truncate
+-> write
+-> truncate to final byte length
+-> flush
+-> close
+```
+
+The manifest is not published until the payload write has completed its explicit `flush()` and `close()`. The checkpoint authority exposes a machine-readable `lastDurabilityBoundary` receipt so the browser acceptance court can verify the actual writer and step order used by production code.
+
+The **exact durability claim** is intentionally narrow:
+
+> `SyncAccessHandle.flush()` returned, the handle then closed successfully, and a fresh checkpoint authority reopened the same OPFS workspace and verified the canonical sequence, digest and full bytes.
+
+OpenContainer does **not** claim a stronger guarantee than the browser API exposes. In particular, this boundary is not a promise about hardware controller caches, filesystem implementation details, browser-managed eviction, physical-device failure, or power-loss persistence beyond the browser's `SyncAccessHandle.flush()` contract.
+
+Node/fake-OPFS tests use the async `createWritable() -> write -> close` fallback and explicitly record `explicitFlush=false`; that fallback is not valid evidence for the browser durability gate.
+
 ## Safe OPFS checkpoint restore
 
 In-memory `runtime.restore(ref)` and persistent checkpoint rollback are intentionally different operations. For an OPFS-backed workspace, consumers should use the two-step persistent restore flow:

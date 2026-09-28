@@ -55,10 +55,14 @@ test('P3 low-storage closure updates no unrelated reconciliation rows',()=>{
   const p3=ledger.overrides.filter(item=>item.domain==='P3');
   assert.ok(p3.length>=14);
   assert.ok(p3.filter(item=>item.closure_met===true).length>=14);
-  for(const id of open.filter(id=>!['P3-09','P3-15','P3-17','P3-20'].includes(id))){
+  for(const id of open.filter(id=>!['P3-07','P3-09','P3-15','P3-17','P3-20'].includes(id))){
     const row=ledger.overrides.find(item=>item.id===id);
     assert.ok(!row||row.closure_met!==true,id+' was silently promoted');
   }
+  const laterDurability=ledger.overrides.find(item=>item.id==='P3-07');
+  assert.equal(laterDurability?.closure_met,true,'P3-07 later closure missing');
+  assert.equal(laterDurability?.evidence,'p3-opfs-durability-boundary','P3-07 later closure evidence drifted');
+  assert.notEqual(laterDurability?.evidence,'p3-low-storage-cleanup','P3-07 later closure was misattributed to low-storage wave');
   const laterFreeze=ledger.overrides.find(item=>item.id==='P3-09');
   assert.equal(laterFreeze?.closure_met,true,'P3-09 later closure missing');
   assert.equal(laterFreeze?.evidence,'p3-freeze-writer-failover','P3-09 later closure evidence drifted');

@@ -44,12 +44,16 @@ test('P3-17 closes only explicit external source mode semantics',()=>{
     {domain:row?.domain,state:row?.state,promotion:row?.promotion,evidence:row?.evidence,closure_met:row?.closure_met},
     {domain:'P3',state:'EVIDENCE',promotion:'PASS-BROWSER',evidence:'p3-external-source-modes',closure_met:true}
   );
-  assert.equal(ledger.overrides.length,195);
-  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,159);
+  assert.equal(ledger.overrides.length,196);
+  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,160);
   const p3=ledger.overrides.filter(item=>item.domain==='P3');
-  assert.equal(p3.length,18);
-  assert.equal(p3.filter(item=>item.closure_met===true).length,18);
-  for(const id of ['P3-07','P3-18']){
+  assert.equal(p3.length,19);
+  assert.equal(p3.filter(item=>item.closure_met===true).length,19);
+  const p307=ledger.overrides.find(item=>item.id==='P3-07');
+  assert.equal(p307?.closure_met,true,'P3-07 later closure missing');
+  assert.equal(p307?.evidence,'p3-opfs-durability-boundary','P3-07 later closure evidence drifted');
+  assert.notEqual(p307?.evidence,'p3-external-source-modes','P3-07 later closure was misattributed to P3-17');
+  for(const id of ['P3-18']){
     const open=ledger.overrides.find(item=>item.id===id);
     assert.ok(!open||open.closure_met!==true,id+' was silently promoted');
   }

@@ -1,0 +1,67 @@
+{
+  "schema": "opencontainer.p3-opfs-durability-boundary-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P3-07",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "requirement": "Prove flush semantics and document the exact durability boundary the browser can actually guarantee.",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 57,
+  "implementation": {
+    "head": "57e7ee4b9733cfbbceff582160a284999124f2ff",
+    "ciRunNumber": 586,
+    "ciRunId": 36391769739,
+    "testedCheckoutCommit": "682705a7a177e07a4f6d49e2d8770697e2eb794e",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "unitTests": 427,
+    "unitPassed": 427,
+    "unitFailed": 0,
+    "criticalTestFiles": 43,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 215,
+    "contractUnexplainedFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "browserUnexplainedFailures": 0
+  },
+  "dedicatedBrowserVerification": {
+    "artifactId": 10956533718,
+    "schema": "opencontainer.p3-opfs-durability-boundary-browser.v1.0",
+    "status": "PASS",
+    "profile": "installed-distribution-chrome-product-path",
+    "iterations": 2,
+    "fullProductPathPasses": 2,
+    "unexplainedFailures": 0,
+    "exactClaim": "canonical payload and manifest writes complete SyncAccessHandle.flush(), then close(), and a fresh authority reopens/verifies the same canonical bytes",
+    "firstGeneration": {
+      "sequence": 1,
+      "generation": 1,
+      "payloadBytes": 87569,
+      "manifestBytes": 180
+    },
+    "secondGeneration": {
+      "sequence": 2,
+      "generation": 2,
+      "payloadBytes": 131257,
+      "manifestBytes": 180,
+      "reopenedBulkBytes": 98304,
+      "reopenedSha256": "af480198b2991f900344418551bfad052296ca0b0f2e5b43e548778ad1d1709e"
+    }
+  },
+  "exactBoundary": [
+    "Canonical browser checkpoint payload is written in a dedicated worker with createSyncAccessHandle({mode:'readwrite'}).",
+    "The worker truncates, writes the complete byte payload, truncates to final length, calls flush(), then calls close().",
+    "Only after the payload flush/close succeeds may canonical manifest publication execute.",
+    "The canonical manifest itself uses the same explicit flush/close path.",
+    "A fresh checkpoint authority reopens the OPFS workspace and verifies the same canonical sequence, digest and complete bytes."
+  ],
+  "explicitNonClaims": [
+    "No claim of power-loss durability stronger than the browser SyncAccessHandle flush contract.",
+    "No claim about hardware/filesystem/controller cache persistence not exposed by the Web API.",
+    "No claim that browser-managed OPFS is immune to eviction, user deletion or device failure."
+  ],
+  "preservedOpenGates": [
+    "P3-18"
+  ],
+  "productionClosed": false
+}
