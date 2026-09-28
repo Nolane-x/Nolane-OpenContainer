@@ -174,7 +174,9 @@ export class FrozenInstallAuthority {
     );
     const graph = this.#bindGraph();
     await this.#bindPersistentGraph();
-    this.#lastInstallFailed = false;
+    // Publication is fail-closed for the entire attempt, including preflight,
+    // hydration and policy validation. Only a complete successful rerun clears it.
+    this.#lastInstallFailed = true;
     assertOc(artifactAuthority && typeof artifactAuthority.fetchArtifact === 'function', ErrorCodes.INVALID_ARGUMENT, 'PackageArtifactAuthority is required');
 
     const selected = locations ? new Set(locations) : null;
