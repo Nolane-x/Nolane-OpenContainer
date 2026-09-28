@@ -1,0 +1,78 @@
+{
+  "schema": "opencontainer.p3-native-external-permission-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P3-18",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "requirement": "Test external file permission revocation and external edit conflicts before privileged writes.",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 58,
+  "implementation": {
+    "head": "0c1a6334cbae8ea3ac4389db76713e20bbccfe96",
+    "ciRunNumber": 616,
+    "ciRunId": 36400618340,
+    "testedCheckoutCommit": "7dd1273022d5e7244efce1665dc3c22efb0d583b",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "nativeExternalPermissionCourt": "PASS",
+    "unitTests": 431,
+    "unitPassed": 431,
+    "unitFailed": 0,
+    "criticalTestFiles": 45,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 225,
+    "contractUnexplainedFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "browserUnexplainedFailures": 0
+  },
+  "dedicatedNativeVerification": {
+    "artifactId": 10959309888,
+    "schema": "opencontainer.p3-native-external-permission.v1.0",
+    "status": "PASS",
+    "browser": "Google Chrome 153.0.8010.52",
+    "profile": "headful Chrome on Xvfb / real OS directory picker",
+    "iterations": 2,
+    "passedIterations": 2,
+    "nativeShowDirectoryPicker": true,
+    "realSelectedFileSystemDirectoryHandle": true,
+    "nativePermissionRevocation": true,
+    "realExternalEditConflict": true,
+    "privilegedWritePermissionRechecked": true,
+    "localCanonicalPreserved": true
+  },
+  "observedNativeSequence": [
+    "A real headful Chrome page invokes showDirectoryPicker({mode:'readwrite'}) with user activation and selects a real Linux directory through the native picker UI.",
+    "The returned FileSystemDirectoryHandle reports read=granted and readwrite=granted.",
+    "OpenContainer reads linked.txt and records the real selected-file SHA-256 revision.",
+    "An external process changes linked.txt from outside-v1 to outside-v2; the next privileged OpenContainer write fails OC_STALE_GENERATION with external-change-detected and silentOverwritePrevented=true.",
+    "After explicit revision refresh, the reconciled linked write succeeds only after permissionRechecked=true and is visible in the selected OS file.",
+    "The selected directory is removed through the native FileSystemDirectoryHandle.remove() path; the same handle transitions read/readwrite permission from granted to denied.",
+    "A subsequent privileged write fails OC_INVALID_STATE before publication with privilegedWriteBlocked=true while the independent local canonical recovery state remains unchanged."
+  ],
+  "nativeRevocation": {
+    "trigger": "selected-directory-removed-through-native-FileSystemDirectoryHandle.remove",
+    "before": {
+      "read": "granted",
+      "readwrite": "granted"
+    },
+    "after": {
+      "read": "denied",
+      "readwrite": "denied"
+    },
+    "blockedCode": "OC_INVALID_STATE",
+    "privilegedWriteBlocked": true,
+    "localCanonicalUnaffected": true
+  },
+  "externalConflict": {
+    "initialExternalValue": "outside-v1",
+    "conflictingExternalValue": "outside-v2",
+    "conflictCode": "OC_STALE_GENERATION",
+    "conflictState": "external-change-detected",
+    "silentOverwritePrevented": true,
+    "reconciledExternalValue": "merged-native",
+    "permissionRechecked": true
+  },
+  "preservedOpenGates": [],
+  "p3DomainClosed": true,
+  "productionClosed": false
+}
