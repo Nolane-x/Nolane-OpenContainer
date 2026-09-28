@@ -789,3 +789,12 @@ PR #57 implementation head `57e7ee4b9733cfbbceff582160a284999124f2ff` passed CI 
 P3-07 is now reconciled and closed for the declared Chrome profile. Canonical checkpoint payload and manifest writes use a dedicated-worker `FileSystemSyncAccessHandle` path with explicit `flush()` before `close()`; a fresh authority then reopens and verifies the same canonical sequence, digest and full bytes. The claim is intentionally limited to that browser-visible API boundary and excludes stronger power-loss/hardware-cache/eviction guarantees not exposed by the Web API.
 
 The production ledger candidate is now 160/304 minimum-closure satisfied with 196 reconciliation rows. P3 has 19/20 gates closed; only P3-18 native `showDirectoryPicker()` permission revocation remains open. `production_closed=false`.
+
+
+## P3 persistence/data-safety wave 10
+
+PR #58 implementation head `0c1a6334cbae8ea3ac4389db76713e20bbccfe96` passed CI #616 with 431/431 unit tests, CodeQL, 45 critical files × 5 = 225 repeated executions, 2/2 installed-distribution Chrome product paths and 2/2 dedicated native File System Access iterations. Native artifact #10959309888 retains the picker/revocation receipt and UI screenshots.
+
+P3-18 is now reconciled and closed for the declared Chrome profile. The court uses real `showDirectoryPicker({mode:'readwrite'})` rather than the prior adapter, obtains a native `FileSystemDirectoryHandle`, fences an external OS edit with `OC_STALE_GENERATION` before overwrite, rechecks permission before the reconciled write, then removes the selected directory through the native handle and observes read/readwrite permission transition from `granted` to `denied`. A later privileged write fails closed while the local canonical recovery state remains unchanged.
+
+The production ledger candidate is now **161/304** minimum-closure satisfied with **197** reconciliation rows. **P3 is 20/20 closed for the declared profile.** Overall `production_closed=false` remains unchanged because open gates still exist outside P3.
