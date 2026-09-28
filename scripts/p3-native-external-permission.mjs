@@ -230,6 +230,27 @@ function captureScreen(label){
   return file;
 }
 
+function windowGeometry(id){
+  const output=xdotool(['getwindowgeometry','--shell',String(id)]);
+  const values={};
+  for(const line of output.split(/\r?\n/)){
+    const match=line.match(/^([A-Z]+)=(.+)$/);
+    if(match)values[match[1]]=Number(match[2]);
+  }
+  const geometry={
+    x:values.X,
+    y:values.Y,
+    width:values.WIDTH,
+    height:values.HEIGHT
+  };
+  assert(
+    [geometry.x,geometry.y,geometry.width,geometry.height].every(Number.isFinite),
+    'Could not parse native picker geometry',
+    {id,output,geometry}
+  );
+  return geometry;
+}
+
 function pickerWindow(){
   const rows=[...visibleWindows()].map(id=>({id,name:windowName(id)}));
   return rows.find(row=>
@@ -268,24 +289,49 @@ async function chooseDirectory(path,before){
   await delay(150);
   captureScreen('picker-location-entry');
   xdotool(['type','--clearmodifiers','--delay','1',path]);
-  await delay(150);
+  await delay(200);
   captureScreen('picker-path-typed');
-  xdotool(['key','--clearmodifiers','Return']);
-  await delay(500);
-  dumpWindows('picker-after-path-return');
-  captureScreen('picker-after-path-return');
 
-  // Chrome's Linux directory chooser exposes an "Open" button even though
-  // the mode selector reads "Select Folder". Use that real button mnemonic.
-  xdotool(['key','--clearmodifiers','alt+o'],{allowFailure:true});
-  await delay(500);
+  // Pressing Enter in Chrome's GTK location entry aborts the browser picker
+  // request in this CI environment. Commit the typed path by clicking the real
+  // Open button instead. The button is anchored at the lower-right corner of
+  // the native dialog; derive the click point from the actual X window.
+  const geometry=windowGeometry(picker.id);
+  const openX=Math.max(24,geometry.width-50);
+  const openY=Math.max(24,geometry.height-28);
+  console.log('[p3-native-permission] open-button '+JSON.stringify({
+    picker,geometry,relative:{x:openX,y:openY}
+  }));
+  xdotool([
+    'mousemove','--window',picker.id,'--sync',
+    String(openX),String(openY)
+  ]);
+  await delay(150);
+  xdotool(['click','1']);
+  await delay(700);
+
   if(pickerWindow()){
-    xdotool(['key','--clearmodifiers','Return'],{allowFailure:true});
-    await delay(350);
+    // A single click may navigate the location rather than accept on some GTK
+    // builds. Click the same concrete Open button once more after navigation.
+    const current=pickerWindow();
+    const currentGeometry=windowGeometry(current.id);
+    xdotool([
+      'mousemove','--window',current.id,'--sync',
+      String(Math.max(24,currentGeometry.width-50)),
+      String(Math.max(24,currentGeometry.height-28))
+    ]);
+    await delay(120);
+    xdotool(['click','1']);
+    await delay(700);
   }
-  dumpWindows('picker-after-select-attempt');
-  captureScreen('picker-after-select-attempt');
-  return Object.freeze({windowId:picker.id,windowName:picker.name});
+  dumpWindows('picker-after-open-click');
+  captureScreen('picker-after-open-click');
+  return Object.freeze({
+    windowId:picker.id,
+    windowName:picker.name,
+    geometry,
+    activation:'direct-open-button-click'
+  });
 }
 
 async function pressChromeConfirmation(){
@@ -396,8 +442,14 @@ try{
           const stillPicker=pickerWindow();
           if(stillPicker){
             xdotool(['windowactivate','--sync',stillPicker.id],{allowFailure:true});
-            xdotool(['key','--clearmodifiers','alt+o'],{allowFailure:true});
-            await delay(200);
+            const geometry=windowGeometry(stillPicker.id);
+            xdotool([
+              'mousemove','--window',stillPicker.id,'--sync',
+              String(Math.max(24,geometry.width-50)),
+              String(Math.max(24,geometry.height-28))
+            ],{allowFailure:true});
+            xdotool(['click','1'],{allowFailure:true});
+            await delay(250);
           }else{
             await pressChromeConfirmation();
           }
