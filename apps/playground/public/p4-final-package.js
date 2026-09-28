@@ -2,7 +2,6 @@ import { OpenContainer } from '/packages/sdk/src/index.js';
 import {
   PackageContentStore,
   PackageGraphAuthority,
-  PackageScriptCapability,
   inspectTarArchive
 } from '/packages/package-env/src/index.js';
 import { ErrorCodes } from '/packages/protocol/src/index.js';
@@ -190,7 +189,7 @@ async function scriptCourt(){
       }
     }});
     const calls=[];
-    const capability=new PackageScriptCapability({
+    const capability=runtime.packages.createPackageScriptCapability({
       grants:[{location:'node_modules/scripted',event:'install',command:'node build.cjs'}],
       async execute(context){
         calls.push(context);
