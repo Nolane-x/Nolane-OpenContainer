@@ -7,6 +7,8 @@ const port=Number(process.env.OPENCONTAINER_P3_NATIVE_PICKER_PORT||4319);
 const iterations=Number(process.env.OPENCONTAINER_P3_NATIVE_PICKER_ITERATIONS||2);
 const origin='http://127.0.0.1:'+port;
 const pageUrl=origin+'/p3-native-external-permission.html';
+const artifactDir=resolve('.artifacts/p3-native-external-permission');
+await mkdir(artifactDir,{recursive:true});
 const browserCandidates=process.platform==='win32'
   ? ['chrome.exe','msedge.exe']
   : ['google-chrome-stable','google-chrome','chromium','chromium-browser'];
@@ -204,6 +206,30 @@ function windowName(id){
   return xdotool(['getwindowname',String(id)],{allowFailure:true});
 }
 
+function dumpWindows(label){
+  const current=[...visibleWindows()].map(id=>({id,name:windowName(id)}));
+  let active=null;
+  try{
+    const id=xdotool(['getactivewindow'],{allowFailure:true});
+    active=id?{id,name:windowName(id)}:null;
+  }catch{}
+  const receipt={label,active,windows:current};
+  console.log('[p3-native-permission] windows '+JSON.stringify(receipt));
+  return receipt;
+}
+
+function captureScreen(label){
+  const safe=String(label).replace(/[^a-z0-9_.-]+/gi,'-');
+  const file=join(artifactDir,'screen-'+safe+'.png');
+  const result=spawnSync('scrot',['-q','100',file],{encoding:'utf8'});
+  if(result.status!==0){
+    console.log('[p3-native-permission] scrot failed '+JSON.stringify({label,stderr:result.stderr}));
+    return null;
+  }
+  console.log('[p3-native-permission] screenshot '+file);
+  return file;
+}
+
 async function waitForPickerWindow(before,timeoutMs=10000){
   const deadline=Date.now()+timeoutMs;
   let last=[];
@@ -225,18 +251,42 @@ async function waitForPickerWindow(before,timeoutMs=10000){
 
 async function chooseDirectory(path,before){
   const picker=await waitForPickerWindow(before);
+  console.log('[p3-native-permission] picker '+JSON.stringify(picker));
+  dumpWindows('picker-open');
+  captureScreen('picker-open');
+
   xdotool(['windowactivate','--sync',picker.id]);
+  await delay(200);
+  // Send keys to the focused GTK child widget rather than directly to the
+  // toplevel window. GTK location-entry handling ignores some synthetic
+  // events addressed only to the parent X window.
+  xdotool(['key','--clearmodifiers','ctrl+l']);
   await delay(150);
-  xdotool(['key','--window',picker.id,'--clearmodifiers','ctrl+l']);
-  await delay(100);
-  xdotool(['type','--window',picker.id,'--clearmodifiers','--delay','1',path]);
-  await delay(100);
-  xdotool(['key','--window',picker.id,'--clearmodifiers','Return']);
-  await delay(400);
-  // GTK folder chooser exposes a Select button; Alt+S is its common mnemonic.
+  captureScreen('picker-location-entry');
+  xdotool(['type','--clearmodifiers','--delay','1',path]);
+  await delay(150);
+  captureScreen('picker-path-typed');
+  xdotool(['key','--clearmodifiers','Return']);
+  await delay(500);
+  dumpWindows('picker-after-path-return');
+  captureScreen('picker-after-path-return');
+
+  // GTK folder chooser normally exposes a Select mnemonic. Try the mnemonic
+  // first, then focused default activation, then a short Tab/Return fallback.
   xdotool(['key','--clearmodifiers','alt+s'],{allowFailure:true});
-  await delay(300);
+  await delay(350);
   xdotool(['key','--clearmodifiers','Return'],{allowFailure:true});
+  await delay(350);
+  if(visibleWindows().has(picker.id)){
+    for(let i=0;i<4;i++){
+      xdotool(['key','--clearmodifiers','Tab'],{allowFailure:true});
+      await delay(80);
+    }
+    xdotool(['key','--clearmodifiers','Return'],{allowFailure:true});
+    await delay(350);
+  }
+  dumpWindows('picker-after-select-attempt');
+  captureScreen('picker-after-select-attempt');
   return Object.freeze({windowId:picker.id,windowName:picker.name});
 }
 
@@ -247,7 +297,7 @@ async function pressChromeConfirmation(){
   if(id){
     xdotool(['windowactivate','--sync',id],{allowFailure:true});
     await delay(100);
-    xdotool(['key','--window',id,'--clearmodifiers','Return'],{allowFailure:true});
+    xdotool(['key','--clearmodifiers','Return'],{allowFailure:true});
     await delay(250);
     return {windowId:id,windowName:windowName(id)};
   }
@@ -456,9 +506,8 @@ try{
     runs:Object.freeze(runReceipts),
     productionClosed:false
   });
-  await mkdir(resolve('.artifacts/p3-native-external-permission'),{recursive:true});
   await writeFile(
-    resolve('.artifacts/p3-native-external-permission/browser-receipt.json'),
+    join(artifactDir,'browser-receipt.json'),
     JSON.stringify(receipt,null,2)+'\n'
   );
   console.log('P3 NATIVE EXTERNAL PERMISSION PASS '+JSON.stringify(receipt));
