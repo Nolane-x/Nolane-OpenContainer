@@ -50,7 +50,7 @@ function measureGraph(lockText,expectedNodes,iterations=50){
     maxMs:Math.max(...durations)
   });
 }
-async function measureStorageAmplification(){
+async function measureRetainedArtifactInputs(){
   const fixtures=[
     {
       id:'lightningcss-wasm',
@@ -101,17 +101,14 @@ async function measureStorageAmplification(){
     }));
   }
 
-  const amplification=unpackedBytes/packedBytes;
-  assert(Number.isFinite(amplification)&&amplification>0,'P4 storage amplification measurement invalid',{packedBytes,unpackedBytes,amplification});
   return Object.freeze({
     corpus:'retained-parser-compatible-toolchain-tarballs',
+    purpose:'identity-and-logical-content-inputs-for-browser-opfs-storage-court',
     packages:Object.freeze(packages),
     packageCount:packages.length,
     fileCount,
     packedBytes,
-    unpackedBytes,
-    amplification,
-    thresholdClaimed:false
+    unpackedBytes
   });
 }
 function findBrowser(){
@@ -282,10 +279,10 @@ process.stdout.write(contract.stdout??'');
 process.stderr.write(contract.stderr??'');
 assert(contract.status===0,'Final P4 package Node contract court failed',{status:contract.status});
 
-const [viteLockText,chokidarLockText,storage]=await Promise.all([
+const [viteLockText,chokidarLockText,retainedArtifactInputs]=await Promise.all([
   readFile(resolve('compat/p4/vite-react-tiny.package-lock.json'),'utf8'),
   readFile(resolve('compat/p4/chokidar.package-lock.json'),'utf8'),
-  measureStorageAmplification()
+  measureRetainedArtifactInputs()
 ]);
 const nodeGraphLoad=Object.freeze({
   clock:'node-performance.now',
@@ -366,6 +363,11 @@ try{
       assert(result.scripts?.exactGrant===true&&result.scripts?.secretHandleCount===0,'P4 lifecycle capability isolation failed',{iteration,result});
       assert(JSON.stringify(result.layout?.reasons)===JSON.stringify(['unmounted','install','reinstall','remove','install']),'P4 layout lifecycle drifted',{iteration,result});
       assert(result.layout?.genericFsWatchClaimed===false,'P4 layout court accidentally claimed generic fs.watch',{iteration,result});
+      assert(result.storage?.formula==='physical-persistent-bytes/unique-verified-logical-content-bytes','P4 storage amplification formula drifted',{iteration,result});
+      assert(result.storage?.surface==='OpfsPackageContentStore','P4 storage amplification did not measure the persistent package store',{iteration,result});
+      assert(result.storage?.packageCount===2,'P4 storage amplification corpus count drifted',{iteration,result});
+      assert(Number.isFinite(result.storage?.storageAmplification)&&result.storage.storageAmplification>0,'P4 storage amplification receipt is invalid',{iteration,result});
+      assert(result.storage?.physicalPersistentBytes===result.storage?.artifactBytes+result.storage?.manifestBytes,'P4 persistent storage byte accounting drifted',{iteration,result});
       assert(result.graphLoad?.viteReactTiny?.nodes===219&&result.graphLoad?.chokidar?.nodes===8,'P4 browser graph-load fixtures drifted',{iteration,result});
       runs.push(Object.freeze({iteration,...result}));
       console.log('[p4-final-package] iteration '+iteration+' PASS '+JSON.stringify(result));
@@ -392,7 +394,17 @@ try{
     lifecycleAmbientSecretHandles:0,
     packageLayoutWatcherDedicated:true,
     genericFsWatchClaimed:false,
-    storageAmplification:storage,
+    retainedArtifactInputs,
+    browserStorageAmplification:Object.freeze(runs.map(item=>Object.freeze({
+      iteration:item.iteration,
+      formula:item.storage.formula,
+      surface:item.storage.surface,
+      physicalPersistentBytes:item.storage.physicalPersistentBytes,
+      uniqueVerifiedLogicalContentBytes:item.storage.uniqueVerifiedLogicalContentBytes,
+      storageAmplification:item.storage.storageAmplification,
+      artifactBytes:item.storage.artifactBytes,
+      manifestBytes:item.storage.manifestBytes
+    }))),
     nodeGraphLoad,
     browserGraphLoad:Object.freeze(runs.map(item=>Object.freeze({
       iteration:item.iteration,
