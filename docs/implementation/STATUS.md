@@ -807,3 +807,14 @@ PR #59 implementation head `0c9bbed9efd24d6c0700d744b05881515c6c6893` passed CI 
 P4-05, P4-08, P4-09, P4-10 and P4-12 are now reconciled at RELEASE-READY minimum closure for the declared Chrome profile. Two retained npm tarballs execute through the production streaming gzip/TAR path; truncation/decompression/path/link/extension attacks fail closed; special TAR features remain denied by default; and a byte-level integrity mismatch cannot publish package content or change package graph generation. The wave also hardened the production TAR parser so incomplete two-block trailers and non-zero trailing bytes are rejected rather than silently accepted.
 
 The production ledger candidate is now **166/304** minimum-closure satisfied with **199** reconciliation rows. P4 remains incomplete: P4-01/02/03/04/06/07/11/13/14/15/16/17/18 remain open or partial. `production_closed=false` remains unchanged.
+
+
+## P4 package publication atomicity wave 2
+
+PR #60 implementation head `b710d7f2415a72f706ae73c5b0bb12a6d159d615` passed CI #677 with 458/458 unit tests, CodeQL, 52 critical files × 5 = 260 repeated executions, 2/2 installed-distribution Chrome product paths and a dedicated 2/2 Chrome publication-atomicity court (artifact #10970556878).
+
+P4-04 and P4-11 are now reconciled at RELEASE-READY minimum closure for the declared Chrome profile. Package persistence now includes a real OPFS package-graph authority coordinated by Web Locks. Graph publication is based on an explicit persistent generation; exactly one concurrent base-generation writer wins, the loser fails `OC_STALE_GENERATION`, and a successor generation fences an installer that still holds the older graph so PackageFS publication also fails `OC_STALE_GENERATION`.
+
+The same court proves failure atomicity under cancellation, real OPFS quota exhaustion and real installer Worker termination. Verified immutable cache objects may remain as recoverable orphans, but incomplete installs do not expose `node_modules`; PackageFS remains unpublished until a complete successful rerun. The install publication barrier is fail-closed from the start of every attempt, including persistent-graph binding and preflight.
+
+The production ledger candidate is now **168/304** minimum-closure satisfied with **201** reconciliation rows. P4 now has **7/18** gates closed; P4-01/02/03/06/07/13/14/15/16/17/18 remain open or partial. `production_closed=false` remains unchanged.
