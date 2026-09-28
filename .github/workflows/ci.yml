@@ -147,7 +147,7 @@ jobs:
       - name: Install native picker automation dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xdotool xvfb openbox
+          sudo apt-get install -y xdotool xvfb openbox scrot
       - run: |
           google-chrome-stable --version || google-chrome --version || chromium --version
           dpkg-query -W -f='xdotool ${Version}\n' xdotool
@@ -155,11 +155,12 @@ jobs:
       - name: Run real showDirectoryPicker permission court
         run: xvfb-run -a sh -c 'openbox >/tmp/openbox.log 2>&1 & npm run p3:native-external:evidence'
       - name: Archive P3 native external permission receipt
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: opencontainer-p3-native-external-permission-${{ github.sha }}
-          path: .artifacts/p3-native-external-permission/browser-receipt.json
-          if-no-files-found: error
+          path: .artifacts/p3-native-external-permission/
+          if-no-files-found: warn
           retention-days: 90
 
   browser-product-path:
