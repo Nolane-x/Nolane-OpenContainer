@@ -230,23 +230,27 @@ function captureScreen(label){
   return file;
 }
 
-async function waitForPickerWindow(before,timeoutMs=10000){
+function pickerWindow(){
+  const rows=[...visibleWindows()].map(id=>({id,name:windowName(id)}));
+  return rows.find(row=>
+    /select where this site can save changes|select folder|choose folder|open folder/i.test(row.name)
+  )??null;
+}
+
+async function waitForPickerWindow(_before,timeoutMs=25000){
   const deadline=Date.now()+timeoutMs;
   let last=[];
   while(Date.now()<deadline){
     const current=visibleWindows();
     const rows=[...current].map(id=>({id,name:windowName(id)}));
     last=rows;
-    const candidates=rows.filter(row=>
-      !before.has(row.id)||
-      /select|choose|folder|file|open/i.test(row.name)
+    const preferred=rows.find(row=>
+      /select where this site can save changes|select folder|choose folder|open folder/i.test(row.name)
     );
-    const preferred=candidates.find(row=>/select|choose.*folder|folder/i.test(row.name))
-      ?? candidates.find(row=>!/OpenContainer P3 Native External Permission Court/i.test(row.name));
     if(preferred)return preferred;
-    await delay(100);
+    await delay(125);
   }
-  throw new Error('Native directory picker window did not appear. Visible windows: '+JSON.stringify(last));
+  throw new Error('Named native directory picker window did not appear. Visible windows: '+JSON.stringify(last));
 }
 
 async function chooseDirectory(path,before){
@@ -271,17 +275,11 @@ async function chooseDirectory(path,before){
   dumpWindows('picker-after-path-return');
   captureScreen('picker-after-path-return');
 
-  // GTK folder chooser normally exposes a Select mnemonic. Try the mnemonic
-  // first, then focused default activation, then a short Tab/Return fallback.
-  xdotool(['key','--clearmodifiers','alt+s'],{allowFailure:true});
-  await delay(350);
-  xdotool(['key','--clearmodifiers','Return'],{allowFailure:true});
-  await delay(350);
-  if(visibleWindows().has(picker.id)){
-    for(let i=0;i<4;i++){
-      xdotool(['key','--clearmodifiers','Tab'],{allowFailure:true});
-      await delay(80);
-    }
+  // Chrome's Linux directory chooser exposes an "Open" button even though
+  // the mode selector reads "Select Folder". Use that real button mnemonic.
+  xdotool(['key','--clearmodifiers','alt+o'],{allowFailure:true});
+  await delay(500);
+  if(pickerWindow()){
     xdotool(['key','--clearmodifiers','Return'],{allowFailure:true});
     await delay(350);
   }
@@ -355,7 +353,10 @@ try{
 
   for(let iteration=1;iteration<=iterations;iteration++){
     const profile=await mkdtemp(join(tmpdir(),'opencontainer-p3-native-picker-profile-'));
-    const externalRoot=await mkdtemp(join(tmpdir(),'opencontainer-p3-native-picker-dir-'));
+    const externalRoot=resolve(
+      'p3-native-picker-fixture-'+process.pid+'-'+iteration+'-'+Date.now()
+    );
+    await mkdir(externalRoot,{recursive:true});
     const selectedName=basename(externalRoot);
     const linkedPath=join(externalRoot,'linked.txt');
     await writeFile(linkedPath,'outside-v1','utf8');
@@ -391,7 +392,16 @@ try{
       const picker=await chooseDirectory(externalRoot,before);
       const picked=await settlePromise(pickPromise,{
         timeoutMs:12000,
-        onWait:pressChromeConfirmation
+        onWait:async()=>{
+          const stillPicker=pickerWindow();
+          if(stillPicker){
+            xdotool(['windowactivate','--sync',stillPicker.id],{allowFailure:true});
+            xdotool(['key','--clearmodifiers','alt+o'],{allowFailure:true});
+            await delay(200);
+          }else{
+            await pressChromeConfirmation();
+          }
+        }
       });
       assert(picked?.kind==='directory','showDirectoryPicker did not return a directory handle',{iteration,picked});
       assert(picked?.name===selectedName,'Native picker selected unexpected directory',{iteration,picked,selectedName});
