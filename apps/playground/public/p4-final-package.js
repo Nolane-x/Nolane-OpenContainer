@@ -385,6 +385,7 @@ async function packageStorageCourt(){
     schema:'opencontainer.p4-package-storage-amplification.v1.0',
     formula:'physical-persistent-bytes/unique-verified-logical-content-bytes',
     surface:'OpfsPackageContentStore',
+    physicalMeasurementScope:'stored OPFS file payload bytes (artifact.tgz + manifest.json); browser filesystem metadata overhead excluded',
     packageCount:packages.length,
     physicalPersistentBytes,
     uniqueVerifiedLogicalContentBytes,
