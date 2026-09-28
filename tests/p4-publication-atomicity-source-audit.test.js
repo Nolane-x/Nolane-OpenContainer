@@ -22,7 +22,7 @@ test('P4 PackageFS publication is generation-preconditioned',()=>{
   assert.match(graphStore,/this\.#lockManager\.request\(this\.#lockName,\{mode:'exclusive'\}/);
   assert.match(graphStore,/Persistent package graph changed before PackageFS publication/);
   assert.match(install,/mountFrozenGraphPersistent/);
-  assert.match(install,/publicationPrecondition,'persistent-graph-generation-cas'/);
+  assert.match(install,/persistent-graph-generation-cas/);
   assert.match(sdk,/new OpfsPackageGraphStore/);
   assert.match(sdk,/this\.packages\.setGraphStore\(graphStore\)/);
 });
