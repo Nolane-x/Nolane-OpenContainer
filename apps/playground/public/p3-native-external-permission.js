@@ -88,6 +88,29 @@ async function write(path='linked.txt',data='opencontainer-write',expectedRevisi
   }
 }
 
+async function removeSelected(){
+  if(!handle)throw new Error('directory is not selected');
+  const before=await permissions();
+  assertRemoveSupport();
+  await handle.remove({recursive:true});
+  const after=await permissions();
+  return Object.freeze({
+    before,
+    after,
+    removedThrough:'FileSystemDirectoryHandle.remove',
+    recursive:true,
+    localCanonical:localCanonical.readFile('linked.txt')
+  });
+}
+
+function assertRemoveSupport(){
+  if(typeof handle?.remove!=='function'){
+    const error=new Error('Selected FileSystemDirectoryHandle does not support remove()');
+    error.name='NotSupportedError';
+    throw error;
+  }
+}
+
 async function state(){
   return Object.freeze({
     selected:!!handle,
@@ -96,6 +119,7 @@ async function state(){
     permission:await permissions(),
     inspect:authority?await authority.inspect():null,
     mode:authority?.mode??null,
+    removeSupported:typeof handle?.remove==='function',
     localCanonical:localCanonical.readFile('linked.txt')
   });
 }
@@ -105,6 +129,7 @@ globalThis.__p3NativePermissionCourt=Object.freeze({
   requestWritePermission,
   read,
   write,
+  removeSelected,
   state
 });
 
