@@ -58,11 +58,11 @@ test('P3 wave2 closes exactly WriterEpoch fencing and quota phase safety',()=>{
   }
   assert.deepEqual(evidence.browserReceiptAuthority.quotaFaultPhases,quotaPhases);
   assert.deepEqual(evidence.preservedOpenGates.map(item=>item.id),remaining);
-  for(const id of remaining.filter(id=>!['P3-07','P3-09','P3-13','P3-14','P3-15','P3-17','P3-20'].includes(id))){
+  for(const id of remaining.filter(id=>!['P3-07','P3-09','P3-13','P3-14','P3-15','P3-17','P3-18','P3-20'].includes(id))){
     const row=ledger.overrides.find(item=>item.id===id);
     assert.ok(!row||row.closure_met!==true,id+' stronger obligation was silently erased');
   }
-  for(const id of ['P3-07','P3-09','P3-13','P3-14','P3-15','P3-17','P3-20']){
+  for(const id of ['P3-07','P3-09','P3-13','P3-14','P3-15','P3-17','P3-18','P3-20']){
     const later=ledger.overrides.find(item=>item.id===id);
     assert.equal(later?.closure_met,true,id+' later closure missing');
     assert.notEqual(later?.evidence,'p3-persistence-wave2',id+' later closure was misattributed to wave2');
