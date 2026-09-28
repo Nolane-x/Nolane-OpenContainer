@@ -56,10 +56,11 @@
       "tests/p4-artifact-boundary-evidence.test.js",
       "tests/opfs-package-graph-store.test.js",
       "tests/p4-publication-atomicity.test.js",
-      "tests/p4-publication-atomicity-source-audit.test.js"
+      "tests/p4-publication-atomicity-source-audit.test.js",
+      "tests/p4-publication-atomicity-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 52
+    "minimumTestFiles": 53
   },
   "browser": {
     "iterations": 2,
