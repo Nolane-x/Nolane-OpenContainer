@@ -46,19 +46,19 @@ test('P3-09 is the only gate promoted by frozen-tab failover evidence',()=>{
     {domain:row?.domain,state:row?.state,promotion:row?.promotion,evidence:row?.evidence,closure_met:row?.closure_met},
     {domain:'P3',state:'EVIDENCE',promotion:'PASS-BROWSER',evidence:'p3-freeze-writer-failover',closure_met:true}
   );
-  assert.equal(ledger.overrides.length,196);
-  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,160);
+  assert.equal(ledger.overrides.length,197);
+  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,161);
   const p3=ledger.overrides.filter(item=>item.domain==='P3');
-  assert.equal(p3.length,19);
-  assert.equal(p3.filter(item=>item.closure_met===true).length,19);
+  assert.equal(p3.length,20);
+  assert.equal(p3.filter(item=>item.closure_met===true).length,20);
   const laterDurability=ledger.overrides.find(item=>item.id==='P3-07');
   assert.equal(laterDurability?.closure_met,true,'P3-07 later closure missing');
   assert.equal(laterDurability?.evidence,'p3-opfs-durability-boundary','P3-07 later closure evidence drifted');
   assert.notEqual(laterDurability?.evidence,'p3-freeze-writer-failover','P3-07 later closure was misattributed to P3-09');
-  for(const id of ['P3-18']){
-    const open=ledger.overrides.find(item=>item.id===id);
-    assert.ok(!open||open.closure_met!==true,id+' was silently promoted');
-  }
+  const laterNative=ledger.overrides.find(item=>item.id==='P3-18');
+  assert.equal(laterNative?.closure_met,true,'P3-18 later native closure missing');
+  assert.equal(laterNative?.evidence,'p3-native-external-permission','P3-18 later closure evidence drifted');
+  assert.notEqual(laterNative?.evidence,'p3-freeze-writer-failover','P3-18 native closure was misattributed to P3-09');
   assert.deepEqual(evidence.preservedOpenGates,['P3-07','P3-18']);
 });
 
@@ -76,8 +76,8 @@ test('P3-09 evidence retains exact freeze resume takeover and stale reject invar
 
 test('P3 frozen-tab closure invariant is retained by repeated critical campaign',()=>{
   assert.ok(flake.contract.testFiles.includes('tests/p3-freeze-writer-evidence.test.js'));
-  assert.equal(flake.contract.testFiles.length,45);
-  assert.equal(flake.contract.minimumTestFiles,45);
+  assert.equal(flake.contract.testFiles.length,47);
+  assert.equal(flake.contract.minimumTestFiles,47);
   assert.equal(flake.contract.iterations,5);
   assert.equal(flake.browser.iterations,2);
 });
