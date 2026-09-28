@@ -103,6 +103,7 @@ function dependencyLocation(nodesByLocation,issuerLocation,name){
 
 export class PackageGraphAuthority {
   #generation=0;#graph=null;#baseFs=null;#nodeModules=null;#resolver=null;#contentStore=null;#graphStore=null;#persistentPublication=null;#maxLockfileBytes;#maxGraphNodes;
+  #catalogGeneration=0;#catalogPackageCount=0;#catalogSymlinkCount=0;#layoutWatchers=new Set();
 
   constructor({fs=null,contentStore=null,maxLockfileBytes=16*1024*1024,maxGraphNodes=100000}={}){
     this.#baseFs=fs;
@@ -119,6 +120,43 @@ export class PackageGraphAuthority {
   get contentStore(){return this.#contentStore;}
   get graphStore(){return this.#graphStore;}
   get persistentPublication(){return this.#persistentPublication;}
+  get catalogGeneration(){return this.#catalogGeneration;}
+
+  #packageLayoutReceipt(reason){
+    return Object.freeze({
+      schema:'opencontainer.package-layout.v1.0',
+      reason,
+      graphGeneration:this.#generation,
+      catalogGeneration:this.#catalogGeneration,
+      mounted:this.#nodeModules!==null,
+      packageCount:this.#catalogPackageCount,
+      symlinkCount:this.#catalogSymlinkCount,
+      layoutFingerprint:this.#graph?.layout?.fingerprint??null,
+      nodeModulesGeneration:this.#nodeModules?.generation??null
+    });
+  }
+
+  #emitPackageLayout(reason){
+    const receipt=this.#packageLayoutReceipt(reason);
+    for(const listener of [...this.#layoutWatchers]){
+      try{listener(receipt);}catch{}
+    }
+    return receipt;
+  }
+
+  watchPackageLayout(listener,{emitInitial=false}={}){
+    assertOc(typeof listener==='function',ErrorCodes.INVALID_ARGUMENT,'Package layout watcher must be a function');
+    this.#layoutWatchers.add(listener);
+    if(emitInitial){
+      try{listener(this.#packageLayoutReceipt(this.#nodeModules?'current':'unmounted'));}catch{}
+    }
+    let active=true;
+    return ()=>{
+      if(!active)return false;
+      active=false;
+      return this.#layoutWatchers.delete(listener);
+    };
+  }
 
   setContentStore(contentStore){
     assertOc(
@@ -215,8 +253,15 @@ export class PackageGraphAuthority {
       rootDevDependencies:frozenRecord(root.devDependencies),
       rootOptionalDependencies:frozenRecord(root.optionalDependencies)
     });
+    const hadCatalog=this.#nodeModules!==null;
     this.#nodeModules=null;this.#resolver=null;this.#persistentPublication=null;
-    this.#generation++;return this.#graph;
+    this.#catalogPackageCount=0;this.#catalogSymlinkCount=0;
+    this.#generation++;
+    if(hadCatalog){
+      this.#catalogGeneration++;
+      this.#emitPackageLayout('graph-invalidated');
+    }
+    return this.#graph;
   }
 
   async publishGraph({baseGeneration,mutationId=null}={}){
@@ -332,9 +377,26 @@ export class PackageGraphAuthority {
   mountCatalog({packages=[],symlinks=[],expectedGraphGeneration=null}={}){
     assertOc(this.#baseFs,ErrorCodes.INVALID_STATE,'Package catalog requires a bound workspace VFS');
     if(expectedGraphGeneration!==null)this.assertGraphGeneration(expectedGraphGeneration);
+    const reason=this.#nodeModules===null?'install':'reinstall';
     this.#nodeModules=new VirtualNodeModulesFS({baseFs:this.#baseFs,packages,symlinks});
     this.#resolver=new NodeResolver({fs:this.#nodeModules});
-    return Object.freeze({fs:this.#nodeModules,resolver:this.#resolver});
+    this.#catalogPackageCount=packages.length;
+    this.#catalogSymlinkCount=symlinks.length;
+    this.#catalogGeneration++;
+    const layout=this.#emitPackageLayout(reason);
+    return Object.freeze({fs:this.#nodeModules,resolver:this.#resolver,layout});
+  }
+
+  unmountCatalog({expectedGraphGeneration=null}={}){
+    if(expectedGraphGeneration!==null)this.assertGraphGeneration(expectedGraphGeneration);
+    const hadCatalog=this.#nodeModules!==null;
+    this.#nodeModules=null;
+    this.#resolver=null;
+    this.#catalogPackageCount=0;
+    this.#catalogSymlinkCount=0;
+    if(!hadCatalog)return this.#packageLayoutReceipt('already-unmounted');
+    this.#catalogGeneration++;
+    return this.#emitPackageLayout('remove');
   }
 
   resolve(specifier,issuer,options){
