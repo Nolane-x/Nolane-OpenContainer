@@ -32,7 +32,7 @@ function dependencyLocation(nodesByLocation,issuerLocation,name){
 }
 
 export class PackageGraphAuthority {
-  #generation=0;#graph=null;#baseFs=null;#nodeModules=null;#resolver=null;#contentStore=null;#maxLockfileBytes;#maxGraphNodes;
+  #generation=0;#graph=null;#baseFs=null;#nodeModules=null;#resolver=null;#contentStore=null;#graphStore=null;#persistentPublication=null;#maxLockfileBytes;#maxGraphNodes;
 
   constructor({fs=null,contentStore=null,maxLockfileBytes=16*1024*1024,maxGraphNodes=100000}={}){
     this.#baseFs=fs;
@@ -47,6 +47,8 @@ export class PackageGraphAuthority {
   get nodeModules(){return this.#nodeModules;}
   get resolver(){return this.#resolver;}
   get contentStore(){return this.#contentStore;}
+  get graphStore(){return this.#graphStore;}
+  get persistentPublication(){return this.#persistentPublication;}
 
   setContentStore(contentStore){
     assertOc(
@@ -58,7 +60,32 @@ export class PackageGraphAuthority {
     return this;
   }
 
-  compile(lockfile){
+  setGraphStore(graphStore){
+    assertOc(
+      graphStore&&typeof graphStore.publish==='function'&&typeof graphStore.read==='function',
+      ErrorCodes.INVALID_ARGUMENT,
+      'Package graph store must expose publish() and read()'
+    );
+    this.#graphStore=graphStore;
+    this.#persistentPublication=null;
+    return this;
+  }
+
+  compile(lockfile,{expectedGeneration=null}={}){
+    if(expectedGeneration!==null){
+      assertOc(
+        Number.isInteger(expectedGeneration)&&expectedGeneration>=0,
+        ErrorCodes.INVALID_ARGUMENT,
+        'expectedGeneration must be a non-negative integer',
+        {expectedGeneration}
+      );
+      if(expectedGeneration!==this.#generation){
+        throw ocError(ErrorCodes.STALE_GENERATION,'Package graph generation precondition failed',{
+          expectedGeneration,
+          currentGeneration:this.#generation
+        });
+      }
+    }
     let doc;
     if(typeof lockfile==='string'){
       const bytes=PACKAGE_GRAPH_ENCODER.encode(lockfile).byteLength;
@@ -106,12 +133,123 @@ export class PackageGraphAuthority {
       rootDevDependencies:frozenRecord(root.devDependencies),
       rootOptionalDependencies:frozenRecord(root.optionalDependencies)
     });
-    this.#nodeModules=null;this.#resolver=null;
+    this.#nodeModules=null;this.#resolver=null;this.#persistentPublication=null;
     this.#generation++;return this.#graph;
   }
 
-  mountCatalog({packages=[],symlinks=[]}={}){
+  async publishGraph({baseGeneration,mutationId=null}={}){
+    assertOc(this.#graphStore,ErrorCodes.INVALID_STATE,'Persistent package graph store is not configured');
+    assertOc(this.#graph,ErrorCodes.INVALID_STATE,'Compile a lockfile before publishing package graph');
+    assertOc(
+      Number.isInteger(baseGeneration)&&baseGeneration>=0,
+      ErrorCodes.INVALID_ARGUMENT,
+      'Persistent package graph baseGeneration must be a non-negative integer',
+      {baseGeneration}
+    );
+    const localGeneration=this.#generation;
+    const graph=this.#graph;
+    const receipt=await this.#graphStore.publish({baseGeneration,graph,mutationId});
+    this.assertGraphGeneration(localGeneration);
+    assertOc(
+      this.#graph===graph,
+      ErrorCodes.STALE_GENERATION,
+      'In-memory package graph changed while persistent graph publication was in flight',
+      {expectedGeneration:localGeneration,currentGeneration:this.#generation}
+    );
+    this.#persistentPublication=Object.freeze({
+      localGeneration,
+      generation:receipt.generation,
+      graphDigest:receipt.graphDigest,
+      mutationId:receipt.mutationId??mutationId??null,
+      reused:receipt.reused===true,
+      crossContextLocking:receipt.crossContextLocking===true
+    });
+    return this.#persistentPublication;
+  }
+
+  async assertPersistentGraphGeneration(expectedGeneration){
+    assertOc(this.#graphStore,ErrorCodes.INVALID_STATE,'Persistent package graph store is not configured');
+    assertOc(
+      Number.isInteger(expectedGeneration)&&expectedGeneration>=1,
+      ErrorCodes.INVALID_ARGUMENT,
+      'Expected persistent package graph generation must be a positive integer',
+      {expectedGeneration}
+    );
+    const binding=this.#persistentPublication;
+    assertOc(
+      binding&&binding.localGeneration===this.#generation,
+      ErrorCodes.INVALID_STATE,
+      'Current in-memory package graph has not been published persistently',
+      {localGeneration:this.#generation,publishedLocalGeneration:binding?.localGeneration??null}
+    );
+    const current=await this.#graphStore.read();
+    const currentGeneration=current?.generation??0;
+    if(
+      currentGeneration!==expectedGeneration||
+      current?.graphDigest!==binding.graphDigest
+    ){
+      throw ocError(ErrorCodes.STALE_GENERATION,'Persistent package graph changed before publication',{
+        expectedGeneration,
+        currentGeneration,
+        expectedDigest:binding.graphDigest,
+        currentDigest:current?.graphDigest??null
+      });
+    }
+    return current;
+  }
+
+  async withPersistentGraphGeneration(expectedGeneration,callback){
+    assertOc(this.#graphStore,ErrorCodes.INVALID_STATE,'Persistent package graph store is not configured');
+    assertOc(typeof callback==='function',ErrorCodes.INVALID_ARGUMENT,'Persistent package graph callback is required');
+    const binding=this.#persistentPublication;
+    assertOc(
+      binding&&binding.localGeneration===this.#generation&&binding.generation===expectedGeneration,
+      ErrorCodes.INVALID_STATE,
+      'Current package graph is not bound to the expected persistent publication',
+      {
+        expectedGeneration,
+        localGeneration:this.#generation,
+        binding:binding?{
+          localGeneration:binding.localGeneration,
+          generation:binding.generation,
+          graphDigest:binding.graphDigest
+        }:null
+      }
+    );
+    return this.#graphStore.withGeneration(expectedGeneration,current=>{
+      if(current?.graphDigest!==binding.graphDigest){
+        throw ocError(ErrorCodes.STALE_GENERATION,'Persistent package graph digest changed before PackageFS publication',{
+          expectedGeneration,
+          currentGeneration:current?.generation??0,
+          expectedDigest:binding.graphDigest,
+          currentDigest:current?.graphDigest??null
+        });
+      }
+      this.assertGraphGeneration(binding.localGeneration);
+      return callback(current);
+    });
+  }
+
+  assertGraphGeneration(expectedGeneration){
+    assertOc(
+      Number.isInteger(expectedGeneration)&&expectedGeneration>=0,
+      ErrorCodes.INVALID_ARGUMENT,
+      'expected package graph generation must be a non-negative integer',
+      {expectedGeneration}
+    );
+    if(this.#generation!==expectedGeneration){
+      throw ocError(ErrorCodes.STALE_GENERATION,'Package graph changed before publication',{
+        expectedGeneration,
+        currentGeneration:this.#generation
+      });
+    }
+    assertOc(this.#graph,ErrorCodes.INVALID_STATE,'Package graph is not compiled');
+    return this.#graph;
+  }
+
+  mountCatalog({packages=[],symlinks=[],expectedGraphGeneration=null}={}){
     assertOc(this.#baseFs,ErrorCodes.INVALID_STATE,'Package catalog requires a bound workspace VFS');
+    if(expectedGraphGeneration!==null)this.assertGraphGeneration(expectedGraphGeneration);
     this.#nodeModules=new VirtualNodeModulesFS({baseFs:this.#baseFs,packages,symlinks});
     this.#resolver=new NodeResolver({fs:this.#nodeModules});
     return Object.freeze({fs:this.#nodeModules,resolver:this.#resolver});
@@ -224,7 +362,13 @@ export class PackageGraphAuthority {
 
   createFrozenInstaller(options={}){
     const contentStore=options.contentStore??this.#contentStore;
-    return new FrozenInstallAuthority({packages:this,...(contentStore?{contentStore}:{}),...options});
+    const graphStore=options.graphStore??this.#graphStore;
+    return new FrozenInstallAuthority({
+      packages:this,
+      ...(contentStore?{contentStore}:{}),
+      ...(graphStore?{graphStore}:{}),
+      ...options
+    });
   }
 
   bindCommands(processSupervisor,options={}){
@@ -250,6 +394,7 @@ export { CommonJsLoader } from './commonjs-loader.js';
 
 export { FrozenInstallAuthority, PackageContentStore } from './frozen-install.js';
 export { OpfsPackageContentStore } from './opfs-package-content-store.js';
+export { OpfsPackageGraphStore } from './opfs-package-graph-store.js';
 
 export { createCoreBuiltinRegistry } from './builtins/registry.js';
 export { createPosixPath } from './builtins/path.js';

@@ -3,7 +3,7 @@ import { DiagnosticJournal, SupportBundleAuthority } from '../../diagnostics/src
 import { ResourceGovernor } from '../../resources/src/index.js';
 import { MemoryVFS, OpfsCheckpointAuthority, OpfsWorkspaceLifecycleAuthority } from '../../vfs/src/index.js';
 import { ProcessSupervisor } from '../../process/src/index.js';
-import { OpfsPackageContentStore, PackageGraphAuthority } from '../../package-env/src/index.js';
+import { OpfsPackageContentStore, OpfsPackageGraphStore, PackageGraphAuthority } from '../../package-env/src/index.js';
 import { NetworkAuthority } from '../../network/src/index.js';
 import { PreviewAuthority } from '../../preview/src/index.js';
 import { MemoryPersistenceAuthority } from '../../persistence/src/index.js';
@@ -22,7 +22,7 @@ export class OpenContainer {
     const preview=new PreviewAuthority();
     const snapshots=new MemoryPersistenceAuthority({fs});
     const kernel=new OpenContainerKernel({diagnostics});
-    Object.assign(this,{fs,process,packages,net,preview,snapshots,resources,diagnostics,workspacePersistence:null,packageContentStore:null});
+    Object.assign(this,{fs,process,packages,net,preview,snapshots,resources,diagnostics,workspacePersistence:null,packageContentStore:null,packageGraphStore:null});
     const support=new SupportBundleAuthority({runtime:this,profile:OpenContainerProductionProfile,browserScope:options.browserScope??globalThis});
     Object.defineProperty(this,'_support',{value:support,enumerable:false});
     Object.defineProperty(this,'_kernel',{value:kernel,enumerable:false});
@@ -60,9 +60,27 @@ export class OpenContainer {
       this._support.recordOutcome('recovery',{status:'not-configured',generation:this.fs.generation});
     }
     if(this._packagePersistenceOptions){
-      const store=await new OpfsPackageContentStore(this._packagePersistenceOptions).open();
+      const {
+        root,
+        directoryName='opencontainer-package-content',
+        graphDirectoryName=directoryName+'-graph',
+        lockManager=globalThis.navigator?.locks??null
+      }=this._packagePersistenceOptions;
+      const store=await new OpfsPackageContentStore({
+        ...this._packagePersistenceOptions,
+        root,
+        directoryName,
+        lockManager
+      }).open();
+      const graphStore=await new OpfsPackageGraphStore({
+        root,
+        directoryName:graphDirectoryName,
+        lockManager
+      }).open();
       this.packages.setContentStore(store);
+      this.packages.setGraphStore(graphStore);
       this.packageContentStore=store;
+      this.packageGraphStore=graphStore;
     }
     await this._kernel.boot();
     return this;
@@ -98,7 +116,12 @@ export class OpenContainer {
       health:this.health,
       generation:this.fs.generation,
       workspacePersistence:this.workspacePersistence?Object.freeze({sequence:this.workspacePersistence.current?.sequence??null,crossContextLocking:this.workspacePersistence.crossContextLocking}):null,
-      packagePersistence:this.packageContentStore?Object.freeze({hydratedCount:this.packageContentStore.hydratedCount??0,crossContextLocking:this.packageContentStore.crossContextLocking}):null
+      packagePersistence:this.packageContentStore?Object.freeze({
+        hydratedCount:this.packageContentStore.hydratedCount??0,
+        crossContextLocking:this.packageContentStore.crossContextLocking,
+        graphGeneration:this.packageGraphStore?.current?.generation??null,
+        graphCrossContextLocking:this.packageGraphStore?.crossContextLocking===true
+      }):null
     });
   }
   supportBundlePreview(options={}){

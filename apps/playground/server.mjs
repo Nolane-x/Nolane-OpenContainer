@@ -38,6 +38,9 @@ const publicAliases = new Map([
   ['/index.js', join(publicRoot, 'index.js')],
   ['/browser-acceptance.html', join(publicRoot, 'browser-acceptance.html')],
   ['/browser-acceptance.js', join(publicRoot, 'browser-acceptance.js')],
+  ['/p4-publication-atomicity.html', join(publicRoot, 'p4-publication-atomicity.html')],
+  ['/p4-publication-atomicity.js', join(publicRoot, 'p4-publication-atomicity.js')],
+  ['/p4-install-worker.js', join(publicRoot, 'p4-install-worker.js')],
   ['/p3-native-external-permission.html', join(publicRoot, 'p3-native-external-permission.html')],
   ['/p3-native-external-permission.js', join(publicRoot, 'p3-native-external-permission.js')],
   ['/p3-freeze-writer-failover.html', join(publicRoot, 'p3-freeze-writer-failover.html')],
@@ -228,6 +231,9 @@ const server = createServer(async (request, response) => {
     }
     if (url.pathname === '/browser-acceptance.html') {
       response.setHeader('X-OpenContainer-Document-Profile', 'acceptance-harness');
+    }
+    if (url.pathname === '/p4-publication-atomicity.html') {
+      response.setHeader('X-OpenContainer-Document-Profile', 'p4-publication-atomicity-court');
     }
     if (url.pathname === '/p3-native-external-permission.html') {
       response.setHeader('X-OpenContainer-Document-Profile', 'p3-native-external-permission-court');

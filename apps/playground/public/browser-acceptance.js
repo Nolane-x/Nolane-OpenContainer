@@ -2462,7 +2462,12 @@ async function run() {
       }
     });
     packageProductRuntime.packages.compile(browserPackageLockfile);
-    assert(packageProductRuntime.packageContentStore?.crossContextLocking === true, 'SDK package persistence profile lost Web Locks coordination');
+    const sdkGraphPublication = await packageProductRuntime.packages.publishGraph({
+      baseGeneration:packageProductRuntime.packageGraphStore.current?.generation??0,
+      mutationId:'browser-sdk-package-persistence'
+    });
+    assert(packageProductRuntime.packageContentStore?.crossContextLocking === true, 'SDK package persistence profile lost content Web Locks coordination');
+    assert(packageProductRuntime.packageGraphStore?.crossContextLocking === true, 'SDK package persistence profile lost graph Web Locks coordination');
     const sdkPackageInstaller = packageProductRuntime.packages.createFrozenInstaller();
     assert(sdkPackageInstaller.contentStore === packageProductRuntime.packageContentStore, 'SDK frozen installer did not inherit the persistent package store');
 
@@ -2479,7 +2484,7 @@ async function run() {
     assert(sdkPackageNetworkFetches === 0, 'SDK persistent package profile reached the network after reopen');
     assert(sdkPackageReceipt.requestedContents === 0 && sdkPackageReceipt.fetchedContents === 0, 'SDK persistent package profile did not hydrate from OPFS');
     assert(packageProductRuntime.packageContentStore.hydratedCount === 1, 'SDK persistent package profile did not hydrate exactly one frozen content');
-    const sdkPackageMounted = sdkPackageInstaller.mountFrozenGraph();
+    const sdkPackageMounted = await sdkPackageInstaller.mountFrozenGraphPersistent();
     const sdkPackageJson = JSON.parse(
       packageProductRuntime.packages.nodeModules.readFile('/workspace/node_modules/lightningcss-wasm/package.json')
     );
@@ -2489,7 +2494,10 @@ async function run() {
       requestedContents: sdkPackageReceipt.requestedContents,
       hydratedContents: packageProductRuntime.packageContentStore.hydratedCount,
       mountedPackages: sdkPackageMounted.packageCount,
-      crossContextLocking: packageProductRuntime.packageContentStore.crossContextLocking
+      persistentGraphGeneration: sdkGraphPublication.generation,
+      publicationPrecondition: sdkPackageMounted.publicationPrecondition,
+      contentCrossContextLocking: packageProductRuntime.packageContentStore.crossContextLocking,
+      graphCrossContextLocking: packageProductRuntime.packageGraphStore.crossContextLocking
     });
     await packageProductRuntime.terminate();
 

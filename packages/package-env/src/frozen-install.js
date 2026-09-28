@@ -76,16 +76,87 @@ export class FrozenInstallAuthority {
   #packages;
   #store;
   #lifecycleScripts;
+  #graphStore;
+  #boundGraphGeneration = null;
+  #boundPersistentGraphGeneration = null;
+  #lastInstallFailed = false;
 
-  constructor({ packages, contentStore = new PackageContentStore(), lifecycleScripts = 'deny' } = {}) {
+  constructor({ packages, contentStore = new PackageContentStore(), graphStore = null, lifecycleScripts = 'deny' } = {}) {
     assertOc(packages && typeof packages.mountCatalog === 'function', ErrorCodes.INVALID_ARGUMENT, 'PackageGraphAuthority is required');
     assertOc(['deny', 'skip'].includes(lifecycleScripts), ErrorCodes.INVALID_ARGUMENT, 'Unsupported lifecycle script policy', { lifecycleScripts });
+    if(graphStore!==null){
+      assertOc(
+        typeof graphStore.read==='function'&&typeof graphStore.withGeneration==='function',
+        ErrorCodes.INVALID_ARGUMENT,
+        'Persistent package graph store must expose read() and withGeneration()'
+      );
+    }
     this.#packages = packages;
     this.#store = contentStore;
+    this.#graphStore = graphStore;
     this.#lifecycleScripts = lifecycleScripts;
   }
 
   get contentStore() { return this.#store; }
+  get graphStore() { return this.#graphStore; }
+  get boundGraphGeneration() { return this.#boundGraphGeneration; }
+  get boundPersistentGraphGeneration() { return this.#boundPersistentGraphGeneration; }
+  get lastInstallFailed() { return this.#lastInstallFailed; }
+
+  #bindGraph(){
+    const graph=this.#packages.graph;
+    assertOc(graph,ErrorCodes.INVALID_STATE,'Compile a lockfile before installing artifacts');
+    if(this.#boundGraphGeneration===null)this.#boundGraphGeneration=this.#packages.generation;
+    this.#packages.assertGraphGeneration(this.#boundGraphGeneration);
+    return graph;
+  }
+
+  #assertGraphCurrent(){
+    assertOc(this.#boundGraphGeneration!==null,ErrorCodes.INVALID_STATE,'Package installer has no bound graph generation');
+    return this.#packages.assertGraphGeneration(this.#boundGraphGeneration);
+  }
+
+  async #bindPersistentGraph(){
+    if(!this.#graphStore)return null;
+    const binding=this.#packages.persistentPublication;
+    assertOc(
+      binding&&binding.localGeneration===this.#boundGraphGeneration,
+      ErrorCodes.INVALID_STATE,
+      'Package installer requires the current graph to be persistently published before install',
+      {
+        graphGeneration:this.#boundGraphGeneration,
+        publishedLocalGeneration:binding?.localGeneration??null,
+        persistentGeneration:binding?.generation??null
+      }
+    );
+    if(this.#boundPersistentGraphGeneration===null){
+      this.#boundPersistentGraphGeneration=binding.generation;
+    }
+    assertOc(
+      this.#boundPersistentGraphGeneration===binding.generation,
+      ErrorCodes.STALE_GENERATION,
+      'Package installer persistent graph binding changed',
+      {
+        expectedGeneration:this.#boundPersistentGraphGeneration,
+        currentGeneration:binding.generation
+      }
+    );
+    await this.#packages.assertPersistentGraphGeneration(this.#boundPersistentGraphGeneration);
+    return this.#boundPersistentGraphGeneration;
+  }
+
+  async #assertPublicationCurrent(){
+    this.#assertGraphCurrent();
+    if(this.#graphStore){
+      assertOc(
+        this.#boundPersistentGraphGeneration!==null,
+        ErrorCodes.INVALID_STATE,
+        'Package installer has no persistent graph binding'
+      );
+      await this.#packages.assertPersistentGraphGeneration(this.#boundPersistentGraphGeneration);
+    }
+    return true;
+  }
 
   async installAll({
     artifactAuthority,
@@ -101,8 +172,12 @@ export class FrozenInstallAuthority {
       ErrorCodes.NETWORK_DENIED,
       'Package installation does not accept network secret handles in the promoted profile'
     );
-    const graph = this.#packages.graph;
-    assertOc(graph, ErrorCodes.INVALID_STATE, 'Compile a lockfile before installing artifacts');
+    const graph = this.#bindGraph();
+    // Publication is fail-closed from the first moment of a new attempt,
+    // including persistent-graph binding, preflight, hydration and policy
+    // validation. Only a complete successful rerun clears it.
+    this.#lastInstallFailed = true;
+    await this.#bindPersistentGraph();
     assertOc(artifactAuthority && typeof artifactAuthority.fetchArtifact === 'function', ErrorCodes.INVALID_ARGUMENT, 'PackageArtifactAuthority is required');
 
     const selected = locations ? new Set(locations) : null;
@@ -164,8 +239,10 @@ export class FrozenInstallAuthority {
           signal
         });
         assertNotAborted();
+        await this.#assertPublicationCurrent();
 
         const receipt = await this.ingestLocation(node.location, artifact.bytes);
+        await this.#assertPublicationCurrent();
         fetchedContents++;
         bytes += artifact.bytes.byteLength;
         redirects += artifact.redirects ?? 0;
@@ -180,7 +257,15 @@ export class FrozenInstallAuthority {
       }
     };
 
-    await Promise.all(Array.from({ length: workerCount }, () => worker()));
+    try {
+      await Promise.all(Array.from({ length: workerCount }, () => worker()));
+      assertNotAborted();
+      await this.#assertPublicationCurrent();
+    } catch (error) {
+      this.#lastInstallFailed = true;
+      throw error;
+    }
+    this.#lastInstallFailed = false;
     return Object.freeze({
       packageInstances,
       embeddedInstances,
@@ -194,8 +279,7 @@ export class FrozenInstallAuthority {
   }
 
   async ingestLocation(location, bytes) {
-    const graph = this.#packages.graph;
-    assertOc(graph, ErrorCodes.INVALID_STATE, 'Compile a lockfile before ingesting artifacts');
+    const graph = this.#bindGraph();
     const node = graph.nodes.find((candidate) => candidate.location === location);
     assertOc(node, ErrorCodes.NOT_FOUND, 'Lockfile location not found', { location });
     assertOc(!node.link, ErrorCodes.INVALID_ARGUMENT, 'Linked workspace package does not accept an artifact', { location });
@@ -210,10 +294,7 @@ export class FrozenInstallAuthority {
     });
   }
 
-  mountFrozenGraph({ locations = null } = {}) {
-    const graph = this.#packages.graph;
-    assertOc(graph, ErrorCodes.INVALID_STATE, 'Compile a lockfile before mounting packages');
-
+  #prepareMountCatalog(graph,locations){
     const selected = locations ? new Set(locations) : null;
     const packages = [];
     const symlinks = [];
@@ -238,8 +319,76 @@ export class FrozenInstallAuthority {
       if (!content) throw ocError(ErrorCodes.PACKAGE_CONTENT_MISSING, 'Verified package content is missing', { location: node.location, contentId: node.contentId });
       packages.push({ location: node.location, packageJson: content.packageJson, files: content.files });
     }
-
-    const mounted = this.#packages.mountCatalog({ packages, symlinks });
-    return Object.freeze({ ...mounted, packageCount: packages.length, linkCount: symlinks.length, embeddedCount, contentCount: this.#store.size, lifecycleScriptsSkipped: Object.freeze([...lifecycleScriptsSkipped].sort()) });
+    return Object.freeze({
+      packages:Object.freeze(packages),
+      symlinks:Object.freeze(symlinks),
+      embeddedCount,
+      lifecycleScriptsSkipped:Object.freeze([...lifecycleScriptsSkipped].sort())
+    });
   }
+
+  #publicationReceipt(mounted,catalog,publicationPrecondition){
+    return Object.freeze({
+      ...mounted,
+      packageCount:catalog.packages.length,
+      linkCount:catalog.symlinks.length,
+      embeddedCount:catalog.embeddedCount,
+      contentCount:this.#store.size,
+      graphGeneration:this.#boundGraphGeneration,
+      persistentGraphGeneration:this.#boundPersistentGraphGeneration,
+      publicationPrecondition,
+      lifecycleScriptsSkipped:catalog.lifecycleScriptsSkipped
+    });
+  }
+
+  mountFrozenGraph({ locations = null } = {}) {
+    const graph = this.#bindGraph();
+    assertOc(
+      this.#graphStore===null,
+      ErrorCodes.INVALID_STATE,
+      'Persistent package graph requires await mountFrozenGraphPersistent() so PackageFS publication is fenced by Web Locks'
+    );
+    assertOc(
+      this.#lastInstallFailed===false,
+      ErrorCodes.INVALID_STATE,
+      'Failed or cancelled package install cannot publish PackageFS; rerun install successfully first',
+      {graphGeneration:this.#boundGraphGeneration}
+    );
+
+    const catalog=this.#prepareMountCatalog(graph,locations);
+    this.#assertGraphCurrent();
+    const mounted = this.#packages.mountCatalog({
+      packages:catalog.packages,
+      symlinks:catalog.symlinks,
+      expectedGraphGeneration:this.#boundGraphGeneration
+    });
+    return this.#publicationReceipt(mounted,catalog,'graph-generation-cas');
+  }
+
+  async mountFrozenGraphPersistent({locations=null}={}){
+    const graph=this.#bindGraph();
+    await this.#bindPersistentGraph();
+    assertOc(
+      this.#lastInstallFailed===false,
+      ErrorCodes.INVALID_STATE,
+      'Failed or cancelled package install cannot publish PackageFS; rerun install successfully first',
+      {
+        graphGeneration:this.#boundGraphGeneration,
+        persistentGraphGeneration:this.#boundPersistentGraphGeneration
+      }
+    );
+
+    const catalog=this.#prepareMountCatalog(graph,locations);
+    await this.#assertPublicationCurrent();
+    const mounted=await this.#packages.withPersistentGraphGeneration(
+      this.#boundPersistentGraphGeneration,
+      ()=>this.#packages.mountCatalog({
+        packages:catalog.packages,
+        symlinks:catalog.symlinks,
+        expectedGraphGeneration:this.#boundGraphGeneration
+      })
+    );
+    return this.#publicationReceipt(mounted,catalog,'persistent-graph-generation-cas');
+  }
+
 }

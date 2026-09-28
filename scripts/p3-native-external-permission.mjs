@@ -189,6 +189,103 @@ async function waitForCourt(cdp,timeoutMs=10000){
   throw new Error('P3 native permission court did not become ready: '+JSON.stringify(last));
 }
 
+async function beginTrustedCourtGesture(cdp,method,args=[]){
+  await cdp.command('Page.bringToFront');
+  const methodLiteral=JSON.stringify(method);
+  const argsLiteral=JSON.stringify(args);
+  const trigger=await evaluate(cdp,`(() => {
+    const existing=document.getElementById('__opencontainer-p3-native-trigger');
+    if(existing)existing.remove();
+    const button=document.createElement('button');
+    button.id='__opencontainer-p3-native-trigger';
+    button.type='button';
+    button.textContent='OpenContainer native permission trigger';
+    Object.assign(button.style,{
+      position:'fixed',
+      left:'24px',
+      top:'24px',
+      width:'260px',
+      height:'56px',
+      zIndex:'2147483647'
+    });
+    globalThis.__p3NativeGestureOutcome=null;
+    globalThis.__p3NativeGesturePromise=null;
+    button.addEventListener('click',() => {
+      const court=globalThis.__p3NativePermissionCourt;
+      const selectedMethod=court[${methodLiteral}];
+      globalThis.__p3NativeGesturePromise=Promise.resolve()
+        .then(() => selectedMethod(...${argsLiteral}))
+        .then(
+          value => {
+            globalThis.__p3NativeGestureOutcome={ok:true,value};
+            return globalThis.__p3NativeGestureOutcome;
+          },
+          error => {
+            globalThis.__p3NativeGestureOutcome={
+              ok:false,
+              error:{
+                name:error?.name??'Error',
+                message:error?.message??String(error),
+                code:error?.code??null
+              }
+            };
+            return globalThis.__p3NativeGestureOutcome;
+          }
+        );
+    },{once:true});
+    document.body.append(button);
+    const rect=button.getBoundingClientRect();
+    return {
+      x:rect.left+rect.width/2,
+      y:rect.top+rect.height/2,
+      width:rect.width,
+      height:rect.height
+    };
+  })()`);
+
+  assert(
+    Number.isFinite(trigger?.x)&&Number.isFinite(trigger?.y)&&
+    trigger.width>0&&trigger.height>0,
+    'Could not materialize trusted native-picker trigger',
+    {method,trigger}
+  );
+
+  await cdp.command('Input.dispatchMouseEvent',{
+    type:'mouseMoved',
+    x:trigger.x,
+    y:trigger.y
+  });
+  await cdp.command('Input.dispatchMouseEvent',{
+    type:'mousePressed',
+    x:trigger.x,
+    y:trigger.y,
+    button:'left',
+    buttons:1,
+    clickCount:1
+  });
+  await cdp.command('Input.dispatchMouseEvent',{
+    type:'mouseReleased',
+    x:trigger.x,
+    y:trigger.y,
+    button:'left',
+    buttons:0,
+    clickCount:1
+  });
+
+  return evaluate(cdp,`(async () => {
+    const pending=globalThis.__p3NativeGesturePromise;
+    if(!pending)throw new Error('Trusted gesture did not invoke the native court method');
+    const outcome=await pending;
+    if(!outcome?.ok){
+      const error=new Error(outcome?.error?.message??'Native court gesture failed');
+      error.name=outcome?.error?.name??'Error';
+      if(outcome?.error?.code)error.code=outcome.error.code;
+      throw error;
+    }
+    return outcome.value;
+  })()`);
+}
+
 function xdotool(args,{allowFailure=false}={}){
   const result=spawnSync('xdotool',args,{encoding:'utf8'});
   if(result.status!==0&&!allowFailure){
@@ -442,7 +539,7 @@ try{
       assert(ready.picker==='function','showDirectoryPicker() unavailable in declared Chrome',{iteration,ready});
 
       const before=visibleWindows();
-      const pickPromise=evaluate(cdp,courtExpression('pick'),{userGesture:true});
+      const pickPromise=beginTrustedCourtGesture(cdp,'pick');
       const picker=await chooseDirectory(externalRoot,before);
       const picked=await settlePromise(pickPromise,{
         timeoutMs:12000,
@@ -468,7 +565,7 @@ try{
 
       let permission=picked.permission;
       if(permission?.readwrite!=='granted'){
-        const grantPromise=evaluate(cdp,courtExpression('requestWritePermission'),{userGesture:true});
+        const grantPromise=beginTrustedCourtGesture(cdp,'requestWritePermission');
         const granted=await settlePromise(grantPromise,{
           timeoutMs:8000,
           onWait:pressChromeConfirmation

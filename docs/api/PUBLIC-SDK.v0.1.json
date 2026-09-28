@@ -176,7 +176,8 @@
     "resources",
     "diagnostics",
     "workspacePersistence",
-    "packageContentStore"
+    "packageContentStore",
+    "packageGraphStore"
   ],
   "privacyBoundary": {
     "noPublicPackageSubpaths": [
