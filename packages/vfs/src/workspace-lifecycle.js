@@ -39,9 +39,24 @@ async function sha256Hex(text){
   return [...new Uint8Array(digest)].map(byte=>byte.toString(16).padStart(2,'0')).join('');
 }
 
+function canonicalJson(value){
+  if(Array.isArray(value))return '['+value.map(canonicalJson).join(',')+']';
+  if(value&&typeof value==='object'){
+    return '{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+canonicalJson(value[key])).join(',')+'}';
+  }
+  return JSON.stringify(value);
+}
+
 function parseJson(text){
   if(!text)return null;
-  try{return JSON.parse(text);}catch{return null;}
+  try{return JSON.parse(text);}
+  catch(error){
+    throw ocError(ErrorCodes.IMPORT_INVALID,'Workspace lifecycle metadata is not valid JSON',{
+      lifecycleMetadataCorrupt:true,
+      cause:error?.message??String(error),
+      silentActiveFallback:false
+    });
+  }
 }
 
 function parseManifest(text,slot){
@@ -58,15 +73,51 @@ function parseManifest(text,slot){
 
 function normalizeRecord(record){
   if(!record)return null;
-  if(record?.version!==1||typeof record.state!=='string')return null;
+  const states=new Set(['active','tombstoned','purging','purged']);
+  if(record?.version!==1||!states.has(record.state)){
+    throw ocError(ErrorCodes.IMPORT_INVALID,'Workspace lifecycle metadata has an invalid shape',{
+      lifecycleMetadataCorrupt:true,
+      state:record?.state??null,
+      silentActiveFallback:false
+    });
+  }
   return record;
+}
+
+async function verifyLifecycleRecord(record){
+  if(!record)return null;
+  const expected=record.lifecycleSha256;
+  if(typeof expected!=='string'||expected.length!==64){
+    throw ocError(ErrorCodes.IMPORT_INVALID,'Workspace lifecycle metadata is missing integrity identity',{
+      lifecycleMetadataCorrupt:true,
+      silentActiveFallback:false
+    });
+  }
+  const body={...record};
+  delete body.lifecycleSha256;
+  const actual=await sha256Hex(canonicalJson(body));
+  if(actual!==expected){
+    throw ocError(ErrorCodes.IMPORT_INVALID,'Workspace lifecycle metadata digest mismatch',{
+      lifecycleMetadataCorrupt:true,
+      expectedSha256:expected,
+      actualSha256:actual,
+      silentActiveFallback:false
+    });
+  }
+  return normalizeRecord(record);
+}
+
+async function sealLifecycleRecord(record){
+  const body={...record};
+  delete body.lifecycleSha256;
+  return Object.freeze({...body,lifecycleSha256:await sha256Hex(canonicalJson(body))});
 }
 
 export async function readWorkspaceLifecycleRecord(root,directoryName){
   assertOc(root&&typeof root.getDirectoryHandle==='function',ErrorCodes.INVALID_ARGUMENT,'OPFS root directory handle is required');
   assertOc(typeof directoryName==='string'&&directoryName.length>0,ErrorCodes.INVALID_ARGUMENT,'workspace directoryName is required');
   const registry=await root.getDirectoryHandle(REGISTRY_DIR,{create:true});
-  return normalizeRecord(parseJson(await readText(registry,recordName(directoryName))));
+  return verifyLifecycleRecord(parseJson(await readText(registry,recordName(directoryName))));
 }
 
 export function workspaceLifecycleBlocksPublication(record){
@@ -447,16 +498,24 @@ export class OpfsWorkspaceLifecycleAuthority{
   }
 
   async #readRecord(){
-    return normalizeRecord(parseJson(await readText(this.#registry,recordName(this.#directoryName))));
+    return verifyLifecycleRecord(parseJson(await readText(this.#registry,recordName(this.#directoryName))));
   }
 
   async #writeRecord(record){
-    await writeText(this.#registry,recordName(this.#directoryName),JSON.stringify(record));
+    const sealed=await sealLifecycleRecord(record);
+    await writeText(this.#registry,recordName(this.#directoryName),JSON.stringify(sealed));
     const verified=await this.#readRecord();
-    assertOc(verified?.state===record.state,ErrorCodes.INVALID_STATE,'Workspace lifecycle record failed read-after-write verification',{
-      expectedState:record.state,
-      actualState:verified?.state??null
-    });
+    assertOc(
+      verified?.state===record.state&&verified?.lifecycleSha256===sealed.lifecycleSha256,
+      ErrorCodes.INVALID_STATE,
+      'Workspace lifecycle record failed read-after-write verification',
+      {
+        expectedState:record.state,
+        actualState:verified?.state??null,
+        expectedSha256:sealed.lifecycleSha256,
+        actualSha256:verified?.lifecycleSha256??null
+      }
+    );
     return verified;
   }
 
