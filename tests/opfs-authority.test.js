@@ -804,3 +804,25 @@ test('P3 VFS mutation lease prevents concurrent transaction commit during restor
   fs.beginTransaction().writeFile('value.txt','three').commit();
   assert.equal(fs.readFile('value.txt'),'three');
 });
+
+
+test('P3 Node/fake OPFS fallback does not claim an explicit flush durability boundary',async()=>{
+  const root=new FakeDirectoryHandle();
+  const locks=new FakeLockManager();
+  const fs=new MemoryVFS();
+  const authority=await new OpfsCheckpointAuthority({
+    root,
+    lockManager:locks,
+    directoryName:'p3-durability-fallback'
+  }).open();
+
+  fs.mount({'durable.txt':'node-fallback'});
+  const receipt=await authority.checkpoint(fs);
+  assert.equal(receipt.sequence,1);
+  assert.equal(authority.lastDurabilityBoundary?.explicitFlush,false);
+  assert.equal(authority.lastDurabilityBoundary?.browserSyncAccessHandle,false);
+  assert.equal(authority.lastDurabilityBoundary?.payload?.writer,'async-file-system-writable');
+  assert.equal(authority.lastDurabilityBoundary?.manifest?.writer,'async-file-system-writable');
+  assert.equal(authority.lastDurabilityBoundary?.payload?.boundary,'writable-close-no-explicit-flush');
+  assert.equal(authority.lastDurabilityBoundary?.manifest?.boundary,'writable-close-no-explicit-flush');
+});
