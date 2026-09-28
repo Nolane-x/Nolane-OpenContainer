@@ -1,0 +1,27 @@
+{
+  "schema": "opencontainer.p4-ecosystem-layout-corpus.v1.0",
+  "frozenAt": "2026-09-28",
+  "sourceGate": "P4-01/P4-02/P4-03/P4-06",
+  "rule": "Fixtures are byte-for-byte package-lock v3 files from already-frozen real-repository corpus commits. Source commit, lockfile Git blob SHA, license identity and package tarball provenance remain authoritative in compat/REAL-REPOSITORY-CORPUS.v0.1.json.",
+  "fixtures": [
+    {
+      "id": "vite-react-tiny",
+      "repository": "SafdarJamal/vite-template-react",
+      "commit": "480dc9128ee90bf7c8c817e52ec063953243b240",
+      "path": "package-lock.json",
+      "blobSha": "228f6568d791e1741ccc07fc0c8f8fcf978044bf",
+      "localPath": "compat/p4/vite-react-tiny.package-lock.json",
+      "expectedGraphNodes": 219
+    },
+    {
+      "id": "chokidar-watch",
+      "repository": "paulmillr/chokidar",
+      "commit": "0bc7bed37d6b018e5b11afcce329bbf797d6441f",
+      "path": "package-lock.json",
+      "blobSha": "c170347d75382e290f32b3b7702f9a6acac1478f",
+      "localPath": "compat/p4/chokidar.package-lock.json",
+      "expectedGraphNodes": 8
+    }
+  ],
+  "productionClosed": false
+}
