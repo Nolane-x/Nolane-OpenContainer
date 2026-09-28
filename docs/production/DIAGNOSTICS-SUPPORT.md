@@ -49,7 +49,7 @@ Support bundles may include:
 - checkpoint sequence/generation/digest;
 - persistent package-store counts.
 
-Resolved package URLs with credentials/query/fragment and package/source bytes are not included. Public HTTP(S) provenance is sanitized before export, while the original source string is represented only by an irreversible diagnostic fingerprint. Package diagnostics also expose physical layout identity and install-script/native-boundary policy metadata.
+Resolved package URLs with credentials/query/fragment and package/source bytes are not included. Public HTTP(S) provenance is sanitized before export, and its diagnostic fingerprint is computed only from that sanitized URL. Raw credential/query/fragment-bearing URLs and raw workspace/opaque source strings are never fingerprinted into the support bundle. Package diagnostics also expose physical layout identity and install-script/native-boundary policy metadata.
 
 This surface is metadata-only and is **not a software-composition-analysis (SCA), vulnerability, malware, license-compliance, exploitability or package-trust scanner**. It must not be used to infer package safety merely because provenance/integrity metadata is present.
 
