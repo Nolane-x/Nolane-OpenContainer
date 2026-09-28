@@ -40,6 +40,11 @@ const publicAliases = new Map([
   ['/browser-acceptance.js', join(publicRoot, 'browser-acceptance.js')],
   ['/p4-publication-atomicity.html', join(publicRoot, 'p4-publication-atomicity.html')],
   ['/p4-publication-atomicity.js', join(publicRoot, 'p4-publication-atomicity.js')],
+  ['/p4-ecosystem-layout.html', join(publicRoot, 'p4-ecosystem-layout.html')],
+  ['/p4-ecosystem-layout.js', join(publicRoot, 'p4-ecosystem-layout.js')],
+  ['/compat/p4/ECOSYSTEM-LAYOUT-CORPUS.v1.0.json', join(repoRoot, 'compat/p4/ECOSYSTEM-LAYOUT-CORPUS.v1.0.json')],
+  ['/compat/p4/vite-react-tiny.package-lock.json', join(repoRoot, 'compat/p4/vite-react-tiny.package-lock.json')],
+  ['/compat/p4/chokidar.package-lock.json', join(repoRoot, 'compat/p4/chokidar.package-lock.json')],
   ['/p4-install-worker.js', join(publicRoot, 'p4-install-worker.js')],
   ['/p3-native-external-permission.html', join(publicRoot, 'p3-native-external-permission.html')],
   ['/p3-native-external-permission.js', join(publicRoot, 'p3-native-external-permission.js')],
@@ -234,6 +239,9 @@ const server = createServer(async (request, response) => {
     }
     if (url.pathname === '/p4-publication-atomicity.html') {
       response.setHeader('X-OpenContainer-Document-Profile', 'p4-publication-atomicity-court');
+    }
+    if (url.pathname === '/p4-ecosystem-layout.html') {
+      response.setHeader('X-OpenContainer-Document-Profile', 'p4-ecosystem-layout-court');
     }
     if (url.pathname === '/p3-native-external-permission.html') {
       response.setHeader('X-OpenContainer-Document-Profile', 'p3-native-external-permission-court');
