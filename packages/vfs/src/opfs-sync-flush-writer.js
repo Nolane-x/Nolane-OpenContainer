@@ -18,10 +18,14 @@ class BrowserOpfsSyncFlushWriter{
       if(!waiter)return;
       this.#pending.delete(id);
       if(ok)waiter.resolve(Object.freeze(receipt));
-      else waiter.reject(ocError(ErrorCodes.INVALID_STATE,'OPFS sync-flush worker failed',{
-        workerError:error??null,
-        durabilityBoundary:'sync-access-handle-flush'
-      }));
+      else waiter.reject(ocError(
+        error?.name==='QuotaExceededError'?ErrorCodes.RESOURCE_EXHAUSTED:ErrorCodes.INVALID_STATE,
+        'OPFS sync-flush worker failed',
+        {
+          workerError:error??null,
+          durabilityBoundary:'sync-access-handle-flush'
+        }
+      ));
     });
     this.#worker.addEventListener('error',(event)=>{
       const error=ocError(ErrorCodes.INVALID_STATE,'OPFS sync-flush worker crashed',{
