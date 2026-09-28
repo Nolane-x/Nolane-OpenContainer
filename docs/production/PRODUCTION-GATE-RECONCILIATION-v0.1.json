@@ -348,6 +348,10 @@
     "p4-publication-atomicity": {
       "ref": "CI #677 / PR #60 implementation head b710d7f2415a72f706ae73c5b0bb12a6d159d615",
       "note": "P4-04/P4-11 declared-profile release evidence: real Chrome OPFS/Web Locks graph CAS rejects stale-base writers and stale PackageFS publication; cancellation, quota exhaustion and installer-worker death preserve verified immutable orphan content without half-publishing PackageFS."
+    },
+    "p4-ecosystem-layout": {
+      "ref": "CI #693 / PR #61 implementation head 54334c52e1a73d992dbd0ea46006016089e9afcd",
+      "note": "P4-01/P4-02/P4-03/P4-06 declared-profile release evidence: exact Node v24.21.0 resolver oracle differentials pass without skips; two frozen real-repository package-lock graphs compile in Chrome with observable physical layout fingerprints; 13 repositories and 9 published npm tarballs retain source commit, lockfile/license blob, URL, SHA-512 and SHA-1 provenance."
     }
   },
   "overrides": [
@@ -666,10 +670,10 @@
     {
       "id": "P4-01",
       "domain": "P4",
-      "state": "PARTIAL",
-      "promotion": "PASS-LOCAL",
-      "evidence": "node24",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p4-ecosystem-layout",
+      "closure_met": true
     },
     {
       "id": "P4-05",
@@ -1957,6 +1961,30 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p4-publication-atomicity",
+      "closure_met": true
+    },
+    {
+      "id": "P4-02",
+      "domain": "P4",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p4-ecosystem-layout",
+      "closure_met": true
+    },
+    {
+      "id": "P4-03",
+      "domain": "P4",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p4-ecosystem-layout",
+      "closure_met": true
+    },
+    {
+      "id": "P4-06",
+      "domain": "P4",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p4-ecosystem-layout",
       "closure_met": true
     }
   ]
