@@ -123,20 +123,27 @@ export class ExternalWorkspaceSourceAuthority{
 
     try{
       const read=await this.#queryPermission('read');
-      const readwrite=await this.#queryPermission('readwrite');
 
       if(read==='prompt'){
         return this.#remember(Object.freeze({
           mode:this.#mode,state:ExternalSourceState.PERMISSION_NEEDED,
           externalRead:false,externalWrite:false,detached:this.#detached,
-          permissionRead:read,permissionReadwrite:readwrite,silentModeChange:false
+          permissionRead:read,permissionReadwrite:'not-queried',silentModeChange:false
         }));
       }
       if(read==='denied'){
         return this.#remember(Object.freeze({
           mode:this.#mode,state:ExternalSourceState.UNAVAILABLE,
           externalRead:false,externalWrite:false,detached:this.#detached,
-          permissionRead:read,permissionReadwrite:readwrite,silentModeChange:false
+          permissionRead:read,permissionReadwrite:'not-queried',silentModeChange:false
+        }));
+      }
+
+      if(this.#mode===ExternalSourceMode.IMPORTED_COPY){
+        return this.#remember(Object.freeze({
+          mode:this.#mode,state:ExternalSourceState.CONNECTED,
+          externalRead:true,externalWrite:false,detached:this.#detached,
+          permissionRead:read,permissionReadwrite:'not-queried',silentModeChange:false
         }));
       }
 
@@ -144,10 +151,11 @@ export class ExternalWorkspaceSourceAuthority{
         return this.#remember(Object.freeze({
           mode:this.#mode,state:ExternalSourceState.READ_ONLY,
           externalRead:true,externalWrite:false,detached:this.#detached,
-          permissionRead:read,permissionReadwrite:readwrite,silentModeChange:false
+          permissionRead:read,permissionReadwrite:'not-queried',silentModeChange:false
         }));
       }
 
+      const readwrite=await this.#queryPermission('readwrite');
       if(readwrite==='granted'){
         return this.#remember(Object.freeze({
           mode:this.#mode,state:ExternalSourceState.CONNECTED,
