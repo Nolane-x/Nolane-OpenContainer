@@ -30,7 +30,7 @@ The release court records:
 
 - packed and unpacked bytes for the retained published npm tarball corpus;
 - aggregate package-storage amplification;
-- startup package-graph compile cost for the frozen 219-node Vite tree and 8-node Chokidar tree;
+- startup raw-package-lock-text → JSON parse → package-graph construction cost for the frozen 219-node Vite tree and 8-node Chokidar tree;
 - Node and Chrome timing receipts with warmup and repeated iterations.
 
 These are measurements for the declared evidence profile, not universal performance guarantees. No production performance threshold is frozen by this gate alone.
