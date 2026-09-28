@@ -11,6 +11,9 @@ const page=readFileSync('apps/playground/public/p4-final-package.html','utf8');
 const runner=readFileSync('scripts/p4-final-package.mjs','utf8');
 const workflow=readFileSync('.github/workflows/ci.yml','utf8');
 const boundary=readFileSync('docs/compatibility/P4-FINAL-PACKAGE-CLOSURE.md','utf8');
+const currentBrowserAcceptance=readFileSync('apps/playground/public/browser-acceptance.js','utf8');
+const artifactCapture=readFileSync('scripts/capture-p4-artifact-boundary-browser-evidence.mjs','utf8');
+const historicalArtifactEvidence=JSON.parse(readFileSync('release/P4-ARTIFACT-BOUNDARY-EVIDENCE.v1.0.json','utf8'));
 
 test('P4-07 retained fuzz corpus and typed parser failures remain production-bound',()=>{
   assert.equal(fuzzCorpus.schema,'opencontainer.p4-parser-fuzz-corpus.v1.0');
@@ -18,6 +21,9 @@ test('P4-07 retained fuzz corpus and typed parser failures remain production-bou
   assert.equal(fuzzCorpus.minimizedFailureInputs.length,8);
   assert.match(fuzzCorpus.retentionRule,/may only be removed/);
   assert.match(artifact,/Invalid or truncated gzip stream/);
+  assert.equal(historicalArtifactEvidence.hostileMatrix.truncatedGzip,'TypeError');
+  assert.match(currentBrowserAcceptance,/P4 truncated gzip stream[\s\S]*'OC_ARCHIVE_UNSAFE'/);
+  assert.match(artifactCapture,/truncatedGzip:'OC_ARCHIVE_UNSAFE'/);
   assert.match(install,/package\.json must be a JSON object/);
   assert.match(boundary,/never leak raw parser exceptions/);
 });
