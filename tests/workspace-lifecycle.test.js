@@ -253,3 +253,55 @@ test('P3 lifecycle refuses a recovery point that is not a retained canonical or 
   assert.equal(status.state,'active');
   assert.equal(status.recoverable,true);
 });
+
+
+test('P3 recoverable delete rejects a checkpoint that became fallback after a newer writer published',async()=>{
+  const {root,locks,fs,lifecycle,recoveryPoint,directoryName}=await seeded({directoryName:'p3-delete-stale-root'});
+  fs.beginTransaction().writeFile('state.txt','remote-newer').commit();
+  const remote=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName}).open();
+  const newer=await remote.checkpoint(fs);
+  assert.equal(newer.sequence,recoveryPoint.sequence+1);
+
+  await assert.rejects(
+    ()=>lifecycle.deleteRecoverably({mutationId:'delete-stale',recoveryPoint}),
+    error=>{
+      assert.equal(error.code,ErrorCodes.STALE_GENERATION);
+      assert.equal(error.details?.deleteAborted,true);
+      assert.equal(error.details?.blindOverwritePrevented,true);
+      assert.equal(error.details?.currentSequence,newer.sequence);
+      return true;
+    }
+  );
+
+  const status=await lifecycle.inspect();
+  assert.equal(status.state,'active');
+  assert.equal(status.workspaceExists,true);
+  const reopened=await new OpfsCheckpointAuthority({root,lockManager:locks,directoryName}).open();
+  assert.equal(reopened.current.sequence,newer.sequence);
+});
+
+test('P3 lifecycle metadata corruption fails closed instead of silently reopening deleted workspace',async()=>{
+  const {root,locks,lifecycle,recoveryPoint,directoryName}=await seeded({directoryName:'p3-lifecycle-corrupt'});
+  await lifecycle.deleteRecoverably({mutationId:'delete-corrupt',recoveryPoint});
+
+  const registry=root.dirs.get('opencontainer-workspace-lifecycle');
+  const record=registry.files.get(encodeURIComponent(directoryName)+'.json');
+  const parsed=JSON.parse(record.data);
+  parsed.state='active';
+  record.data=JSON.stringify(parsed);
+
+  await assert.rejects(
+    ()=>lifecycle.inspect(),
+    error=>{
+      assert.equal(error.code,ErrorCodes.IMPORT_INVALID);
+      assert.equal(error.details?.lifecycleMetadataCorrupt,true);
+      assert.equal(error.details?.silentActiveFallback,false);
+      return true;
+    }
+  );
+
+  await assert.rejects(
+    ()=>new OpfsCheckpointAuthority({root,lockManager:locks,directoryName}).open(),
+    error=>error.code===ErrorCodes.IMPORT_INVALID&&error.details?.silentActiveFallback===false
+  );
+});
