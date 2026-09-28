@@ -65,6 +65,28 @@ function deriveLayoutIdentity(nodes,root={}){
   });
 }
 
+function normalizeWorkspaceContext(value){
+  assertOc(typeof value==='string'&&value.startsWith('/workspace'),ErrorCodes.INVALID_ARGUMENT,'Package command context must be inside /workspace',{value});
+  const out=[];
+  for(const part of value.slice('/workspace'.length).split('/')){
+    if(!part||part==='.')continue;
+    assertOc(part!=='..',ErrorCodes.INVALID_ARGUMENT,'Package command context cannot escape /workspace',{value});
+    out.push(part);
+  }
+  return out.join('/');
+}
+function binScopePrefix(descriptor){
+  const suffix='node_modules/'+descriptor.package;
+  if(descriptor.location===suffix)return '';
+  const marker='/'+suffix;
+  if(descriptor.location.endsWith(marker))return descriptor.location.slice(0,-marker.length);
+  const nested=descriptor.location.lastIndexOf('/node_modules/');
+  if(nested>=0)return descriptor.location.slice(0,nested);
+  return '';
+}
+function contextContainsScope(context,scope){
+  return scope===''||context===scope||context.startsWith(scope+'/');
+}
 function dependencyLocation(nodesByLocation,issuerLocation,name){
   let current=issuerLocation;
   while(true){
@@ -147,7 +169,7 @@ export class PackageGraphAuthority {
     assertOc(doc&&[2,3].includes(doc.lockfileVersion),ErrorCodes.INVALID_ARGUMENT,'Only package-lock v2/v3 is supported in Wave 1');
     const packageEntries=Object.entries(doc.packages??{});
     assertOc(packageEntries.length<=this.#maxGraphNodes,ErrorCodes.RESOURCE_EXHAUSTED,'Lockfile graph exceeds node budget',{nodes:packageEntries.length,limit:this.#maxGraphNodes});
-    const nodes=[];const bins={};
+    const nodes=[];const binCandidates={};
     for(const [location,meta] of packageEntries){
       if(!location||!location.includes('node_modules/'))continue;
       const name=meta.name??packageNameFromPath(location);const version=meta.version??'0.0.0-link';
@@ -164,11 +186,21 @@ export class PackageGraphAuthority {
         dev:!!meta.dev,optional:!!meta.optional
       }));
       if(meta.bin){
-        if(typeof meta.bin==='string')bins[name]=Object.freeze({package:name,path:meta.bin,location});
-        else for(const [command,path] of Object.entries(meta.bin))bins[command]=Object.freeze({package:name,path,location});
+        const addBin=(command,path)=>{
+          assertOc(typeof command==='string'&&command.length>0,ErrorCodes.INVALID_PACKAGE_CONFIG,'Package bin command must be non-empty',{location,name});
+          assertOc(typeof path==='string'&&path.length>0,ErrorCodes.INVALID_PACKAGE_CONFIG,'Package bin target must be non-empty',{location,name,command});
+          const descriptor=Object.freeze({command,package:name,path,location});
+          (binCandidates[command]??=[]).push(descriptor);
+        };
+        if(typeof meta.bin==='string')addBin(name,meta.bin);
+        else for(const [command,path] of Object.entries(meta.bin))addBin(command,path);
       }
     }
     nodes.sort((a,b)=>a.location.localeCompare(b.location));
+    const bins={};
+    for(const [command,candidates] of Object.entries(binCandidates)){
+      bins[command]=Object.freeze([...candidates].sort((a,b)=>a.location.localeCompare(b.location)));
+    }
     const root=doc.packages?.['']??{};
     const layout=deriveLayoutIdentity(nodes,root);
     this.#graph=Object.freeze({
@@ -308,6 +340,46 @@ export class PackageGraphAuthority {
   resolve(specifier,issuer,options){
     assertOc(this.#resolver,ErrorCodes.INVALID_STATE,'Package catalog is not mounted');
     return this.#resolver.resolve(specifier,issuer,options);
+  }
+
+  resolveBin(command,{cwd='/workspace'}={}){
+    assertOc(this.#graph,ErrorCodes.INVALID_STATE,'Compile a lockfile before resolving package commands');
+    assertOc(typeof command==='string'&&command.length>0,ErrorCodes.INVALID_ARGUMENT,'Package command is required');
+    const candidates=this.#graph.bins?.[command]??[];
+    assertOc(candidates.length>0,ErrorCodes.NOT_FOUND,'Package command is absent from graph',{command});
+
+    const logical=normalizeWorkspaceContext(cwd);
+    const contexts=[logical];
+    for(const node of this.#graph.nodes){
+      if(!node.link||typeof node.resolved!=='string'||!node.resolved)continue;
+      const target=node.resolved.startsWith('/')
+        ? node.resolved.replace(/\/$/,'')
+        : '/workspace/'+node.resolved.replace(/^\.\//,'').replace(/^\/+|\/+$/g,'');
+      if(cwd===target||cwd.startsWith(target+'/')){
+        const suffix=cwd.slice(target.length).replace(/^\//,'');
+        contexts.push(node.location+(suffix?'/'+suffix:''));
+      }
+    }
+
+    let bestDepth=-1;
+    let best=[];
+    for(const candidate of candidates){
+      const scope=binScopePrefix(candidate);
+      if(!contexts.some(context=>contextContainsScope(context,scope)))continue;
+      const depth=scope?scope.split('/').length:0;
+      if(depth>bestDepth){bestDepth=depth;best=[candidate];}
+      else if(depth===bestDepth)best.push(candidate);
+    }
+
+    assertOc(best.length>0,ErrorCodes.NOT_FOUND,'Package command is not visible from context',{command,cwd});
+    if(best.length!==1){
+      throw ocError(ErrorCodes.INVALID_PACKAGE_CONFIG,'Package command is ambiguous in current graph context',{
+        command,
+        cwd,
+        candidates:best.map(item=>({package:item.package,location:item.location,path:item.path}))
+      });
+    }
+    return best[0];
   }
 
   selectDependencyClosure({roots=[],includeOptional=false,includeOptionalPeers=false,peerPolicy='require'}={}){
