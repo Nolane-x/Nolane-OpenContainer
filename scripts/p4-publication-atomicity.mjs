@@ -160,7 +160,21 @@ async function waitForCourt(cdp,timeoutMs=10000){
     }catch{}
     await delay(75);
   }
-  throw new Error('P4 publication atomicity court did not become ready: '+JSON.stringify(last));
+  const probe=await evaluate(cdp,`(async()=>{try{
+    const response=await fetch('/p4-publication-atomicity.js',{cache:'no-store'});
+    const status=response.status;
+    const contentType=response.headers.get('content-type');
+    const prefix=(await response.text()).slice(0,160);
+    try{
+      await import('/p4-publication-atomicity.js?diagnostic='+Date.now());
+      return {ok:true,status,contentType,prefix};
+    }catch(error){
+      return {ok:false,status,contentType,prefix,name:error?.name??'Error',message:error?.message??String(error),stack:error?.stack??null};
+    }
+  }catch(error){
+    return {ok:false,name:error?.name??'Error',message:error?.message??String(error),stack:error?.stack??null};
+  }})()`);
+  throw new Error('P4 publication atomicity court did not become ready: '+JSON.stringify({last,probe}));
 }
 function js(value){return JSON.stringify(value);}
 async function courtCall(cdp,method,...args){
