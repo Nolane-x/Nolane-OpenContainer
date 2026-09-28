@@ -311,20 +311,22 @@ function percentile(values,p){
   const index=Math.min(sorted.length-1,Math.max(0,Math.ceil((p/100)*sorted.length)-1));
   return sorted[index];
 }
-function measureGraph(lock,expectedNodes,iterations=30){
+function measureGraph(lockText,expectedNodes,iterations=30){
   for(let i=0;i<5;i++){
-    const graph=new PackageGraphAuthority().compile(lock);
+    const graph=new PackageGraphAuthority().compile(lockText);
     assert(graph.nodes.length===expectedNodes,'P4 graph warmup node count drifted',{expectedNodes,actual:graph.nodes.length});
   }
   const values=[];
   for(let i=0;i<iterations;i++){
     const start=performance.now();
-    const graph=new PackageGraphAuthority().compile(lock);
+    const graph=new PackageGraphAuthority().compile(lockText);
     values.push(performance.now()-start);
     assert(graph.nodes.length===expectedNodes,'P4 measured graph node count drifted',{expectedNodes,actual:graph.nodes.length});
   }
   return Object.freeze({
     nodes:expectedNodes,
+    lockfileBytes:encoder.encode(lockText).byteLength,
+    path:'raw-package-lock-text-to-graph',
     iterations,
     p50Ms:percentile(values,50),
     p95Ms:percentile(values,95),
@@ -338,9 +340,9 @@ async function performanceCourt(){
     fetch('/compat/p4/chokidar.package-lock.json',{cache:'no-store'})
   ]);
   assert(viteResponse.ok&&chokidarResponse.ok,'P4 real graph fixtures could not be loaded');
-  const [vite,chokidar]=await Promise.all([viteResponse.json(),chokidarResponse.json()]);
-  const viteMeasure=measureGraph(vite,219);
-  const chokidarMeasure=measureGraph(chokidar,8);
+  const [viteText,chokidarText]=await Promise.all([viteResponse.text(),chokidarResponse.text()]);
+  const viteMeasure=measureGraph(viteText,219);
+  const chokidarMeasure=measureGraph(chokidarText,8);
   assert(Number.isFinite(viteMeasure.p95Ms)&&viteMeasure.p95Ms<5000,'P4 Vite graph-load measurement invalid',{viteMeasure});
   assert(Number.isFinite(chokidarMeasure.p95Ms)&&chokidarMeasure.p95Ms<5000,'P4 Chokidar graph-load measurement invalid',{chokidarMeasure});
   return Object.freeze({
