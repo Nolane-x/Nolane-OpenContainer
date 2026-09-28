@@ -2,6 +2,7 @@ import { OpenContainer } from '/packages/sdk/src/index.js';
 import {
   PackageContentStore,
   PackageGraphAuthority,
+  OpfsPackageContentStore,
   inspectTarArchive
 } from '/packages/package-env/src/index.js';
 import { ErrorCodes } from '/packages/protocol/src/index.js';
@@ -312,6 +313,89 @@ async function layoutCourt(){
   }
 }
 
+async function packageStorageCourt(){
+  assert(navigator.storage?.getDirectory,'P4 storage amplification court requires OPFS');
+  const root=await navigator.storage.getDirectory();
+  const directoryName='opencontainer-p4-final-package-storage';
+  try{await root.removeEntry(directoryName,{recursive:true});}catch(error){
+    if(error?.name!=='NotFoundError')throw error;
+  }
+  const store=await new OpfsPackageContentStore({
+    root,
+    directoryName,
+    lockManager:navigator.locks??null
+  }).open();
+
+  const fixtures=[
+    {
+      id:'lightningcss-wasm',
+      path:'/toolchain/vendor/lightningcss-wasm-1.33.0.tgz',
+      expectedBytes:3826518
+    },
+    {
+      id:'rolldown-browser',
+      path:'/toolchain/vendor/rolldown-browser-1.2.9.tgz',
+      expectedBytes:3809446
+    }
+  ];
+
+  let physicalPersistentBytes=0;
+  let uniqueVerifiedLogicalContentBytes=0;
+  let artifactBytes=0;
+  let manifestBytes=0;
+  const packages=[];
+
+  for(const fixture of fixtures){
+    const response=await fetch(fixture.path,{cache:'no-store'});
+    assert(response.ok,'P4 retained storage tarball fetch failed',{fixture,status:response.status});
+    const bytes=new Uint8Array(await response.arrayBuffer());
+    assert(bytes.byteLength===fixture.expectedBytes,'P4 retained storage tarball byte count drifted',{
+      id:fixture.id,expected:fixture.expectedBytes,actual:bytes.byteLength
+    });
+    const integrity=await sri(bytes);
+    const archive=await inspectTarArchive(bytes,{requiredPrefix:'package/'});
+    const contentId='p4-storage:'+fixture.id;
+    const receipt=await store.ingest({contentId,integrity,bytes});
+    assert(receipt.persisted===true,'P4 retained package was not persisted in OPFS',{id:fixture.id,receipt});
+    const usage=await store.persistedUsage(contentId);
+    assert(usage.exists===true,'P4 persisted package usage disappeared',{id:fixture.id,usage});
+    assert(usage.artifactBytes===bytes.byteLength,'P4 persisted artifact byte accounting drifted',{id:fixture.id,usage});
+    assert(usage.totalBytes===usage.artifactBytes+usage.manifestBytes,'P4 persisted byte accounting is inconsistent',{id:fixture.id,usage});
+
+    physicalPersistentBytes+=usage.totalBytes;
+    uniqueVerifiedLogicalContentBytes+=archive.totalBytes;
+    artifactBytes+=usage.artifactBytes;
+    manifestBytes+=usage.manifestBytes;
+    packages.push(Object.freeze({
+      id:fixture.id,
+      packedArtifactBytes:bytes.byteLength,
+      uniqueLogicalContentBytes:archive.totalBytes,
+      physicalPersistentBytes:usage.totalBytes,
+      artifactBytes:usage.artifactBytes,
+      manifestBytes:usage.manifestBytes,
+      storageAmplification:usage.totalBytes/archive.totalBytes
+    }));
+  }
+
+  const storageAmplification=physicalPersistentBytes/uniqueVerifiedLogicalContentBytes;
+  assert(Number.isFinite(storageAmplification)&&storageAmplification>0,'P4 PackageFS storage amplification measurement invalid',{
+    physicalPersistentBytes,uniqueVerifiedLogicalContentBytes,storageAmplification
+  });
+  return Object.freeze({
+    schema:'opencontainer.p4-package-storage-amplification.v1.0',
+    formula:'physical-persistent-bytes/unique-verified-logical-content-bytes',
+    surface:'OpfsPackageContentStore',
+    packageCount:packages.length,
+    physicalPersistentBytes,
+    uniqueVerifiedLogicalContentBytes,
+    artifactBytes,
+    manifestBytes,
+    storageAmplification,
+    packages:Object.freeze(packages),
+    thresholdClaimed:false
+  });
+}
+
 function percentile(values,p){
   const sorted=[...values].sort((a,b)=>a-b);
   const index=Math.min(sorted.length-1,Math.max(0,Math.ceil((p/100)*sorted.length)-1));
@@ -364,6 +448,7 @@ async function run(){
   const parser=await parserCourt();
   const scripts=await scriptCourt();
   const layout=await layoutCourt();
+  const storage=await packageStorageCourt();
   const graphLoad=await performanceCourt();
   return Object.freeze({
     schema:'opencontainer.p4-final-package.v1.0',
@@ -374,6 +459,7 @@ async function run(){
     parser,
     scripts,
     layout,
+    storage,
     graphLoad
   });
 }
