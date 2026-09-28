@@ -133,7 +133,7 @@ export class OpenContainer {
       await this.workspacePersistence.readCheckpoint(recoveryPoint);
       const lifecycle=await new OpfsWorkspaceLifecycleAuthority(this._workspacePersistenceOptions).open();
       const receipt=await lifecycle.deleteRecoverably({mutationId,recoveryPoint});
-      this._support.recordOutcome('workspace-delete',{
+      this._support.recordOutcome('workspaceDelete',{
         status:'tombstoned',
         mutationId:receipt.mutationId,
         recoverable:true,
