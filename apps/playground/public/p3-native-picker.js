@@ -127,6 +127,7 @@ async function collectEnvironmentEvidence(){
 
   return Object.freeze({
     productionProfileId:profile.profileId,
+    gateSourceSha256:profile.closure?.gateSourceSha256??null,
     browserReferenceProfile:profile.browser?.referenceProfile??null,
     compatibilityRowId:supported?.id??null,
     expectedBrowserProduct:supported?.browser?.product??null,
@@ -177,6 +178,7 @@ function publicReceipt(court){
     status,
     closureEligible:semanticsPass&&declaredProfileMatch,
     sourceGate:'OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P3-18',
+    sourceGateSha256:environmentEvidence?.gateSourceSha256??null,
     evidenceKind:'INTERACTIVE_NATIVE_BROWSER',
     operatorAssisted:true,
     createdAt:court?.createdAt??null,
