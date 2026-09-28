@@ -496,13 +496,30 @@ try{
       assert(merged?.result?.permissionRechecked===true,'Native linked write did not recheck permission immediately before write',{iteration,merged});
       assert(await readFile(linkedPath,'utf8')==='merged-native','Native linked write did not reach selected OS file',{iteration});
 
-      await rm(externalRoot,{recursive:true,force:true});
+      const nativeRemove=await evaluate(cdp,courtExpression('removeSelected'));
+      assert(
+        nativeRemove?.removedThrough==='FileSystemDirectoryHandle.remove'&&
+        nativeRemove?.recursive===true,
+        'Native selected-directory removal trigger did not execute',
+        {iteration,nativeRemove}
+      );
+      assert(
+        nativeRemove?.localCanonical==='local-canonical-survives',
+        'Native revocation trigger damaged independent local canonical state',
+        {iteration,nativeRemove}
+      );
+
       const revoked=await waitForPermissionRevocation(cdp);
       assert(
         revoked.permission.read==='denied'||revoked.permission.readwrite==='denied',
-        'Selected native handle did not expose revoked permission',
-        {iteration,revoked}
+        'Selected native handle did not expose revoked permission after handle.remove()',
+        {iteration,nativeRemove,revoked}
       );
+
+      let removedOnDisk=false;
+      try{await readFile(linkedPath,'utf8');}
+      catch(error){removedOnDisk=error?.code==='ENOENT';}
+      assert(removedOnDisk,'Native FileSystemDirectoryHandle.remove() did not remove the selected OS directory contents',{iteration});
 
       const blocked=await evaluate(cdp,courtExpression('write',['linked.txt','must-not-write-after-revoke',refreshed.revision]));
       assert(blocked?.ok===false,'Privileged write proceeded after native permission revocation',{iteration,blocked});
@@ -535,7 +552,9 @@ try{
           permissionRechecked:merged.result.permissionRechecked
         }),
         nativeRevocation:Object.freeze({
-          trigger:'selected-directory-removed-by-external-os-process',
+          trigger:'selected-directory-removed-through-native-FileSystemDirectoryHandle.remove',
+          removeBefore:nativeRemove.before,
+          removeAfter:nativeRemove.after,
           read:revoked.permission.read,
           readwrite:revoked.permission.readwrite,
           blockedCode:blocked.error.code,
