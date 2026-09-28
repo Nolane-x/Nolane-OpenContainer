@@ -15,7 +15,7 @@ Use one of these instead:
 - a browser-native API exposed through a reviewed OpenContainer adapter;
 - a separate trusted backend/service when the capability fundamentally requires host-native access.
 
-Do not hide a native requirement behind install scripts. Lifecycle scripts are denied by default.
+Do not hide a native requirement behind install scripts. Lifecycle scripts are denied by default. An embedding product may authorize a specific `preinstall`/`install`/`postinstall` command only through an exact `PackageScriptCapability` grant bound to package location + lifecycle event + command string. The executor receives no ambient environment or secret/network-secret handles; this is not a global `allowScripts` switch or host-shell authority.
 
 ## Host filesystem and shell
 
