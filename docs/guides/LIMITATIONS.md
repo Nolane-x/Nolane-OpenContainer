@@ -6,6 +6,8 @@ OpenContainer is a browser-native runtime, not a browser escape hatch. Compatibi
 
 Native `.node` addons, node-gyp builds and arbitrary host-native binaries are unsupported.
 
+Generic package/path aliases do not authorize native-addon fallback. A browser replacement is accepted only through an exact `nativeAddonAdapters` mapping from one absolute `.node` source path to one existing non-`.node` target. That mapping executes supported browser-side content; it never executes host-native code. See `docs/compatibility/P4-PACKAGE-COMMAND-DIAGNOSTICS-NATIVE-BOUNDARY.md` for the exact boundary.
+
 Use one of these instead:
 
 - a WASM build with pinned bytes and an explicit browser execution path;
