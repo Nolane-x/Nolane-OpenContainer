@@ -8,8 +8,8 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **191**
-- Minimum-closure satisfied: **156**
+- Seed-reconciled against implementation evidence: **193**
+- Minimum-closure satisfied: **157**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -19,7 +19,7 @@
 | P0 Product scope & production profile | 12 | 0 | 12 |
 | P1 Browser deployment, origin & lifecycle | 7 | 9 | 16 |
 | P2 Kernel, RPC, process & stream semantics | 6 | 8 | 14 |
-| P3 VFS, OPFS, persistence & data safety | 14 | 6 | 20 |
+| P3 VFS, OPFS, persistence & data safety | 16 | 4 | 20 |
 | P4 Packages, resolver, archive & installer | 6 | 12 | 18 |
 | P5 Network, secrets & preview edge | 18 | 0 | 18 |
 | P6 Toolchain, BCR, Vite & framework integration | 8 | 8 | 16 |
@@ -43,6 +43,11 @@
 - Release trust chain now has reproducible artifact/checksum/SBOM/provenance/inventory evidence, but authenticated attestation, public publication, rollback and license/FTO closure remain open.
 
 ## Newly reconciled in this wave
+
+- **P3-20** is newly reconciled and meets declared-profile closure through PR #54 / CI #529 on implementation head `e89f16bf2a164ea812e2dd8793559816ad5d8757`. Normal delete is a D2 recoverable destructive action: local mutation is fenced, the current canonical checkpoint is verified as the recovery root, and an integrity-bound tombstone blocks boot/publication until explicit restore.
+- Permanent purge is a distinct D4 action. It requires exact target-specific confirmation, physically removes workspace storage, reports `recoverable=false` / `recoverability=none`, is idempotent by mutation identity, and reconciles acknowledgement-loss against authoritative lifecycle state before retry. Lifecycle metadata corruption fails closed rather than silently reactivating a deleted workspace.
+- CI #529 passed **406/406 unit tests**, **38 critical files × 5 = 190 repeated executions**, CodeQL and **2/2** installed-distribution Chrome paths. Dedicated artifact #10952810664 passed the destructive-lifecycle invariants in both browser iterations. Closure CI expands the retained critical campaign to **40 files × 5 = 200 executions**.
+- **P3-07, P3-09, P3-17 and P3-18 remain unreconciled/open**. P3-20 closure does not infer explicit flush durability, frozen-tab stale-resume safety or external-file mode/permission/conflict semantics.
 
 - **P3-15** is newly reconciled and meets declared-profile closure through PR #53, implementation CI #509 and dedicated safe-restore CI #512. Restore planning binds the working VFS generation and canonical OPFS sequence; commit creates/reuses a recovery point before rollback and republishes the selected older checkpoint as a **new** canonical generation.
 - Local edits after planning and cross-context canonical publication both abort with `OC_STALE_GENERATION`. If quota prevents the safety checkpoint, restore aborts with `OC_RESOURCE_EXHAUSTED`, `riskDeclared=true`, and leaves the working tree unchanged. Dedicated artifact #10944841419 verifies these invariants in **2/2** installed Chrome iterations.
