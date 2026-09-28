@@ -56,7 +56,8 @@
     "p3:native-external:evidence": "node scripts/p3-native-external-permission.mjs",
     "p4:publication-atomicity:evidence": "node scripts/p4-publication-atomicity.mjs",
     "p4:artifact-boundary:evidence": "node scripts/capture-p4-artifact-boundary-browser-evidence.mjs",
-    "p4:ecosystem-layout:evidence": "node scripts/p4-ecosystem-layout.mjs"
+    "p4:ecosystem-layout:evidence": "node scripts/p4-ecosystem-layout.mjs",
+    "p4:command-diagnostics:evidence": "node scripts/p4-command-diagnostics.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",
