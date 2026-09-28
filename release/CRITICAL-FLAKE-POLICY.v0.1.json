@@ -46,10 +46,11 @@
       "tests/workspace-lifecycle.test.js",
       "tests/p3-destructive-lifecycle-evidence.test.js",
       "tests/external-source.test.js",
-      "tests/p3-external-source-evidence.test.js"
+      "tests/p3-external-source-evidence.test.js",
+      "tests/p3-freeze-writer-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 42
+    "minimumTestFiles": 43
   },
   "browser": {
     "iterations": 2,

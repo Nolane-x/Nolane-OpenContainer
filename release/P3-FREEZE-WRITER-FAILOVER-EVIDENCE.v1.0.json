@@ -1,0 +1,52 @@
+{
+  "schema": "opencontainer.p3-freeze-writer-failover-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P3-09",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "requirement": "Run real multi-tab writer failover while one tab freezes, resumes and attempts stale publication.",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 56,
+  "implementation": {
+    "head": "74b1fb598e652f2650b0c37e28e67deab3db6d8b",
+    "ciRunNumber": 565,
+    "ciRunId": 36387920789,
+    "testedCheckoutCommit": "64749c2c1e20427c9cfabd4ef4b5979ada6bb144",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "unitTests": 419,
+    "unitPassed": 419,
+    "unitFailed": 0,
+    "criticalTestFiles": 42,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 210,
+    "contractUnexplainedFailures": 0
+  },
+  "dedicatedBrowserVerification": {
+    "artifactId": 10954814739,
+    "schema": "opencontainer.p3-freeze-writer-failover.v1.0",
+    "status": "PASS",
+    "browser": "Google Chrome 153.0.8010.52",
+    "iterations": 2,
+    "passedIterations": 2,
+    "realMultiTab": true,
+    "realPageLifecycleFreeze": true,
+    "lifecycleCommand": "Page.setWebLifecycleState",
+    "writerEpochTakeover": true,
+    "staleResumePublicationRejected": true,
+    "canonicalPreserved": true
+  },
+  "invariants": [
+    "Writer A publishes canonical sequence 1 with WriterEpoch 1 from one real Chrome page target.",
+    "Chrome applies Page.setWebLifecycleState(frozen) to Writer A and the page observes a real freeze lifecycle event.",
+    "A separate same-origin Chrome page target restores the same real OPFS workspace, claims WriterEpoch 2 and publishes canonical sequence 2 while A remains frozen.",
+    "Chrome resumes Writer A and the page observes a real resume lifecycle event.",
+    "Writer A keeps its post-resume local edit but its original authority is fenced: publication fails OC_STALE_GENERATION with expectedWriterEpoch=1 and currentWriterEpoch=2.",
+    "Writer A re-observes manifestWriterEpoch=2 without silently changing its own writerEpoch=1 identity.",
+    "A fresh canonical read after the rejected stale publication remains Writer B value B1 at sequence 2 / WriterEpoch 2."
+  ],
+  "preservedOpenGates": [
+    "P3-07",
+    "P3-18"
+  ],
+  "productionClosed": false
+}

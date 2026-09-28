@@ -154,6 +154,14 @@ jobs:
       - run: npm run p3:safe-restore:evidence
       - run: npm run p3:destructive-lifecycle:evidence
       - run: npm run p3:external-source:evidence
+      - run: npm run p3:freeze-writer:evidence
+      - name: Archive P3 freeze writer browser receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-p3-freeze-writer-browser-${{ github.sha }}
+          path: .artifacts/p3-freeze-writer/browser-receipt.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Archive P3 external source browser receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

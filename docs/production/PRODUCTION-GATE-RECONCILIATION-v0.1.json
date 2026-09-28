@@ -328,6 +328,10 @@
     "p3-external-source-modes": {
       "ref": "CI #547 / PR #55 implementation head 1f5a9f0ddfc814193658a9f36117a6f088d93ce8",
       "note": "P3-17 declared-profile external-source mode court: imported-copy detaches after one staged local publish, read-only-source never grants write authority, and linked-folder preserves explicit mode across permission/conflict states. Real Chrome uses OPFS bytes plus a File-System-Access-compatible permission adapter. Native showDirectoryPicker permission revocation remains explicitly unexercised, so P3-18 stays open."
+    },
+    "p3-freeze-writer-failover": {
+      "ref": "CI #565 / PR #56 implementation head 74b1fb598e652f2650b0c37e28e67deab3db6d8b",
+      "note": "P3-09 declared-profile real multi-tab freeze/resume writer-failover court: Writer A freezes at epoch 1, Writer B claims epoch 2 and publishes, resumed A is fenced OC_STALE_GENERATION before stale publication, canonical B state remains intact."
     }
   },
   "overrides": [
@@ -1881,6 +1885,14 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p3-external-source-modes",
+      "closure_met": true
+    },
+    {
+      "id": "P3-09",
+      "domain": "P3",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p3-freeze-writer-failover",
       "closure_met": true
     }
   ]

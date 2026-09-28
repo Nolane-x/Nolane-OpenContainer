@@ -771,3 +771,12 @@ P3-17 is now reconciled and closed for the declared Chrome profile. Imported-cop
 P3-18 remains open. Current browser evidence uses real Chrome/OPFS bytes plus a File-System-Access-compatible permission adapter and explicitly records `nativePickerPermissionRevocationExercised=false`. A real user-selected `showDirectoryPicker()` handle and subsequent native permission-revocation transition are still required.
 
 The production ledger is now 158/304 minimum-closure satisfied with 194 reconciliation rows. P3-07, P3-09 and P3-18 remain open; `production_closed=false`.
+
+
+## P3 persistence/data-safety wave 8
+
+PR #56 implementation head `74b1fb598e652f2650b0c37e28e67deab3db6d8b` passed CI #565 with 419/419 unit tests, CodeQL, 42 critical files × 5 = 210 repeated executions and the installed-distribution Chrome product path. Dedicated browser artifact #10954814739 passed 2/2 real two-target freeze/resume iterations.
+
+P3-09 is now reconciled and closed for the declared Chrome profile. Writer A publishes at WriterEpoch 1, Chrome freezes its real page target, Writer B claims WriterEpoch 2 and publishes while A is frozen, then Chrome resumes A. A's original authority re-handshakes shared state and its stale publication fails `OC_STALE_GENERATION` with expected epoch 1/current epoch 2. Canonical sequence/value remain Writer B's acknowledged state.
+
+The production ledger candidate is now 159/304 minimum-closure satisfied with 195 reconciliation rows. P3-07 and P3-18 remain open; `production_closed=false`.

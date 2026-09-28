@@ -44,15 +44,18 @@ test('P3-17 closes only explicit external source mode semantics',()=>{
     {domain:row?.domain,state:row?.state,promotion:row?.promotion,evidence:row?.evidence,closure_met:row?.closure_met},
     {domain:'P3',state:'EVIDENCE',promotion:'PASS-BROWSER',evidence:'p3-external-source-modes',closure_met:true}
   );
-  assert.equal(ledger.overrides.length,194);
-  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,158);
+  assert.equal(ledger.overrides.length,195);
+  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,159);
   const p3=ledger.overrides.filter(item=>item.domain==='P3');
-  assert.equal(p3.length,17);
-  assert.equal(p3.filter(item=>item.closure_met===true).length,17);
-  for(const id of ['P3-07','P3-09','P3-18']){
+  assert.equal(p3.length,18);
+  assert.equal(p3.filter(item=>item.closure_met===true).length,18);
+  for(const id of ['P3-07','P3-18']){
     const open=ledger.overrides.find(item=>item.id===id);
     assert.ok(!open||open.closure_met!==true,id+' was silently promoted');
   }
+  const laterFreeze=ledger.overrides.find(item=>item.id==='P3-09');
+  assert.equal(laterFreeze?.closure_met,true,'P3-09 later closure missing');
+  assert.equal(laterFreeze?.evidence,'p3-freeze-writer-failover','P3-09 later closure evidence drifted');
 });
 
 test('P3-18 native picker permission revocation remains explicitly open',()=>{
@@ -74,8 +77,8 @@ test('P3 external source modes are typed browser evidence retained by critical c
     'tests/external-source.test.js',
     'tests/p3-external-source-evidence.test.js'
   ]) assert.ok(flake.contract.testFiles.includes(file),file);
-  assert.equal(flake.contract.testFiles.length,42);
-  assert.equal(flake.contract.minimumTestFiles,42);
+  assert.equal(flake.contract.testFiles.length,flake.contract.minimumTestFiles);
+  assert.ok(flake.contract.testFiles.length>=42);
   assert.equal(flake.contract.iterations,5);
   assert.equal(flake.browser.iterations,2);
 });

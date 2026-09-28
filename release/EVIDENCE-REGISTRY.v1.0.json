@@ -466,6 +466,14 @@
       "status": "PASS",
       "ref": "CI #547 / PR #55 implementation head 1f5a9f0ddfc814193658a9f36117a6f088d93ce8",
       "note": "Declared-profile P3-17 closure evidence: imported-copy, linked-folder and read-only-source remain explicit immutable modes; imported-copy detaches after staged local publication, read-only-source never widens write authority, linked-folder permission/conflict states do not silently change mode. 415/415 unit tests, 200/200 repeated critical executions, CodeQL and 2/2 installed-distribution Chrome paths passed. P3-18 native picker permission revocation remains open."
+    },
+    {
+      "key": "p3-freeze-writer-failover",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #565 / PR #56 implementation head 74b1fb598e652f2650b0c37e28e67deab3db6d8b",
+      "note": "Declared-profile P3-09 closure: two independent same-origin Chrome targets; A frozen/resumed with Page.setWebLifecycleState, B claims WriterEpoch 2 while A is frozen, resumed A publication is fenced OC_STALE_GENERATION expected epoch 1/current epoch 2, canonical B state remains intact. Dedicated two-iteration browser receipt passed."
     }
   ]
 }
