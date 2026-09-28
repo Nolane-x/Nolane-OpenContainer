@@ -26,6 +26,12 @@ This does **not** claim generic Node `fs.watch`, chokidar or host-filesystem wat
 
 ## P4-16 — measurement scope
 
+The release court uses the frozen storage metric from the research spec:
+
+`StorageAmplification = physical persistent bytes / unique verified logical content bytes`
+
+For package storage, Chrome ingests the retained parser-compatible artifacts into the real `OpfsPackageContentStore`, reads `persistedUsage()`, and compares artifact + manifest bytes with the unique verified logical TAR content bytes.
+
 The release court records:
 
 - packed and unpacked bytes for the two retained parser-compatible toolchain tarballs (`lightningcss-wasm@1.33.0` and `@rolldown/browser@1.2.9`), after exact byte-count and SHA-256 verification;
