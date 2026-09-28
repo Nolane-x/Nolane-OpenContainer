@@ -28,7 +28,7 @@ This does **not** claim generic Node `fs.watch`, chokidar or host-filesystem wat
 
 The release court records:
 
-- packed and unpacked bytes for the retained published npm tarball corpus;
+- packed and unpacked bytes for the two retained parser-compatible toolchain tarballs (`lightningcss-wasm@1.33.0` and `@rolldown/browser@1.2.9`), after exact byte-count and SHA-256 verification;
 - aggregate package-storage amplification;
 - startup raw-package-lock-text → JSON parse → package-graph construction cost for the frozen 219-node Vite tree and 8-node Chokidar tree;
 - Node and Chrome timing receipts with warmup and repeated iterations.
