@@ -804,3 +804,79 @@ test('P3 VFS mutation lease prevents concurrent transaction commit during restor
   fs.beginTransaction().writeFile('value.txt','three').commit();
   assert.equal(fs.readFile('value.txt'),'three');
 });
+
+
+test('P3 canonical checkpoint waits for durability-writer flush receipts before publication returns',async()=>{
+  const root=new FakeDirectoryHandle();
+  const calls=[];
+  const durabilityWriter={
+    async write(directory,name,content){
+      const handle=await directory.getFileHandle(name,{create:true});
+      const writable=await handle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      const bytes=new TextEncoder().encode(String(content)).byteLength;
+      calls.push({name,bytes});
+      return Object.freeze({
+        schema:'opencontainer.opfs-sync-flush-write.v1.0',
+        name,
+        bytes,
+        bytesWritten:bytes,
+        bytesReadAfterFlush:bytes,
+        sizeAfterFlush:bytes,
+        writeCalled:true,
+        truncateCalled:true,
+        flushCalled:true,
+        closeCalled:true,
+        readAfterFlushVerified:true,
+        dedicatedWorker:true,
+        syncAccessHandle:true,
+        apiBoundary:'flush-attempts-cached-modifications-to-underlying-storage-device',
+        powerLossGuaranteed:false,
+        osFsyncGuaranteed:false
+      });
+    }
+  };
+
+  const fs=new MemoryVFS();
+  fs.mount({'durable.txt':'v1'});
+  const authority=await new OpfsCheckpointAuthority({root,durabilityWriter}).open();
+  const receipt=await authority.checkpoint(fs);
+
+  assert.equal(receipt.sequence,1);
+  assert.equal(calls.length,3);
+  assert.match(calls[0].name,/^writer-epoch-1\.json$/);
+  assert.match(calls[1].name,/^generation-1-[a-f0-9]{16}\.json$/);
+  assert.equal(calls[2].name,'manifest-a.json');
+
+  const durability=authority.durabilityState;
+  assert.equal(durability.mode,'sync-access-handle-flush');
+  assert.equal(durability.flushBeforePublication,true);
+  assert.equal(durability.dedicatedWorker,true);
+  assert.equal(durability.closeAloneSufficient,false);
+  assert.equal(durability.powerLossGuaranteed,false);
+  assert.equal(durability.osFsyncGuaranteed,false);
+  assert.equal(durability.lastWrite?.phase,'manifest');
+  assert.equal(durability.lastWrite?.flushCalled,true);
+  assert.equal(durability.lastWrite?.closeCalled,true);
+  assert.equal(durability.lastWrite?.readAfterFlushVerified,true);
+
+  const reopened=await new OpfsCheckpointAuthority({root,durabilityWriter}).open();
+  const restored=new MemoryVFS();
+  await reopened.restoreInto(restored);
+  assert.equal(restored.readFile('durable.txt'),'v1');
+});
+
+test('P3 non-browser checkpoint fallback does not pretend to have an explicit flush boundary',async()=>{
+  const root=new FakeDirectoryHandle();
+  const fs=new MemoryVFS();
+  fs.mount({'fallback.txt':'value'});
+  const authority=await new OpfsCheckpointAuthority({root,durabilityWriter:null}).open();
+  await authority.checkpoint(fs);
+  const durability=authority.durabilityState;
+  assert.equal(durability.mode,'async-writable-stream-close');
+  assert.equal(durability.flushBeforePublication,false);
+  assert.equal(durability.lastWrite?.flushCalled,false);
+  assert.equal(durability.powerLossGuaranteed,false);
+  assert.equal(durability.osFsyncGuaranteed,false);
+});
