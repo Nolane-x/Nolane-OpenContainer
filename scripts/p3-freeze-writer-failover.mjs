@@ -1,7 +1,7 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 
 const port=Number(process.env.OPENCONTAINER_P3_FREEZE_PORT||4289);
 const iterations=Number(process.env.OPENCONTAINER_P3_FREEZE_ITERATIONS||2);
@@ -330,6 +330,11 @@ try{
     canonicalPreserved:true,
     runs:Object.freeze(runReceipts)
   });
+  await mkdir(resolve('.artifacts/p3-freeze-writer'),{recursive:true});
+  await writeFile(
+    resolve('.artifacts/p3-freeze-writer/browser-receipt.json'),
+    JSON.stringify(receipt,null,2)+'\n'
+  );
   console.log('P3 FREEZE WRITER FAILOVER PASS '+JSON.stringify(receipt));
 }finally{
   await terminateChild(chrome);
