@@ -340,14 +340,22 @@ async function pressChromeConfirmation(){
   const id=ids.at(-1);
   if(id){
     xdotool(['windowactivate','--sync',id],{allowFailure:true});
-    await delay(100);
-    xdotool(['key','--clearmodifiers','Return'],{allowFailure:true});
-    await delay(250);
-    return {windowId:id,windowName:windowName(id)};
+    await delay(180);
+    captureScreen('chrome-edit-permission-before-allow');
+    // Chrome focuses the safe "Don't Allow" action first. Move once to the
+    // affirmative "Allow" action, then activate it.
+    xdotool(['key','--window',id,'--clearmodifiers','Tab'],{allowFailure:true});
+    await delay(120);
+    xdotool(['key','--window',id,'--clearmodifiers','Return'],{allowFailure:true});
+    await delay(350);
+    captureScreen('chrome-edit-permission-after-allow');
+    return {
+      windowId:id,
+      windowName:windowName(id),
+      action:'tab-to-allow-then-enter'
+    };
   }
-  xdotool(['key','--clearmodifiers','Return'],{allowFailure:true});
-  await delay(250);
-  return {windowId:null,windowName:null};
+  return {windowId:null,windowName:null,action:'chrome-window-not-found'};
 }
 
 async function settlePromise(promise,{timeoutMs=12000,onWait=null}={}){
