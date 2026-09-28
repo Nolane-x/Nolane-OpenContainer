@@ -216,12 +216,18 @@ async function scriptCourt(){
       });
     }catch(error){secretFailure=error;}
     assert(secretFailure?.code===ErrorCodes.NETWORK_DENIED,'package install accepted ambient secret handle',{secretFailure});
+    assert(installer.lastInstallFailed===true,'secret-bearing install did not raise publication barrier');
+    let mountFailure=null;
+    try{installer.mountFrozenGraph();}
+    catch(error){mountFailure=error;}
+    assert(mountFailure?.code===ErrorCodes.INVALID_STATE,'secret-bearing install left PackageFS publication eligible',{mountFailure});
     return Object.freeze({
       executed:receipt.lifecycleScriptsExecuted.length,
       exactGrant:true,
       ambientEnvKeys:0,
       secretHandleCount:0,
       secretHandleInstallRejected:true,
+      publicationBarrierRetained:true,
       executorCalls:calls.length
     });
   }finally{
