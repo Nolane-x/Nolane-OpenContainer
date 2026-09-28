@@ -32,6 +32,7 @@ test('P4-13 lifecycle scripts require an exact separate capability with no ambie
   assert.match(install,/secretHandles:Object\.freeze\(\[\]\)/);
   assert.match(install,/networkSecretHandles:Object\.freeze\(\[\]\)/);
   assert.match(install,/Package installation does not accept network secret handles/);
+  assert.match(install,/this\.#lastInstallFailed = true;[\s\S]*Package installation does not accept network secret handles/);
   assert.match(boundary,/not host-shell authority/);
 });
 
