@@ -1474,6 +1474,33 @@ async function run() {
     const sdkSecond = await persistentRuntimeA.persistWorkspace();
     assert(sdkSecond.sequence === sdkFirst.sequence + 1, 'SDK workspace checkpoint sequence did not advance');
     assert(sdkSecond.generation === persistentRuntimeA.fs.generation, 'SDK workspace checkpoint generation diverged before reopen');
+
+    const sdkDurability=persistentRuntimeA.workspacePersistence.durabilityState;
+    assert(sdkDurability.mode==='sync-access-handle-flush','P3 canonical browser persistence did not use SyncAccessHandle flush');
+    assert(sdkDurability.flushBeforePublication===true,'P3 canonical publication returned without explicit flush boundary');
+    assert(sdkDurability.dedicatedWorker===true,'P3 SyncAccessHandle durability path did not execute in a Dedicated Worker');
+    assert(sdkDurability.lastWrite?.phase==='manifest','P3 durability receipt did not bind the canonical manifest write');
+    assert(sdkDurability.lastWrite?.flushCalled===true,'P3 canonical manifest did not flush before publication return');
+    assert(sdkDurability.lastWrite?.closeCalled===true,'P3 canonical manifest access handle did not close after flush');
+    assert(sdkDurability.lastWrite?.readAfterFlushVerified===true,'P3 canonical manifest bytes did not verify through the SyncAccessHandle after flush');
+    assert(sdkDurability.lastWrite?.publicationOrder==='flush-close-before-authority-return','P3 flush/publication ordering drifted');
+    assert(sdkDurability.powerLossGuaranteed===false&&sdkDurability.osFsyncGuaranteed===false,'P3 durability receipt overclaimed browser guarantees');
+    stage('p3-sync-flush-durability-pass',{
+      mode:sdkDurability.mode,
+      flushBeforePublication:sdkDurability.flushBeforePublication,
+      dedicatedWorker:sdkDurability.dedicatedWorker,
+      manifestPhase:sdkDurability.lastWrite.phase,
+      manifestBytes:sdkDurability.lastWrite.bytes,
+      bytesWritten:sdkDurability.lastWrite.bytesWritten,
+      bytesReadAfterFlush:sdkDurability.lastWrite.bytesReadAfterFlush,
+      flushCalled:sdkDurability.lastWrite.flushCalled,
+      closeCalled:sdkDurability.lastWrite.closeCalled,
+      readAfterFlushVerified:sdkDurability.lastWrite.readAfterFlushVerified,
+      publicationOrder:sdkDurability.lastWrite.publicationOrder,
+      apiBoundary:sdkDurability.lastWrite.apiBoundary,
+      powerLossGuaranteed:sdkDurability.powerLossGuaranteed,
+      osFsyncGuaranteed:sdkDurability.osFsyncGuaranteed
+    });
     await persistentRuntimeA.terminate();
 
     const persistentRuntimeB = await OpenContainer.boot({ workspacePersistence: workspaceProfile });
