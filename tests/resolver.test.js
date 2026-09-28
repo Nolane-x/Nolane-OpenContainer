@@ -152,3 +152,96 @@ test('browser path aliases can substitute one verified package artifact without 
     (error)=>error.code===ErrorCodes.MODULE_NOT_FOUND
   );
 });
+
+
+test('P4 native addon boundary rejects generic aliases and accepts only exact explicit adapter mapping',async()=>{
+  const runtime=await OpenContainer.boot();
+  runtime.mount({
+    'package.json':'{"name":"addon-app","type":"commonjs"}',
+    'entry.cjs':'module.exports=require("native-pkg")'
+  });
+  runtime.packages.mountCatalog({
+    packages:[{
+      location:'node_modules/native-pkg',
+      packageJson:{name:'native-pkg',version:'1.0.0',type:'commonjs',main:'binding.node'},
+      files:{
+        'binding.node':'not-a-real-native-binary',
+        'adapter.cjs':'module.exports={kind:"explicit-browser-adapter",value:42}'
+      }
+    }]
+  });
+
+  const addon='/workspace/node_modules/native-pkg/binding.node';
+  const adapter='/workspace/node_modules/native-pkg/adapter.cjs';
+
+  assert.throws(
+    ()=>runtime.packages.resolve('native-pkg','/workspace/entry.cjs',{
+      mode:'cjs',
+      pathAliases:{[addon]:adapter}
+    }),
+    error=>error?.code===ErrorCodes.NATIVE_ADDON_UNSUPPORTED
+  );
+
+  const resolved=runtime.packages.resolve('native-pkg','/workspace/entry.cjs',{
+    mode:'cjs',
+    nativeAddonAdapters:{[addon]:adapter}
+  });
+  assert.equal(resolved.path,adapter);
+  assert.equal(resolved.format,'commonjs');
+  assert.deepEqual(resolved.nativeAddonAdapter,{source:addon,target:adapter,explicit:true});
+
+  const normalFailure=()=>{
+    try{
+      runtime.packages.resolve('native-pkg','/workspace/entry.cjs',{mode:'cjs'});
+      return null;
+    }catch(error){
+      return error;
+    }
+  };
+  assert.equal(normalFailure()?.code,ErrorCodes.NATIVE_ADDON_UNSUPPORTED);
+
+  const loader=runtime.packages.createCommonJsLoader({
+    allowDynamicCode:true,
+    nativeAddonAdapters:{[addon]:adapter}
+  });
+  assert.deepEqual(loader.require('./entry.cjs','/workspace/bootstrap.cjs'),{
+    kind:'explicit-browser-adapter',
+    value:42
+  });
+
+  assert.throws(
+    ()=>runtime.packages.resolve('native-pkg','/workspace/entry.cjs',{
+      mode:'cjs',
+      nativeAddonAdapters:{[addon]:'/workspace/node_modules/native-pkg/other.node'}
+    }),
+    error=>error?.code===ErrorCodes.INVALID_ARGUMENT
+  );
+});
+
+test('P4 native addon adapter mapping participates in resolver cache identity',async()=>{
+  const runtime=await OpenContainer.boot();
+  runtime.mount({'package.json':'{"type":"commonjs"}','entry.cjs':''});
+  runtime.packages.mountCatalog({
+    packages:[{
+      location:'node_modules/native-pkg',
+      packageJson:{name:'native-pkg',type:'commonjs',main:'binding.node'},
+      files:{
+        'binding.node':'native',
+        'adapter-a.cjs':'module.exports="a"',
+        'adapter-b.cjs':'module.exports="b"'
+      }
+    }]
+  });
+  const addon='/workspace/node_modules/native-pkg/binding.node';
+  const a=runtime.packages.resolve('native-pkg','/workspace/entry.cjs',{
+    mode:'cjs',
+    nativeAddonAdapters:{[addon]:'/workspace/node_modules/native-pkg/adapter-a.cjs'}
+  });
+  const b=runtime.packages.resolve('native-pkg','/workspace/entry.cjs',{
+    mode:'cjs',
+    nativeAddonAdapters:{[addon]:'/workspace/node_modules/native-pkg/adapter-b.cjs'}
+  });
+  assert.notEqual(a.path,b.path);
+  assert.equal(a.nativeAddonAdapter.target,'/workspace/node_modules/native-pkg/adapter-a.cjs');
+  assert.equal(b.nativeAddonAdapter.target,'/workspace/node_modules/native-pkg/adapter-b.cjs');
+});
