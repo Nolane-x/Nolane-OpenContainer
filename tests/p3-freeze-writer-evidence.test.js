@@ -76,8 +76,8 @@ test('P3-09 evidence retains exact freeze resume takeover and stale reject invar
 
 test('P3 frozen-tab closure invariant is retained by repeated critical campaign',()=>{
   assert.ok(flake.contract.testFiles.includes('tests/p3-freeze-writer-evidence.test.js'));
-  assert.equal(flake.contract.testFiles.length,43);
-  assert.equal(flake.contract.minimumTestFiles,43);
+  assert.equal(flake.contract.testFiles.length,45);
+  assert.equal(flake.contract.minimumTestFiles,45);
   assert.equal(flake.contract.iterations,5);
   assert.equal(flake.browser.iterations,2);
 });
