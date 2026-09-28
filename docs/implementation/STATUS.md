@@ -760,3 +760,14 @@ PR #54 implementation head `e89f16bf2a164ea812e2dd8793559816ad5d8757` passed CI 
 P3-20 is now reconciled and closed for the declared Chrome profile. Normal delete is D2 recoverable destructive: OpenContainer fences late local mutation, verifies the current canonical checkpoint as the recovery root, writes an integrity-bound tombstone and blocks boot/publication until explicit restore. Permanent purge is a separate D4 action requiring target-specific irreversible confirmation; it physically removes workspace storage, reports no remaining recovery, is idempotent by mutation identity and reconciles acknowledgement loss before retry. Corrupt lifecycle metadata fails closed rather than silently reactivating the workspace.
 
 The production ledger is now 157/304 minimum-closure satisfied with 193 reconciliation rows. P3-07, P3-09, P3-17 and P3-18 remain unreconciled/open; `production_closed=false`.
+
+
+## P3 persistence/data-safety wave 7
+
+PR #55 implementation head `1f5a9f0ddfc814193658a9f36117a6f088d93ce8` passed CI #547 with 415/415 unit tests, CodeQL, 40 critical files × 5 = 200 repeated executions, and 2/2 installed-distribution Chrome product paths. Dedicated external-source artifact #10953546693 passed both browser iterations.
+
+P3-17 is now reconciled and closed for the declared Chrome profile. Imported-copy, linked-folder and read-only-source are explicit immutable authority modes: imported-copy detaches after atomic local publication, read-only-source never grants external write authority, and linked-folder preserves mode across permission/conflict states. Privileged linked writes re-check permission and require a content-revision precondition so detected external edits cannot be silently overwritten.
+
+P3-18 remains open. Current browser evidence uses real Chrome/OPFS bytes plus a File-System-Access-compatible permission adapter and explicitly records `nativePickerPermissionRevocationExercised=false`. A real user-selected `showDirectoryPicker()` handle and subsequent native permission-revocation transition are still required.
+
+The production ledger is now 158/304 minimum-closure satisfied with 194 reconciliation rows. P3-07, P3-09 and P3-18 remain open; `production_closed=false`.

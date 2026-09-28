@@ -324,6 +324,10 @@
     "p3-destructive-lifecycle": {
       "ref": "CI #529 / PR #54 implementation head e89f16bf2a164ea812e2dd8793559816ad5d8757",
       "note": "P3-20 real-browser destructive lifecycle court: D2 recoverable delete binds the current canonical checkpoint to an integrity-protected tombstone and fences late local/stale cross-context mutation; D4 permanent purge requires exact irreversible confirmation, physically removes workspace storage, reports no recovery, is mutation-idempotent and reconciles acknowledgement-loss."
+    },
+    "p3-external-source-modes": {
+      "ref": "CI #547 / PR #55 implementation head 1f5a9f0ddfc814193658a9f36117a6f088d93ce8",
+      "note": "P3-17 declared-profile external-source mode court: imported-copy detaches after one staged local publish, read-only-source never grants write authority, and linked-folder preserves explicit mode across permission/conflict states. Real Chrome uses OPFS bytes plus a File-System-Access-compatible permission adapter. Native showDirectoryPicker permission revocation remains explicitly unexercised, so P3-18 stays open."
     }
   },
   "overrides": [
@@ -1869,6 +1873,14 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p3-destructive-lifecycle",
+      "closure_met": true
+    },
+    {
+      "id": "P3-17",
+      "domain": "P3",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p3-external-source-modes",
       "closure_met": true
     }
   ]

@@ -44,10 +44,12 @@
       "tests/p3-low-storage-evidence.test.js",
       "tests/p3-safe-restore-evidence.test.js",
       "tests/workspace-lifecycle.test.js",
-      "tests/p3-destructive-lifecycle-evidence.test.js"
+      "tests/p3-destructive-lifecycle-evidence.test.js",
+      "tests/external-source.test.js",
+      "tests/p3-external-source-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 40
+    "minimumTestFiles": 42
   },
   "browser": {
     "iterations": 2,

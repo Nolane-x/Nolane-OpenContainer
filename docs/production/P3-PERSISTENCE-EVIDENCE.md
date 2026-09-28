@@ -252,3 +252,45 @@ CI #529 passed 406/406 unit tests, 38 critical files × 5 = 190 repeated file ex
 - P3-18 — external permission revocation and edit conflict before privileged writes.
 
 `production_closed=false` remains mandatory.
+
+
+## Wave 7 — external source mode semantics
+
+**Implementation evidence:** CI #547 / PR #55 / `1f5a9f0ddfc814193658a9f36117a6f088d93ce8`  
+**Tested checkout:** `615e6c714ae0df00e1cd5ae84a204b055fa68869`  
+**Dedicated browser artifact:** `10953546693`  
+**Closure:** `P3-17`
+
+External filesystem authority is now a separate durability domain from the local canonical browser workspace. The VFS authority exposes three explicit immutable modes:
+
+```text
+imported-copy
+linked-folder
+read-only-source
+```
+
+Imported-copy scans the source before publication, commits the imported bytes through one local VFS transaction, then detaches from the external handle. Later external edits cannot silently keep the project linked. Read-only-source permits reads but rejects privileged writes with `OC_STORAGE_READ_ONLY`, even if the backing handle could technically write. Linked-folder retains its mode across `granted`, `prompt` and `denied` permission states.
+
+Every privileged linked-folder write re-checks `readwrite` permission and requires a previously observed content revision. If the external file changed after OpenContainer read it, publication fails with `OC_STALE_GENERATION` / `external-change-detected` before overwrite and exposes compare, reload-external-version, save-as-copy and merge recovery choices.
+
+CI #547 passed 415/415 unit tests, 40 critical files × 5 = 200 repeated executions, CodeQL and 2/2 installed-distribution Chrome paths. Dedicated artifact #10953546693 verifies the mode invariants in both browser iterations.
+
+### Explicit evidence boundary for P3-18
+
+The browser court uses real Chrome + real OPFS bytes behind a File-System-Access-compatible permission adapter. It proves that permission is rechecked immediately before privileged write, denied/prompt states block the write, external revision conflicts block overwrite, and local canonical recovery state survives permission loss.
+
+It **does not** claim native picker permission revocation. The machine receipt explicitly records:
+
+```text
+nativePickerPermissionRevocationExercised = false
+```
+
+P3-18 therefore remains open until the declared profile exercises a real user-selected `FileSystemDirectoryHandle` from `showDirectoryPicker()`, browser/user revocation after selection, and the resulting native `queryPermission()` transition.
+
+### Still open after Wave 7
+
+- P3-07 — explicit canonical flush/durability boundary.
+- P3-09 — frozen/background-tab writer failover and stale resume publication.
+- P3-18 — native external file permission revocation plus external edit conflict on the real selected handle.
+
+`production_closed=false` remains mandatory.

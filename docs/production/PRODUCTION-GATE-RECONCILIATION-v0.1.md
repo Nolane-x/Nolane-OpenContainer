@@ -8,8 +8,8 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **193**
-- Minimum-closure satisfied: **157**
+- Seed-reconciled against implementation evidence: **194**
+- Minimum-closure satisfied: **158**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -19,7 +19,7 @@
 | P0 Product scope & production profile | 12 | 0 | 12 |
 | P1 Browser deployment, origin & lifecycle | 7 | 9 | 16 |
 | P2 Kernel, RPC, process & stream semantics | 6 | 8 | 14 |
-| P3 VFS, OPFS, persistence & data safety | 16 | 4 | 20 |
+| P3 VFS, OPFS, persistence & data safety | 17 | 3 | 20 |
 | P4 Packages, resolver, archive & installer | 6 | 12 | 18 |
 | P5 Network, secrets & preview edge | 18 | 0 | 18 |
 | P6 Toolchain, BCR, Vite & framework integration | 8 | 8 | 16 |
@@ -43,6 +43,11 @@
 - Release trust chain now has reproducible artifact/checksum/SBOM/provenance/inventory evidence, but authenticated attestation, public publication, rollback and license/FTO closure remain open.
 
 ## Newly reconciled in this wave
+
+- **P3-17** is newly reconciled and meets declared-profile closure through PR #55 / CI #547 on implementation head `1f5a9f0ddfc814193658a9f36117a6f088d93ce8`. External source mode is explicit and immutable: imported-copy stages bytes into one local VFS transaction then detaches; read-only-source never widens external write authority; linked-folder remains linked across permission and conflict states instead of silently changing mode.
+- CI #547 passed **415/415 unit tests**, **40 critical files × 5 = 200 repeated executions**, CodeQL and **2/2** installed-distribution Chrome paths. Dedicated artifact #10953546693 passed both iterations over real Chrome/OPFS bytes and a File-System-Access-compatible permission adapter.
+- **P3-18 remains unreconciled/open.** The dedicated receipt explicitly records `nativePickerPermissionRevocationExercised=false`: the current headless court proves write-time permission recheck and external revision conflict handling, but does not claim a real `showDirectoryPicker()` handle whose permission was later revoked by the browser/user.
+- Closure CI expands the retained critical campaign to **42 files × 5 = 210 executions** and keeps P3-07, P3-09 and P3-18 fail-closed.
 
 - **P3-20** is newly reconciled and meets declared-profile closure through PR #54 / CI #529 on implementation head `e89f16bf2a164ea812e2dd8793559816ad5d8757`. Normal delete is a D2 recoverable destructive action: local mutation is fenced, the current canonical checkpoint is verified as the recovery root, and an integrity-bound tombstone blocks boot/publication until explicit restore.
 - Permanent purge is a distinct D4 action. It requires exact target-specific confirmation, physically removes workspace storage, reports `recoverable=false` / `recoverability=none`, is idempotent by mutation identity, and reconciles acknowledgement-loss against authoritative lifecycle state before retry. Lifecycle metadata corruption fails closed rather than silently reactivating a deleted workspace.

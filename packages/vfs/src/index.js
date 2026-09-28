@@ -236,3 +236,5 @@ export { OpfsCheckpointAuthority } from './opfs-authority.js';
 export { BrowserStoragePolicy } from './browser-storage-policy.js';
 
 export { OpfsWorkspaceLifecycleAuthority, readWorkspaceLifecycleRecord, workspaceLifecycleBlocksPublication } from './workspace-lifecycle.js';
+
+export { ExternalWorkspaceSourceAuthority, ExternalSourceMode, ExternalSourceState } from './external-source.js';

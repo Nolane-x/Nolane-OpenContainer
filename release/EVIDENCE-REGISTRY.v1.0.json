@@ -458,6 +458,14 @@
       "status": "PASS",
       "ref": "CI #529 / PR #54 implementation head e89f16bf2a164ea812e2dd8793559816ad5d8757",
       "note": "Declared-profile P3-20 closure court: D2 recoverable delete freezes local mutation and binds the current canonical checkpoint to an integrity-protected tombstone; boot/publication remain blocked until restore. D4 permanent purge requires exact target-specific irreversible confirmation, physically removes workspace storage, reports recoverable=false, is idempotent by mutation identity, and reconciles acknowledgement-loss to authoritative terminal state. 406/406 unit tests, 190/190 repeated critical executions, CodeQL and 2/2 installed-distribution Chrome paths passed; dedicated destructive-lifecycle browser receipt passed both iterations."
+    },
+    {
+      "key": "p3-external-source-modes",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #547 / PR #55 implementation head 1f5a9f0ddfc814193658a9f36117a6f088d93ce8",
+      "note": "Declared-profile P3-17 closure evidence: imported-copy, linked-folder and read-only-source remain explicit immutable modes; imported-copy detaches after staged local publication, read-only-source never widens write authority, linked-folder permission/conflict states do not silently change mode. 415/415 unit tests, 200/200 repeated critical executions, CodeQL and 2/2 installed-distribution Chrome paths passed. P3-18 native picker permission revocation remains open."
     }
   ]
 }

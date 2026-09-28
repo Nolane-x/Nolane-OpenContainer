@@ -1,0 +1,67 @@
+{
+  "schema": "opencontainer.p3-external-source-modes-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P3-17",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "requirement": "Test imported-copy, linked-folder and read-only-source semantics without silent mode changes.",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 55,
+  "implementation": {
+    "head": "1f5a9f0ddfc814193658a9f36117a6f088d93ce8",
+    "ciRunNumber": 547,
+    "ciRunId": 36382768937,
+    "testedCheckoutCommit": "615e6c714ae0df00e1cd5ae84a204b055fa68869",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "unitTests": 415,
+    "unitPassed": 415,
+    "unitFailed": 0,
+    "criticalTestFiles": 40,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 200,
+    "contractUnexplainedFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "browserUnexplainedFailures": 0
+  },
+  "dedicatedBrowserVerification": {
+    "artifactId": 10953546693,
+    "schema": "opencontainer.p3-external-source-boundary-browser.v1.0",
+    "status": "PASS",
+    "iterations": 2,
+    "fullProductPathPasses": 2,
+    "unexplainedFailures": 0,
+    "evidenceScope": "real-chrome-opfs-bytes+file-system-access-compatible-permission-adapter",
+    "nativePickerPermissionRevocationExercised": false
+  },
+  "invariants": [
+    "Imported-copy stages source bytes into one local VFS transaction, keeps mode='imported-copy', then detaches so later external edits cannot silently remain linked.",
+    "Read-only-source remains mode='read-only-source' and rejects privileged external writes with OC_STORAGE_READ_ONLY even if the backing handle can technically write.",
+    "Linked-folder remains mode='linked-folder' across granted, prompt and denied permission states; permission loss never silently converts it into imported-copy.",
+    "Linked-folder re-checks readwrite permission before every privileged external write and leaves local canonical recovery state unaffected when permission is unavailable.",
+    "Every linked privileged write requires an observed content revision; an external modification yields OC_STALE_GENERATION / external-change-detected before overwrite.",
+    "Conflict receipts retain compare, reload-external-version, save-opencontainer-version-as-copy and merge recovery choices.",
+    "Imported-copy and read-only-source only query read permission; write capability is not probed unless linked-folder needs privileged write authority."
+  ],
+  "p3_18Boundary": {
+    "status": "OPEN",
+    "reason": "Headless Chrome evidence uses a File-System-Access-compatible permission adapter over real OPFS bytes. Native showDirectoryPicker permission grant/revocation was not exercised.",
+    "implementedEvidence": [
+      "permission state is rechecked immediately before privileged linked-folder write",
+      "denied/prompt states block privileged write without changing source mode",
+      "external edit revision conflict blocks silent overwrite",
+      "local canonical recovery copy remains usable when external permission is unavailable"
+    ],
+    "missingEvidence": [
+      "real user-selected FileSystemDirectoryHandle from showDirectoryPicker()",
+      "browser/user revocation of that native handle permission after selection",
+      "declared-profile receipt proving queryPermission() transition on the native handle"
+    ]
+  },
+  "preservedOpenGates": [
+    "P3-07",
+    "P3-09",
+    "P3-18"
+  ],
+  "productionClosed": false
+}
