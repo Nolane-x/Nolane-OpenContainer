@@ -2,7 +2,7 @@ import { ErrorCodes, assertOc, ocError } from '../../protocol/src/index.js';
 import { VirtualNodeModulesFS } from './virtual-node-modules.js';
 import { NodeResolver } from './resolver.js';
 import { CommonJsLoader } from './commonjs-loader.js';
-import { FrozenInstallAuthority } from './frozen-install.js';
+import { FrozenInstallAuthority, PackageScriptCapability } from './frozen-install.js';
 import { createCoreBuiltinRegistry } from './builtins/registry.js';
 import { PackageCommandBridge } from './command-bridge.js';
 import { NativeEsmPublicationAuthority } from './native-esm-publication.js';
@@ -542,6 +542,10 @@ export class PackageGraphAuthority {
       ...rest
     });
     return loader;
+  }
+
+  createPackageScriptCapability(options={}){
+    return new PackageScriptCapability(options);
   }
 
   createFrozenInstaller(options={}){
