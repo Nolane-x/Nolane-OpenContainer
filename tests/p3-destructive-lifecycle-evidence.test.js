@@ -54,10 +54,14 @@ test('P3-20 is newly reconciled only by destructive lifecycle browser evidence',
   const p3=ledger.overrides.filter(item=>item.domain==='P3');
   assert.ok(p3.length>=16);
   assert.ok(p3.filter(item=>item.closure_met===true).length>=16);
-  for(const id of preserved.filter(id=>!['P3-09','P3-17'].includes(id))){
+  for(const id of preserved.filter(id=>!['P3-07','P3-09','P3-17'].includes(id))){
     const open=ledger.overrides.find(item=>item.id===id);
     assert.ok(!open||open.closure_met!==true,id+' was silently promoted');
   }
+  const laterDurability=ledger.overrides.find(item=>item.id==='P3-07');
+  assert.equal(laterDurability?.closure_met,true,'P3-07 later closure missing');
+  assert.equal(laterDurability?.evidence,'p3-opfs-durability-boundary','P3-07 later closure evidence drifted');
+  assert.notEqual(laterDurability?.evidence,'p3-destructive-lifecycle','P3-07 later closure was misattributed to destructive-lifecycle wave');
   const laterFreeze=ledger.overrides.find(item=>item.id==='P3-09');
   assert.equal(laterFreeze?.closure_met,true,'P3-09 later closure missing');
   assert.equal(laterFreeze?.evidence,'p3-freeze-writer-failover','P3-09 later closure evidence drifted');
