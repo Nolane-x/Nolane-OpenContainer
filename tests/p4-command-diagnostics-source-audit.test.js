@@ -43,7 +43,10 @@ test('P4 package diagnostics expose provenance and policy without raw source sec
   assert.match(diagnostics,/url\.search=''/);
   assert.match(diagnostics,/url\.hash=''/);
   assert.match(diagnostics,/policy:'deny-by-default'/);
+  assert.match(diagnostics,/analysisScope:'package-provenance-metadata-only'/);
+  assert.match(diagnostics,/scaAssessmentPerformed:false/);
   assert.match(diagnostics,/policy:'deny-unless-exact-adapter'/);
+  assert.match(diagnostics,/detection:'resolver-exact-.node-target-only'/);
   assert.match(diagnostics,/hasInstallScript/);
   assert.match(diagnostics,/layout:graph\.layout/);
   assert.match(boundaryDoc,/not.*full SCA scanner/i);
