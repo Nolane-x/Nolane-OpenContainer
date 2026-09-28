@@ -66,10 +66,11 @@
       "tests/package-command-bridge.test.js",
       "tests/resolver.test.js",
       "tests/production-diagnostics.test.js",
-      "tests/p4-command-diagnostics-source-audit.test.js"
+      "tests/p4-command-diagnostics-source-audit.test.js",
+      "tests/p4-command-diagnostics-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 62
+    "minimumTestFiles": 63
   },
   "browser": {
     "iterations": 2,
