@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>OpenContainer P3 Native Picker Permission Court</title>
+</head>
+<body>
+  <h1>OpenContainer P3 Native Picker Permission Court</h1>
+  <p>This manual court exercises a real user-selected <code>FileSystemDirectoryHandle</code>. It never records the selected directory name or path.</p>
+
+  <section>
+    <h2>1. Select and prepare</h2>
+    <p>Select a disposable test folder. OpenContainer will create one file named <code>opencontainer-p3-native-picker-court.txt</code> and save a local OPFS recovery copy.</p>
+    <button id="prepare">Select folder and prepare court</button>
+  </section>
+
+  <section>
+    <h2>2. Prove external edit conflict</h2>
+    <p>After preparation, edit <code>opencontainer-p3-native-picker-court.txt</code> outside this page using your OS/editor, then click verify. The court must detect the revision change before overwrite.</p>
+    <button id="verify-conflict">Verify external edit conflict</button>
+  </section>
+
+  <section>
+    <h2>3. Revoke native folder permission</h2>
+    <p>Use Chrome's site/file permission controls to revoke this site's access to the selected folder. Do not grant permission again. Then select how you revoked it and verify.</p>
+    <label for="revocation-method">Revocation method:</label>
+    <select id="revocation-method">
+      <option value="">Choose...</option>
+      <option value="browser-site-settings-revoke">Browser site settings revoke</option>
+      <option value="browser-permission-ui-revoke">Browser permission UI revoke</option>
+    </select>
+    <button id="verify-revocation">Verify native permission revocation</button>
+  </section>
+
+  <section>
+    <h2>4. Evidence receipt</h2>
+    <p>PASS requires: real picker handle, initial readwrite grant, external edit conflict blocked, native permission transition away from granted, privileged write blocked after revocation, and local OPFS recovery still readable.</p>
+    <button id="download" disabled>Download receipt JSON</button>
+    <button id="copy" disabled>Copy receipt JSON</button>
+  </section>
+
+  <h2>Status</h2>
+  <pre id="status">not started</pre>
+  <h2>Receipt</h2>
+  <pre id="receipt">{}</pre>
+
+  <script type="module" src="/p3-native-picker.js"></script>
+</body>
+</html>
