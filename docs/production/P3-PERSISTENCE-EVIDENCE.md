@@ -294,3 +294,53 @@ P3-18 therefore remains open until the declared profile exercises a real user-se
 - P3-18 — native external file permission revocation plus external edit conflict on the real selected handle.
 
 `production_closed=false` remains mandatory.
+
+
+## Wave 8 — frozen-tab writer failover
+
+**Implementation evidence:** CI #565 / PR #56 / `74b1fb598e652f2650b0c37e28e67deab3db6d8b`  
+**Tested checkout:** `64749c2c1e20427c9cfabd4ef4b5979ada6bb144`  
+**Dedicated browser artifact:** `10954814739`  
+**Closure:** `P3-09`
+
+P3-09 is now exercised as one combined browser lifecycle and writer-fencing court rather than separate freeze and failover pieces.
+
+Each of two independent iterations creates two same-origin Chrome page targets against one real OPFS workspace:
+
+```text
+Writer A:
+  publish sequence 1 / WriterEpoch 1
+  -> Chrome Page.setWebLifecycleState(frozen)
+
+Writer B:
+  restore same OPFS workspace
+  -> claim WriterEpoch 2
+  -> publish sequence 2 while A is frozen
+
+Writer A:
+  Chrome Page.setWebLifecycleState(active)
+  -> receives resume lifecycle event
+  -> keeps local A-stale edit
+  -> attempts publication through original epoch-1 authority
+  -> OC_STALE_GENERATION
+```
+
+The stale rejection is explicitly bound to writer fencing, not an incidental payload mismatch:
+
+```text
+expectedWriterEpoch = 1
+currentWriterEpoch  = 2
+localWriterEpoch    = 1
+observed manifest writer epoch = 2
+```
+
+A fresh canonical read after the rejected publication remains Writer B value `B1`, sequence 2, generation 2 and WriterEpoch 2. Both iterations observed one real `freeze` event and one real `resume` event.
+
+CI #565 passed 419/419 unit tests, 42 critical files × 5 = 210 repeated executions, CodeQL and the installed-distribution Chrome product path. Dedicated artifact #10954814739 passed 2/2 two-target freeze/resume iterations. Closure CI additionally retains the P3-09 evidence invariant in the repeated critical campaign.
+
+### Still open after Wave 8
+
+- P3-07 — exact flush/durability boundary the browser can actually guarantee.
+- P3-18 — native `showDirectoryPicker()` permission revocation on a real selected external handle.
+
+`production_closed=false` remains mandatory.
