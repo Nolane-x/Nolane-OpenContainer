@@ -1,0 +1,130 @@
+{
+  "schema": "opencontainer.p4-parser-fuzz-corpus.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P4-07",
+  "seed": "0x4f504334",
+  "targets": [
+    {
+      "id": "tar",
+      "parser": "inspectTarArchive",
+      "coverageGuide": [
+        "header checksum",
+        "octal size/checksum fields",
+        "path traversal",
+        "unsupported type",
+        "truncated entry",
+        "two-zero-block trailer",
+        "non-zero trailing bytes"
+      ]
+    },
+    {
+      "id": "gzip",
+      "parser": "inspectTarArchive gunzip preflight",
+      "coverageGuide": [
+        "gzip magic",
+        "truncated stream",
+        "invalid deflate payload",
+        "inflated-byte budget"
+      ]
+    },
+    {
+      "id": "manifest",
+      "parser": "PackageContentStore.ingest package.json",
+      "coverageGuide": [
+        "invalid JSON",
+        "non-object JSON",
+        "name/version identity disagreement"
+      ]
+    },
+    {
+      "id": "lockfile",
+      "parser": "PackageGraphAuthority.compile",
+      "coverageGuide": [
+        "invalid JSON",
+        "unsupported lockfileVersion",
+        "byte budget",
+        "node budget",
+        "unsafe clone/input shape"
+      ]
+    }
+  ],
+  "minimizedFailureInputs": [
+    {
+      "id": "tar-single-nonzero-block",
+      "target": "tar",
+      "encoding": "base64",
+      "payloadBase64": "QQ==",
+      "expectedCodes": [
+        "OC_ARCHIVE_UNSAFE"
+      ]
+    },
+    {
+      "id": "tar-zero-block-only",
+      "target": "tar",
+      "encoding": "base64",
+      "payloadBase64": "AA==",
+      "expectedCodes": [
+        "OC_ARCHIVE_UNSAFE"
+      ]
+    },
+    {
+      "id": "gzip-truncated-header",
+      "target": "gzip",
+      "encoding": "base64",
+      "payloadBase64": "H4sI",
+      "expectedCodes": [
+        "OC_ARCHIVE_UNSAFE",
+        "TypeError",
+        "Error"
+      ]
+    },
+    {
+      "id": "gzip-invalid-deflate",
+      "target": "gzip",
+      "encoding": "base64",
+      "payloadBase64": "H4sIAAAA",
+      "expectedCodes": [
+        "OC_ARCHIVE_UNSAFE",
+        "TypeError",
+        "Error"
+      ]
+    },
+    {
+      "id": "manifest-open-brace",
+      "target": "manifest",
+      "encoding": "utf8",
+      "text": "{",
+      "expectedCodes": [
+        "OC_INVALID_PACKAGE_CONFIG"
+      ]
+    },
+    {
+      "id": "manifest-null",
+      "target": "manifest",
+      "encoding": "utf8",
+      "text": "null",
+      "expectedCodes": [
+        "OC_INVALID_PACKAGE_CONFIG"
+      ]
+    },
+    {
+      "id": "lockfile-open-brace",
+      "target": "lockfile",
+      "encoding": "utf8",
+      "text": "{",
+      "expectedCodes": [
+        "OC_INVALID_PACKAGE_CONFIG"
+      ]
+    },
+    {
+      "id": "lockfile-empty-object",
+      "target": "lockfile",
+      "encoding": "utf8",
+      "text": "{}",
+      "expectedCodes": [
+        "OC_INVALID_ARGUMENT"
+      ]
+    }
+  ],
+  "retentionRule": "A minimized failure input may only be removed when the parser contract changes intentionally and the replacement failure/recovery evidence is retained.",
+  "productionClosed": false
+}
