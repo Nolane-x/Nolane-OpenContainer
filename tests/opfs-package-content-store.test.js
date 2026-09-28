@@ -199,10 +199,8 @@ test('OPFS package content reopens verified content and skips network fetch', as
   assert.equal(reopenedStore.hydratedCount, 1);
   assert.equal(reopenedStore.corruptCount, 0);
   assert.equal(reopenedStore.size, 1);
-  const mounted = await reopenedInstaller.mountFrozenGraphPersistent();
+  const mounted = reopenedInstaller.mountFrozenGraph();
   assert.equal(mounted.packageCount, 1);
-  assert.equal(mounted.persistentGraphGeneration,reopenedGraphPublication.generation);
-  assert.equal(mounted.publicationPrecondition,'persistent-graph-generation-cas');
 
   const loader = runtime.packages.createCommonJsLoader({ allowDynamicCode: true });
   assert.deepEqual(loader.require('a', '/workspace/src/app.cjs'), { name: 'a', persisted: true });
@@ -419,8 +417,10 @@ test('SDK package persistence profile binds the default frozen installer store a
   assert.equal(networkCalls, 0);
   assert.equal(reopenedReceipt.requestedContents, 0);
   assert.equal(reopenedRuntime.packageContentStore.hydratedCount, 1);
-  const mounted = reopenedInstaller.mountFrozenGraph();
+  const mounted = await reopenedInstaller.mountFrozenGraphPersistent();
   assert.equal(mounted.packageCount, 1);
+  assert.equal(mounted.persistentGraphGeneration,reopenedGraphPublication.generation);
+  assert.equal(mounted.publicationPrecondition,'persistent-graph-generation-cas');
 
   const loader = reopenedRuntime.packages.createCommonJsLoader({ allowDynamicCode: true });
   assert.deepEqual(
