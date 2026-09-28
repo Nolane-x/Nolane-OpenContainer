@@ -114,7 +114,10 @@ test('P4 publication atomicity evidence is registered and retained by critical f
     'tests/p4-publication-atomicity-evidence.test.js'
   ]) assert.ok(flake.contract.testFiles.includes(file),file);
   assert.equal(flake.contract.testFiles.length,flake.contract.minimumTestFiles);
-  assert.equal(flake.contract.testFiles.length,53);
+  assert.ok(
+    flake.contract.testFiles.length>=53,
+    'critical flake campaign must not shrink below the P4 Wave 2 retained baseline'
+  );
   assert.equal(flake.contract.iterations,5);
   assert.equal(flake.browser.iterations,2);
 });
