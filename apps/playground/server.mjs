@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, extname, join, resolve, sep } from 'node:path';
+import { platform as hostPlatform, release as hostRelease, arch as hostArch } from 'node:os';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '../..');
@@ -48,6 +49,7 @@ const publicAliases = new Map([
   ['/toolchain/vendor/rolldown-browser-1.2.9.tgz', join(repoRoot, 'toolchain/vendor/rolldown-browser-1.2.9.tgz')],
   ['/package-lock.json', sourcePackageLockPath],
   ['/docs/production/PRODUCTION-PROFILE.json', join(repoRoot, 'docs/production/PRODUCTION-PROFILE.json')],
+  ['/release/RELEASE-COMPATIBILITY-MATRIX.v1.0.json', join(repoRoot, 'release/RELEASE-COMPATIBILITY-MATRIX.v1.0.json')],
   ['/scripts/hosting-self-check-lib.mjs', join(repoRoot, 'scripts/hosting-self-check-lib.mjs')]
 ]);
 
@@ -152,6 +154,39 @@ const networkFixture = createServer((request, response) => {
   response.end('P5 network fixture: not found');
 });
 
+async function p3NativePickerHostEnvironment() {
+  let distribution = null;
+  let versionId = null;
+  if (hostPlatform() === 'linux') {
+    try {
+      const text = await readFile('/etc/os-release', 'utf8');
+      const values = new Map();
+      for (const raw of text.split(/\r?\n/)) {
+        const index = raw.indexOf('=');
+        if (index <= 0) continue;
+        const key = raw.slice(0, index);
+        let value = raw.slice(index + 1);
+        if (
+          (value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))
+        ) value = value.slice(1, -1);
+        values.set(key, value);
+      }
+      distribution = values.get('ID') ?? null;
+      versionId = values.get('VERSION_ID') ?? null;
+    } catch {}
+  }
+  return Object.freeze({
+    schema: 'opencontainer.p3-native-picker-host-environment.v1.0',
+    platform: hostPlatform(),
+    release: hostRelease(),
+    arch: hostArch(),
+    distribution,
+    distributionVersion: versionId,
+    githubActions: process.env.GITHUB_ACTIONS === 'true'
+  });
+}
+
 const server = createServer(async (request, response) => {
   response.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   response.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
@@ -166,6 +201,13 @@ const server = createServer(async (request, response) => {
 
   try {
     const url = new URL(request.url, 'http://127.0.0.1');
+
+    if (url.pathname === '/__p3_native_picker__/environment') {
+      response.statusCode = 200;
+      response.setHeader('Content-Type', 'application/json; charset=utf-8');
+      response.end(JSON.stringify(await p3NativePickerHostEnvironment()));
+      return;
+    }
 
     if (url.pathname === '/__p5__/redirect-allowed') {
       response.statusCode = 302;
