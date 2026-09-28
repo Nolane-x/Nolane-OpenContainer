@@ -56,7 +56,7 @@ test('P3-15 is newly reconciled only by safe-restore browser evidence',()=>{
   const p3=ledger.overrides.filter(item=>item.domain==='P3');
   assert.ok(p3.length>=15);
   assert.ok(p3.filter(item=>item.closure_met===true).length>=15);
-  for(const id of preserved.filter(id=>!['P3-07','P3-09','P3-17','P3-20'].includes(id))){
+  for(const id of preserved.filter(id=>!['P3-07','P3-09','P3-17','P3-18','P3-20'].includes(id))){
     const open=ledger.overrides.find(item=>item.id===id);
     assert.ok(!open||open.closure_met!==true,id+' was silently promoted');
   }
@@ -70,6 +70,10 @@ test('P3-15 is newly reconciled only by safe-restore browser evidence',()=>{
   const laterExternal=ledger.overrides.find(item=>item.id==='P3-17');
   assert.equal(laterExternal?.closure_met,true,'P3-17 later closure missing');
   assert.notEqual(laterExternal?.evidence,'p3-safe-checkpoint-restore','P3-17 later closure was misattributed to safe-restore wave');
+  const laterNative=ledger.overrides.find(item=>item.id==='P3-18');
+  assert.equal(laterNative?.closure_met,true,'P3-18 later native closure missing');
+  assert.equal(laterNative?.evidence,'p3-native-external-permission','P3-18 later closure evidence drifted');
+  assert.notEqual(laterNative?.evidence,'p3-safe-checkpoint-restore','P3-18 later closure was misattributed to safe-restore wave');
   const laterDelete=ledger.overrides.find(item=>item.id==='P3-20');
   assert.equal(laterDelete?.closure_met,true,'P3-20 later closure missing');
   assert.notEqual(laterDelete?.evidence,'p3-safe-checkpoint-restore','P3-20 later closure was misattributed to safe-restore wave');
