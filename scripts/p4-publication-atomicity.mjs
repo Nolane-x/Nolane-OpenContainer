@@ -226,6 +226,16 @@ try{
     assert(cas.finalPackage==='winner','P4 stale graph writer replaced winning graph',{iteration,cas});
     assert(cas.finalGeneration===cas.winnerGeneration,'P4 stale graph writer advanced generation',{iteration,cas});
 
+    const persistentCasDirectory='opencontainer-p4-graph-cas-'+suffix;
+    const persistentCas=await courtCall(cdp,'persistentCas',persistentCasDirectory);
+    assert(persistentCas.fulfilledCount===1&&persistentCas.rejectedCount===1,'P4 real OPFS graph race did not produce exactly one winner',{iteration,persistentCas});
+    assert(persistentCas.raceFailure?.code==='OC_STALE_GENERATION','P4 real OPFS/WebLock loser did not fail stale',{iteration,persistentCas});
+    assert(persistentCas.winnerGeneration===1,'P4 persistent graph winner generation drifted',{iteration,persistentCas});
+    assert(persistentCas.successorGeneration===2&&persistentCas.finalGeneration===2,'P4 persistent graph successor did not publish generation 2',{iteration,persistentCas});
+    assert(persistentCas.crossContextLocking===true,'P4 persistent graph court did not use Web Locks',{iteration,persistentCas});
+    assert(persistentCas.mountFailure?.code==='OC_STALE_GENERATION','P4 stale persistent graph installer mounted PackageFS',{iteration,persistentCas});
+    assert(persistentCas.nodeModulesNull===true,'P4 stale persistent graph installer exposed node_modules',{iteration,persistentCas});
+
     const cancelDirectory='opencontainer-p4-cancel-'+suffix;
     const cancel=await courtCall(cdp,'cancel',cancelDirectory);
     assert(cancel.failure?.code==='OC_INVALID_STATE','P4 cancellation did not terminate install transaction',{iteration,cancel});
@@ -233,7 +243,7 @@ try{
     assert(cancel.nodeModulesAfterFailure===true,'P4 cancelled transaction exposed node_modules',{iteration,cancel});
     assert(cancel.afterFailure.filter(row=>row.usage?.exists===true).length===1,'P4 cancel did not retain exactly one immutable orphan cache object',{iteration,cancel});
     assert(cancel.retry.packageCount===2,'P4 cancel recovery did not publish complete package graph',{iteration,cancel});
-    assert(cancel.retry.publicationPrecondition==='graph-generation-cas','P4 cancel recovery lost graph CAS publication',{iteration,cancel});
+    assert(cancel.retry.publicationPrecondition==='persistent-graph-generation-cas','P4 cancel recovery lost graph CAS publication',{iteration,cancel});
 
     const quotaDirectory='opencontainer-p4-quota-'+suffix;
     const quotaBefore=await cdp.command('Storage.getUsageAndQuota',{origin});
@@ -264,7 +274,7 @@ try{
     assert(quota.nodeModulesNull===true,'P4 quota-failed install exposed node_modules',{iteration,quota});
     const quotaRecovery=await courtCall(cdp,'quotaRecover',quotaDirectory);
     assert(quotaRecovery.packageCount===1,'P4 quota recovery did not publish full single-package graph',{iteration,quotaRecovery});
-    assert(quotaRecovery.publicationPrecondition==='graph-generation-cas','P4 quota recovery lost graph CAS publication',{iteration,quotaRecovery});
+    assert(quotaRecovery.publicationPrecondition==='persistent-graph-generation-cas','P4 quota recovery lost graph CAS publication',{iteration,quotaRecovery});
 
     const workerDirectory='opencontainer-p4-worker-death-'+suffix;
     const workerReady=await courtCall(cdp,'startWorker',workerDirectory);
@@ -277,9 +287,9 @@ try{
     assert(workerDeath.beforeRecovery.hydrate.filter(row=>row.hydrated===true).length===1,'P4 worker death did not leave exactly one verified immutable orphan',{iteration,workerDeath});
     assert(workerDeath.beforeRecovery.mountFailure?.code==='OC_PACKAGE_CONTENT_MISSING','P4 worker-death incomplete graph was not rejected before publication',{iteration,workerDeath});
     assert(workerDeath.recovery.packageCount===2,'P4 worker-death recovery did not publish complete graph',{iteration,workerDeath});
-    assert(workerDeath.recovery.publicationPrecondition==='graph-generation-cas','P4 worker-death recovery lost graph CAS publication',{iteration,workerDeath});
+    assert(workerDeath.recovery.publicationPrecondition==='persistent-graph-generation-cas','P4 worker-death recovery lost graph CAS publication',{iteration,workerDeath});
 
-    for(const directoryName of [cancelDirectory,quotaDirectory,workerDirectory]){
+    for(const directoryName of [persistentCasDirectory,cancelDirectory,quotaDirectory,workerDirectory]){
       await courtCall(cdp,'cleanup',directoryName);
     }
 
@@ -292,6 +302,15 @@ try{
         staleCode:cas.stale.code,
         finalPackage:cas.finalPackage,
         lostUpdate:false
+      }),
+      persistentCas:Object.freeze({
+        winnerGeneration:persistentCas.winnerGeneration,
+        successorGeneration:persistentCas.successorGeneration,
+        staleCode:persistentCas.raceFailure.code,
+        staleMountCode:persistentCas.mountFailure.code,
+        crossContextLocking:persistentCas.crossContextLocking,
+        lostUpdate:false,
+        halfPublished:false
       }),
       cancel:Object.freeze({
         failureCode:cancel.failure.code,
@@ -334,6 +353,10 @@ try{
     iterations,
     passedIterations:runs.length,
     graphGenerationCas:true,
+    persistentGraphGenerationCas:true,
+    realOpfsGraphPublication:true,
+    webLocksGraphPublication:true,
+    stalePersistentPackageFsPublicationPrevented:true,
     concurrentLostUpdatePrevented:true,
     realOpfsQuotaFault:true,
     realInstallerWorkerDeath:true,
