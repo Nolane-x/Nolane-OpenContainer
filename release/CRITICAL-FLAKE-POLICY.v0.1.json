@@ -53,10 +53,13 @@
       "tests/p3-native-external-permission-source-audit.test.js",
       "tests/p3-native-external-permission-evidence.test.js",
       "tests/p4-artifact-boundary-source-audit.test.js",
-      "tests/p4-artifact-boundary-evidence.test.js"
+      "tests/p4-artifact-boundary-evidence.test.js",
+      "tests/opfs-package-graph-store.test.js",
+      "tests/p4-publication-atomicity.test.js",
+      "tests/p4-publication-atomicity-source-audit.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 49
+    "minimumTestFiles": 52
   },
   "browser": {
     "iterations": 2,
