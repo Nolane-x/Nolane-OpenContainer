@@ -156,3 +156,26 @@ test('P4 contextual .bin resolution fails closed on same-scope command ambiguity
     error=>error?.code==='OC_INVALID_PACKAGE_CONFIG'&&/ambiguous/.test(error.message)
   );
 });
+
+
+test('P4 contextual .bin resolution maps linked workspace cwd back into package graph context',async()=>{
+  const runtime=await OpenContainer.boot();
+  runtime.packages.compile({
+    name:'workspace-root',
+    version:'1',
+    lockfileVersion:3,
+    packages:{
+      '':{name:'workspace-root',version:'1',dependencies:{a:'file:packages/a',rootTool:'1'}},
+      'node_modules/a':{name:'a',version:'1',resolved:'packages/a',link:true},
+      'node_modules/root-tool':{name:'root-tool',version:'1',bin:{tool:'root.cjs'}},
+      'node_modules/a/node_modules/nested-tool':{name:'nested-tool',version:'1',bin:{tool:'nested.cjs'}}
+    }
+  });
+
+  const fromWorkspace=runtime.packages.resolveBin('tool',{cwd:'/workspace/packages/a/src'});
+  assert.equal(fromWorkspace.package,'nested-tool');
+  assert.equal(fromWorkspace.location,'node_modules/a/node_modules/nested-tool');
+
+  const fromRoot=runtime.packages.resolveBin('tool',{cwd:'/workspace'});
+  assert.equal(fromRoot.package,'root-tool');
+});
