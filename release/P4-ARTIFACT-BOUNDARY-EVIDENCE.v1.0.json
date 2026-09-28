@@ -1,0 +1,118 @@
+{
+  "schema": "opencontainer.p4-artifact-boundary-evidence.v1.0",
+  "source": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "RELEASE-READY evidence",
+  "pullRequest": 59,
+  "closedGates": [
+    {
+      "id": "P4-05",
+      "requirement": "Run browser PackageArchiveGate streaming implementation against the frozen npm tarball corpus."
+    },
+    {
+      "id": "P4-08",
+      "requirement": "Inject truncated headers, payloads, trailers, gzip streams and decompression-budget exhaustion."
+    },
+    {
+      "id": "P4-09",
+      "requirement": "Prove path traversal, absolute path, dot-segment, symlink/hardlink and extension attacks fail closed."
+    },
+    {
+      "id": "P4-10",
+      "requirement": "Keep special TAR/link features denied until an evidence-backed compatibility requirement promotes them."
+    },
+    {
+      "id": "P4-12",
+      "requirement": "Prove package integrity mismatch has no install-anyway fast path in the default profile."
+    }
+  ],
+  "implementation": {
+    "head": "0c9bbed9efd24d6c0700d744b05881515c6c6893",
+    "ciRunNumber": 633,
+    "ciRunId": 36411620252,
+    "testedCheckoutCommit": "92fed164f4e83414f42fbb052cf2d990e7fa5931",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "unitTests": 440,
+    "unitPassed": 440,
+    "unitFailed": 0,
+    "criticalTestFiles": 47,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 235,
+    "contractUnexplainedFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "browserUnexplainedFailures": 0
+  },
+  "dedicatedBrowserVerification": {
+    "artifactId": 10964252846,
+    "schema": "opencontainer.p4-artifact-boundary-browser.v1.0",
+    "status": "PASS",
+    "profile": "installed-distribution-chrome-product-path",
+    "iterations": 2,
+    "fullProductPathPasses": 2,
+    "unexplainedFailures": 0,
+    "frozenNpmCorpus": [
+      {
+        "name": "lightningcss-wasm",
+        "version": "1.33.0",
+        "integrity": "sha512-OLAtqEyInBSVWjPrTjpLzcZUMUHO0q+2PFBXKr86nxZOu0P38givj/ZMtRaZ0d38pMTb9wQx+LtaLtHclv+sEA==",
+        "compressedBytes": 3826518,
+        "unpackedBytes": 16232340,
+        "entries": 19
+      },
+      {
+        "name": "@rolldown/browser",
+        "version": "1.2.9",
+        "integrity": "sha256-mszzzf49IoetfV9JzSz83bycESq/y8KVhj5AHvRLhXY=",
+        "compressedBytes": 3809446,
+        "unpackedBytes": 12132027,
+        "entries": 67
+      }
+    ]
+  },
+  "hostileMatrix": {
+    "truncatedHeader": "OC_ARCHIVE_UNSAFE",
+    "truncatedPayload": "OC_ARCHIVE_UNSAFE",
+    "truncatedTrailer": "OC_ARCHIVE_UNSAFE",
+    "truncatedGzip": "TypeError",
+    "decompressionBudget": "OC_ARTIFACT_TOO_LARGE",
+    "pathTraversal": "OC_ARCHIVE_UNSAFE",
+    "absolutePath": "OC_ARCHIVE_UNSAFE",
+    "dotSegment": "OC_ARCHIVE_UNSAFE",
+    "symlink": "OC_ARCHIVE_UNSAFE",
+    "hardlink": "OC_ARCHIVE_UNSAFE",
+    "paxExtension": "OC_ARCHIVE_UNSAFE",
+    "gnuLongNameExtension": "OC_ARCHIVE_UNSAFE"
+  },
+  "integrityMismatch": {
+    "code": "OC_ARTIFACT_INTEGRITY",
+    "graphGenerationPreserved": true,
+    "contentPublished": false,
+    "installAnywayPath": false
+  },
+  "parserHardening": [
+    "TAR must terminate with two zero blocks.",
+    "A truncated header, payload, or end-of-archive trailer fails closed.",
+    "Non-zero bytes after the end-of-archive trailer fail closed.",
+    "Only regular-file and directory entry types are admitted in the default profile."
+  ],
+  "preservedOpenGates": [
+    "P4-01",
+    "P4-02",
+    "P4-03",
+    "P4-04",
+    "P4-06",
+    "P4-07",
+    "P4-11",
+    "P4-13",
+    "P4-14",
+    "P4-15",
+    "P4-16",
+    "P4-17",
+    "P4-18"
+  ],
+  "p4DomainClosed": false,
+  "productionClosed": false
+}
