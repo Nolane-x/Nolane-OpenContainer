@@ -18,12 +18,12 @@ Support diagnostics emit metadata needed to reproduce package identity and polic
 
 - package name, version, physical location, content and instance identity;
 - lockfile integrity identity;
-- privacy-sanitized source provenance plus an irreversible diagnostic fingerprint of the original source string;
+- privacy-sanitized source provenance plus a diagnostic fingerprint computed only from the sanitized public URL;
 - package layout identity/fingerprint;
 - install-script presence and the active `deny-by-default` policy;
 - native-addon boundary metadata.
 
-Source URLs remove username, password, query, and fragment before export. Workspace-link or opaque source strings are represented by a class plus fingerprint instead of raw source text.
+Source URLs remove username, password, query, and fragment before export. Workspace-link or opaque source strings are represented by a class without hashing/exporting the raw private source text.
 
 These diagnostics are **not** a full SCA scanner. They do not claim vulnerability, malware, license-compliance, dependency-trust, exploitability, or package-safety verdicts.
 
