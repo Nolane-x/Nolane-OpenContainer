@@ -97,7 +97,7 @@ async function measureRetainedArtifactInputs(){
       packedBytes:bytes.byteLength,
       unpackedBytes:archive.totalBytes,
       fileCount:files,
-      amplification:archive.totalBytes/bytes.byteLength
+      unpackedToPackedRatio:archive.totalBytes/bytes.byteLength
     }));
   }
 
