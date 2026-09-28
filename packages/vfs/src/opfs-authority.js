@@ -1,5 +1,6 @@
 import { ErrorCodes, assertOc, ocError } from '../../protocol/src/index.js';
 import { readWorkspaceLifecycleRecord, workspaceLifecycleBlocksPublication } from './workspace-lifecycle.js';
+import { defaultBrowserOpfsSyncFlushWriter } from './opfs-sync-flush-writer.js';
 
 const MANIFEST_A = 'manifest-a.json';
 const MANIFEST_B = 'manifest-b.json';
@@ -66,13 +67,16 @@ export class OpfsCheckpointAuthority {
   #lockName;
   #storagePolicy;
   #lastStorageGuard = null;
+  #durabilityWriter;
+  #lastDurabilityReceipt = null;
 
   constructor({
     root,
     directoryName = 'opencontainer-workspace',
     lockManager = globalThis.navigator?.locks ?? null,
     lockName = null,
-    storagePolicy = null
+    storagePolicy = null,
+    durabilityWriter = undefined
   } = {}) {
     assertOc(root && typeof root.getDirectoryHandle === 'function', ErrorCodes.INVALID_ARGUMENT, 'OPFS root directory handle is required');
     if (lockManager !== null) {
@@ -90,6 +94,16 @@ export class OpfsCheckpointAuthority {
     this.#lockManager = lockManager;
     this.#lockName = lockName ?? 'opencontainer:opfs-checkpoint:' + directoryName;
     this.#storagePolicy = storagePolicy;
+    this.#durabilityWriter = durabilityWriter === undefined
+      ? defaultBrowserOpfsSyncFlushWriter()
+      : durabilityWriter;
+    if (this.#durabilityWriter !== null) {
+      assertOc(
+        typeof this.#durabilityWriter?.write === 'function',
+        ErrorCodes.INVALID_ARGUMENT,
+        'OPFS durability writer must expose write(directory,name,content)'
+      );
+    }
   }
 
   get current() {
@@ -122,6 +136,21 @@ export class OpfsCheckpointAuthority {
 
   get lastStorageGuard() {
     return this.#lastStorageGuard;
+  }
+
+  get durabilityState() {
+    return Object.freeze({
+      mode: this.#durabilityWriter ? 'sync-access-handle-flush' : 'async-writable-stream-close',
+      flushBeforePublication: this.#durabilityWriter !== null,
+      dedicatedWorker: this.#durabilityWriter !== null,
+      exactBoundary: this.#durabilityWriter
+        ? 'FileSystemSyncAccessHandle.flush() attempts to transfer cached file-content modifications to the underlying storage device before close and before checkpoint publication returns'
+        : 'FileSystemWritableFileStream close only; no explicit SyncAccessHandle flush boundary',
+      closeAloneSufficient: false,
+      powerLossGuaranteed: false,
+      osFsyncGuaranteed: false,
+      lastWrite: this.#lastDurabilityReceipt
+    });
   }
 
   async open() {
@@ -832,9 +861,33 @@ export class OpfsCheckpointAuthority {
     }
 
     try {
-      await writeText(directory, name, content);
+      if (this.#durabilityWriter) {
+        const receipt = await this.#durabilityWriter.write(directory, name, content);
+        this.#lastDurabilityReceipt = Object.freeze({
+          ...receipt,
+          phase,
+          publicationOrder: 'flush-close-before-authority-return'
+        });
+      } else {
+        await writeText(directory, name, content);
+        this.#lastDurabilityReceipt = Object.freeze({
+          schema: 'opencontainer.opfs-async-write.v1.0',
+          phase,
+          name,
+          bytes: encoder.encode(String(content)).byteLength,
+          writeCalled: true,
+          flushCalled: false,
+          closeCalled: true,
+          dedicatedWorker: false,
+          syncAccessHandle: false,
+          apiBoundary: 'writable-stream-close',
+          powerLossGuaranteed: false,
+          osFsyncGuaranteed: false,
+          publicationOrder: 'close-before-authority-return'
+        });
+      }
     } catch (error) {
-      if (error?.name !== 'QuotaExceededError') throw error;
+      if (error?.name !== 'QuotaExceededError' && error?.code !== ErrorCodes.RESOURCE_EXHAUSTED) throw error;
       let storage = null;
       if (this.#storagePolicy) {
         try { storage = await this.#storagePolicy.inspect(); } catch {}
@@ -842,7 +895,8 @@ export class OpfsCheckpointAuthority {
       throw ocError(ErrorCodes.RESOURCE_EXHAUSTED, 'OPFS storage quota exhausted during checkpoint', {
         phase,
         name,
-        storage
+        storage,
+        durabilityBoundary: this.#durabilityWriter ? 'sync-access-handle-flush' : 'writable-stream-close'
       });
     }
   }
