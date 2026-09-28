@@ -230,7 +230,7 @@ export class OpfsWorkspaceLifecycleAuthority{
         });
       }
 
-      const verified=await this.#verifyRecoveryPoint(recoveryPoint);
+      const verified=await this.#verifyRecoveryPoint(recoveryPoint,{requireCurrent:true});
       const next={
         version:1,
         state:'tombstoned',
@@ -430,7 +430,7 @@ export class OpfsWorkspaceLifecycleAuthority{
     });
   }
 
-  async #verifyRecoveryPoint(reference){
+  async #verifyRecoveryPoint(reference,{requireCurrent=false}={}){
     assertOc(
       reference&&
       Number.isInteger(reference.sequence)&&reference.sequence>=1&&
@@ -464,6 +464,38 @@ export class OpfsWorkspaceLifecycleAuthority{
     const payload=await readText(generations,reference.payload);
     assertOc(payload!==null,ErrorCodes.IMPORT_INVALID,'Delete recovery payload is missing',{payload:reference.payload});
     assertOc(await sha256Hex(payload)===reference.sha256,ErrorCodes.IMPORT_INVALID,'Delete recovery payload digest mismatch',{payload:reference.payload});
+
+    if(requireCurrent){
+      const valid=[];
+      for(const candidate of roots){
+        const text=await readText(generations,candidate.payload);
+        if(text===null)continue;
+        if(await sha256Hex(text)!==candidate.sha256)continue;
+        let snapshot=null;
+        try{snapshot=JSON.parse(text);}catch{}
+        if(snapshot?.version!==1||snapshot.generation!==candidate.generation||!Array.isArray(snapshot.entries))continue;
+        valid.push(candidate);
+      }
+      valid.sort((a,b)=>b.sequence-a.sequence);
+      const current=valid[0]??null;
+      if(
+        !current||
+        current.sequence!==reference.sequence||
+        current.generation!==reference.generation||
+        current.payload!==reference.payload||
+        current.sha256!==reference.sha256
+      ){
+        throw ocError(ErrorCodes.STALE_GENERATION,'Recoverable delete recovery point is no longer the current canonical root',{
+          requestedSequence:reference.sequence,
+          currentSequence:current?.sequence??null,
+          requestedGeneration:reference.generation,
+          currentGeneration:current?.generation??null,
+          deleteAborted:true,
+          blindOverwritePrevented:true
+        });
+      }
+    }
+
     return Object.freeze({
       sequence:reference.sequence,
       generation:reference.generation,
