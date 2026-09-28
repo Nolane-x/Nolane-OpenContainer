@@ -30,7 +30,7 @@ The release court uses the frozen storage metric from the research spec:
 
 `StorageAmplification = physical persistent bytes / unique verified logical content bytes`
 
-For package storage, Chrome ingests the retained parser-compatible artifacts into the real `OpfsPackageContentStore`, reads `persistedUsage()`, and compares artifact + manifest bytes with the unique verified logical TAR content bytes.
+For package storage, Chrome ingests the retained parser-compatible artifacts into the real `OpfsPackageContentStore`, reads `persistedUsage()`, and compares artifact + manifest bytes with the unique verified logical TAR content bytes. This measures stored OPFS file payload bytes; browser/filesystem metadata overhead outside those files is explicitly excluded rather than guessed.
 
 The release court records:
 
