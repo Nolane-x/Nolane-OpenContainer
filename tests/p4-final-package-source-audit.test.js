@@ -46,8 +46,9 @@ test('P4-15 package layout watcher is dedicated and does not claim generic fs.wa
 });
 
 test('P4-16 measurement court uses real tarballs and frozen realistic dependency trees',()=>{
-  assert.match(runner,/published\.length===9/);
-  assert.match(runner,/verifySri\(bytes,meta\.integrity\)/);
+  assert.match(runner,/lightningcss-wasm-1\.33\.0\.tgz/);
+  assert.match(runner,/rolldown-browser-1\.2\.9\.tgz/);
+  assert.match(runner,/createHash\('sha256'\)\.update\(bytes\)\.digest\('hex'\)/);
   assert.match(runner,/inspectTarArchive\(bytes,\{requiredPrefix:'package\/'\}\)/);
   assert.match(runner,/vite-react-tiny\.package-lock\.json/);
   assert.match(runner,/chokidar\.package-lock\.json/);
