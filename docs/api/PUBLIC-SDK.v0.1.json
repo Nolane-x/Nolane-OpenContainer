@@ -22,6 +22,26 @@
       "name": "productionProfile",
       "kind": "getter",
       "signature": "OpenContainer.productionProfile -> OpenContainerProductionProfile"
+    },
+    {
+      "name": "inspectWorkspaceLifecycle",
+      "kind": "method",
+      "signature": "OpenContainer.inspectWorkspaceLifecycle(workspacePersistence) -> Promise<WorkspaceLifecycleStatus>"
+    },
+    {
+      "name": "restoreDeletedWorkspace",
+      "kind": "method",
+      "signature": "OpenContainer.restoreDeletedWorkspace(workspacePersistence, options) -> Promise<WorkspaceLifecycleReceipt>"
+    },
+    {
+      "name": "purgeDeletedWorkspace",
+      "kind": "method",
+      "signature": "OpenContainer.purgeDeletedWorkspace(workspacePersistence, options) -> Promise<WorkspacePurgeReceipt>"
+    },
+    {
+      "name": "reconcileWorkspacePurge",
+      "kind": "method",
+      "signature": "OpenContainer.reconcileWorkspacePurge(workspacePersistence, options) -> Promise<WorkspacePurgeStatus>"
     }
   ],
   "instanceMembers": [
@@ -129,6 +149,11 @@
       "name": "collectWorkspaceGarbage",
       "kind": "method",
       "signature": "runtime.collectWorkspaceGarbage(options?) -> Promise<GCReceipt>"
+    },
+    {
+      "name": "deleteWorkspaceRecoverably",
+      "kind": "method",
+      "signature": "runtime.deleteWorkspaceRecoverably(options) -> Promise<WorkspaceDeleteReceipt>"
     },
     {
       "name": "teardown",
