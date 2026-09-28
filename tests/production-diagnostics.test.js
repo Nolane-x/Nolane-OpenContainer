@@ -246,6 +246,11 @@ test('support bundle preview lists categories and generation is read-only',async
   assert.equal(bundle.packages.components[0].source.kind,'https');
   assert.equal(bundle.packages.components[0].source.url,'https://registry.example.test/dep.tgz');
   assert.match(bundle.packages.components[0].source.fingerprint,/^ocfp:[0-9a-f]{16}$/);
+  assert.equal(bundle.packages.components[0].source.sensitiveComponentsRemoved,true);
+  assert.equal(
+    bundle.packages.components[0].source.fingerprint,
+    diagnosticFingerprint('https://registry.example.test/dep.tgz')
+  );
   assert.equal(bundle.packages.installScripts.policy,'deny-by-default');
   assert.equal(bundle.packages.installScripts.packageCount,1);
   assert.deepEqual(bundle.packages.installScripts.locations,['node_modules/dep']);
