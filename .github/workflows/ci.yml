@@ -150,7 +150,8 @@ jobs:
           sudo apt-get install -y xdotool xvfb openbox
       - run: |
           google-chrome-stable --version || google-chrome --version || chromium --version
-          xdotool version
+          dpkg-query -W -f='xdotool ${Version}\n' xdotool
+          dpkg-query -W -f='openbox ${Version}\n' openbox
       - name: Run real showDirectoryPicker permission court
         run: xvfb-run -a sh -c 'openbox >/tmp/openbox.log 2>&1 & npm run p3:native-external:evidence'
       - name: Archive P3 native external permission receipt
