@@ -32,7 +32,9 @@ test('P4 native addon boundary rejects generic alias bypass and requires exact a
   assert.match(loader,/nativeAddonAdapters/);
   assert.match(loader,/nativeAddonAdapters: this\.#nativeAddonAdapters/);
   assert.match(boundaryDoc,/Generic package aliases and generic path aliases do not authorize a native-addon fallback/);
-  assert.match(boundaryDoc,/exact explicitly registered `.node` → non-native adapter mapping|exact explicitly registered browser adapter/);
+  assert.match(boundaryDoc,/nativeAddonAdapters/);
+  assert.match(boundaryDoc,/exact absolute `.node` source path/);
+  assert.match(boundaryDoc,/exact non-`.node` file/);
   assert.match(boundaryDoc,/No host-native code is executed/);
 });
 
