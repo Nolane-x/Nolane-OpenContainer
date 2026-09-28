@@ -8,8 +8,8 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **197**
-- Minimum-closure satisfied: **161**
+- Seed-reconciled against implementation evidence: **199**
+- Minimum-closure satisfied: **166**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -20,7 +20,7 @@
 | P1 Browser deployment, origin & lifecycle | 7 | 9 | 16 |
 | P2 Kernel, RPC, process & stream semantics | 6 | 8 | 14 |
 | P3 VFS, OPFS, persistence & data safety | 20 | 0 | 20 |
-| P4 Packages, resolver, archive & installer | 6 | 12 | 18 |
+| P4 Packages, resolver, archive & installer | 8 | 10 | 18 |
 | P5 Network, secrets & preview edge | 18 | 0 | 18 |
 | P6 Toolchain, BCR, Vite & framework integration | 8 | 8 | 16 |
 | P7 Resources, performance & weak-device behavior | 4 | 10 | 14 |
@@ -43,6 +43,11 @@
 - Release trust chain now has reproducible artifact/checksum/SBOM/provenance/inventory evidence, but authenticated attestation, public publication, rollback and license/FTO closure remain open.
 
 ## Newly reconciled in this wave
+
+- **P4-05 / P4-08 / P4-09 / P4-10 / P4-12** now meet RELEASE-READY minimum closure through PR #59 / CI #633 implementation head `0c9bbed9efd24d6c0700d744b05881515c6c6893`. The real Chrome court executes retained npm tarballs `lightningcss-wasm@1.33.0` and `@rolldown/browser@1.2.9` through the production streaming gzip/TAR path with exact integrity identities.
+- The same court injects truncated TAR headers, payloads and trailers; truncated gzip; decompression-budget exhaustion; traversal, absolute and dot-segment paths; symlink/hardlink entries; and PAX/GNU-longname extensions. All cases fail closed. Production parsing was hardened to require a complete two-zero-block TAR trailer and reject non-zero data after the trailer.
+- A byte-mutated retained artifact fails `OC_ARTIFACT_INTEGRITY` with package graph generation unchanged, zero package content publication and no install-anyway path. Dedicated artifact **#10964252846** passed **2/2** installed-distribution Chrome iterations; CI #633 passed **440/440** unit tests, **47 critical files × 5 = 235** repeated executions and CodeQL.
+- This wave does **not** close P4-01/02/03/04/06/07/11/13/14/15/16/17/18. P4 remains open as a domain and `production_closed=false` remains mandatory.
 
 - **P3-18** now meets declared-profile closure through CI #616 / PR #58 implementation head `0c1a6334cbae8ea3ac4389db76713e20bbccfe96`. A real headful Chrome 153 page invokes `showDirectoryPicker({mode:'readwrite'})`, selects a real Linux directory through the native picker, and receives a real `FileSystemDirectoryHandle` with read/readwrite permission granted.
 - The court mutates the selected file from outside OpenContainer and proves the next privileged write fails `OC_STALE_GENERATION` / `external-change-detected` before overwrite with `silentOverwritePrevented=true`. After explicit revision refresh, the reconciled write succeeds only with `permissionRechecked=true`.

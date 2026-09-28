@@ -340,6 +340,10 @@
     "p3-native-external-permission": {
       "ref": "CI #616 / PR #58 implementation head 0c1a6334cbae8ea3ac4389db76713e20bbccfe96",
       "note": "P3-18 native Chrome File System Access court: real showDirectoryPicker selected handle begins read/readwrite granted; external file mutation is fenced OC_STALE_GENERATION before overwrite; reconciled write rechecks permission; native FileSystemDirectoryHandle.remove transitions permissions to denied; later privileged write fails closed and local canonical recovery state remains intact."
+    },
+    "p4-artifact-boundary": {
+      "ref": "CI #633 / PR #59 implementation head 0c9bbed9efd24d6c0700d744b05881515c6c6893",
+      "note": "P4-05/08/09/10/12 declared-profile release evidence: real Chrome executes retained lightningcss-wasm@1.33.0 and @rolldown/browser@1.2.9 tarballs through the production streaming parser; hostile truncation/path/link/extension cases fail closed; integrity mutation cannot publish content or change graph generation."
     }
   },
   "overrides": [
@@ -666,26 +670,26 @@
     {
       "id": "P4-05",
       "domain": "P4",
-      "state": "PARTIAL",
+      "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
-      "evidence": "package-corpus",
-      "closure_met": false
+      "evidence": "p4-artifact-boundary",
+      "closure_met": true
     },
     {
       "id": "P4-09",
       "domain": "P4",
-      "state": "PARTIAL",
-      "promotion": "PASS-LOCAL",
-      "evidence": "archive-security",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p4-artifact-boundary",
+      "closure_met": true
     },
     {
       "id": "P4-12",
       "domain": "P4",
-      "state": "PARTIAL",
-      "promotion": "IMPLEMENTED",
-      "evidence": "package-integrity",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p4-artifact-boundary",
+      "closure_met": true
     },
     {
       "id": "P4-13",
@@ -1917,6 +1921,22 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p3-native-external-permission",
+      "closure_met": true
+    },
+    {
+      "id": "P4-08",
+      "domain": "P4",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p4-artifact-boundary",
+      "closure_met": true
+    },
+    {
+      "id": "P4-10",
+      "domain": "P4",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p4-artifact-boundary",
       "closure_met": true
     }
   ]

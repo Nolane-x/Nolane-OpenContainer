@@ -1,6 +1,6 @@
 import { OpenContainer } from '/packages/sdk/src/index.js';
 import { BrowserEsmServiceWorkerBridge } from '/packages/package-env/src/browser-esm-edge.js';
-import { OpfsPackageContentStore, PackageArtifactAuthority } from '/packages/package-env/src/index.js';
+import { OpfsPackageContentStore, PackageArtifactAuthority, inspectTarArchive } from '/packages/package-env/src/index.js';
 import { BrowserGuestWorkerAuthority } from '/packages/process/src/browser-guest-worker.js';
 import { WorkerRpcAuthority } from '/packages/process/src/worker-authority.js';
 import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority, OpfsWorkspaceLifecycleAuthority, ExternalWorkspaceSourceAuthority, ExternalSourceMode, ExternalSourceState } from '/packages/vfs/src/index.js';
@@ -29,6 +29,92 @@ function canonicalJson(value) {
   return Object.fromEntries(
     Object.keys(value).sort().map((key) => [key, canonicalJson(value[key])])
   );
+}
+
+async function p4Gunzip(bytes) {
+  const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')).getReader();
+  const chunks = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = value instanceof Uint8Array ? value : new Uint8Array(value);
+    chunks.push(new Uint8Array(chunk));
+    total += chunk.byteLength;
+  }
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return out;
+}
+
+function p4TarOctal(bytes, start, length) {
+  let text = '';
+  for (let index = start; index < Math.min(bytes.length, start + length); index++) {
+    if (bytes[index] === 0) break;
+    text += String.fromCharCode(bytes[index]);
+  }
+  text = text.trim();
+  return text ? Number.parseInt(text, 8) : 0;
+}
+
+function p4TarEndOffset(bytes) {
+  let offset = 0;
+  while (offset + 512 <= bytes.length) {
+    const header = bytes.subarray(offset, offset + 512);
+    if (header.every((byte) => byte === 0)) return offset;
+    const size = p4TarOctal(bytes, offset + 124, 12);
+    offset += 512 + Math.ceil(size / 512) * 512;
+  }
+  return null;
+}
+
+function p4FirstPayload(bytes) {
+  let offset = 0;
+  while (offset + 512 <= bytes.length) {
+    const header = bytes.subarray(offset, offset + 512);
+    if (header.every((byte) => byte === 0)) return null;
+    const size = p4TarOctal(bytes, offset + 124, 12);
+    if (size > 0) return { headerOffset: offset, dataStart: offset + 512, size };
+    offset += 512 + Math.ceil(size / 512) * 512;
+  }
+  return null;
+}
+
+function p4WriteTarText(bytes, start, length, value) {
+  bytes.fill(0, start, start + length);
+  const encoded = new TextEncoder().encode(value);
+  bytes.set(encoded.subarray(0, length), start);
+}
+
+function p4RechecksumHeader(bytes, offset) {
+  bytes.fill(32, offset + 148, offset + 156);
+  let sum = 0;
+  for (let index = 0; index < 512; index++) sum += bytes[offset + index];
+  const octal = sum.toString(8).padStart(6, '0') + '\0 ';
+  p4WriteTarText(bytes, offset + 148, 8, octal);
+}
+
+function p4MutateFirstTarHeader(rawTar, { path = null, type = null } = {}) {
+  const copy = new Uint8Array(rawTar);
+  if (path != null) p4WriteTarText(copy, 0, 100, path);
+  if (type != null) copy[156] = String(type).charCodeAt(0);
+  p4RechecksumHeader(copy, 0);
+  return copy;
+}
+
+async function p4ExpectCode(label, operation, expectedCode) {
+  let code = null;
+  try {
+    await operation();
+  } catch (error) {
+    code = error?.code ?? error?.name ?? 'ERROR';
+  }
+  assert(code === expectedCode, label + ' expected ' + expectedCode + ' but observed ' + code);
+  return code;
 }
 
 async function run() {
@@ -2131,6 +2217,177 @@ async function run() {
       await lifecycleRegistry.removeEntry(encodeURIComponent(p3AckLossDirectory)+'.json').catch(()=>{});
     }catch{}
   }
+
+  stage('p4-artifact-boundary-start');
+  runtime.net.allow({
+    origin: location.origin,
+    methods: ['GET'],
+    paths: ['/toolchain/vendor/']
+  });
+
+  const p4Corpus = [
+    {
+      name: 'lightningcss-wasm',
+      version: '1.33.0',
+      url: location.origin + '/toolchain/vendor/lightningcss-wasm-1.33.0.tgz',
+      integrity: 'sha512-OLAtqEyInBSVWjPrTjpLzcZUMUHO0q+2PFBXKr86nxZOu0P38givj/ZMtRaZ0d38pMTb9wQx+LtaLtHclv+sEA=='
+    },
+    {
+      name: '@rolldown/browser',
+      version: '1.2.9',
+      url: location.origin + '/toolchain/vendor/rolldown-browser-1.2.9.tgz',
+      integrity: 'sha256-mszzzf49IoetfV9JzSz83bycESq/y8KVhj5AHvRLhXY='
+    }
+  ];
+  const p4Authority = new PackageArtifactAuthority({
+    fs: runtime.fs,
+    network: runtime.net,
+    maxArtifactBytes: 16 * 1024 * 1024,
+    maxFiles: 20_000,
+    maxUnpackedBytes: 128 * 1024 * 1024
+  });
+  const p4CorpusReceipts = [];
+  let p4LightningBytes = null;
+  for (const fixture of p4Corpus) {
+    const artifact = await p4Authority.fetchArtifact({
+      url: fixture.url,
+      integrity: fixture.integrity
+    });
+    const archive = await inspectTarArchive(artifact.bytes, {
+      maxFiles: 20_000,
+      maxUnpackedBytes: 128 * 1024 * 1024,
+      requiredPrefix: 'package/'
+    });
+    const packageJsonEntry = archive.entries.find((entry) => entry.path === 'package/package.json' && entry.type === 'file');
+    assert(packageJsonEntry?.data instanceof Uint8Array, 'P4 frozen npm corpus is missing package/package.json for ' + fixture.name);
+    const packageJson = JSON.parse(new TextDecoder().decode(packageJsonEntry.data));
+    assert(packageJson.name === fixture.name, 'P4 frozen npm corpus package name drifted for ' + fixture.name);
+    assert(packageJson.version === fixture.version, 'P4 frozen npm corpus package version drifted for ' + fixture.name);
+    p4CorpusReceipts.push({
+      name: fixture.name,
+      version: fixture.version,
+      integrity: artifact.verified.integrity,
+      compressedBytes: artifact.bytes.byteLength,
+      unpackedBytes: archive.totalBytes,
+      entries: archive.entries.length
+    });
+    if (fixture.name === 'lightningcss-wasm') p4LightningBytes = new Uint8Array(artifact.bytes);
+  }
+  assert(p4CorpusReceipts.length === 2 && p4LightningBytes instanceof Uint8Array, 'P4 frozen npm tarball corpus did not execute both retained fixtures');
+
+  const p4RawTar = await p4Gunzip(p4LightningBytes);
+  const p4EndOffset = p4TarEndOffset(p4RawTar);
+  const p4Payload = p4FirstPayload(p4RawTar);
+  assert(Number.isInteger(p4EndOffset) && p4EndOffset >= 0, 'P4 retained TAR has no end marker');
+  assert(p4Payload && p4Payload.size > 0, 'P4 retained TAR has no payload entry');
+
+  const p4Hostile = {};
+  p4Hostile.truncatedHeader = await p4ExpectCode(
+    'P4 truncated header',
+    () => inspectTarArchive(p4RawTar.subarray(0, 127), { requiredPrefix: 'package/' }),
+    'OC_ARCHIVE_UNSAFE'
+  );
+  p4Hostile.truncatedPayload = await p4ExpectCode(
+    'P4 truncated payload',
+    () => inspectTarArchive(
+      p4RawTar.subarray(0, p4Payload.dataStart + Math.max(0, p4Payload.size - 1)),
+      { requiredPrefix: 'package/' }
+    ),
+    'OC_ARCHIVE_UNSAFE'
+  );
+  p4Hostile.truncatedTrailer = await p4ExpectCode(
+    'P4 truncated trailer',
+    () => inspectTarArchive(p4RawTar.subarray(0, p4EndOffset + 512), { requiredPrefix: 'package/' }),
+    'OC_ARCHIVE_UNSAFE'
+  );
+  p4Hostile.truncatedGzip = await p4ExpectCode(
+    'P4 truncated gzip stream',
+    () => inspectTarArchive(p4LightningBytes.subarray(0, p4LightningBytes.byteLength - 8), { requiredPrefix: 'package/' }),
+    'TypeError'
+  );
+  p4Hostile.decompressionBudget = await p4ExpectCode(
+    'P4 decompression budget',
+    () => inspectTarArchive(p4LightningBytes, {
+      maxFiles: 1,
+      maxUnpackedBytes: 128,
+      requiredPrefix: 'package/'
+    }),
+    'OC_ARTIFACT_TOO_LARGE'
+  );
+
+  for (const [label, mutated] of [
+    ['pathTraversal', p4MutateFirstTarHeader(p4RawTar, { path: 'package/../escape.js' })],
+    ['absolutePath', p4MutateFirstTarHeader(p4RawTar, { path: '/etc/passwd' })],
+    ['dotSegment', p4MutateFirstTarHeader(p4RawTar, { path: 'package/./escape.js' })],
+    ['symlink', p4MutateFirstTarHeader(p4RawTar, { type: '2' })],
+    ['hardlink', p4MutateFirstTarHeader(p4RawTar, { type: '1' })],
+    ['paxExtension', p4MutateFirstTarHeader(p4RawTar, { type: 'x' })],
+    ['gnuLongNameExtension', p4MutateFirstTarHeader(p4RawTar, { type: 'L' })]
+  ]) {
+    p4Hostile[label] = await p4ExpectCode(
+      'P4 ' + label,
+      () => inspectTarArchive(mutated, { requiredPrefix: 'package/' }),
+      'OC_ARCHIVE_UNSAFE'
+    );
+  }
+
+  const p4IntegrityRuntime = await OpenContainer.boot({ network: { allowLocal: true } });
+  p4IntegrityRuntime.net.allow({
+    origin: location.origin,
+    methods: ['GET'],
+    paths: ['/toolchain/vendor/']
+  });
+  const p4IntegrityLock = {
+    name: 'p4-integrity-court',
+    version: '1.0.0',
+    lockfileVersion: 3,
+    packages: {
+      '': { name: 'p4-integrity-court', version: '1.0.0' },
+      'node_modules/lightningcss-wasm': {
+        name: 'lightningcss-wasm',
+        version: '1.33.0',
+        resolved: p4Corpus[0].url,
+        integrity: p4Corpus[0].integrity
+      }
+    }
+  };
+  p4IntegrityRuntime.packages.compile(p4IntegrityLock);
+  const p4IntegrityGeneration = p4IntegrityRuntime.packages.generation;
+  const p4MutatedArtifact = new Uint8Array(p4LightningBytes);
+  p4MutatedArtifact[Math.max(0, p4MutatedArtifact.length - 17)] ^= 0x01;
+  const p4MismatchAuthority = new PackageArtifactAuthority({
+    fs: p4IntegrityRuntime.fs,
+    network: p4IntegrityRuntime.net,
+    fetchImpl: async () => new Response(p4MutatedArtifact, {
+      status: 200,
+      headers: { 'content-type': 'application/octet-stream' }
+    }),
+    maxArtifactBytes: 16 * 1024 * 1024,
+    maxUnpackedBytes: 128 * 1024 * 1024
+  });
+  const p4MismatchInstaller = p4IntegrityRuntime.packages.createFrozenInstaller();
+  const p4IntegrityCode = await p4ExpectCode(
+    'P4 integrity mismatch',
+    () => p4MismatchInstaller.installAll({ artifactAuthority: p4MismatchAuthority, concurrency: 1 }),
+    'OC_ARTIFACT_INTEGRITY'
+  );
+  assert(p4IntegrityRuntime.packages.generation === p4IntegrityGeneration, 'P4 integrity mismatch changed package graph generation');
+  assert(p4MismatchInstaller.contentStore.size === 0, 'P4 integrity mismatch published package content');
+  await p4IntegrityRuntime.terminate();
+
+  stage('p4-artifact-boundary-pass', {
+    corpus: p4CorpusReceipts,
+    streamingDecompression: typeof DecompressionStream === 'function',
+    hostileCases: p4Hostile,
+    integrityMismatch: {
+      code: p4IntegrityCode,
+      graphGenerationPreserved: true,
+      contentPublished: false,
+      installAnywayPath: false
+    },
+    specialTarFeaturesDefault: 'deny',
+    gates: ['P4-05', 'P4-08', 'P4-09', 'P4-10', 'P4-12']
+  });
 
   stage('browser-package-install-start');
   const lightningIntegrity = 'sha512-OLAtqEyInBSVWjPrTjpLzcZUMUHO0q+2PFBXKr86nxZOu0P38givj/ZMtRaZ0d38pMTb9wQx+LtaLtHclv+sEA==';

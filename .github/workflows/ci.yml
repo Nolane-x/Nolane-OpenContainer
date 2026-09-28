@@ -178,6 +178,14 @@ jobs:
           google-chrome-stable --version || google-chrome --version || chromium --version
       - run: npm run browser:profile:verify
       - run: npm run critical:browser-flake
+      - run: npm run p4:artifact-boundary:evidence
+      - name: Archive P4 artifact boundary browser receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-p4-artifact-boundary-${{ github.sha }}
+          path: .artifacts/p4-artifact-boundary/browser-receipt.json
+          if-no-files-found: error
+          retention-days: 90
       - run: npm run p3:evidence:browser
       - run: npm run p3:corruption:evidence
       - run: npm run p3:low-storage:evidence

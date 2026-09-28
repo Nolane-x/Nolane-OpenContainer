@@ -490,6 +490,14 @@
       "status": "PASS",
       "ref": "CI #616 / PR #58 implementation head 0c1a6334cbae8ea3ac4389db76713e20bbccfe96",
       "note": "Declared-profile P3-18 closure evidence: real headful Chrome showDirectoryPicker returns a native FileSystemDirectoryHandle with read/readwrite granted; external OS edit is rejected OC_STALE_GENERATION before overwrite; reconciled write rechecks permission; native handle removal transitions read/readwrite granted->denied; subsequent privileged write is blocked OC_INVALID_STATE while local canonical recovery state remains unchanged. Dedicated native court passed 2/2."
+    },
+    {
+      "key": "p4-artifact-boundary",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #633 / PR #59 implementation head 0c9bbed9efd24d6c0700d744b05881515c6c6893",
+      "note": "P4 release-evidence wave for P4-05/08/09/10/12: two retained npm tarballs execute through real Chrome streaming gzip/TAR parsing; truncated header/payload/trailer/gzip and decompression-budget faults fail closed; traversal/absolute/dot-segment/symlink/hardlink/PAX/GNU-longname attacks fail closed; special TAR features remain default-deny; SRI mutation cannot publish content or change package graph generation. Dedicated 2/2 browser receipt retained."
     }
   ]
 }

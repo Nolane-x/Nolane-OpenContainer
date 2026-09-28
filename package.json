@@ -53,7 +53,8 @@
     "p3:external-source:evidence": "node scripts/capture-p3-external-source-browser-evidence.mjs",
     "p3:freeze-writer:evidence": "node scripts/p3-freeze-writer-failover.mjs",
     "p3:durability:evidence": "node scripts/capture-p3-durability-boundary-browser-evidence.mjs",
-    "p3:native-external:evidence": "node scripts/p3-native-external-permission.mjs"
+    "p3:native-external:evidence": "node scripts/p3-native-external-permission.mjs",
+    "p4:artifact-boundary:evidence": "node scripts/capture-p4-artifact-boundary-browser-evidence.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",
