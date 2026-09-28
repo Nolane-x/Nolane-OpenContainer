@@ -32,7 +32,7 @@ function dependencyLocation(nodesByLocation,issuerLocation,name){
 }
 
 export class PackageGraphAuthority {
-  #generation=0;#graph=null;#baseFs=null;#nodeModules=null;#resolver=null;#contentStore=null;#maxLockfileBytes;#maxGraphNodes;
+  #generation=0;#graph=null;#baseFs=null;#nodeModules=null;#resolver=null;#contentStore=null;#graphStore=null;#maxLockfileBytes;#maxGraphNodes;
 
   constructor({fs=null,contentStore=null,maxLockfileBytes=16*1024*1024,maxGraphNodes=100000}={}){
     this.#baseFs=fs;
@@ -47,6 +47,7 @@ export class PackageGraphAuthority {
   get nodeModules(){return this.#nodeModules;}
   get resolver(){return this.#resolver;}
   get contentStore(){return this.#contentStore;}
+  get graphStore(){return this.#graphStore;}
 
   setContentStore(contentStore){
     assertOc(
@@ -55,6 +56,16 @@ export class PackageGraphAuthority {
       'Package content store must expose has(), get(), and ingest()'
     );
     this.#contentStore=contentStore;
+    return this;
+  }
+
+  setGraphStore(graphStore){
+    assertOc(
+      graphStore&&typeof graphStore.publish==='function'&&typeof graphStore.read==='function',
+      ErrorCodes.INVALID_ARGUMENT,
+      'Package graph store must expose publish() and read()'
+    );
+    this.#graphStore=graphStore;
     return this;
   }
 
@@ -256,7 +267,13 @@ export class PackageGraphAuthority {
 
   createFrozenInstaller(options={}){
     const contentStore=options.contentStore??this.#contentStore;
-    return new FrozenInstallAuthority({packages:this,...(contentStore?{contentStore}:{}),...options});
+    const graphStore=options.graphStore??this.#graphStore;
+    return new FrozenInstallAuthority({
+      packages:this,
+      ...(contentStore?{contentStore}:{}),
+      ...(graphStore?{graphStore}:{}),
+      ...options
+    });
   }
 
   bindCommands(processSupervisor,options={}){
@@ -282,6 +299,7 @@ export { CommonJsLoader } from './commonjs-loader.js';
 
 export { FrozenInstallAuthority, PackageContentStore } from './frozen-install.js';
 export { OpfsPackageContentStore } from './opfs-package-content-store.js';
+export { OpfsPackageGraphStore } from './opfs-package-graph-store.js';
 
 export { createCoreBuiltinRegistry } from './builtins/registry.js';
 export { createPosixPath } from './builtins/path.js';
