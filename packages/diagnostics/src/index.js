@@ -358,10 +358,6 @@ function packageIdentity(packages){
     optional:node.optional===true
   }));
   const installScriptPackages=nodes.filter(node=>node.hasInstallScript).map(node=>node.location).sort();
-  const nativeBoundaryPackages=nodes
-    .filter(node=>node.hasInstallScript||/\b(?:node-gyp|prebuild|prebuildify|node-pre-gyp|\.node)\b/i.test(String(node.resolved??'')))
-    .map(node=>node.location)
-    .sort();
   return Object.freeze({
     compiled:true,
     generation:packages.generation,
@@ -381,10 +377,12 @@ function packageIdentity(packages){
       packageCount:installScriptPackages.length,
       locations:Object.freeze(installScriptPackages)
     }),
+    analysisScope:'package-provenance-metadata-only',
+    scaAssessmentPerformed:false,
     nativeAddonBoundary:Object.freeze({
       policy:'deny-unless-exact-adapter',
-      candidateCount:nativeBoundaryPackages.length,
-      locations:Object.freeze(nativeBoundaryPackages)
+      detection:'resolver-exact-.node-target-only',
+      candidatesEnumerated:false
     }),
     components:freezeArray(nodes.map((node)=>({
       name:node.name,
