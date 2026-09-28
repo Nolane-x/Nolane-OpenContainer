@@ -180,3 +180,7 @@
 ## Update discipline
 
 Every substantive PR should update the JSON ledger only for gate IDs it directly produces evidence for. A gate remains `closure_met=false` until its exact `minimum_closure` is satisfied.
+
+
+- **P3-09** now meets its declared-profile minimum closure. CI #565 / PR #56 runs a real two-page Chrome court: Writer A publishes WriterEpoch 1, Chrome freezes A with `Page.setWebLifecycleState(frozen)`, Writer B claims WriterEpoch 2 and publishes sequence 2, Chrome resumes A, and A's original authority is fenced with `OC_STALE_GENERATION` before stale publication. Both iterations observe real freeze/resume lifecycle events; a fresh canonical read remains Writer B value `B1` at sequence 2 / WriterEpoch 2. Dedicated artifact #10954814739 retains the machine receipt.
+- P3-07 and P3-18 remain open. The P3-18 external-source implementation evidence still does not include native `showDirectoryPicker()` permission revocation, and P3-07 still requires exact browser durability-boundary closure.
