@@ -287,7 +287,7 @@ test('P3 SDK recoverable delete preserves tombstone and static restore re-enable
   assert.equal(deleted.state,'tombstoned');
   assert.equal(deleted.recoverable,true);
   assert.equal(deleted.recoveryPoint.sequence>=1,true);
-  assert.equal(runtime.state,'terminated');
+  assert.equal(runtime.state,'TERMINATED');
 
   const status=await OpenContainer.inspectWorkspaceLifecycle(profile);
   assert.equal(status.state,'tombstoned');
