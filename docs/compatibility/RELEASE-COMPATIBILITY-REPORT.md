@@ -11,21 +11,17 @@ The compatibility baseline reports filesystem, module, process, HTTP, package an
 ## Known limitations
 
 - pnpm and yarn lockfiles are not accepted by the promoted frozen package graph parser.
-- native `.node` addons and arbitrary node-gyp/host-native execution are denied by default; a browser fallback is accepted only through an exact explicitly registered `.node` → non-native adapter mapping. Generic path/package aliases never authorize native-addon fallback.
+- native .node addons and arbitrary node-gyp/native binary execution are unsupported.
 - generic fs.watch/chokidar parity is not promoted.
 - raw guest TCP/UDP and arbitrary host process creation are unsupported.
 - minimum cross-browser versions are intentionally not frozen before browser matrix evidence.
 
 ## Unsupported Core classes
 
-- **native-addons** — Native `.node` execution, node-gyp and arbitrary host-native binaries are unsupported in Core 1.x. An exact explicitly registered browser adapter may replace one specific `.node` path, but this does not enable native execution or generic addon compatibility.
+- **native-addons** — Native .node addons, node-gyp and arbitrary host-native binaries are unsupported in Core 1.x.
 - **raw-tcp-tls** — Arbitrary raw TCP/UDP/TLS socket semantics are unsupported in Core 1.x.
 - **full-linux** — Full Linux/POSIX process, device and host-filesystem semantics are unsupported in Core 1.x.
 - **undeclared-browser-profiles** — Browser/OS/device profiles without retained evidence are unsupported and must not be marketed as supported.
-
-## Package diagnostics boundary
-
-Package provenance diagnostics are metadata-only: package/version/location identity, lockfile integrity, privacy-sanitized source provenance, layout identity and install-script/native-boundary flags. They are **not** a software-composition-analysis (SCA), vulnerability, malware, license-compliance or trust verdict.
 
 ## Current known issues / evidence gaps
 
