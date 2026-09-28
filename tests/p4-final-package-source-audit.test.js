@@ -51,11 +51,15 @@ test('P4-16 measurement court uses real tarballs and frozen realistic dependency
   assert.match(runner,/rolldown-browser-1\.2\.9\.tgz/);
   assert.match(runner,/createHash\('sha256'\)\.update\(bytes\)\.digest\('hex'\)/);
   assert.match(runner,/inspectTarArchive\(bytes,\{requiredPrefix:'package\/'\}\)/);
+  assert.match(browserCourt,/OpfsPackageContentStore/);
+  assert.match(browserCourt,/persistedUsage\(contentId\)/);
+  assert.match(browserCourt,/formula:'physical-persistent-bytes\/unique-verified-logical-content-bytes'/);
   assert.match(runner,/vite-react-tiny\.package-lock\.json/);
   assert.match(runner,/chokidar\.package-lock\.json/);
   assert.match(runner,/measureGraph\(viteLockText,219\)/);
   assert.match(runner,/measureGraph\(chokidarLockText,8\)/);
   assert.match(runner,/path:'raw-package-lock-text-to-graph'/);
+  assert.match(runner,/browserStorageAmplification/);
   assert.match(runner,/thresholdClaimed:false/);
   assert.match(browserCourt,/measureGraph\(viteText,219\)/);
   assert.match(browserCourt,/measureGraph\(chokidarText,8\)/);
