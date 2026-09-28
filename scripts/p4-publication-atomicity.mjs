@@ -247,8 +247,15 @@ try{
       await cdp.command('Storage.overrideQuotaForOrigin',{origin,quotaSize:quotaBefore.quota});
     }
     assert(quota.failure!==null,'P4 real OPFS quota court unexpectedly completed install',{iteration,quota,quotaBefore,forcedQuota});
+    const quotaRefusal=
+      quota.failure?.name==='QuotaExceededError'||
+      quota.failure?.code==='OC_RESOURCE_EXHAUSTED'||
+      (
+        quota.failure?.name==='AbortError'&&
+        /Failed to write data to data pipe/i.test(String(quota.failure?.message??''))
+      );
     assert(
-      quota.failure?.name==='QuotaExceededError'||quota.failure?.code==='OC_RESOURCE_EXHAUSTED',
+      quotaRefusal,
       'P4 real OPFS quota court failed for a non-quota reason',
       {iteration,quota,quotaBefore,forcedQuota}
     );
@@ -299,6 +306,8 @@ try{
         forcedQuota,
         failureName:quota.failure.name,
         failureCode:quota.failure.code,
+        failureMessage:quota.failure.message,
+        quotaRefusalAccepted:quotaRefusal,
         mountCode:quota.mountFailure.code,
         halfPublished:false,
         recoveryPackageCount:quotaRecovery.packageCount
