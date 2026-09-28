@@ -11,6 +11,7 @@ const browserCourt=readFileSync('apps/playground/public/p4-command-diagnostics.j
 const page=readFileSync('apps/playground/public/p4-command-diagnostics.html','utf8');
 const runner=readFileSync('scripts/p4-command-diagnostics.mjs','utf8');
 const workflow=readFileSync('.github/workflows/ci.yml','utf8');
+const boundaryDoc=readFileSync('docs/compatibility/P4-PACKAGE-COMMAND-DIAGNOSTICS-NATIVE-BOUNDARY.md','utf8');
 
 test('P4 command graph retains contextual candidates and fail-closed resolution',()=>{
   assert.match(graph,/const binCandidates=\{\}/);
@@ -30,6 +31,9 @@ test('P4 native addon boundary rejects generic alias bypass and requires exact a
   assert.match(resolver,/nativeAddonAdapter = Object\.freeze/);
   assert.match(loader,/nativeAddonAdapters/);
   assert.match(loader,/nativeAddonAdapters: this\.#nativeAddonAdapters/);
+  assert.match(boundaryDoc,/Generic package aliases and generic path aliases do not authorize a native-addon fallback/);
+  assert.match(boundaryDoc,/exact explicitly registered `.node` → non-native adapter mapping|exact explicitly registered browser adapter/);
+  assert.match(boundaryDoc,/No host-native code is executed/);
 });
 
 test('P4 package diagnostics expose provenance and policy without raw source secrets',()=>{
@@ -42,6 +46,8 @@ test('P4 package diagnostics expose provenance and policy without raw source sec
   assert.match(diagnostics,/policy:'deny-unless-exact-adapter'/);
   assert.match(diagnostics,/hasInstallScript/);
   assert.match(diagnostics,/layout:graph\.layout/);
+  assert.match(boundaryDoc,/not.*full SCA scanner/i);
+  assert.match(boundaryDoc,/vulnerability, malware, license-compliance, dependency-trust, exploitability, or package-safety verdicts/);
 });
 
 test('P4 command diagnostics browser court is retained in CI',()=>{
