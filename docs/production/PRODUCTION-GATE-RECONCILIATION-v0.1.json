@@ -352,6 +352,10 @@
     "p4-ecosystem-layout": {
       "ref": "CI #693 / PR #61 implementation head 54334c52e1a73d992dbd0ea46006016089e9afcd",
       "note": "P4-01/P4-02/P4-03/P4-06 declared-profile release evidence: exact Node v24.21.0 resolver oracle differentials pass without skips; two frozen real-repository package-lock graphs compile in Chrome with observable physical layout fingerprints; 13 repositories and 9 published npm tarballs retain source commit, lockfile/license blob, URL, SHA-512 and SHA-1 provenance."
+    },
+    "p4-command-diagnostics": {
+      "ref": "CI #729 / PR #62 implementation head dd199a16e921770789e8308cae15922bec89a384",
+      "note": "P4-14/P4-17/P4-18 declared-profile release evidence: contextual graph-derived .bin selection with ambiguity rejection; metadata-only package provenance/integrity/script diagnostics with sanitized-source privacy; default .node rejection plus exact explicitly registered non-native adapters only. Dedicated Chrome court 2/2 and full installed product path 2/2."
     }
   },
   "overrides": [
@@ -710,10 +714,10 @@
     {
       "id": "P4-18",
       "domain": "P4",
-      "state": "PARTIAL",
-      "promotion": "IMPLEMENTED",
-      "evidence": "node-boundary",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p4-command-diagnostics",
+      "closure_met": true
     },
     {
       "id": "P5-01",
@@ -1985,6 +1989,22 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p4-ecosystem-layout",
+      "closure_met": true
+    },
+    {
+      "id": "P4-14",
+      "domain": "P4",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p4-command-diagnostics",
+      "closure_met": true
+    },
+    {
+      "id": "P4-17",
+      "domain": "P4",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p4-command-diagnostics",
       "closure_met": true
     }
   ]
