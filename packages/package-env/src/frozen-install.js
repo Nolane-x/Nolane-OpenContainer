@@ -9,8 +9,8 @@ function cloneFiles(files) {
 
 const LIFECYCLE_EVENTS=Object.freeze(['preinstall','install','postinstall']);
 
-function scriptGrantKey({location,event,command}){
-  return String(location)+'\n'+String(event)+'\n'+String(command);
+function scriptGrantKey({contentId,location,event,command}){
+  return String(contentId)+'\n'+String(location)+'\n'+String(event)+'\n'+String(command);
 }
 
 export class PackageScriptCapability {
@@ -22,7 +22,8 @@ export class PackageScriptCapability {
     assertOc(Array.isArray(grants)&&grants.length>0,ErrorCodes.INVALID_ARGUMENT,'Package script capability requires explicit grants');
     this.#grants=new Set();
     for(const grant of grants){
-      assertOc(grant&&typeof grant.location==='string'&&grant.location.length>0,ErrorCodes.INVALID_ARGUMENT,'Package script grant location is required');
+      assertOc(grant&&typeof grant.contentId==='string'&&grant.contentId.length>0,ErrorCodes.INVALID_ARGUMENT,'Package script grant contentId is required');
+      assertOc(typeof grant.location==='string'&&grant.location.length>0,ErrorCodes.INVALID_ARGUMENT,'Package script grant location is required');
       assertOc(LIFECYCLE_EVENTS.includes(grant.event),ErrorCodes.INVALID_ARGUMENT,'Unsupported package lifecycle event',{event:grant.event});
       assertOc(typeof grant.command==='string'&&grant.command.length>0,ErrorCodes.INVALID_ARGUMENT,'Package script grant command is required');
       this.#grants.add(scriptGrantKey(grant));
@@ -30,15 +31,16 @@ export class PackageScriptCapability {
     this.#execute=execute;
   }
 
-  authorizes({location,event,command}={}){
-    return this.#grants.has(scriptGrantKey({location,event,command}));
+  authorizes({contentId,location,event,command}={}){
+    return this.#grants.has(scriptGrantKey({contentId,location,event,command}));
   }
 
-  async run({location,event,command,cwd}={}){
-    assertOc(this.authorizes({location,event,command}),ErrorCodes.NETWORK_DENIED,'Package lifecycle script is not explicitly authorized',{
-      location,event
+  async run({contentId,location,event,command,cwd}={}){
+    assertOc(this.authorizes({contentId,location,event,command}),ErrorCodes.NETWORK_DENIED,'Package lifecycle script is not explicitly authorized',{
+      contentId,location,event
     });
     const context=Object.freeze({
+      contentId,
       location,
       event,
       command,
@@ -54,7 +56,7 @@ export class PackageScriptCapability {
       throw ocError(ErrorCodes.INVALID_STATE,'Authorized package lifecycle script failed',{location,event,exitCode});
     }
     return Object.freeze({
-      location,event,command,cwd,exitCode,
+      contentId,location,event,command,cwd,exitCode,
       ambientEnvKeys:0,
       secretHandleCount:0
     });
@@ -243,10 +245,11 @@ export class FrozenInstallAuthority {
       });
       for(const event of recognized){
         const command=scripts[event];
-        assertOc(this.#scriptCapability.authorizes({location:node.location,event,command}),ErrorCodes.NETWORK_DENIED,'Package lifecycle script lacks an exact capability grant',{
-          location:node.location,event
+        assertOc(this.#scriptCapability.authorizes({contentId:node.contentId,location:node.location,event,command}),ErrorCodes.NETWORK_DENIED,'Package lifecycle script lacks an exact capability grant',{
+          contentId:node.contentId,location:node.location,event
         });
         receipts.push(await this.#scriptCapability.run({
+          contentId:node.contentId,
           location:node.location,
           event,
           command,
