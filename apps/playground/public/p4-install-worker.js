@@ -5,6 +5,15 @@ import { PackageArtifactAuthority } from '/packages/package-env/src/artifact-aut
 const LIGHTNING_INTEGRITY='sha512-OLAtqEyInBSVWjPrTjpLzcZUMUHO0q+2PFBXKr86nxZOu0P38givj/ZMtRaZ0d38pMTb9wQx+LtaLtHclv+sEA==';
 const ROLLDOWN_INTEGRITY='sha256-mszzzf49IoetfV9JzSz83bycESq/y8KVhj5AHvRLhXY=';
 
+function stableId(prefix,value){
+  let h1=0x811c9dc5,h2=0x9e3779b9;
+  for(const byte of new TextEncoder().encode(value)){
+    h1=Math.imul(h1^byte,0x01000193)>>>0;
+    h2=Math.imul(h2^byte,0x85ebca6b)>>>0;
+  }
+  return prefix+':'+h1.toString(16).padStart(8,'0')+h2.toString(16).padStart(8,'0');
+}
+
 function graph(){
   return Object.freeze({
     version:1,
@@ -14,8 +23,8 @@ function graph(){
         name:'@rolldown/browser',
         version:'1.2.9',
         location:'node_modules/@rolldown/browser',
-        contentId:'p4-worker:rolldown-browser-1.2.9',
-        instanceId:'p4-worker:rolldown-instance',
+        contentId:stableId('content',ROLLDOWN_INTEGRITY),
+        instanceId:stableId('instance',stableId('content',ROLLDOWN_INTEGRITY)+'|node_modules/@rolldown/browser'),
         integrity:ROLLDOWN_INTEGRITY,
         resolved:location.origin+'/toolchain/vendor/rolldown-browser-1.2.9.tgz',
         link:false,inBundle:false,
@@ -27,8 +36,8 @@ function graph(){
         name:'lightningcss-wasm',
         version:'1.33.0',
         location:'node_modules/lightningcss-wasm',
-        contentId:'p4-worker:lightningcss-wasm-1.33.0',
-        instanceId:'p4-worker:lightning-instance',
+        contentId:stableId('content',LIGHTNING_INTEGRITY),
+        instanceId:stableId('instance',stableId('content',LIGHTNING_INTEGRITY)+'|node_modules/lightningcss-wasm'),
         integrity:LIGHTNING_INTEGRITY,
         resolved:location.origin+'/toolchain/vendor/lightningcss-wasm-1.33.0.tgz',
         link:false,inBundle:false,
