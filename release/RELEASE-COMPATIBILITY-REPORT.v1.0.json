@@ -10,7 +10,7 @@
   "compatibilityBaseline": "docs/compatibility/COMPATIBILITY-BASELINE.v0.1.json",
   "limitations": [
     "pnpm and yarn lockfiles are not accepted by the promoted frozen package graph parser",
-    "native .node addons and arbitrary node-gyp/native binary execution are unsupported",
+    "native .node execution and arbitrary node-gyp/host-native execution are unsupported; only exact explicitly registered .node-to-non-native browser adapters are allowed and generic aliases do not authorize fallback",
     "generic fs.watch/chokidar parity is not promoted",
     "raw guest TCP/UDP and arbitrary host process creation are unsupported",
     "minimum cross-browser versions are intentionally not frozen before browser matrix evidence"
@@ -18,7 +18,7 @@
   "unsupportedClasses": [
     {
       "id": "native-addons",
-      "statement": "Native .node addons, node-gyp and arbitrary host-native binaries are unsupported in Core 1.x."
+      "statement": "Native .node execution, node-gyp and arbitrary host-native binaries are unsupported in Core 1.x. A specific .node path may use an exact explicitly registered non-native browser adapter; this does not enable native execution or generic addon compatibility."
     },
     {
       "id": "raw-tcp-tls",
@@ -57,5 +57,22 @@
     "production closed"
   ],
   "productionClosed": false,
-  "browserOsProfileMatrix": "release/RELEASE-COMPATIBILITY-MATRIX.v1.0.json"
+  "browserOsProfileMatrix": "release/RELEASE-COMPATIBILITY-MATRIX.v1.0.json",
+  "packageDiagnosticsBoundary": {
+    "metadataOnly": true,
+    "fields": [
+      "package/version/location identity",
+      "lockfile integrity",
+      "privacy-sanitized source provenance",
+      "layout identity",
+      "install-script/native-boundary flags"
+    ],
+    "notA": [
+      "SCA scanner",
+      "vulnerability scanner",
+      "malware scanner",
+      "license-compliance verdict",
+      "package trust verdict"
+    ]
+  }
 }
