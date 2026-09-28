@@ -73,6 +73,7 @@ These facets are intentionally reachable from an OpenContainer instance. They ar
 - runtime.diagnostics
 - runtime.workspacePersistence
 - runtime.packageContentStore
+- runtime.packageGraphStore
 
 ## Privacy boundary
 
