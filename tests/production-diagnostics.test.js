@@ -179,7 +179,8 @@ test('support bundle preview lists categories and generation is read-only',async
         name:'dep',
         version:'1.2.3',
         integrity:'sha512-'+SECRET,
-        resolved:'https://registry.example.test/dep.tgz?token='+SECRET
+        resolved:'https://user:'+SECRET+'@registry.example.test/dep.tgz?token='+SECRET+'#private',
+        hasInstallScript:true
       }
     }
   });
@@ -241,6 +242,16 @@ test('support bundle preview lists categories and generation is read-only',async
   assert.equal(bundle.packages.components.length,1);
   assert.equal(bundle.packages.components[0].name,'dep');
   assert.match(bundle.packages.components[0].integrity,/^ocfp:|^sha(?:256|384|512)-/);
+  assert.equal(bundle.packages.components[0].hasInstallScript,true);
+  assert.equal(bundle.packages.components[0].source.kind,'https');
+  assert.equal(bundle.packages.components[0].source.url,'https://registry.example.test/dep.tgz');
+  assert.match(bundle.packages.components[0].source.fingerprint,/^ocfp:[0-9a-f]{16}$/);
+  assert.equal(bundle.packages.installScripts.policy,'deny-by-default');
+  assert.equal(bundle.packages.installScripts.packageCount,1);
+  assert.deepEqual(bundle.packages.installScripts.locations,['node_modules/dep']);
+  assert.equal(bundle.packages.nativeAddonBoundary.policy,'deny-unless-exact-adapter');
+  assert.equal(bundle.packages.nativeAddonBoundary.candidateCount,1);
+  assert.match(bundle.packages.layout.fingerprint,/^layout:[0-9a-f]{16}$/);
   assert.equal(bundle.fingerprintBasis.runtimeVersion,'0.1.0-alpha.1');
   assert.equal(bundle.fingerprintBasis.previewEpoch,before.preview);
   assert.equal(bundle.fingerprintBasis.workspaceGeneration,before.fs);
