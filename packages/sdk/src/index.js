@@ -123,19 +123,29 @@ export class OpenContainer {
   async deleteWorkspaceRecoverably({mutationId}={}){
     this._kernel.assertReady();
     assertOc(this.workspacePersistence&&this._workspacePersistenceOptions,ErrorCodes.INVALID_STATE,'Workspace OPFS persistence is not configured');
-    const recoveryPoint=await this.workspacePersistence.checkpoint(this.fs);
-    await this.workspacePersistence.readCheckpoint(recoveryPoint);
-    const lifecycle=await new OpfsWorkspaceLifecycleAuthority(this._workspacePersistenceOptions).open();
-    const receipt=await lifecycle.deleteRecoverably({mutationId,recoveryPoint});
-    this._support.recordOutcome('workspace-delete',{
-      status:'tombstoned',
-      mutationId:receipt.mutationId,
-      recoverable:true,
-      recoverySequence:receipt.recoveryPoint.sequence,
-      recoveryGeneration:receipt.recoveryPoint.generation
+    const lease=this.fs.acquireMutationLease({
+      expectedGeneration:this.fs.generation,
+      reason:'recoverable-workspace-delete'
     });
-    await this.terminate();
-    return receipt;
+    try{
+      const snapshot=this.fs.snapshot();
+      const recoveryPoint=await this.workspacePersistence.checkpoint(snapshot);
+      await this.workspacePersistence.readCheckpoint(recoveryPoint);
+      const lifecycle=await new OpfsWorkspaceLifecycleAuthority(this._workspacePersistenceOptions).open();
+      const receipt=await lifecycle.deleteRecoverably({mutationId,recoveryPoint});
+      this._support.recordOutcome('workspace-delete',{
+        status:'tombstoned',
+        mutationId:receipt.mutationId,
+        recoverable:true,
+        recoverySequence:receipt.recoveryPoint.sequence,
+        recoveryGeneration:receipt.recoveryPoint.generation,
+        localMutationLease:true
+      });
+      await this.terminate();
+      return receipt;
+    }finally{
+      lease.release();
+    }
   }
   async prepareWorkspaceRestore(checkpoint){
     this._kernel.assertReady();
