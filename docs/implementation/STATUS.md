@@ -798,3 +798,12 @@ PR #58 implementation head `0c1a6334cbae8ea3ac4389db76713e20bbccfe96` passed CI 
 P3-18 is now reconciled and closed for the declared Chrome profile. The court uses real `showDirectoryPicker({mode:'readwrite'})` rather than the prior adapter, obtains a native `FileSystemDirectoryHandle`, fences an external OS edit with `OC_STALE_GENERATION` before overwrite, rechecks permission before the reconciled write, then removes the selected directory through the native handle and observes read/readwrite permission transition from `granted` to `denied`. A later privileged write fails closed while the local canonical recovery state remains unchanged.
 
 The production ledger candidate is now **161/304** minimum-closure satisfied with **197** reconciliation rows. **P3 is 20/20 closed for the declared profile.** Overall `production_closed=false` remains unchanged because open gates still exist outside P3.
+
+
+## P4 package artifact boundary wave 1
+
+PR #59 implementation head `0c9bbed9efd24d6c0700d744b05881515c6c6893` passed CI #633 with 440/440 unit tests, CodeQL, 47 critical files × 5 = 235 repeated executions and 2/2 installed-distribution Chrome product paths. Dedicated P4 artifact #10964252846 passed both browser iterations.
+
+P4-05, P4-08, P4-09, P4-10 and P4-12 are now reconciled at RELEASE-READY minimum closure for the declared Chrome profile. Two retained npm tarballs execute through the production streaming gzip/TAR path; truncation/decompression/path/link/extension attacks fail closed; special TAR features remain denied by default; and a byte-level integrity mismatch cannot publish package content or change package graph generation. The wave also hardened the production TAR parser so incomplete two-block trailers and non-zero trailing bytes are rejected rather than silently accepted.
+
+The production ledger candidate is now **166/304** minimum-closure satisfied with **199** reconciliation rows. P4 remains incomplete: P4-01/02/03/04/06/07/11/13/14/15/16/17/18 remain open or partial. `production_closed=false` remains unchanged.
