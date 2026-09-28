@@ -128,6 +128,7 @@ async function diagnosticsCourt(){
     assert(component.source.kind==='https','package source kind drifted',{source:component.source});
     assert(component.source.url==='https://registry.example.test/dep.tgz','package source URL was not privacy sanitized',{source:component.source});
     assert(/^ocfp:[0-9a-f]{16}$/.test(component.source.fingerprint),'package source provenance fingerprint missing',{source:component.source});
+    assert(component.source.sensitiveComponentsRemoved===true,'package source did not report removed sensitive URL components',{source:component.source});
     assert(component.hasInstallScript===true,'install-script metadata missing',{component});
     assert(bundle.packages.installScripts.policy==='deny-by-default','install-script diagnostics policy drifted',{installScripts:bundle.packages.installScripts});
     assert(bundle.packages.installScripts.packageCount===1,'install-script package count drifted',{installScripts:bundle.packages.installScripts});
@@ -140,6 +141,7 @@ async function diagnosticsCourt(){
       sourceKind:component.source.kind,
       sanitizedSourceUrl:component.source.url,
       sourceFingerprint:component.source.fingerprint,
+      sensitiveComponentsRemoved:component.source.sensitiveComponentsRemoved,
       installScriptPolicy:bundle.packages.installScripts.policy,
       installScriptPackages:bundle.packages.installScripts.packageCount,
       analysisScope:bundle.packages.analysisScope,
