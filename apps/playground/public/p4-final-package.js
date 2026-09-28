@@ -242,8 +242,9 @@ async function layoutCourt(){
       version:'1',
       lockfileVersion:3,
       packages:{
-        '':{name:'layout-cycle',version:'1',dependencies:{a:'1',ws:'file:packages/ws'}},
+        '':{name:'layout-cycle',version:'1',dependencies:{a:'1',b:'1',ws:'file:packages/ws'}},
         'node_modules/a':{name:'a',version:'1'},
+        'node_modules/b':{name:'b',version:'1'},
         'node_modules/ws':{name:'ws',version:'1',resolved:'packages/ws',link:true}
       }
     });
