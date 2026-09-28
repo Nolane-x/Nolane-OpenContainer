@@ -87,11 +87,74 @@ async function queryPermissions(handle){
   });
 }
 
+async function collectEnvironmentEvidence(){
+  const [profileResponse,matrixResponse,hostResponse]=await Promise.all([
+    fetch('/docs/production/PRODUCTION-PROFILE.json',{cache:'no-store'}),
+    fetch('/release/RELEASE-COMPATIBILITY-MATRIX.v1.0.json',{cache:'no-store'}),
+    fetch('/__p3_native_picker__/environment',{cache:'no-store'})
+  ]);
+  if(!profileResponse.ok||!matrixResponse.ok||!hostResponse.ok){
+    throw new Error('Failed to load declared-profile evidence metadata.');
+  }
+  const profile=await profileResponse.json();
+  const matrix=await matrixResponse.json();
+  const host=await hostResponse.json();
+
+  let highEntropy={};
+  if(navigator.userAgentData?.getHighEntropyValues){
+    highEntropy=await navigator.userAgentData.getHighEntropyValues([
+      'architecture','bitness','platformVersion','fullVersionList','model','wow64'
+    ]);
+  }
+  const brands=highEntropy.fullVersionList??navigator.userAgentData?.brands??[];
+  const chrome=brands.find(item=>item.brand==='Google Chrome')
+    ??brands.find(item=>item.brand==='Chromium')
+    ??null;
+  const supported=matrix.rows?.find(row=>row.status==='SUPPORTED-EVIDENCE-BACKED')??null;
+  const family=host.platform==='linux'?'Linux':host.platform==='win32'?'Windows':host.platform==='darwin'?'macOS':host.platform;
+  const distribution=host.distribution?String(host.distribution).toLowerCase():null;
+  const expectedDistribution=supported?.os?.distribution?String(supported.os.distribution).toLowerCase():null;
+
+  const profileMatch=Boolean(
+    supported &&
+    matrix.productionProfileId===profile.profileId &&
+    chrome?.version===supported.browser?.version &&
+    family===supported.os?.family &&
+    (!expectedDistribution||distribution===expectedDistribution) &&
+    (!supported.os?.version||host.distributionVersion===supported.os.version) &&
+    host.arch===supported.os?.arch
+  );
+
+  return Object.freeze({
+    productionProfileId:profile.profileId,
+    browserReferenceProfile:profile.browser?.referenceProfile??null,
+    compatibilityRowId:supported?.id??null,
+    expectedBrowserProduct:supported?.browser?.product??null,
+    expectedBrowserVersion:supported?.browser?.version??null,
+    expectedOsFamily:supported?.os?.family??null,
+    expectedOsDistribution:supported?.os?.distribution??null,
+    expectedOsVersion:supported?.os?.version??null,
+    expectedArch:supported?.os?.arch??null,
+    actualBrowserProduct:chrome?.brand??null,
+    actualBrowserVersion:chrome?.version??null,
+    actualUaPlatform:navigator.userAgentData?.platform??navigator.platform??null,
+    actualUaArchitecture:highEntropy.architecture??null,
+    actualHostPlatform:host.platform??null,
+    actualHostRelease:host.release??null,
+    actualHostArch:host.arch??null,
+    actualHostDistribution:host.distribution??null,
+    actualHostDistributionVersion:host.distributionVersion??null,
+    githubActions:host.githubActions===true,
+    profileMatch
+  });
+}
+
 function publicReceipt(court){
   const conflict=court?.conflict??null;
   const revoke=court?.revocation??null;
   const initial=court?.initial??null;
-  const pass=Boolean(
+  const environmentEvidence=court?.environmentEvidence??null;
+  const semanticsPass=Boolean(
     court?.nativePickerHandle===true &&
     initial?.permissionReadwrite==='granted' &&
     conflict?.status==='PASS' &&
@@ -105,9 +168,14 @@ function publicReceipt(court){
     revoke?.requestPermissionCalledDuringVerification===false &&
     ['browser-site-settings-revoke','browser-permission-ui-revoke'].includes(revoke?.revocationMethod)
   );
+  const declaredProfileMatch=environmentEvidence?.profileMatch===true;
+  const status=semanticsPass
+    ? (declaredProfileMatch?'PASS':'PASS-SEMANTICS-PROFILE-MISMATCH')
+    : 'INCOMPLETE';
   return Object.freeze({
     schema:'opencontainer.p3-native-picker-permission-browser.v1.0',
-    status:pass?'PASS':'INCOMPLETE',
+    status,
+    closureEligible:semanticsPass&&declaredProfileMatch,
     sourceGate:'OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P3-18',
     evidenceKind:'INTERACTIVE_NATIVE_BROWSER',
     operatorAssisted:true,
@@ -118,7 +186,27 @@ function publicReceipt(court){
       platform:navigator.userAgentData?.platform??navigator.platform??null,
       secureContext:globalThis.isSecureContext,
       crossOriginIsolated:globalThis.crossOriginIsolated,
-      showDirectoryPickerAvailable:typeof globalThis.showDirectoryPicker==='function'
+      showDirectoryPickerAvailable:typeof globalThis.showDirectoryPicker==='function',
+      productionProfileId:environmentEvidence?.productionProfileId??null,
+      browserReferenceProfile:environmentEvidence?.browserReferenceProfile??null,
+      compatibilityRowId:environmentEvidence?.compatibilityRowId??null,
+      expectedBrowserProduct:environmentEvidence?.expectedBrowserProduct??null,
+      expectedBrowserVersion:environmentEvidence?.expectedBrowserVersion??null,
+      expectedOsFamily:environmentEvidence?.expectedOsFamily??null,
+      expectedOsDistribution:environmentEvidence?.expectedOsDistribution??null,
+      expectedOsVersion:environmentEvidence?.expectedOsVersion??null,
+      expectedArch:environmentEvidence?.expectedArch??null,
+      actualBrowserProduct:environmentEvidence?.actualBrowserProduct??null,
+      actualBrowserVersion:environmentEvidence?.actualBrowserVersion??null,
+      actualUaPlatform:environmentEvidence?.actualUaPlatform??null,
+      actualUaArchitecture:environmentEvidence?.actualUaArchitecture??null,
+      actualHostPlatform:environmentEvidence?.actualHostPlatform??null,
+      actualHostRelease:environmentEvidence?.actualHostRelease??null,
+      actualHostArch:environmentEvidence?.actualHostArch??null,
+      actualHostDistribution:environmentEvidence?.actualHostDistribution??null,
+      actualHostDistributionVersion:environmentEvidence?.actualHostDistributionVersion??null,
+      githubActions:environmentEvidence?.githubActions===true,
+      declaredProfileMatch
     }),
     privacy:Object.freeze({
       directoryNameRedacted:true,
@@ -180,8 +268,9 @@ async function render(){
   receiptNode.textContent=JSON.stringify(receipt,null,2);
   conflictButton.disabled=!court?.nativePickerHandle;
   revocationButton.disabled=!court?.nativePickerHandle;
-  downloadButton.disabled=receipt.status!=='PASS';
-  copyButton.disabled=receipt.status!=='PASS';
+  const downloadable=receipt.status==='PASS'||receipt.status==='PASS-SEMANTICS-PROFILE-MISMATCH';
+  downloadButton.disabled=!downloadable;
+  copyButton.disabled=!downloadable;
   return {court,receipt};
 }
 
@@ -206,6 +295,7 @@ prepareButton.addEventListener('click',async()=>{
       throw new Error('Read/write permission must be granted during preparation.');
     }
 
+    const environmentEvidence=await collectEnvironmentEvidence();
     const courtId=crypto.randomUUID();
     const baseline='OPENCONTAINER_NATIVE_PICKER_BASELINE_'+courtId;
     const markerHandle=await handle.getFileHandle(MARKER,{create:true});
@@ -246,6 +336,7 @@ prepareButton.addEventListener('click',async()=>{
       handle,
       handleKind:handle.kind,
       nativePickerHandle:true,
+      environmentEvidence,
       localDirectory,
       marker:MARKER,
       baselineRevision:observed.revision,
@@ -410,9 +501,13 @@ revocationButton.addEventListener('click',async()=>{
     court.modeStayedLinkedFolder=court.modeStayedLinkedFolder&&authority.mode===ExternalSourceMode.LINKED_FOLDER;
     await saveCourt(court);
     const {receipt}=await render();
-    setStatus(receipt.status==='PASS'
-      ? 'P3 native picker court PASS. Download the receipt JSON and retain it as declared-profile evidence.'
-      : 'Native permission revocation verification did not satisfy every invariant.');
+    setStatus(
+      receipt.status==='PASS'
+        ? 'P3 native picker court PASS on the current declared profile. Download and retain the receipt JSON.'
+        : receipt.status==='PASS-SEMANTICS-PROFILE-MISMATCH'
+          ? 'Native permission semantics PASS, but this browser/OS does not match the current evidence-backed production profile. Download the receipt for debugging; it cannot close P3-18.'
+          : 'Native permission revocation verification did not satisfy every invariant.'
+    );
   }catch(error){
     setStatus('REVOCATION VERIFY FAILED: '+(error?.stack??error));
   }
@@ -420,7 +515,7 @@ revocationButton.addEventListener('click',async()=>{
 
 downloadButton.addEventListener('click',async()=>{
   const {receipt}=await render();
-  if(receipt.status!=='PASS')return;
+  if(!['PASS','PASS-SEMANTICS-PROFILE-MISMATCH'].includes(receipt.status))return;
   const blob=new Blob([JSON.stringify(receipt,null,2)+'\n'],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const anchor=document.createElement('a');
@@ -434,7 +529,7 @@ downloadButton.addEventListener('click',async()=>{
 
 copyButton.addEventListener('click',async()=>{
   const {receipt}=await render();
-  if(receipt.status!=='PASS')return;
+  if(!['PASS','PASS-SEMANTICS-PROFILE-MISMATCH'].includes(receipt.status))return;
   await navigator.clipboard.writeText(JSON.stringify(receipt,null,2));
   setStatus('PASS receipt copied to clipboard.');
 });
