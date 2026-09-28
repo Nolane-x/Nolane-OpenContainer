@@ -131,7 +131,10 @@ async function diagnosticsCourt(){
     assert(component.hasInstallScript===true,'install-script metadata missing',{component});
     assert(bundle.packages.installScripts.policy==='deny-by-default','install-script diagnostics policy drifted',{installScripts:bundle.packages.installScripts});
     assert(bundle.packages.installScripts.packageCount===1,'install-script package count drifted',{installScripts:bundle.packages.installScripts});
+    assert(bundle.packages.analysisScope==='package-provenance-metadata-only','package diagnostics scope drifted',{analysisScope:bundle.packages.analysisScope});
+    assert(bundle.packages.scaAssessmentPerformed===false,'package diagnostics pretended to perform SCA',{scaAssessmentPerformed:bundle.packages.scaAssessmentPerformed});
     assert(bundle.packages.nativeAddonBoundary.policy==='deny-unless-exact-adapter','native-addon diagnostics boundary drifted',{nativeAddonBoundary:bundle.packages.nativeAddonBoundary});
+    assert(bundle.packages.nativeAddonBoundary.detection==='resolver-exact-.node-target-only','native-addon diagnostics detection scope drifted',{nativeAddonBoundary:bundle.packages.nativeAddonBoundary});
     assert(/^layout:[0-9a-f]{16}$/.test(bundle.packages.layout.fingerprint),'package layout fingerprint missing from diagnostics',{layout:bundle.packages.layout});
     return Object.freeze({
       sourceKind:component.source.kind,
@@ -139,7 +142,10 @@ async function diagnosticsCourt(){
       sourceFingerprint:component.source.fingerprint,
       installScriptPolicy:bundle.packages.installScripts.policy,
       installScriptPackages:bundle.packages.installScripts.packageCount,
+      analysisScope:bundle.packages.analysisScope,
+      scaAssessmentPerformed:bundle.packages.scaAssessmentPerformed,
       nativeAddonPolicy:bundle.packages.nativeAddonBoundary.policy,
+      nativeAddonDetection:bundle.packages.nativeAddonBoundary.detection,
       leakedSecret:false
     });
   }finally{
