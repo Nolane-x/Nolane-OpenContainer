@@ -514,6 +514,14 @@
       "status": "PASS",
       "ref": "CI #693 / PR #61 implementation head 54334c52e1a73d992dbd0ea46006016089e9afcd",
       "note": "P4-01/P4-02/P4-03/P4-06 declared-profile closure: exact Node v24.21.0 resolver differentials pass without skips; two frozen real repository package-lock graphs (219 + 8 nodes) compile in Chrome; physical hoisted/nested/shallow/linked layout identity is observable and fingerprinted; all 13 frozen repositories verify online and 9 published npm tarballs are byte/digest/source/license bound. Dedicated Chrome court passed 2/2 in artifact #10974148519."
+    },
+    {
+      "key": "p4-command-diagnostics",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #729 / PR #62 implementation head dd199a16e921770789e8308cae15922bec89a384",
+      "note": "P4-14/P4-17/P4-18 declared-profile closure: package .bin ownership is resolved from immutable graph/context with linked-workspace mapping and fail-closed ambiguity; support diagnostics emit privacy-safe provenance/integrity/install-script metadata under an explicit metadata-only non-SCA scope; native .node targets deny by default, generic aliases cannot authorize fallback, and only exact nativeAddonAdapters mappings to existing non-native targets are accepted. Dedicated Chrome court passed 2/2 in artifact #10979651177."
     }
   ]
 }
