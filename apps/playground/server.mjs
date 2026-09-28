@@ -38,6 +38,8 @@ const publicAliases = new Map([
   ['/index.js', join(publicRoot, 'index.js')],
   ['/browser-acceptance.html', join(publicRoot, 'browser-acceptance.html')],
   ['/browser-acceptance.js', join(publicRoot, 'browser-acceptance.js')],
+  ['/p3-native-picker.html', join(publicRoot, 'p3-native-picker.html')],
+  ['/p3-native-picker.js', join(publicRoot, 'p3-native-picker.js')],
   ['/opencontainer-sw.js', join(publicRoot, 'opencontainer-sw.js')],
   ['/opencontainer-guest-worker.mjs', join(publicRoot, 'opencontainer-guest-worker.mjs')],
   ['/opencontainer-toolchain-worker.mjs', join(publicRoot, 'opencontainer-toolchain-worker.mjs')],
@@ -224,6 +226,13 @@ const server = createServer(async (request, response) => {
     }
     if (url.pathname === '/browser-acceptance.html') {
       response.setHeader('X-OpenContainer-Document-Profile', 'acceptance-harness');
+    }
+    if (url.pathname === '/p3-native-picker.html') {
+      response.setHeader(
+        'Content-Security-Policy',
+        "default-src 'self'; script-src 'self'; connect-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+      );
+      response.setHeader('X-OpenContainer-Document-Profile', 'manual-native-picker-evidence');
     }
     if (url.pathname === '/opencontainer-sw.js') response.setHeader('Service-Worker-Allowed', '/');
     if (url.pathname === '/opencontainer-guest-worker.mjs') {
