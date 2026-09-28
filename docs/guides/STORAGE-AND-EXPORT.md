@@ -24,6 +24,54 @@ A restore plan binds both the live VFS generation and the canonical OPFS checkpo
 
 If local work or another browser context publishes after planning, restore fails with `OC_STALE_GENERATION` instead of overwriting it. If storage pressure prevents creation of the pre-restore recovery point, restore fails with `OC_RESOURCE_EXHAUSTED` and declares that risk in the error details; it does not mutate the working tree. Restore targets must still be retained canonical/fallback recovery roots, not arbitrary leftover payload files.
 
+## Recoverable delete and permanent purge
+
+Workspace deletion has two deliberately separate operations.
+
+```text
+normal delete      = D2 recoverable destructive
+permanent purge    = D4 irreversible local purge
+```
+
+`runtime.deleteWorkspaceRecoverably({mutationId})` first freezes local VFS mutation, publishes or reuses the current canonical checkpoint as the recovery point, and then writes a durable tombstone. A tombstoned workspace cannot boot or publish new checkpoints until it is explicitly restored. Repeating the same delete mutation ID is idempotent; a different delete mutation cannot silently replace the existing tombstone.
+
+The lifecycle may be inspected and recovered without booting the deleted workspace:
+
+```js
+const status = await OpenContainer.inspectWorkspaceLifecycle(workspacePersistence);
+
+await OpenContainer.restoreDeletedWorkspace(workspacePersistence, {
+  deleteMutationId: 'delete-123',
+  restoreMutationId: 'restore-123'
+});
+```
+
+Permanent purge is a separate static operation and requires target-specific confirmation that names the irreversible recoverability boundary:
+
+```js
+await OpenContainer.purgeDeletedWorkspace(workspacePersistence, {
+  deleteMutationId: 'delete-123',
+  purgeMutationId: 'purge-123',
+  confirmation: {
+    action: 'PERMANENT_PURGE',
+    target: workspacePersistence.directoryName,
+    recoverability: 'none-after-purge'
+  }
+});
+```
+
+After permanent purge, workspace storage is physically removed and lifecycle status reports `recoverable=false` / `recoverability='none'`. The lifecycle registry retains only non-content mutation/state truth so duplicate submit and ambiguous acknowledgement can be reconciled without reconstructing project data.
+
+If a purge commit succeeds but acknowledgement is lost, callers must reconcile authoritative state rather than immediately retrying as though the first mutation failed:
+
+```js
+const result = await OpenContainer.reconcileWorkspacePurge(workspacePersistence, {
+  purgeMutationId: 'purge-123'
+});
+```
+
+Lifecycle metadata is integrity-bound. Corrupt lifecycle metadata fails closed; it is not interpreted as an active workspace.
+
 ## Portable export
 
 `runtime.export(ref?)` returns a `ReadableStream<Uint8Array>` containing OpenContainer NDJSON.
