@@ -372,7 +372,7 @@ export class SupportBundleAuthority{
   #runtime;
   #profile;
   #browserScope;
-  #lastOutcomes={recovery:null,migration:null,update:null};
+  #lastOutcomes={recovery:null,migration:null,update:null,workspaceDelete:null};
 
   constructor({runtime,profile,browserScope=globalThis}={}){
     if(!runtime)throw new TypeError('SupportBundleAuthority requires runtime');
@@ -383,7 +383,7 @@ export class SupportBundleAuthority{
   }
 
   recordOutcome(kind,outcome){
-    if(!['recovery','migration','update'].includes(kind))throw new TypeError('Unsupported support outcome: '+kind);
+    if(!['recovery','migration','update','workspaceDelete'].includes(kind))throw new TypeError('Unsupported support outcome: '+kind);
     this.#lastOutcomes={...this.#lastOutcomes,[kind]:safeOutcome(outcome)};
     return this.#lastOutcomes[kind];
   }
@@ -404,7 +404,8 @@ export class SupportBundleAuthority{
       'deployment-headers',
       'package-graph-identity',
       'storage-generation',
-      'recovery-migration-update'
+      'recovery-migration-update',
+      'workspace-destructive-lifecycle'
     ];
     if(includeAi===true)categories.push('ai-content-redacted');
     return Object.freeze({
