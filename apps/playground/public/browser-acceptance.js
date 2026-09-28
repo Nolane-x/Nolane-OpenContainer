@@ -3,7 +3,7 @@ import { BrowserEsmServiceWorkerBridge } from '/packages/package-env/src/browser
 import { OpfsPackageContentStore, PackageArtifactAuthority } from '/packages/package-env/src/index.js';
 import { BrowserGuestWorkerAuthority } from '/packages/process/src/browser-guest-worker.js';
 import { WorkerRpcAuthority } from '/packages/process/src/worker-authority.js';
-import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority, OpfsWorkspaceLifecycleAuthority } from '/packages/vfs/src/index.js';
+import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority, OpfsWorkspaceLifecycleAuthority, ExternalWorkspaceSourceAuthority, ExternalSourceMode, ExternalSourceState } from '/packages/vfs/src/index.js';
 import { BrowserPreviewServiceWorkerBridge, createSandboxedPreviewFrame } from '/packages/preview/src/index.js';
 import { ResourceGovernor } from '/packages/resources/src/index.js';
 import { OpfsReleaseStorageAuthority, OpfsDerivedIndexStore, PersistenceCorruptionClass, corruptionDisposition, StorageCleanupCoordinator, StorageCleanupTier } from '/packages/persistence/src/index.js';
@@ -1712,6 +1712,183 @@ async function run() {
     await opfsRoot.removeEntry(p3SafeRestoreDirectory,{recursive:true}).catch(()=>{});
     await opfsRoot.removeEntry(p3SafeRestoreCrossDirectory,{recursive:true}).catch(()=>{});
     await opfsRoot.removeEntry(p3SafeRestoreQuotaDirectory,{recursive:true}).catch(()=>{});
+  }
+
+  stage('p3-external-source-boundary-start');
+  const p3ExternalBase='opencontainer-p3-external-'+crypto.randomUUID();
+  const p3ImportedDirectory=p3ExternalBase+'-imported';
+  const p3ReadOnlyDirectory=p3ExternalBase+'-readonly';
+  const p3LinkedDirectory=p3ExternalBase+'-linked';
+
+  class PermissionDirectoryAdapter{
+    kind='directory';
+    constructor(handle,permission){
+      this.handle=handle;
+      this.permission=permission;
+      this.requestCount=0;
+    }
+    async queryPermission({mode='read'}={}){
+      return mode==='readwrite'?this.permission.readwrite:this.permission.read;
+    }
+    async requestPermission({mode='read'}={}){
+      this.requestCount++;
+      return mode==='readwrite'?this.permission.readwrite:this.permission.read;
+    }
+    async getFileHandle(name,options){return this.handle.getFileHandle(name,options);}
+    async getDirectoryHandle(name,options){
+      const child=await this.handle.getDirectoryHandle(name,options);
+      return new PermissionDirectoryAdapter(child,this.permission);
+    }
+    async *entries(){
+      for await(const [name,handle] of this.handle.entries()){
+        yield [name,handle?.kind==='directory'?new PermissionDirectoryAdapter(handle,this.permission):handle];
+      }
+    }
+  }
+
+  async function writeExternalText(directory,path,text){
+    const parts=path.split('/');
+    let current=directory;
+    for(const part of parts.slice(0,-1))current=await current.getDirectoryHandle(part,{create:true});
+    const file=await current.getFileHandle(parts.at(-1),{create:true});
+    const writable=await file.createWritable();
+    await writable.write(text);
+    await writable.close();
+  }
+
+  async function readExternalText(directory,path){
+    const parts=path.split('/');
+    let current=directory;
+    for(const part of parts.slice(0,-1))current=await current.getDirectoryHandle(part);
+    return (await (await current.getFileHandle(parts.at(-1))).getFile()).text();
+  }
+
+  try{
+    const importedRaw=await opfsRoot.getDirectoryHandle(p3ImportedDirectory,{create:true});
+    await writeExternalText(importedRaw,'src/main.js','source-v1');
+    await writeExternalText(importedRaw,'README.md','external-readme');
+    const importedPermission={read:'granted',readwrite:'denied'};
+    const importedAuthority=new ExternalWorkspaceSourceAuthority({
+      mode:ExternalSourceMode.IMPORTED_COPY,
+      handle:new PermissionDirectoryAdapter(importedRaw,importedPermission)
+    });
+    const importedFs=new MemoryVFS();
+    importedFs.mount({'local.txt':'preserve-local'});
+    const importedReceipt=await importedAuthority.importCopyInto(importedFs);
+    assert(importedReceipt.mode==='imported-copy'&&importedReceipt.detached===true,'P3 imported copy did not detach');
+    assert(importedFs.readFile('src/main.js')==='source-v1','P3 imported copy did not publish staged source bytes');
+    assert(importedFs.readFile('local.txt')==='preserve-local','P3 imported copy damaged prior local canonical state');
+    await writeExternalText(importedRaw,'src/main.js','source-v2-outside');
+    assert(importedFs.readFile('src/main.js')==='source-v1','P3 imported copy silently remained linked after import');
+    const importedState=await importedAuthority.inspect();
+    assert(importedState.mode==='imported-copy'&&importedState.externalRead===false&&importedState.externalWrite===false,'P3 imported-copy mode silently changed after detach');
+
+    const readOnlyRaw=await opfsRoot.getDirectoryHandle(p3ReadOnlyDirectory,{create:true});
+    await writeExternalText(readOnlyRaw,'notes.txt','read-only-source');
+    const readOnlyPermission={read:'granted',readwrite:'granted'};
+    const readOnlyAuthority=new ExternalWorkspaceSourceAuthority({
+      mode:ExternalSourceMode.READ_ONLY_SOURCE,
+      handle:new PermissionDirectoryAdapter(readOnlyRaw,readOnlyPermission)
+    });
+    const readOnlyState=await readOnlyAuthority.inspect();
+    assert(readOnlyState.state===ExternalSourceState.READ_ONLY&&readOnlyState.externalWrite===false,'P3 read-only-source silently widened write authority');
+    const readOnlyObserved=await readOnlyAuthority.readFile('notes.txt');
+    assert(readOnlyObserved.data==='read-only-source','P3 read-only-source could not read external bytes');
+    let readOnlyWriteCode=null;
+    try{await readOnlyAuthority.writeFile('notes.txt','must-not-write');}
+    catch(error){readOnlyWriteCode=error?.code??null;}
+    assert(readOnlyWriteCode==='OC_STORAGE_READ_ONLY','P3 read-only-source allowed privileged write');
+    assert(await readExternalText(readOnlyRaw,'notes.txt')==='read-only-source','P3 read-only-source changed external bytes');
+
+    const linkedRaw=await opfsRoot.getDirectoryHandle(p3LinkedDirectory,{create:true});
+    await writeExternalText(linkedRaw,'app.txt','linked-v1');
+    const linkedPermission={read:'granted',readwrite:'granted'};
+    const linkedAdapter=new PermissionDirectoryAdapter(linkedRaw,linkedPermission);
+    const linkedAuthority=new ExternalWorkspaceSourceAuthority({
+      mode:ExternalSourceMode.LINKED_FOLDER,
+      handle:linkedAdapter
+    });
+    const localCanonical=new MemoryVFS();
+    localCanonical.mount({'app.txt':'local-canonical-survives'});
+    const linkedObserved=await linkedAuthority.readFile('app.txt');
+    assert(linkedObserved.data==='linked-v1','P3 linked-folder initial read failed');
+
+    linkedPermission.readwrite='denied';
+    let permissionRevokedCode=null;
+    let permissionRevokedState=null;
+    let localCanonicalUnaffected=null;
+    try{await linkedAuthority.writeFile('app.txt','linked-v2');}
+    catch(error){
+      permissionRevokedCode=error?.code??null;
+      permissionRevokedState=error?.details?.state??null;
+      localCanonicalUnaffected=error?.details?.localCanonicalUnaffected??null;
+    }
+    assert(permissionRevokedCode==='OC_INVALID_STATE','P3 linked-folder write ignored revoked permission');
+    assert(permissionRevokedState==='read-only'&&localCanonicalUnaffected===true,'P3 permission loss boundary drifted');
+    assert(linkedAuthority.mode==='linked-folder','P3 permission loss silently changed linked-folder mode');
+    assert(await readExternalText(linkedRaw,'app.txt')==='linked-v1','P3 permission loss still wrote external bytes');
+    assert(localCanonical.readFile('app.txt')==='local-canonical-survives','P3 permission loss damaged local canonical recovery copy');
+
+    linkedPermission.readwrite='prompt';
+    const permissionNeeded=await linkedAuthority.inspect();
+    assert(permissionNeeded.state==='permission-needed'&&linkedAuthority.mode==='linked-folder','P3 prompt silently changed linked-folder mode');
+
+    linkedPermission.readwrite='granted';
+    await writeExternalText(linkedRaw,'app.txt','outside-edit');
+    let conflictCode=null;
+    let conflictState=null;
+    let conflictActions=[];
+    try{await linkedAuthority.writeFile('app.txt','opencontainer-overwrite');}
+    catch(error){
+      conflictCode=error?.code??null;
+      conflictState=error?.details?.state??null;
+      conflictActions=error?.details?.actions??[];
+    }
+    assert(conflictCode==='OC_STALE_GENERATION'&&conflictState==='external-change-detected','P3 external edit conflict did not block overwrite');
+    assert(conflictActions.includes('compare')&&conflictActions.includes('merge'),'P3 external conflict recovery actions drifted');
+    assert(await readExternalText(linkedRaw,'app.txt')==='outside-edit','P3 external conflict silently overwrote newer external bytes');
+
+    const refreshed=await linkedAuthority.readFile('app.txt');
+    const merged=await linkedAuthority.writeFile('app.txt','merged-version',{expectedRevision:refreshed.revision});
+    assert(merged.permissionRechecked===true&&merged.silentOverwritePrevented===true,'P3 privileged external write did not recheck permission/precondition');
+    assert(await readExternalText(linkedRaw,'app.txt')==='merged-version','P3 reconciled linked write did not publish');
+
+    stage('p3-external-source-boundary-pass',{
+      evidenceScope:'real-chrome-opfs-bytes+file-system-access-compatible-permission-adapter',
+      nativePickerPermissionRevocationExercised:false,
+      importedCopy:{
+        mode:importedReceipt.mode,
+        detached:importedReceipt.detached,
+        externalWrite:importedReceipt.externalWrite,
+        sourceChangedAfterImport:true,
+        localStayedPinned:importedFs.readFile('src/main.js')==='source-v1',
+        silentModeChange:importedReceipt.silentModeChange
+      },
+      readOnlySource:{
+        mode:readOnlyAuthority.mode,
+        state:readOnlyState.state,
+        externalWrite:readOnlyState.externalWrite,
+        writeCode:readOnlyWriteCode,
+        sourceUnchanged:(await readExternalText(readOnlyRaw,'notes.txt'))==='read-only-source'
+      },
+      linkedFolder:{
+        mode:linkedAuthority.mode,
+        permissionRevokedCode,
+        permissionRevokedState,
+        localCanonicalUnaffected,
+        permissionNeededState:permissionNeeded.state,
+        conflictCode,
+        conflictState,
+        conflictActions,
+        reconciledWriteRevision:merged.revision,
+        permissionRechecked:merged.permissionRechecked,
+        finalExternalValue:await readExternalText(linkedRaw,'app.txt')
+      }
+    });
+  }finally{
+    await opfsRoot.removeEntry(p3ImportedDirectory,{recursive:true}).catch(()=>{});
+    await opfsRoot.removeEntry(p3ReadOnlyDirectory,{recursive:true}).catch(()=>{});
+    await opfsRoot.removeEntry(p3LinkedDirectory,{recursive:true}).catch(()=>{});
   }
 
   stage('p3-destructive-lifecycle-start');
