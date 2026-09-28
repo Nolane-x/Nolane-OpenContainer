@@ -268,3 +268,99 @@ test('P3 SDK safe restore APIs fail closed without workspace persistence',async(
   );
   await runtime.terminate();
 });
+
+
+test('P3 SDK recoverable delete preserves tombstone and static restore re-enables boot',async()=>{
+  const root=new FakeDirectoryHandle();
+  const locks=new FakeLockManager();
+  const profile={root,directoryName:'sdk-recoverable-delete',lockManager:locks};
+
+  const runtime=await OpenContainer.boot({workspacePersistence:profile});
+  runtime.mount({'state.txt':'before-delete','unsaved.txt':'must-be-checkpointed'});
+  const late=runtime.fs.beginTransaction().writeFile('late.txt','must-not-slip-through-delete');
+  const deleting=runtime.deleteWorkspaceRecoverably({mutationId:'delete-sdk-1'});
+  assert.throws(
+    ()=>late.commit(),
+    error=>error.code===ErrorCodes.INVALID_STATE&&error.details?.reason==='recoverable-workspace-delete'
+  );
+  const deleted=await deleting;
+  assert.equal(deleted.state,'tombstoned');
+  assert.equal(deleted.recoverable,true);
+  assert.equal(deleted.recoveryPoint.sequence>=1,true);
+  assert.equal(runtime.state,'TERMINATED');
+
+  const status=await OpenContainer.inspectWorkspaceLifecycle(profile);
+  assert.equal(status.state,'tombstoned');
+  assert.equal(status.workspaceExists,true);
+  assert.equal(status.recoverable,true);
+  assert.equal(status.recoverability,'tombstone+checkpoint');
+
+  await assert.rejects(
+    ()=>OpenContainer.boot({workspacePersistence:profile}),
+    error=>{
+      assert.equal(error.code,ErrorCodes.INVALID_STATE);
+      assert.equal(error.details?.workspaceLifecycle,'tombstoned');
+      assert.equal(error.details?.recoverable,true);
+      return true;
+    }
+  );
+
+  const restored=await OpenContainer.restoreDeletedWorkspace(profile,{
+    deleteMutationId:'delete-sdk-1',
+    restoreMutationId:'restore-sdk-1'
+  });
+  assert.equal(restored.state,'active');
+  assert.equal(restored.recoverable,true);
+
+  const reopened=await OpenContainer.boot({workspacePersistence:profile});
+  assert.equal(reopened.fs.readFile('state.txt'),'before-delete');
+  assert.equal(reopened.fs.readFile('unsaved.txt'),'must-be-checkpointed');
+  assert.equal(reopened.fs.exists('late.txt'),false);
+  await reopened.terminate();
+});
+
+test('P3 SDK permanent purge is separate from delete and reports unrecoverable truth',async()=>{
+  const root=new FakeDirectoryHandle();
+  const locks=new FakeLockManager();
+  const profile={root,directoryName:'sdk-permanent-purge',lockManager:locks};
+
+  const runtime=await OpenContainer.boot({workspacePersistence:profile});
+  runtime.mount({'state.txt':'purge-me'});
+  await runtime.deleteWorkspaceRecoverably({mutationId:'delete-sdk-purge'});
+
+  const purged=await OpenContainer.purgeDeletedWorkspace(profile,{
+    deleteMutationId:'delete-sdk-purge',
+    purgeMutationId:'purge-sdk-1',
+    confirmation:{
+      action:'PERMANENT_PURGE',
+      target:'sdk-permanent-purge',
+      recoverability:'none-after-purge'
+    }
+  });
+  assert.equal(purged.state,'purged');
+  assert.equal(purged.actionClass,'D4');
+  assert.equal(purged.recoverable,false);
+  assert.equal(purged.recoverability,'none');
+
+  const status=await OpenContainer.inspectWorkspaceLifecycle(profile);
+  assert.equal(status.state,'purged');
+  assert.equal(status.workspaceExists,false);
+  assert.equal(status.recoverable,false);
+  assert.equal(status.recoverability,'none');
+
+  const duplicate=await OpenContainer.purgeDeletedWorkspace(profile,{
+    deleteMutationId:'delete-sdk-purge',
+    purgeMutationId:'purge-sdk-1',
+    confirmation:{
+      action:'PERMANENT_PURGE',
+      target:'sdk-permanent-purge',
+      recoverability:'none-after-purge'
+    }
+  });
+  assert.equal(duplicate.idempotent,true);
+
+  await assert.rejects(
+    ()=>OpenContainer.boot({workspacePersistence:profile}),
+    error=>error.code===ErrorCodes.INVALID_STATE&&error.details?.workspaceLifecycle==='purged'
+  );
+});

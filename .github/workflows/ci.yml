@@ -152,6 +152,14 @@ jobs:
       - run: npm run p3:corruption:evidence
       - run: npm run p3:low-storage:evidence
       - run: npm run p3:safe-restore:evidence
+      - run: npm run p3:destructive-lifecycle:evidence
+      - name: Archive P3 destructive lifecycle browser receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-p3-destructive-lifecycle-browser-${{ github.sha }}
+          path: .artifacts/p3-destructive-lifecycle/browser-receipt.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Archive P3 safe restore browser receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

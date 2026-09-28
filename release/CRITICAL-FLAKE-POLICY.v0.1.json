@@ -42,10 +42,12 @@
       "tests/p3-corruption-evidence.test.js",
       "tests/storage-cleanup.test.js",
       "tests/p3-low-storage-evidence.test.js",
-      "tests/p3-safe-restore-evidence.test.js"
+      "tests/p3-safe-restore-evidence.test.js",
+      "tests/workspace-lifecycle.test.js",
+      "tests/p3-destructive-lifecycle-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 38
+    "minimumTestFiles": 40
   },
   "browser": {
     "iterations": 2,

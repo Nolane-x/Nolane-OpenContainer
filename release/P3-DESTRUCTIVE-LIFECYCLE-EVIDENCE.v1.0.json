@@ -1,0 +1,52 @@
+{
+  "schema": "opencontainer.p3-destructive-lifecycle-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P3-20",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "requirement": "Run destructive-delete/tombstone/permanent-purge courts with explicit recoverability truth.",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 54,
+  "implementation": {
+    "head": "e89f16bf2a164ea812e2dd8793559816ad5d8757",
+    "ciRunNumber": 529,
+    "ciRunId": 36380578592,
+    "testedCheckoutCommit": "044b8f474973e9e9768b230e72e84e67c131b2ac",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "unitTests": 406,
+    "unitPassed": 406,
+    "unitFailed": 0,
+    "criticalTestFiles": 38,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 190,
+    "contractUnexplainedFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "browserUnexplainedFailures": 0
+  },
+  "dedicatedBrowserVerification": {
+    "artifactId": 10952810664,
+    "schema": "opencontainer.p3-destructive-lifecycle-browser.v1.0",
+    "status": "PASS",
+    "iterations": 2,
+    "fullProductPathPasses": 2,
+    "unexplainedFailures": 0
+  },
+  "invariants": [
+    "Normal workspace delete is D2 recoverable destructive and names an exact current canonical checkpoint recovery point.",
+    "Recoverable delete fences late local VFS mutations and rejects a recovery point that became stale after a newer cross-context publication.",
+    "Tombstoned workspace boot and canonical checkpoint publication are blocked until explicit restoration.",
+    "Lifecycle metadata is SHA-256 integrity-bound; corrupted lifecycle truth fails closed instead of silently reopening deleted state.",
+    "Permanent purge is a separate D4 action requiring target-specific confirmation that recoverability becomes none.",
+    "Permanent purge physically removes workspace storage and leaves only non-content lifecycle mutation truth with recoverable=false.",
+    "Duplicate delete/purge mutation identities are idempotent; different mutation identities cannot silently replace prior destructive intent.",
+    "Purge acknowledgement loss exposes an unknown outcome and authoritative reconciliation determines the terminal purged state before retry."
+  ],
+  "preservedOpenGates": [
+    "P3-07",
+    "P3-09",
+    "P3-17",
+    "P3-18"
+  ],
+  "productionClosed": false
+}

@@ -320,6 +320,10 @@
     "p3-safe-checkpoint-restore": {
       "ref": "CI #509 + dedicated CI #512 / PR #53",
       "note": "P3-15 real-browser restore court: pre-restore recovery point, new-generation rollback publication, local working-generation guard, canonical-sequence CAS, cross-context conflict rejection, quota risk declaration and retained fallback after reopen."
+    },
+    "p3-destructive-lifecycle": {
+      "ref": "CI #529 / PR #54 implementation head e89f16bf2a164ea812e2dd8793559816ad5d8757",
+      "note": "P3-20 real-browser destructive lifecycle court: D2 recoverable delete binds the current canonical checkpoint to an integrity-protected tombstone and fences late local/stale cross-context mutation; D4 permanent purge requires exact irreversible confirmation, physically removes workspace storage, reports no recovery, is mutation-idempotent and reconciles acknowledgement-loss."
     }
   },
   "overrides": [
@@ -1857,6 +1861,14 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p3-safe-checkpoint-restore",
+      "closure_met": true
+    },
+    {
+      "id": "P3-20",
+      "domain": "P3",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p3-destructive-lifecycle",
       "closure_met": true
     }
   ]

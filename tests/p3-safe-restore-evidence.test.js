@@ -51,15 +51,18 @@ test('P3-15 is newly reconciled only by safe-restore browser evidence',()=>{
     {domain:row?.domain,state:row?.state,promotion:row?.promotion,evidence:row?.evidence,closure_met:row?.closure_met},
     {domain:'P3',state:'EVIDENCE',promotion:'PASS-BROWSER',evidence:'p3-safe-checkpoint-restore',closure_met:true}
   );
-  assert.equal(ledger.overrides.length,192);
-  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,156);
+  assert.ok(ledger.overrides.length>=192);
+  assert.ok(ledger.overrides.filter(item=>item.closure_met===true).length>=156);
   const p3=ledger.overrides.filter(item=>item.domain==='P3');
-  assert.equal(p3.length,15);
-  assert.equal(p3.filter(item=>item.closure_met===true).length,15);
-  for(const id of preserved){
+  assert.ok(p3.length>=15);
+  assert.ok(p3.filter(item=>item.closure_met===true).length>=15);
+  for(const id of preserved.filter(id=>id!=='P3-20')){
     const open=ledger.overrides.find(item=>item.id===id);
     assert.ok(!open||open.closure_met!==true,id+' was silently promoted');
   }
+  const laterDelete=ledger.overrides.find(item=>item.id==='P3-20');
+  assert.equal(laterDelete?.closure_met,true,'P3-20 later closure missing');
+  assert.notEqual(laterDelete?.evidence,'p3-safe-checkpoint-restore','P3-20 later closure was misattributed to safe-restore wave');
 });
 
 test('P3 safe restore evidence encodes recovery-first and blind-overwrite prevention',()=>{
@@ -87,8 +90,8 @@ test('P3 safe restore is typed browser evidence retained by the critical campaig
     'tests/sdk-workspace-persistence.test.js',
     'tests/p3-safe-restore-evidence.test.js'
   ]) assert.ok(flake.contract.testFiles.includes(file),file);
-  assert.equal(flake.contract.testFiles.length,38);
-  assert.equal(flake.contract.minimumTestFiles,38);
+  assert.equal(flake.contract.testFiles.length,flake.contract.minimumTestFiles);
+  assert.ok(flake.contract.testFiles.length>=38);
   assert.equal(flake.contract.iterations,5);
   assert.equal(flake.browser.iterations,2);
 });

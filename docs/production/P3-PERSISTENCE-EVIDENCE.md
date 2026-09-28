@@ -218,3 +218,37 @@ CI #509 passed 394/394 unit tests, 37 critical files × 5 = 185 repeated executi
 - P3-20 — destructive delete / tombstone / permanent purge recovery.
 
 `production_closed=false` remains mandatory.
+
+
+## Wave 6 — destructive workspace lifecycle
+
+**Implementation evidence:** CI #529 / PR #54 / `e89f16bf2a164ea812e2dd8793559816ad5d8757`  
+**Dedicated browser artifact:** `10952810664`  
+**Closure:** `P3-20`
+
+Workspace deletion now has explicit persistent lifecycle state rather than being represented as an unqualified VFS remove.
+
+```text
+active
+  -> tombstoned  [D2, recoverable]
+       -> active [explicit restore]
+       -> purging
+            -> purged [D4, unrecoverable]
+```
+
+Recoverable delete acquires a local VFS mutation lease, publishes/verifies the current working state as the canonical recovery checkpoint and writes an integrity-bound tombstone outside the workspace directory. The recovery point must still be the current canonical root; a newer cross-context publication makes the delete stale instead of allowing an old fallback to become the declared recovery point. While tombstoned, both boot and further canonical checkpoint publication fail closed.
+
+Permanent purge is a separate D4 operation. It requires explicit confirmation of the exact workspace target and `none-after-purge` recoverability, removes the workspace OPFS directory, leaves only non-content lifecycle/mutation truth, and reports `recoverable=false`. Repeating the same purge mutation is idempotent. If commit succeeds but acknowledgement is lost, the operation reports an unknown outcome and requires authoritative reconciliation rather than blind retry.
+
+Lifecycle records are SHA-256 integrity-bound. Invalid JSON, invalid shape, missing integrity identity or digest mismatch returns `OC_IMPORT_INVALID` with no silent active-workspace fallback.
+
+CI #529 passed 406/406 unit tests, 38 critical files × 5 = 190 repeated file executions, CodeQL and 2/2 installed-distribution Chrome product paths. Dedicated artifact #10952810664 verifies recoverable delete, late-local-mutation fencing, tombstone boot refusal, restore, D4 purge, duplicate-submit idempotency and acknowledgement-loss reconciliation in both Chrome iterations. Closure CI retains both the lifecycle implementation court and evidence invariant court in a 40-file × 5 repeated campaign.
+
+### Still open after Wave 6
+
+- P3-07 — explicit canonical flush/durability boundary.
+- P3-09 — frozen/background-tab writer failover and stale resume publication.
+- P3-17 — imported-copy / linked-folder / read-only-source semantics.
+- P3-18 — external permission revocation and edit conflict before privileged writes.
+
+`production_closed=false` remains mandatory.

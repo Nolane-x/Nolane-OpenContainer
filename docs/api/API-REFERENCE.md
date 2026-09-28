@@ -25,6 +25,10 @@ Contract version: 0.1.0-alpha.1
 | --- | --- | --- |
 | boot | method | OpenContainer.boot(options?) -> Promise<OpenContainer> |
 | productionProfile | getter | OpenContainer.productionProfile -> OpenContainerProductionProfile |
+| inspectWorkspaceLifecycle | method | OpenContainer.inspectWorkspaceLifecycle(workspacePersistence) -> Promise<WorkspaceLifecycleStatus> |
+| restoreDeletedWorkspace | method | OpenContainer.restoreDeletedWorkspace(workspacePersistence, options) -> Promise<WorkspaceLifecycleReceipt> |
+| purgeDeletedWorkspace | method | OpenContainer.purgeDeletedWorkspace(workspacePersistence, options) -> Promise<WorkspacePurgeReceipt> |
+| reconcileWorkspacePurge | method | OpenContainer.reconcileWorkspacePurge(workspacePersistence, options) -> Promise<WorkspacePurgeStatus> |
 
 ## Instance members
 
@@ -51,6 +55,7 @@ Contract version: 0.1.0-alpha.1
 | prepareWorkspaceRestore | method | runtime.prepareWorkspaceRestore(checkpoint) -> Promise<WorkspaceRestorePlan> |
 | restoreWorkspaceCheckpoint | method | runtime.restoreWorkspaceCheckpoint(plan) -> Promise<WorkspaceRestoreReceipt> |
 | collectWorkspaceGarbage | method | runtime.collectWorkspaceGarbage(options?) -> Promise<GCReceipt> |
+| deleteWorkspaceRecoverably | method | runtime.deleteWorkspaceRecoverably(options) -> Promise<WorkspaceDeleteReceipt> |
 | teardown | method | runtime.teardown() -> Promise<void> |
 | terminate | method | runtime.terminate() -> Promise<void> |
 
