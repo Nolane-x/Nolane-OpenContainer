@@ -8,8 +8,8 @@
 
 - Gates: **304**
 - Domains: **19**
-- Seed-reconciled against implementation evidence: **194**
-- Minimum-closure satisfied: **158**
+- Seed-reconciled against implementation evidence: **197**
+- Minimum-closure satisfied: **161**
 - Production closed: **false**
 
 ## Domain reconciliation state
@@ -19,7 +19,7 @@
 | P0 Product scope & production profile | 12 | 0 | 12 |
 | P1 Browser deployment, origin & lifecycle | 7 | 9 | 16 |
 | P2 Kernel, RPC, process & stream semantics | 6 | 8 | 14 |
-| P3 VFS, OPFS, persistence & data safety | 17 | 3 | 20 |
+| P3 VFS, OPFS, persistence & data safety | 20 | 0 | 20 |
 | P4 Packages, resolver, archive & installer | 6 | 12 | 18 |
 | P5 Network, secrets & preview edge | 18 | 0 | 18 |
 | P6 Toolchain, BCR, Vite & framework integration | 8 | 8 | 16 |
@@ -43,6 +43,11 @@
 - Release trust chain now has reproducible artifact/checksum/SBOM/provenance/inventory evidence, but authenticated attestation, public publication, rollback and license/FTO closure remain open.
 
 ## Newly reconciled in this wave
+
+- **P3-18** now meets declared-profile closure through CI #616 / PR #58 implementation head `0c1a6334cbae8ea3ac4389db76713e20bbccfe96`. A real headful Chrome 153 page invokes `showDirectoryPicker({mode:'readwrite'})`, selects a real Linux directory through the native picker, and receives a real `FileSystemDirectoryHandle` with read/readwrite permission granted.
+- The court mutates the selected file from outside OpenContainer and proves the next privileged write fails `OC_STALE_GENERATION` / `external-change-detected` before overwrite with `silentOverwritePrevented=true`. After explicit revision refresh, the reconciled write succeeds only with `permissionRechecked=true`.
+- Native revocation is then exercised through `FileSystemDirectoryHandle.remove()`: the same selected handle transitions read/readwrite permission from `granted` to `denied`, and a subsequent privileged write fails `OC_INVALID_STATE` with `privilegedWriteBlocked=true` while the independent local canonical recovery state remains unchanged. Dedicated artifact **#10959309888** passed **2/2** native-picker iterations.
+- P3 is now **20/20 minimum-closure satisfied** for the declared Chrome profile. This closes the P3 domain only; `production_closed=false` remains mandatory because other production domains still contain open gates.
 
 - **P3-07** now meets declared-profile closure through CI #586 / PR #57 implementation head `57e7ee4b9733cfbbceff582160a284999124f2ff`. Normal browser canonical payload and manifest writes execute in a dedicated worker through `createSyncAccessHandle({mode:'readwrite'}) → truncate → write → truncate-final → flush → close`; a fresh authority then reopens and verifies the same canonical sequence, digest and complete bytes.
 - Dedicated artifact **#10956533718** passed **2/2** installed-distribution Chrome iterations. CI #586 also passed **427/427** unit tests, **43 critical files × 5 = 215** repeated executions and CodeQL with zero unexplained failures. Final closure CI retains two additional P3-07 invariants, raising the repeated campaign to **45 files × 5 = 225 executions**.
@@ -188,4 +193,4 @@ Every substantive PR should update the JSON ledger only for gate IDs it directly
 
 
 - **P3-09** now meets its declared-profile minimum closure. CI #565 / PR #56 runs a real two-page Chrome court: Writer A publishes WriterEpoch 1, Chrome freezes A with `Page.setWebLifecycleState(frozen)`, Writer B claims WriterEpoch 2 and publishes sequence 2, Chrome resumes A, and A's original authority is fenced with `OC_STALE_GENERATION` before stale publication. Both iterations observe real freeze/resume lifecycle events; a fresh canonical read remains Writer B value `B1` at sequence 2 / WriterEpoch 2. Dedicated artifact #10954814739 retains the machine receipt.
-- **P3-07 is now closed** for the declared Chrome profile through explicit SyncAccessHandle flush/close/fresh-reopen evidence. **P3-18 remains open** because native `showDirectoryPicker()` permission revocation has not yet been exercised.
+- **P3-07 and P3-18 are now both closed** for the declared Chrome profile. P3 therefore has **20/20** reconciled source gates at minimum closure. This does not imply overall production closure; non-P3 release, compatibility, resource, publication and governance gates remain independently authoritative.
