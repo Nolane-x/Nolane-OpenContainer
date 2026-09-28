@@ -213,3 +213,49 @@ test('artifact fetch preserves browser-compatible fetch receiver', async () => {
   });
   assert.equal(receiver, globalThis);
 });
+
+
+test('P4 strict TAR parser rejects truncated header payload and end trailer', async () => {
+  const full = tar([
+    { path: 'package/', type: '5' },
+    { path: 'package/package.json', content: '{"name":"demo","version":"1.0.0"}' },
+    { path: 'package/index.js', content: 'export default 1' }
+  ]);
+
+  await assert.rejects(
+    () => inspectTarArchive(full.subarray(0, 127)),
+    (error) => error.code === ErrorCodes.ARCHIVE_UNSAFE && /Truncated tar header\/trailer/.test(error.message)
+  );
+
+  const payloadEntry = tarEntry('package/payload.bin', '1234567890');
+  await assert.rejects(
+    () => inspectTarArchive(payloadEntry.subarray(0, 512 + 9)),
+    (error) => error.code === ErrorCodes.ARCHIVE_UNSAFE && /Truncated tar entry/.test(error.message)
+  );
+
+  const endOffset = full.byteLength - 1024;
+  await assert.rejects(
+    () => inspectTarArchive(full.subarray(0, endOffset + 512)),
+    (error) => error.code === ErrorCodes.ARCHIVE_UNSAFE && /Truncated tar end-of-archive trailer/.test(error.message)
+  );
+});
+
+test('P4 strict TAR parser rejects nonzero trailing data and special extension records', async () => {
+  const full = tar([{ path: 'package/a.txt', content: 'a' }]);
+  const trailing = new Uint8Array(full.byteLength + 512);
+  trailing.set(full);
+  trailing[full.byteLength] = 1;
+  await assert.rejects(
+    () => inspectTarArchive(trailing),
+    (error) => error.code === ErrorCodes.ARCHIVE_UNSAFE && /Non-zero bytes after tar end-of-archive trailer/.test(error.message)
+  );
+
+  for (const type of ['1', '2', 'x', 'g', 'L', 'K']) {
+    const bytes = tar([{ path: 'package/special', content: '', type }]);
+    await assert.rejects(
+      () => inspectTarArchive(bytes),
+      (error) => error.code === ErrorCodes.ARCHIVE_UNSAFE,
+      'special TAR type '+type+' must remain denied'
+    );
+  }
+});
