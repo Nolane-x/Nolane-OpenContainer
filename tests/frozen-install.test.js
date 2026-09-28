@@ -363,6 +363,11 @@ test('P4 package lifecycle scripts require exact capability grants and receive n
     }),
     error=>error?.code===ErrorCodes.NETWORK_DENIED
   );
+  assert.equal(installer.lastInstallFailed,true);
+  assert.throws(
+    ()=>installer.mountFrozenGraph(),
+    error=>error?.code===ErrorCodes.INVALID_STATE&&/rerun install successfully/.test(error.message)
+  );
 });
 
 test('P4 lifecycle capability grant is invalidated by exact command drift',async()=>{
