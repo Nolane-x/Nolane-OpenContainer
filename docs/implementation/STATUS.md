@@ -751,3 +751,12 @@ PR #53 safe-checkpoint-restore implementation passed CI #509 with 394/394 unit t
 P3-15 is now reconciled and closed for the declared Chrome profile. Restore planning binds working generation + canonical sequence/generation; commit locks local mutation, creates/reuses a pre-restore recovery point, uses canonical-sequence CAS under Web Locks, republishes older checkpoint contents as a new generation, and fails closed on local conflict, cross-context conflict or inability to create the safety point.
 
 P3-07, P3-09, P3-17, P3-18 and P3-20 remain unreconciled/open. The production ledger is now 156/304 minimum-closure satisfied; `production_closed=false`.
+
+
+## P3 persistence/data-safety wave 6
+
+PR #54 implementation head `e89f16bf2a164ea812e2dd8793559816ad5d8757` passed CI #529 with 406/406 unit tests, CodeQL, 38 critical files × 5 = 190 repeated executions and 2/2 installed-distribution Chrome paths. Dedicated destructive-lifecycle artifact #10952810664 passed both browser iterations.
+
+P3-20 is now reconciled and closed for the declared Chrome profile. Normal delete is D2 recoverable destructive: OpenContainer fences late local mutation, verifies the current canonical checkpoint as the recovery root, writes an integrity-bound tombstone and blocks boot/publication until explicit restore. Permanent purge is a separate D4 action requiring target-specific irreversible confirmation; it physically removes workspace storage, reports no remaining recovery, is idempotent by mutation identity and reconciles acknowledgement loss before retry. Corrupt lifecycle metadata fails closed rather than silently reactivating the workspace.
+
+The production ledger is now 157/304 minimum-closure satisfied with 193 reconciliation rows. P3-07, P3-09, P3-17 and P3-18 remain unreconciled/open; `production_closed=false`.
