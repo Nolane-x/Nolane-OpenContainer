@@ -199,8 +199,10 @@ test('OPFS package content reopens verified content and skips network fetch', as
   assert.equal(reopenedStore.hydratedCount, 1);
   assert.equal(reopenedStore.corruptCount, 0);
   assert.equal(reopenedStore.size, 1);
-  const mounted = reopenedInstaller.mountFrozenGraph();
+  const mounted = await reopenedInstaller.mountFrozenGraphPersistent();
   assert.equal(mounted.packageCount, 1);
+  assert.equal(mounted.persistentGraphGeneration,reopenedGraphPublication.generation);
+  assert.equal(mounted.publicationPrecondition,'persistent-graph-generation-cas');
 
   const loader = runtime.packages.createCommonJsLoader({ allowDynamicCode: true });
   assert.deepEqual(loader.require('a', '/workspace/src/app.cjs'), { name: 'a', persisted: true });
@@ -380,17 +382,31 @@ test('SDK package persistence profile binds the default frozen installer store a
 
   const firstRuntime = await OpenContainer.boot({ packagePersistence: profile });
   firstRuntime.packages.compile(lockfile);
+  const firstGraphPublication = await firstRuntime.packages.publishGraph({
+    baseGeneration:firstRuntime.packageGraphStore.current?.generation??0,
+    mutationId:'sdk-package-product-first'
+  });
   const firstInstaller = firstRuntime.packages.createFrozenInstaller();
   assert.equal(firstInstaller.contentStore, firstRuntime.packageContentStore);
+  assert.equal(firstInstaller.graphStore, firstRuntime.packageGraphStore);
   assert.equal(firstRuntime.packageContentStore.crossContextLocking, true);
+  assert.equal(firstRuntime.packageGraphStore.crossContextLocking, true);
+  assert.equal(firstGraphPublication.generation,1);
   const firstReceipt = await firstInstaller.ingestLocation('node_modules/sdk-persisted', bytes);
   assert.equal(firstReceipt.persisted, true);
   await firstRuntime.terminate();
 
   const reopenedRuntime = await OpenContainer.boot({ packagePersistence: profile });
   reopenedRuntime.packages.compile(lockfile);
+  const reopenedGraphPublication = await reopenedRuntime.packages.publishGraph({
+    baseGeneration:reopenedRuntime.packageGraphStore.current?.generation??0,
+    mutationId:'sdk-package-product-reopen'
+  });
   const reopenedInstaller = reopenedRuntime.packages.createFrozenInstaller();
   assert.equal(reopenedInstaller.contentStore, reopenedRuntime.packageContentStore);
+  assert.equal(reopenedInstaller.graphStore, reopenedRuntime.packageGraphStore);
+  assert.equal(reopenedGraphPublication.generation,firstGraphPublication.generation);
+  assert.equal(reopenedGraphPublication.reused,true);
   let networkCalls = 0;
   const reopenedReceipt = await reopenedInstaller.installAll({
     artifactAuthority: {
