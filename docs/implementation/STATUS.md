@@ -818,3 +818,16 @@ P4-04 and P4-11 are now reconciled at RELEASE-READY minimum closure for the decl
 The same court proves failure atomicity under cancellation, real OPFS quota exhaustion and real installer Worker termination. Verified immutable cache objects may remain as recoverable orphans, but incomplete installs do not expose `node_modules`; PackageFS remains unpublished until a complete successful rerun. The install publication barrier is fail-closed from the start of every attempt, including persistent-graph binding and preflight.
 
 The production ledger candidate is now **168/304** minimum-closure satisfied with **201** reconciliation rows. P4 now has **7/18** gates closed; P4-01/02/03/06/07/13/14/15/16/17/18 remain open or partial. `production_closed=false` remains unchanged.
+
+
+## P4 ecosystem resolver and layout wave 3
+
+PR #61 implementation head `54334c52e1a73d992dbd0ea46006016089e9afcd` passed CI #693 with **472/472** contract tests, CodeQL, **57 critical files × 5 = 285** repeated executions with zero unexplained failures, **2/2** installed-distribution Chrome product paths and a dedicated **2/2** P4 ecosystem/layout court (artifact #10974148519).
+
+P4-01, P4-02, P4-03 and P4-06 now meet RELEASE-READY minimum closure for the declared Chrome profile. The exact Node oracle is pinned to `v24.21.0` and covers exports/imports, nested resolution, realpath/symlink and preserveSymlinks behavior without skipped cases. Two byte-pinned package-lock v3 graphs from frozen real repositories execute in Chrome: `vite-react-tiny` compiles to **219 nodes** and `chokidar-watch` to **8 nodes**.
+
+Package graph layout identity is now a production-visible contract derived from physical package-lock locations. It exposes top-level, hoisted-transitive, nested, linked and shallow structure plus maximum node_modules depth and a deterministic layout fingerprint; hoisted and nested forms cannot silently collapse to one identity.
+
+The wider compatibility corpus retains **13 frozen repositories**. CI performs online source/license/lockfile verification and downloads/verifies **9 published npm tarballs**, binding registry URL, exact bytes, SHA-512 integrity, SHA-1 shasum, source commit and license provenance.
+
+The production ledger candidate is now **172/304** minimum-closure satisfied with **204** reconciliation rows. P4 is **11/18** closed. P4-07 and P4-13 through P4-18 remain open; `production_closed=false` remains unchanged.
