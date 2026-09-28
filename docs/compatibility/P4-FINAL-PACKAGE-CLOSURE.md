@@ -12,7 +12,7 @@ Seeded mutation campaigns must never leak raw parser exceptions such as untyped 
 
 Lifecycle scripts are denied by default. `skip` remains explicit and auditable.
 
-Execution requires possession of a `PackageScriptCapability` that grants the exact package location, lifecycle event and exact command string. A changed command does not inherit an old grant. The executor context contains an empty environment and zero secret/network-secret handles. Package installation itself continues to reject ambient secret handles.
+Execution requires possession of a `PackageScriptCapability` that grants the exact frozen package `contentId`, package location, lifecycle event and exact command string. A changed artifact/integrity or changed command does not inherit an old grant. The executor context contains an empty environment and zero secret/network-secret handles. Package installation itself continues to reject ambient secret handles.
 
 This capability is an explicit embedding hook, not host-shell authority and not generic npm lifecycle parity.
 
