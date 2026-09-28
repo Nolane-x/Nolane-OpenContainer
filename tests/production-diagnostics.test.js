@@ -249,8 +249,11 @@ test('support bundle preview lists categories and generation is read-only',async
   assert.equal(bundle.packages.installScripts.policy,'deny-by-default');
   assert.equal(bundle.packages.installScripts.packageCount,1);
   assert.deepEqual(bundle.packages.installScripts.locations,['node_modules/dep']);
+  assert.equal(bundle.packages.analysisScope,'package-provenance-metadata-only');
+  assert.equal(bundle.packages.scaAssessmentPerformed,false);
   assert.equal(bundle.packages.nativeAddonBoundary.policy,'deny-unless-exact-adapter');
-  assert.equal(bundle.packages.nativeAddonBoundary.candidateCount,1);
+  assert.equal(bundle.packages.nativeAddonBoundary.detection,'resolver-exact-.node-target-only');
+  assert.equal(bundle.packages.nativeAddonBoundary.candidatesEnumerated,false);
   assert.match(bundle.packages.layout.fingerprint,/^layout:[0-9a-f]{16}$/);
   assert.equal(bundle.fingerprintBasis.runtimeVersion,'0.1.0-alpha.1');
   assert.equal(bundle.fingerprintBasis.previewEpoch,before.preview);
