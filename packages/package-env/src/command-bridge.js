@@ -27,9 +27,11 @@ export class PackageCommandBridge {
     const bins = this.#packages.graph.bins ?? {};
     const commands = [];
 
-    for (const [command, descriptor] of Object.entries(bins)) {
-      const executable = binPath(descriptor.location, descriptor.path);
+    for (const [command, candidates] of Object.entries(bins)) {
+      assertOc(Array.isArray(candidates)&&candidates.length>0,ErrorCodes.INVALID_PACKAGE_CONFIG,'Package command must retain graph candidates',{command});
       const unregister = this.#process.register(command, async ({ args, cwd, env, stdout, stderr }) => {
+        const descriptor=this.#packages.resolveBin(command,{cwd});
+        const executable = binPath(descriptor.location, descriptor.path);
         const loader = this.#packages.createCommonJsLoader({
           allowDynamicCode: this.#options.allowDynamicCode ?? true,
           evaluator: this.#options.evaluator,
@@ -51,7 +53,13 @@ export class PackageCommandBridge {
         }
       });
       this.#unregister.push(unregister);
-      commands.push(Object.freeze({ command, executable, package: descriptor.package }));
+      commands.push(Object.freeze({
+        command,
+        contextual:true,
+        candidateCount:candidates.length,
+        packages:Object.freeze(candidates.map(item=>item.package)),
+        locations:Object.freeze(candidates.map(item=>item.location))
+      }));
     }
 
     return Object.freeze(commands);
