@@ -175,3 +175,29 @@ test('P4 failed install can recover only after a complete successful rerun on th
   assert.equal(mounted.graphGeneration,runtime.packages.generation);
   assert.equal(mounted.publicationPrecondition,'graph-generation-cas');
 });
+
+
+test('P4 every new install attempt rearms publication barrier before preflight validation',async()=>{
+  const runtime=await OpenContainer.boot();
+  const a=packageTar('a');
+  runtime.packages.compile(lock('a',sri(a)));
+  const installer=runtime.packages.createFrozenInstaller();
+
+  await installer.installAll({
+    artifactAuthority:{
+      async fetchArtifact({url}){return {url,bytes:a,redirects:0};}
+    }
+  });
+  assert.equal(installer.lastInstallFailed,false);
+  assert.equal(installer.mountFrozenGraph().packageCount,1);
+
+  await assert.rejects(
+    ()=>installer.installAll({artifactAuthority:null}),
+    error=>error.code===ErrorCodes.INVALID_ARGUMENT
+  );
+  assert.equal(installer.lastInstallFailed,true);
+  assert.throws(
+    ()=>installer.mountFrozenGraph(),
+    error=>error.code===ErrorCodes.INVALID_STATE&&/cannot publish PackageFS/.test(error.message)
+  );
+});
