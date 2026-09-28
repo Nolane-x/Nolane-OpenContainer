@@ -831,3 +831,18 @@ Package graph layout identity is now a production-visible contract derived from 
 The wider compatibility corpus retains **13 frozen repositories**. CI performs online source/license/lockfile verification and downloads/verifies **9 published npm tarballs**, binding registry URL, exact bytes, SHA-512 integrity, SHA-1 shasum, source commit and license provenance.
 
 The production ledger candidate is now **172/304** minimum-closure satisfied with **204** reconciliation rows. P4 is **11/18** closed. P4-07 and P4-13 through P4-18 remain open; `production_closed=false` remains unchanged.
+
+
+## P4 command diagnostics and native-boundary wave 4
+
+PR #62 implementation head `dd199a16e921770789e8308cae15922bec89a384` passed CI #729 with **485/485** contract tests, CodeQL, **62 critical files × 5 = 310** repeated executions with zero unexplained failures, **2/2** installed-distribution Chrome product paths and a dedicated **2/2** P4 command/diagnostics/native-boundary court (artifact #10979651177).
+
+P4-14, P4-17 and P4-18 now meet RELEASE-READY minimum closure for the declared Chrome profile.
+
+For P4-14, package `.bin` ownership is no longer compiled into a last-writer-wins global descriptor. The package graph retains all command candidates; invocation resolves the nearest candidate from `cwd`/package ancestry, including linked-workspace context, and same-scope ambiguity fails closed with `OC_INVALID_PACKAGE_CONFIG`.
+
+For P4-17, support bundles emit package name/version/location, content/instance identity, lockfile integrity, physical layout identity and install-script metadata. HTTP(S) provenance removes username/password/query/fragment before export and fingerprints only the sanitized URL. Raw workspace/opaque source strings are not fingerprinted into the bundle. The machine surface declares `analysisScope=package-provenance-metadata-only` and `scaAssessmentPerformed=false`; it does not claim SCA, vulnerability, malware, license-compliance, exploitability or package-trust verdicts.
+
+For P4-18, native `.node` execution remains denied by default with `OC_NATIVE_ADDON_UNSUPPORTED`. Generic package/path aliases cannot authorize a fallback. Only an exact `nativeAddonAdapters` mapping from a specific absolute `.node` source to an existing non-`.node` target is accepted; the mapping participates in resolver cache identity and emits an explicit source→target receipt. No host-native execution is introduced. The boundary is documented in both the dedicated P4 compatibility note and the public limitations guide.
+
+The production ledger candidate is now **175/304** minimum-closure satisfied with **206** reconciliation rows. P4 is **14/18** closed. Source gates P4-07, P4-13, P4-15 and P4-16 remain open; `production_closed=false` remains unchanged.

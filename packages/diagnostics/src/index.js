@@ -302,6 +302,40 @@ function safeOutcome(value){
   return Object.freeze(allowed);
 }
 
+function safePackageSource(value,{link=false}={}){
+  if(value===null||value===undefined)return Object.freeze({kind:link?'workspace-link':'absent',fingerprint:null,url:null});
+  const text=String(value);
+  if(link){
+    return Object.freeze({
+      kind:'workspace-link',
+      fingerprint:null,
+      url:null
+    });
+  }
+  try{
+    const url=new URL(text);
+    if(url.protocol==='https:'||url.protocol==='http:'){
+      const redacted=url.username!==''||url.password!==''||url.search!==''||url.hash!=='';
+      url.username='';
+      url.password='';
+      url.search='';
+      url.hash='';
+      const sanitized=url.toString();
+      return Object.freeze({
+        kind:url.protocol.slice(0,-1),
+        fingerprint:diagnosticFingerprint(sanitized),
+        url:sanitized,
+        sensitiveComponentsRemoved:redacted
+      });
+    }
+  }catch{}
+  return Object.freeze({
+    kind:'opaque',
+    fingerprint:null,
+    url:null
+  });
+}
+
 function safePackageIntegrity(value){
   if(value===null||value===undefined)return null;
   const text=String(value);
@@ -317,8 +351,16 @@ function packageIdentity(packages){
     version:node.version,
     location:node.location,
     contentId:node.contentId,
-    integrity:node.integrity??null
+    instanceId:node.instanceId,
+    integrity:node.integrity??null,
+    resolved:node.resolved??null,
+    link:node.link===true,
+    inBundle:node.inBundle===true,
+    hasInstallScript:node.hasInstallScript===true,
+    dev:node.dev===true,
+    optional:node.optional===true
   }));
+  const installScriptPackages=nodes.filter(node=>node.hasInstallScript).map(node=>node.location).sort();
   return Object.freeze({
     compiled:true,
     generation:packages.generation,
@@ -327,11 +369,37 @@ function packageIdentity(packages){
     rootVersion:graph.rootVersion??null,
     nodeCount:nodes.length,
     graphFingerprint:diagnosticFingerprint(nodes),
+    layout:graph.layout?Object.freeze({
+      authority:graph.layout.authority,
+      fingerprint:graph.layout.fingerprint,
+      kinds:Object.freeze([...(graph.layout.kinds??[])]),
+      maxNodeModulesDepth:graph.layout.maxNodeModulesDepth
+    }):null,
+    installScripts:Object.freeze({
+      policy:'deny-by-default',
+      packageCount:installScriptPackages.length,
+      locations:Object.freeze(installScriptPackages)
+    }),
+    analysisScope:'package-provenance-metadata-only',
+    scaAssessmentPerformed:false,
+    nativeAddonBoundary:Object.freeze({
+      policy:'deny-unless-exact-adapter',
+      detection:'resolver-exact-.node-target-only',
+      candidatesEnumerated:false
+    }),
     components:freezeArray(nodes.map((node)=>({
       name:node.name,
       version:node.version,
+      location:node.location,
       contentId:node.contentId,
-      integrity:safePackageIntegrity(node.integrity)
+      instanceId:node.instanceId,
+      integrity:safePackageIntegrity(node.integrity),
+      source:safePackageSource(node.resolved,{link:node.link}),
+      link:node.link,
+      inBundle:node.inBundle,
+      hasInstallScript:node.hasInstallScript,
+      dev:node.dev,
+      optional:node.optional
     })))
   });
 }

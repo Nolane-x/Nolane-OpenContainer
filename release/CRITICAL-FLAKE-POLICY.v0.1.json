@@ -62,10 +62,15 @@
       "tests/p4-layout-identity.test.js",
       "tests/p4-ecosystem-layout-corpus.test.js",
       "tests/p4-ecosystem-layout-source-audit.test.js",
-      "tests/p4-ecosystem-layout-evidence.test.js"
+      "tests/p4-ecosystem-layout-evidence.test.js",
+      "tests/package-command-bridge.test.js",
+      "tests/resolver.test.js",
+      "tests/production-diagnostics.test.js",
+      "tests/p4-command-diagnostics-source-audit.test.js",
+      "tests/p4-command-diagnostics-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 58
+    "minimumTestFiles": 63
   },
   "browser": {
     "iterations": 2,

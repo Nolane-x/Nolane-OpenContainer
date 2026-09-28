@@ -209,3 +209,11 @@ Every substantive PR should update the JSON ledger only for gate IDs it directly
 - Exact Node `v24.21.0` resolver differentials execute without skips for exports/imports, nearest nested node_modules, realpath/symlink and preserveSymlinks semantics. Two frozen real-repository package-lock v3 graphs execute in Chrome (Vite tiny: **219 nodes**; Chokidar: **8 nodes**), with deterministic physical-layout fingerprints that distinguish hoisted, nested, shallow and linked structure.
 - The frozen corpus retains **13 repository pins**; CI online-verifies source/license/lockfile identity and **9 published npm tarballs** against exact URL, bytes, SHA-512 integrity and SHA-1 shasum. Dedicated artifact **#10974148519** passed **2/2** Chrome iterations; CI #693 passed **472/472** tests, **57 critical files × 5 = 285** repeated executions, CodeQL and **2/2** installed-distribution browser paths.
 - P4 remains open as a domain: P4-07 and P4-13/14/15/16/17/18 remain open; `production_closed=false` remains mandatory.
+
+
+- **P4-14 / P4-17 / P4-18** now meet RELEASE-READY minimum closure through PR #62 / CI #729 implementation head `dd199a16e921770789e8308cae15922bec89a384`.
+- P4-14: `.bin` command ownership is graph/context derived. The graph retains all candidates, root/nested/linked-workspace context selects the nearest visible owner, and same-scope ambiguity fails closed instead of using last-writer-wins global state.
+- P4-17: support diagnostics emit package provenance/integrity/script metadata under an explicit metadata-only, non-SCA contract. Credential/query/fragment-bearing source URL components are removed; fingerprints use only sanitized public URLs and raw workspace/opaque source strings are not fingerprinted.
+- P4-18: `.node` resolution denies by default; generic aliases cannot bypass the boundary; only exact explicitly registered `nativeAddonAdapters` mappings to existing non-native files are accepted, with no host-native execution.
+- Dedicated artifact **#10979651177** passed **2/2** Chrome iterations; CI #729 passed **485/485** tests, **62 critical files × 5 = 310** repeated executions, CodeQL and **2/2** installed-distribution browser paths.
+- P4 remains open as a domain: source gates P4-07, P4-13, P4-15 and P4-16 remain open; `production_closed=false` remains mandatory.

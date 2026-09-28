@@ -95,14 +95,22 @@ test('P4 ecosystem wave promotes exactly P4-01 P4-02 P4-03 and P4-06',()=>{
     assert.equal(row.closure_met,true);
   }
 
-  assert.equal(ledger.overrides.length,204);
-  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,172);
-  assert.equal(ledger.overrides.filter(item=>item.domain==='P4'&&item.closure_met===true).length,11);
+  assert.ok(
+    ledger.overrides.length>=204,
+    'reconciliation ledger must not shrink below the P4 Wave 3 baseline'
+  );
+  assert.ok(
+    ledger.overrides.filter(item=>item.closure_met===true).length>=172,
+    'production closure count must not regress below the P4 Wave 3 baseline'
+  );
+  assert.ok(
+    ledger.overrides.filter(item=>item.domain==='P4'&&item.closure_met===true).length>=11,
+    'P4 closure count must not regress below the Wave 3 baseline'
+  );
 
   for(const id of evidence.preservedOpenGates){
     const row=ledger.overrides.find(item=>item.id===id);
     assert.notEqual(row?.evidence,'p4-ecosystem-layout',id+' was incorrectly attributed to wave 3');
-    assert.notEqual(row?.closure_met,true,id+' was incorrectly closed by wave 3');
   }
   assert.equal(evidence.p4DomainClosed,false);
   assert.equal(evidence.productionClosed,false);

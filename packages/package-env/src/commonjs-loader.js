@@ -19,8 +19,9 @@ export class CommonJsLoader {
   #evaluator;
   #allowDynamicCode;
   #globals;
+  #nativeAddonAdapters;
 
-  constructor({ fs, resolver, builtins = {}, globals = {}, evaluator = null, allowDynamicCode = false } = {}) {
+  constructor({ fs, resolver, builtins = {}, globals = {}, evaluator = null, allowDynamicCode = false, nativeAddonAdapters = {} } = {}) {
     assertOc(fs && typeof fs.readFile === 'function', ErrorCodes.INVALID_ARGUMENT, 'CommonJS loader filesystem is required');
     assertOc(resolver && typeof resolver.resolve === 'function', ErrorCodes.INVALID_ARGUMENT, 'CommonJS resolver is required');
     this.#fs = fs;
@@ -29,21 +30,22 @@ export class CommonJsLoader {
     this.#globals = { ...globals };
     this.#evaluator = evaluator;
     this.#allowDynamicCode = !!allowDynamicCode;
+    this.#nativeAddonAdapters = Object.freeze({...nativeAddonAdapters});
   }
 
   require(specifier, issuer = '/workspace/index.cjs') {
-    const resolved = this.#resolver.resolve(specifier, issuer, { mode: 'cjs' });
+    const resolved = this.#resolver.resolve(specifier, issuer, { mode: 'cjs', nativeAddonAdapters: this.#nativeAddonAdapters });
     return this.#loadResolved(resolved, issuer);
   }
 
   resolve(specifier, issuer = '/workspace/index.cjs') {
-    const resolved = this.#resolver.resolve(specifier, issuer, { mode: 'cjs' });
+    const resolved = this.#resolver.resolve(specifier, issuer, { mode: 'cjs', nativeAddonAdapters: this.#nativeAddonAdapters });
     return resolved.kind === 'builtin' ? resolved.specifier : resolved.path;
   }
 
   createRequire(issuer = '/workspace/index.cjs') {
     const require = (specifier) => {
-      const resolved = this.#resolver.resolve(specifier, issuer, { mode: 'cjs' });
+      const resolved = this.#resolver.resolve(specifier, issuer, { mode: 'cjs', nativeAddonAdapters: this.#nativeAddonAdapters });
       return this.#loadResolved(resolved, issuer);
     };
     require.resolve = (specifier) => this.resolve(specifier, issuer);
@@ -96,12 +98,12 @@ export class CommonJsLoader {
 
       const source = this.#fs.readFile(resolved.path).replace(/^#![^\r\n]*(?:\r?\n|$)/, '');
       const localRequire = (specifier) => {
-        const child = this.#resolver.resolve(specifier, resolved.path, { mode: 'cjs' });
+        const child = this.#resolver.resolve(specifier, resolved.path, { mode: 'cjs', nativeAddonAdapters: this.#nativeAddonAdapters });
         if (child.kind === 'file' && !module.children.includes(child.path)) module.children.push(child.path);
         return this.#loadResolved(child, resolved.path);
       };
       localRequire.resolve = (specifier) => {
-        const child = this.#resolver.resolve(specifier, resolved.path, { mode: 'cjs' });
+        const child = this.#resolver.resolve(specifier, resolved.path, { mode: 'cjs', nativeAddonAdapters: this.#nativeAddonAdapters });
         return child.kind === 'builtin' ? child.specifier : child.path;
       };
 
