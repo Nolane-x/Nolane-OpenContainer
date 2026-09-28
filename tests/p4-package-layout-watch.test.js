@@ -17,10 +17,14 @@ test('P4 package layout watcher tracks install remove reinstall with readdir and
       '':{
         name:'layout-cycle',
         version:'1.0.0',
-        dependencies:{a:'1.0.0',ws:'file:packages/ws'}
+        dependencies:{a:'1.0.0',b:'1.0.0',ws:'file:packages/ws'}
       },
       'node_modules/a':{
         name:'a',
+        version:'1.0.0'
+      },
+      'node_modules/b':{
+        name:'b',
         version:'1.0.0'
       },
       'node_modules/ws':{
