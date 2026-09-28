@@ -253,6 +253,7 @@ try{
       assert(result.command?.candidateCount===2,'P4 .bin candidate count drifted',{iteration,result});
       assert(result.ambiguity?.failClosed===true,'P4 .bin ambiguity did not fail closed',{iteration,result});
       assert(result.diagnostics?.leakedSecret===false,'P4 package diagnostics leaked source secret',{iteration,result});
+      assert(result.diagnostics?.sensitiveComponentsRemoved===true,'P4 package diagnostics did not report URL secret removal',{iteration,result});
       assert(result.diagnostics?.analysisScope==='package-provenance-metadata-only','P4 package diagnostics scope drifted',{iteration,result});
       assert(result.diagnostics?.scaAssessmentPerformed===false,'P4 package diagnostics claimed SCA assessment',{iteration,result});
       assert(result.diagnostics?.installScriptPolicy==='deny-by-default','P4 install-script diagnostics policy drifted',{iteration,result});
