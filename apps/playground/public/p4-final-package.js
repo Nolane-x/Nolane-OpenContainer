@@ -190,8 +190,10 @@ async function scriptCourt(){
       }
     }});
     const calls=[];
+    const scriptedNode=runtime.packages.graph.nodes.find(node=>node.location==='node_modules/scripted');
+    assert(scriptedNode?.contentId,'scripted package content identity missing');
     const capability=runtime.packages.createPackageScriptCapability({
-      grants:[{location:'node_modules/scripted',event:'install',command:'node build.cjs'}],
+      grants:[{contentId:scriptedNode.contentId,location:'node_modules/scripted',event:'install',command:'node build.cjs'}],
       async execute(context){
         calls.push(context);
         assert(Object.keys(context.env).length===0,'lifecycle capability received ambient env',{context});
@@ -225,6 +227,7 @@ async function scriptCourt(){
     return Object.freeze({
       executed:receipt.lifecycleScriptsExecuted.length,
       exactGrant:true,
+      contentIdBound:true,
       ambientEnvKeys:0,
       secretHandleCount:0,
       secretHandleInstallRejected:true,
