@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const graph=readFileSync('packages/package-env/src/index.js','utf8');
 const server=readFileSync('apps/playground/server.mjs','utf8');
+const page=readFileSync('apps/playground/public/p4-ecosystem-layout.html','utf8');
 const browserCourt=readFileSync('apps/playground/public/p4-ecosystem-layout.js','utf8');
 const runner=readFileSync('scripts/p4-ecosystem-layout.mjs','utf8');
 const workflow=readFileSync('.github/workflows/ci.yml','utf8');
@@ -31,6 +32,8 @@ test('P4 browser court executes exact frozen real-repository package graphs',()=
     assert.ok(fixture.localPath.startsWith('compat/p4/'));
   }
   assert.match(server,/p4-ecosystem-layout\.html/);
+  assert.match(page,/type="importmap"/);
+  assert.match(page,/"es-module-lexer\/minimal\/js": "\/__deps__\/es-module-lexer-minimal\.js"/);
   assert.match(server,/vite-react-tiny\.package-lock\.json/);
   assert.match(server,/chokidar\.package-lock\.json/);
   assert.match(browserCourt,/vite\.nodes\.length===219/);
