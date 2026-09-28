@@ -506,6 +506,14 @@
       "status": "PASS",
       "ref": "CI #677 / PR #60 implementation head b710d7f2415a72f706ae73c5b0bb12a6d159d615",
       "note": "P4-04/P4-11 declared-profile closure: real Chrome OPFS package-graph publication uses Web Locks + explicit base-generation CAS; exactly one concurrent writer wins, stale persistent PackageFS mount is rejected, and cancellation/quota/worker death never expose half-installed PackageFS. Dedicated 2/2 browser receipt artifact #10970556878."
+    },
+    {
+      "key": "p4-ecosystem-layout",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #693 / PR #61 implementation head 54334c52e1a73d992dbd0ea46006016089e9afcd",
+      "note": "P4-01/P4-02/P4-03/P4-06 declared-profile closure: exact Node v24.21.0 resolver differentials pass without skips; two frozen real repository package-lock graphs (219 + 8 nodes) compile in Chrome; physical hoisted/nested/shallow/linked layout identity is observable and fingerprinted; all 13 frozen repositories verify online and 9 published npm tarballs are byte/digest/source/license bound. Dedicated Chrome court passed 2/2 in artifact #10974148519."
     }
   ]
 }

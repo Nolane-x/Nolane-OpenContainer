@@ -57,10 +57,15 @@
       "tests/opfs-package-graph-store.test.js",
       "tests/p4-publication-atomicity.test.js",
       "tests/p4-publication-atomicity-source-audit.test.js",
-      "tests/p4-publication-atomicity-evidence.test.js"
+      "tests/p4-publication-atomicity-evidence.test.js",
+      "tests/node24-resolver-differential.test.js",
+      "tests/p4-layout-identity.test.js",
+      "tests/p4-ecosystem-layout-corpus.test.js",
+      "tests/p4-ecosystem-layout-source-audit.test.js",
+      "tests/p4-ecosystem-layout-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 53
+    "minimumTestFiles": 58
   },
   "browser": {
     "iterations": 2,
