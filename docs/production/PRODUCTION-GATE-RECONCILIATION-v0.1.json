@@ -336,6 +336,10 @@
     "p3-opfs-durability-boundary": {
       "ref": "CI #586 / PR #57 implementation head 57e7ee4b9733cfbbceff582160a284999124f2ff",
       "note": "P3-07 real Chrome OPFS explicit flush court: payload + manifest both use SyncAccessHandle readwrite/flush/close, then a fresh authority reopens the same canonical sequence/digest/full bytes. Claim is limited to the browser-visible flush/close/reopen boundary."
+    },
+    "p3-native-external-permission": {
+      "ref": "CI #616 / PR #58 implementation head 0c1a6334cbae8ea3ac4389db76713e20bbccfe96",
+      "note": "P3-18 native Chrome File System Access court: real showDirectoryPicker selected handle begins read/readwrite granted; external file mutation is fenced OC_STALE_GENERATION before overwrite; reconciled write rechecks permission; native FileSystemDirectoryHandle.remove transitions permissions to denied; later privileged write fails closed and local canonical recovery state remains intact."
     }
   },
   "overrides": [
@@ -1905,6 +1909,14 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p3-opfs-durability-boundary",
+      "closure_met": true
+    },
+    {
+      "id": "P3-18",
+      "domain": "P3",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p3-native-external-permission",
       "closure_met": true
     }
   ]
