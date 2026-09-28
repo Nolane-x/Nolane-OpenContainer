@@ -450,6 +450,14 @@
       "status": "PASS",
       "ref": "CI #509 + dedicated CI #512 / PR #53",
       "note": "Declared-profile P3-15 closure: restore plan binds working generation + canonical sequence; current work is recovery-checkpointed before rollback; old checkpoint content is republished as a new generation; local/cross-context post-plan work aborts stale; quota without a safety point fails resource-exhausted with explicit risk. 394/394 unit tests, 185/185 repeated critical executions, CodeQL, 2/2 installed Chrome and dedicated safe-restore receipt passed."
+    },
+    {
+      "key": "p3-destructive-lifecycle",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #529 / PR #54 implementation head e89f16bf2a164ea812e2dd8793559816ad5d8757",
+      "note": "Declared-profile P3-20 closure court: D2 recoverable delete freezes local mutation and binds the current canonical checkpoint to an integrity-protected tombstone; boot/publication remain blocked until restore. D4 permanent purge requires exact target-specific irreversible confirmation, physically removes workspace storage, reports recoverable=false, is idempotent by mutation identity, and reconciles acknowledgement-loss to authoritative terminal state. 406/406 unit tests, 190/190 repeated critical executions, CodeQL and 2/2 installed-distribution Chrome paths passed; dedicated destructive-lifecycle browser receipt passed both iterations."
     }
   ]
 }
