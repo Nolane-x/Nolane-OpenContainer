@@ -51,7 +51,8 @@
     "p3:safe-restore:evidence": "node scripts/capture-p3-safe-restore-browser-evidence.mjs",
     "p3:destructive-lifecycle:evidence": "node scripts/capture-p3-destructive-lifecycle-browser-evidence.mjs",
     "p3:external-source:evidence": "node scripts/capture-p3-external-source-browser-evidence.mjs",
-    "p3:freeze-writer:evidence": "node scripts/p3-freeze-writer-failover.mjs"
+    "p3:freeze-writer:evidence": "node scripts/p3-freeze-writer-failover.mjs",
+    "p3:durability:evidence": "node scripts/capture-p3-durability-boundary-browser-evidence.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",
