@@ -94,6 +94,12 @@ export class PackageContentStore {
     } catch {
       throw ocError(ErrorCodes.INVALID_PACKAGE_CONFIG, 'Package artifact has invalid package.json', { contentId });
     }
+    assertOc(
+      packageJson && typeof packageJson === 'object' && !Array.isArray(packageJson),
+      ErrorCodes.INVALID_PACKAGE_CONFIG,
+      'Package artifact package.json must be a JSON object',
+      { contentId }
+    );
 
     if (expectedName && packageJson.name && packageJson.name !== expectedName) {
       throw ocError(ErrorCodes.INVALID_PACKAGE_CONFIG, 'Artifact package name disagrees with lockfile', { expected: expectedName, actual: packageJson.name });
