@@ -277,7 +277,13 @@ test('P3 SDK recoverable delete preserves tombstone and static restore re-enable
 
   const runtime=await OpenContainer.boot({workspacePersistence:profile});
   runtime.mount({'state.txt':'before-delete','unsaved.txt':'must-be-checkpointed'});
-  const deleted=await runtime.deleteWorkspaceRecoverably({mutationId:'delete-sdk-1'});
+  const late=runtime.fs.beginTransaction().writeFile('late.txt','must-not-slip-through-delete');
+  const deleting=runtime.deleteWorkspaceRecoverably({mutationId:'delete-sdk-1'});
+  assert.throws(
+    ()=>late.commit(),
+    error=>error.code===ErrorCodes.INVALID_STATE&&error.details?.reason==='recoverable-workspace-delete'
+  );
+  const deleted=await deleting;
   assert.equal(deleted.state,'tombstoned');
   assert.equal(deleted.recoverable,true);
   assert.equal(deleted.recoveryPoint.sequence>=1,true);
@@ -309,6 +315,7 @@ test('P3 SDK recoverable delete preserves tombstone and static restore re-enable
   const reopened=await OpenContainer.boot({workspacePersistence:profile});
   assert.equal(reopened.fs.readFile('state.txt'),'before-delete');
   assert.equal(reopened.fs.readFile('unsaved.txt'),'must-be-checkpointed');
+  assert.equal(reopened.fs.exists('late.txt'),false);
   await reopened.terminate();
 });
 
