@@ -72,9 +72,7 @@
       "encoding": "base64",
       "payloadBase64": "H4sI",
       "expectedCodes": [
-        "OC_ARCHIVE_UNSAFE",
-        "TypeError",
-        "Error"
+        "OC_ARCHIVE_UNSAFE"
       ]
     },
     {
@@ -83,9 +81,7 @@
       "encoding": "base64",
       "payloadBase64": "H4sIAAAA",
       "expectedCodes": [
-        "OC_ARCHIVE_UNSAFE",
-        "TypeError",
-        "Error"
+        "OC_ARCHIVE_UNSAFE"
       ]
     },
     {
