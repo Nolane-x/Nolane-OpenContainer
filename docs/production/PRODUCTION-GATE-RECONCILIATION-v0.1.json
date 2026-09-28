@@ -344,6 +344,10 @@
     "p4-artifact-boundary": {
       "ref": "CI #633 / PR #59 implementation head 0c9bbed9efd24d6c0700d744b05881515c6c6893",
       "note": "P4-05/08/09/10/12 declared-profile release evidence: real Chrome executes retained lightningcss-wasm@1.33.0 and @rolldown/browser@1.2.9 tarballs through the production streaming parser; hostile truncation/path/link/extension cases fail closed; integrity mutation cannot publish content or change graph generation."
+    },
+    "p4-publication-atomicity": {
+      "ref": "CI #677 / PR #60 implementation head b710d7f2415a72f706ae73c5b0bb12a6d159d615",
+      "note": "P4-04/P4-11 declared-profile release evidence: real Chrome OPFS/Web Locks graph CAS rejects stale-base writers and stale PackageFS publication; cancellation, quota exhaustion and installer-worker death preserve verified immutable orphan content without half-publishing PackageFS."
     }
   },
   "overrides": [
@@ -1937,6 +1941,22 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p4-artifact-boundary",
+      "closure_met": true
+    },
+    {
+      "id": "P4-04",
+      "domain": "P4",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p4-publication-atomicity",
+      "closure_met": true
+    },
+    {
+      "id": "P4-11",
+      "domain": "P4",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p4-publication-atomicity",
       "closure_met": true
     }
   ]
