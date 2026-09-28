@@ -3,7 +3,7 @@ import { BrowserEsmServiceWorkerBridge } from '/packages/package-env/src/browser
 import { OpfsPackageContentStore, PackageArtifactAuthority } from '/packages/package-env/src/index.js';
 import { BrowserGuestWorkerAuthority } from '/packages/process/src/browser-guest-worker.js';
 import { WorkerRpcAuthority } from '/packages/process/src/worker-authority.js';
-import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority } from '/packages/vfs/src/index.js';
+import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority, OpfsWorkspaceLifecycleAuthority } from '/packages/vfs/src/index.js';
 import { BrowserPreviewServiceWorkerBridge, createSandboxedPreviewFrame } from '/packages/preview/src/index.js';
 import { ResourceGovernor } from '/packages/resources/src/index.js';
 import { OpfsReleaseStorageAuthority, OpfsDerivedIndexStore, PersistenceCorruptionClass, corruptionDisposition, StorageCleanupCoordinator, StorageCleanupTier } from '/packages/persistence/src/index.js';
@@ -1712,6 +1712,159 @@ async function run() {
     await opfsRoot.removeEntry(p3SafeRestoreDirectory,{recursive:true}).catch(()=>{});
     await opfsRoot.removeEntry(p3SafeRestoreCrossDirectory,{recursive:true}).catch(()=>{});
     await opfsRoot.removeEntry(p3SafeRestoreQuotaDirectory,{recursive:true}).catch(()=>{});
+  }
+
+  stage('p3-destructive-lifecycle-start');
+  const p3DeleteDirectory='opencontainer-p3-delete-'+crypto.randomUUID();
+  const p3AckLossDirectory=p3DeleteDirectory+'-ack-loss';
+  try{
+    const deleteProfile={
+      root:opfsRoot,
+      directoryName:p3DeleteDirectory,
+      lockManager:navigator.locks
+    };
+    const deleteRuntime=await OpenContainer.boot({workspacePersistence:deleteProfile});
+    deleteRuntime.mount({'state.txt':'before-delete','unsaved.txt':'must-be-checkpointed'});
+    const lateTx=deleteRuntime.fs.beginTransaction().writeFile('late.txt','must-not-slip-through-delete');
+    const deleting=deleteRuntime.deleteWorkspaceRecoverably({mutationId:'browser-delete-1'});
+    let lateMutationCode=null;
+    try{lateTx.commit();}catch(error){lateMutationCode=error?.code??null;}
+    assert(lateMutationCode==='OC_INVALID_STATE','P3 recoverable delete did not fence late local mutation');
+    const deleteReceipt=await deleting;
+    assert(deleteReceipt.state==='tombstoned','P3 recoverable delete did not tombstone workspace');
+    assert(deleteReceipt.actionClass==='D2','P3 recoverable delete action class drifted');
+    assert(deleteReceipt.recoverable===true&&deleteReceipt.recoverability==='tombstone+checkpoint','P3 tombstone recoverability truth drifted');
+
+    const deleteStatus=await OpenContainer.inspectWorkspaceLifecycle(deleteProfile);
+    assert(deleteStatus.state==='tombstoned','P3 lifecycle inspection lost tombstone');
+    assert(deleteStatus.workspaceExists===true&&deleteStatus.recoverable===true,'P3 tombstone did not preserve workspace recovery storage');
+
+    let tombstoneBootCode=null;
+    let tombstoneBootRecoverable=null;
+    try{await OpenContainer.boot({workspacePersistence:deleteProfile});}
+    catch(error){
+      tombstoneBootCode=error?.code??null;
+      tombstoneBootRecoverable=error?.details?.recoverable??null;
+    }
+    assert(tombstoneBootCode==='OC_INVALID_STATE'&&tombstoneBootRecoverable===true,'P3 tombstoned workspace silently reopened');
+
+    const restoreDeleteReceipt=await OpenContainer.restoreDeletedWorkspace(deleteProfile,{
+      deleteMutationId:'browser-delete-1',
+      restoreMutationId:'browser-restore-1'
+    });
+    assert(restoreDeleteReceipt.state==='active'&&restoreDeleteReceipt.recoverable===true,'P3 recoverable tombstone restore failed');
+
+    const restoredDeleteRuntime=await OpenContainer.boot({workspacePersistence:deleteProfile});
+    assert(restoredDeleteRuntime.fs.readFile('state.txt')==='before-delete','P3 restored tombstone lost canonical project state');
+    assert(restoredDeleteRuntime.fs.readFile('unsaved.txt')==='must-be-checkpointed','P3 delete recovery point missed current working state');
+    assert(restoredDeleteRuntime.fs.exists('late.txt')===false,'P3 late local mutation slipped through recoverable delete');
+
+    restoredDeleteRuntime.fs.beginTransaction().writeFile('state.txt','before-permanent-purge').commit();
+    const secondDelete=await restoredDeleteRuntime.deleteWorkspaceRecoverably({mutationId:'browser-delete-2'});
+    assert(secondDelete.state==='tombstoned'&&secondDelete.recoverable===true,'P3 second delete did not remain recoverable before purge');
+
+    const purgeReceipt=await OpenContainer.purgeDeletedWorkspace(deleteProfile,{
+      deleteMutationId:'browser-delete-2',
+      purgeMutationId:'browser-purge-1',
+      confirmation:{
+        action:'PERMANENT_PURGE',
+        target:p3DeleteDirectory,
+        recoverability:'none-after-purge'
+      }
+    });
+    assert(purgeReceipt.state==='purged'&&purgeReceipt.actionClass==='D4','P3 permanent purge action class/state drifted');
+    assert(purgeReceipt.recoverable===false&&purgeReceipt.recoverability==='none','P3 permanent purge falsely claimed recovery');
+
+    const duplicatePurge=await OpenContainer.purgeDeletedWorkspace(deleteProfile,{
+      deleteMutationId:'browser-delete-2',
+      purgeMutationId:'browser-purge-1',
+      confirmation:{
+        action:'PERMANENT_PURGE',
+        target:p3DeleteDirectory,
+        recoverability:'none-after-purge'
+      }
+    });
+    assert(duplicatePurge.idempotent===true,'P3 permanent purge duplicate submit was not idempotent');
+
+    const purgeStatus=await OpenContainer.inspectWorkspaceLifecycle(deleteProfile);
+    assert(purgeStatus.state==='purged'&&purgeStatus.workspaceExists===false,'P3 purge status did not reflect physical workspace removal');
+    assert(purgeStatus.recoverable===false&&purgeStatus.recoverability==='none','P3 purge inspection lied about recoverability');
+
+    let purgedBootCode=null;
+    let purgedBootRecoverable=null;
+    try{await OpenContainer.boot({workspacePersistence:deleteProfile});}
+    catch(error){
+      purgedBootCode=error?.code??null;
+      purgedBootRecoverable=error?.details?.recoverable??null;
+    }
+    assert(purgedBootCode==='OC_INVALID_STATE'&&purgedBootRecoverable===false,'P3 purged workspace silently recreated');
+
+    const ackProfile={
+      root:opfsRoot,
+      directoryName:p3AckLossDirectory,
+      lockManager:navigator.locks
+    };
+    const ackRuntime=await OpenContainer.boot({workspacePersistence:ackProfile});
+    ackRuntime.mount({'state.txt':'ack-loss-project'});
+    await ackRuntime.deleteWorkspaceRecoverably({mutationId:'browser-delete-ack'});
+    const ackLifecycle=await new OpfsWorkspaceLifecycleAuthority(ackProfile).open();
+    let ackLossCode=null;
+    let unknownOutcome=false;
+    try{
+      await ackLifecycle.purge({
+        deleteMutationId:'browser-delete-ack',
+        purgeMutationId:'browser-purge-ack',
+        confirmation:{
+          action:'PERMANENT_PURGE',
+          target:p3AckLossDirectory,
+          recoverability:'none-after-purge'
+        },
+        simulateAckLossAfterCommit:true
+      });
+    }catch(error){
+      ackLossCode=error?.code??null;
+      unknownOutcome=
+        error?.details?.unknownOutcome===true&&
+        error?.details?.mutationCommitted===true&&
+        error?.details?.reconciliationRequired===true;
+    }
+    assert(ackLossCode==='OC_INVALID_STATE'&&unknownOutcome,'P3 purge acknowledgement-loss court did not enter unknown outcome');
+
+    const reconciled=await OpenContainer.reconcileWorkspacePurge(ackProfile,{purgeMutationId:'browser-purge-ack'});
+    assert(reconciled.state==='purged'&&reconciled.terminal===true&&reconciled.mutationFound===true,'P3 purge unknown outcome did not reconcile authoritative terminal state');
+    assert(reconciled.workspaceExists===false&&reconciled.recoverable===false,'P3 purge reconciliation falsely claimed recoverability');
+
+    stage('p3-destructive-lifecycle-pass',{
+      deleteActionClass:deleteReceipt.actionClass,
+      deleteRecoverable:deleteReceipt.recoverable,
+      deleteRecoverability:deleteReceipt.recoverability,
+      deleteRecoverySequence:deleteReceipt.recoveryPoint.sequence,
+      lateMutationCode,
+      tombstoneBootCode,
+      tombstoneBootRecoverable,
+      restoreState:restoreDeleteReceipt.state,
+      restoredState:restoredDeleteRuntime.state,
+      purgeActionClass:purgeReceipt.actionClass,
+      purgeRecoverable:purgeReceipt.recoverable,
+      purgeRecoverability:purgeReceipt.recoverability,
+      duplicatePurgeIdempotent:duplicatePurge.idempotent,
+      purgedBootCode,
+      purgedBootRecoverable,
+      ackLossCode,
+      unknownOutcome,
+      reconciledState:reconciled.state,
+      reconciledTerminal:reconciled.terminal,
+      reconciledWorkspaceExists:reconciled.workspaceExists,
+      reconciledRecoverable:reconciled.recoverable
+    });
+  }finally{
+    await opfsRoot.removeEntry(p3DeleteDirectory,{recursive:true}).catch(()=>{});
+    await opfsRoot.removeEntry(p3AckLossDirectory,{recursive:true}).catch(()=>{});
+    try{
+      const lifecycleRegistry=await opfsRoot.getDirectoryHandle('opencontainer-workspace-lifecycle');
+      await lifecycleRegistry.removeEntry(encodeURIComponent(p3DeleteDirectory)+'.json').catch(()=>{});
+      await lifecycleRegistry.removeEntry(encodeURIComponent(p3AckLossDirectory)+'.json').catch(()=>{});
+    }catch{}
   }
 
   stage('browser-package-install-start');
