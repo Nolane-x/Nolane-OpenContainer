@@ -50,16 +50,28 @@ async function root(){return navigator.storage.getDirectory();}
 async function cleanup(directoryName){
   const r=await root();
   await r.removeEntry(directoryName,{recursive:true}).catch(()=>{});
+  await r.removeEntry(directoryName+'-graph',{recursive:true}).catch(()=>{});
   return true;
 }
 async function bootPersistent(directoryName){
   const r=await root();
   const runtime=await OpenContainer.boot({
     network:{allowLocal:true},
-    packagePersistence:{root:r,directoryName,lockManager:navigator.locks}
+    packagePersistence:{
+      root:r,
+      directoryName,
+      graphDirectoryName:directoryName+'-graph',
+      lockManager:navigator.locks
+    }
   });
   runtime.net.allow({origin:location.origin,methods:['GET'],paths:['/toolchain/vendor/']});
   return runtime;
+}
+async function publishCurrentGraph(runtime,mutationId){
+  return runtime.packages.publishGraph({
+    baseGeneration:runtime.packageGraphStore.current?.generation??0,
+    mutationId
+  });
 }
 function artifactAuthority(runtime){
   return new PackageArtifactAuthority({
@@ -112,11 +124,80 @@ async function cas(){
   }finally{await runtime.terminate();}
 }
 
+async function persistentCas(directoryName){
+  await cleanup(directoryName);
+  const left=await bootPersistent(directoryName);
+  const right=await bootPersistent(directoryName);
+  try{
+    left.packages.compile(syntheticLock('left'));
+    right.packages.compile(syntheticLock('right'));
+    const baseGeneration=0;
+    const race=await Promise.allSettled([
+      left.packages.publishGraph({baseGeneration,mutationId:'p4-cas-left'}),
+      right.packages.publishGraph({baseGeneration,mutationId:'p4-cas-right'})
+    ]);
+    const fulfilled=race
+      .map((result,index)=>({result,index}))
+      .filter(row=>row.result.status==='fulfilled');
+    const rejected=race
+      .map((result,index)=>({result,index}))
+      .filter(row=>row.result.status==='rejected');
+    const winnerIndex=fulfilled[0]?.index??null;
+    const loserIndex=rejected[0]?.index??null;
+    const winner=winnerIndex===0?left:right;
+    const loser=loserIndex===0?left:right;
+    const canonical=await winner.packageGraphStore.read();
+
+    let raceFailure=null;
+    if(rejected[0])raceFailure=serializeError(rejected[0].result.reason);
+
+    const installer=winner.packages.createFrozenInstaller();
+    await installer.installAll({
+      artifactAuthority:{
+        async fetchArtifact(){throw new Error('link-only persistent CAS court must not fetch artifacts');}
+      },
+      concurrency:1
+    });
+
+    const successor=await loser.packages.publishGraph({
+      baseGeneration:canonical.generation,
+      mutationId:'p4-cas-successor'
+    });
+    let mountFailure=null;
+    try{await installer.mountFrozenGraphPersistent();}
+    catch(error){mountFailure=serializeError(error);}
+    const finalCanonical=await loser.packageGraphStore.read();
+
+    return {
+      baseGeneration,
+      fulfilledCount:fulfilled.length,
+      rejectedCount:rejected.length,
+      raceFailure,
+      winnerIndex,
+      loserIndex,
+      winnerName:canonical.graph.nodes[0]?.name??null,
+      winnerGeneration:canonical.generation,
+      successorGeneration:successor.generation,
+      finalGeneration:finalCanonical.generation,
+      finalName:finalCanonical.graph.nodes[0]?.name??null,
+      crossContextLocking:
+        left.packageGraphStore.crossContextLocking===true&&
+        right.packageGraphStore.crossContextLocking===true,
+      mountFailure,
+      nodeModulesNull:winner.packages.nodeModules===null
+    };
+  }finally{
+    await left.terminate();
+    await right.terminate();
+  }
+}
+
 async function cancel(directoryName){
   await cleanup(directoryName);
   const runtime=await bootPersistent(directoryName);
   try{
     runtime.packages.compile(fullLockfile('p4-cancel'));
+    const graphPublication=await publishCurrentGraph(runtime,'p4-cancel');
     const graphGeneration=runtime.packages.generation;
     const installer=runtime.packages.createFrozenInstaller();
     const controller=new AbortController();
@@ -133,7 +214,7 @@ async function cancel(directoryName){
     }catch(error){failure=serializeError(error);}
 
     let mountFailure=null;
-    try{installer.mountFrozenGraph();}
+    try{await installer.mountFrozenGraphPersistent();}
     catch(error){mountFailure=serializeError(error);}
     const afterFailure=await contentState(runtime);
     const nodeModulesAfterFailure=runtime.packages.nodeModules===null;
@@ -142,9 +223,10 @@ async function cancel(directoryName){
       artifactAuthority:artifactAuthority(runtime),
       concurrency:1
     });
-    const mounted=installer.mountFrozenGraph();
+    const mounted=await installer.mountFrozenGraphPersistent();
     return {
       graphGeneration,
+      persistentGraphGeneration:graphPublication.generation,
       failure,
       mountFailure,
       lastInstallFailedAfterFailure:mountFailure?.code==='OC_INVALID_STATE',
@@ -167,15 +249,17 @@ async function quotaAttempt(directoryName){
   const runtime=await bootPersistent(directoryName);
   try{
     runtime.packages.compile(singleLockfile());
+    const graphPublication=await publishCurrentGraph(runtime,'p4-quota-attempt');
     const installer=runtime.packages.createFrozenInstaller();
     let failure=null;
     try{
       await installer.installAll({artifactAuthority:artifactAuthority(runtime),concurrency:1});
     }catch(error){failure=serializeError(error);}
     let mountFailure=null;
-    try{installer.mountFrozenGraph();}
+    try{await installer.mountFrozenGraphPersistent();}
     catch(error){mountFailure=serializeError(error);}
     return {
+      graphPublication,
       failure,
       mountFailure,
       lastInstallFailed:installer.lastInstallFailed,
@@ -189,14 +273,16 @@ async function quotaRecover(directoryName){
   const runtime=await bootPersistent(directoryName);
   try{
     runtime.packages.compile(singleLockfile());
+    const graphPublication=await publishCurrentGraph(runtime,'p4-quota-recover');
     const installer=runtime.packages.createFrozenInstaller();
     const receipt=await installer.installAll({artifactAuthority:artifactAuthority(runtime),concurrency:1});
-    const mounted=installer.mountFrozenGraph();
+    const mounted=await installer.mountFrozenGraphPersistent();
     return {
       requestedContents:receipt.requestedContents,
       fetchedContents:receipt.fetchedContents,
       packageCount:mounted.packageCount,
       graphGeneration:mounted.graphGeneration,
+      persistentGraphGeneration:graphPublication.generation,
       publicationPrecondition:mounted.publicationPrecondition,
       content:await contentState(runtime)
     };
@@ -248,6 +334,7 @@ async function inspectWorkerDeath(directoryName){
   const runtime=await bootPersistent(directoryName);
   try{
     runtime.packages.compile(fullLockfile('p4-worker-recovery'));
+    const graphPublication=await publishCurrentGraph(runtime,'p4-worker-recovery');
     const hydrate=[];
     for(const node of runtime.packages.graph.nodes){
       hydrate.push({
@@ -262,7 +349,7 @@ async function inspectWorkerDeath(directoryName){
     }
     const installer=runtime.packages.createFrozenInstaller();
     let mountFailure=null;
-    try{installer.mountFrozenGraph();}
+    try{await installer.mountFrozenGraphPersistent();}
     catch(error){mountFailure=serializeError(error);}
     const beforeRecovery={
       hydrate,
@@ -271,8 +358,9 @@ async function inspectWorkerDeath(directoryName){
       mountFailure
     };
     const receipt=await installer.installAll({artifactAuthority:artifactAuthority(runtime),concurrency:1});
-    const mounted=installer.mountFrozenGraph();
+    const mounted=await installer.mountFrozenGraphPersistent();
     return {
+      persistentGraphGeneration:graphPublication.generation,
       beforeRecovery,
       recovery:{
         requestedContents:receipt.requestedContents,
@@ -286,7 +374,7 @@ async function inspectWorkerDeath(directoryName){
 }
 
 globalThis.__p4AtomicityCourt=Object.freeze({
-  cas,cancel,quotaAttempt,quotaRecover,startWorker,killWorker,inspectWorkerDeath,cleanup
+  cas,persistentCas,cancel,quotaAttempt,quotaRecover,startWorker,killWorker,inspectWorkerDeath,cleanup
 });
 document.body.dataset.ready='true';
 document.getElementById('result').textContent='ready';
