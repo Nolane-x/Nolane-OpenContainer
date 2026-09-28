@@ -24,6 +24,7 @@ test('P4-07 retained fuzz corpus and typed parser failures remain production-bou
 
 test('P4-13 lifecycle scripts require an exact separate capability with no ambient secret handles',()=>{
   assert.match(install,/export class PackageScriptCapability/);
+  assert.match(graph,/createPackageScriptCapability\(options=\{\}\)/);
   assert.match(install,/scriptGrantKey\(\{location,event,command\}\)/);
   assert.match(install,/lifecycleScripts === 'authorize'|lifecycleScripts==='authorize'/);
   assert.match(install,/Package lifecycle script lacks an exact capability grant/);
