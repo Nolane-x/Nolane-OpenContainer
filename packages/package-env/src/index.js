@@ -17,6 +17,54 @@ function stableId(prefix,value){
 }
 function packageNameFromPath(path){const marker='node_modules/';const index=path.lastIndexOf(marker);return index>=0?path.slice(index+marker.length):path;}
 function frozenRecord(value={}){return Object.freeze({...value});}
+function packageLocationDepth(location){
+  return String(location).split('/node_modules/').length-1+(String(location).startsWith('node_modules/')?1:0);
+}
+function deriveLayoutIdentity(nodes,root={}){
+  const directNames=new Set(Object.keys({
+    ...(root.dependencies??{}),
+    ...(root.devDependencies??{}),
+    ...(root.optionalDependencies??{})
+  }));
+  const topLevel=[];
+  const hoisted=[];
+  const nested=[];
+  const linked=[];
+  let maxDepth=0;
+  for(const node of nodes){
+    const depth=packageLocationDepth(node.location);
+    maxDepth=Math.max(maxDepth,depth);
+    const isTopLevel=depth===1;
+    if(isTopLevel)topLevel.push(node.location);
+    else nested.push(node.location);
+    if(isTopLevel&&!directNames.has(node.name))hoisted.push(node.location);
+    if(node.link)linked.push(node.location);
+  }
+  const structuralRows=nodes.map(node=>[
+    node.location,node.name,node.version,node.link===true?'link':'package'
+  ].join('|')).sort();
+  const kinds=[];
+  if(topLevel.length)kinds.push('top-level');
+  if(hoisted.length)kinds.push('hoisted-transitive');
+  if(nested.length)kinds.push('nested');
+  if(linked.length)kinds.push('linked');
+  if(nodes.length>0&&nested.length===0)kinds.push('shallow');
+  return Object.freeze({
+    authority:'package-lock-physical-locations',
+    kinds:Object.freeze(kinds),
+    topLevelCount:topLevel.length,
+    hoistedTransitiveCount:hoisted.length,
+    nestedCount:nested.length,
+    linkedCount:linked.length,
+    maxNodeModulesDepth:maxDepth,
+    topLevelLocations:Object.freeze(topLevel.sort()),
+    hoistedTransitiveLocations:Object.freeze(hoisted.sort()),
+    nestedLocations:Object.freeze(nested.sort()),
+    linkedLocations:Object.freeze(linked.sort()),
+    fingerprint:stableId('layout',structuralRows.join('\n'))
+  });
+}
+
 function dependencyLocation(nodesByLocation,issuerLocation,name){
   let current=issuerLocation;
   while(true){
@@ -122,11 +170,13 @@ export class PackageGraphAuthority {
     }
     nodes.sort((a,b)=>a.location.localeCompare(b.location));
     const root=doc.packages?.['']??{};
+    const layout=deriveLayoutIdentity(nodes,root);
     this.#graph=Object.freeze({
       version:1,
       lockfileVersion:doc.lockfileVersion,
       nodes:Object.freeze(nodes),
       bins:Object.freeze(bins),
+      layout,
       rootName:doc.name??root.name,
       rootVersion:doc.version??root.version,
       rootDependencies:frozenRecord(root.dependencies),
