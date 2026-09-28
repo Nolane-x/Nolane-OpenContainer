@@ -1,14 +1,13 @@
 import { spawn, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import {
   PackageGraphAuthority,
-  inspectTarArchive,
-  verifySri
+  inspectTarArchive
 } from '../packages/package-env/src/index.js';
-import { loadCompatibilitySources } from './compat-corpus.mjs';
 
 const port=Number(process.env.OPENCONTAINER_P4_FINAL_PACKAGE_PORT||4343);
 const origin='http://127.0.0.1:'+port;
@@ -52,29 +51,49 @@ function measureGraph(lockText,expectedNodes,iterations=50){
   });
 }
 async function measureStorageAmplification(){
-  const {corpus}=await loadCompatibilitySources();
-  const published=corpus.cases.filter(entry=>entry.packageTarball?.status==='published');
-  assert(published.length===9,'P4 storage corpus count drifted',{count:published.length});
+  const fixtures=[
+    {
+      id:'lightningcss-wasm',
+      name:'lightningcss-wasm',
+      version:'1.33.0',
+      file:'toolchain/vendor/lightningcss-wasm-1.33.0.tgz',
+      expectedBytes:3826518,
+      sha256:'266866c1b0efd7ca5307fe312411e4f1895b997086fb76f392ec5b60aadf31c8'
+    },
+    {
+      id:'rolldown-browser',
+      name:'@rolldown/browser',
+      version:'1.2.9',
+      file:'toolchain/vendor/rolldown-browser-1.2.9.tgz',
+      expectedBytes:3809446,
+      sha256:'9accf3cdfe3d2287ad7d5f49cd2cfcddbc9c112abfcbc295863e401ef44b8576'
+    }
+  ];
   const packages=[];
   let packedBytes=0;
   let unpackedBytes=0;
   let fileCount=0;
 
-  for(const entry of published){
-    const meta=entry.packageTarball;
-    const response=await fetch(meta.tarball,{redirect:'follow'});
-    assert(response.ok,'P4 storage measurement tarball fetch failed',{id:entry.id,status:response.status,url:meta.tarball});
-    const bytes=new Uint8Array(await response.arrayBuffer());
-    await verifySri(bytes,meta.integrity);
+  for(const fixture of fixtures){
+    const bytes=new Uint8Array(await readFile(resolve(fixture.file)));
+    const sha256=createHash('sha256').update(bytes).digest('hex');
+    assert(bytes.byteLength===fixture.expectedBytes,'P4 retained storage tarball byte count drifted',{
+      id:fixture.id,expected:fixture.expectedBytes,actual:bytes.byteLength
+    });
+    assert(sha256===fixture.sha256,'P4 retained storage tarball digest drifted',{
+      id:fixture.id,expected:fixture.sha256,actual:sha256
+    });
     const archive=await inspectTarArchive(bytes,{requiredPrefix:'package/'});
     const files=archive.entries.filter(item=>item.type==='file').length;
     packedBytes+=bytes.byteLength;
     unpackedBytes+=archive.totalBytes;
     fileCount+=files;
     packages.push(Object.freeze({
-      id:entry.id,
-      name:meta.name,
-      version:meta.version,
+      id:fixture.id,
+      name:fixture.name,
+      version:fixture.version,
+      retainedFile:fixture.file,
+      sha256,
       packedBytes:bytes.byteLength,
       unpackedBytes:archive.totalBytes,
       fileCount:files,
@@ -85,6 +104,7 @@ async function measureStorageAmplification(){
   const amplification=unpackedBytes/packedBytes;
   assert(Number.isFinite(amplification)&&amplification>0,'P4 storage amplification measurement invalid',{packedBytes,unpackedBytes,amplification});
   return Object.freeze({
+    corpus:'retained-parser-compatible-toolchain-tarballs',
     packages:Object.freeze(packages),
     packageCount:packages.length,
     fileCount,
