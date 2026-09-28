@@ -14,6 +14,8 @@ const boundary=readFileSync('docs/compatibility/P4-FINAL-PACKAGE-CLOSURE.md','ut
 const currentBrowserAcceptance=readFileSync('apps/playground/public/browser-acceptance.js','utf8');
 const artifactCapture=readFileSync('scripts/capture-p4-artifact-boundary-browser-evidence.mjs','utf8');
 const historicalArtifactEvidence=JSON.parse(readFileSync('release/P4-ARTIFACT-BOUNDARY-EVIDENCE.v1.0.json','utf8'));
+const limitations=readFileSync('docs/guides/LIMITATIONS.md','utf8');
+const repositoryCheck=readFileSync('scripts/check.mjs','utf8');
 
 test('P4-07 retained fuzz corpus and typed parser failures remain production-bound',()=>{
   assert.equal(fuzzCorpus.schema,'opencontainer.p4-parser-fuzz-corpus.v1.0');
@@ -40,6 +42,8 @@ test('P4-13 lifecycle scripts require an exact separate capability with no ambie
   assert.match(install,/Package installation does not accept network secret handles/);
   assert.match(install,/this\.#lastInstallFailed = true;[\s\S]*Package installation does not accept network secret handles/);
   assert.match(boundary,/not host-shell authority/);
+  assert.match(limitations,/PackageScriptCapability/);
+  assert.match(limitations,/not a global `allowScripts` switch or host-shell authority/);
 });
 
 test('P4-15 package layout watcher is dedicated and does not claim generic fs.watch parity',()=>{
@@ -80,4 +84,5 @@ test('final P4 browser court is retained in CI and covers exactly the four remai
   assert.match(runner,/OPENCONTAINER_P4_FINAL_PACKAGE_ITERATIONS\|\|2/);
   assert.match(workflow,/p4-final-package:/);
   assert.match(workflow,/npm run p4:final-package:evidence/);
+  assert.match(repositoryCheck,/P4-FINAL-PACKAGE-CLOSURE\.md/);
 });
