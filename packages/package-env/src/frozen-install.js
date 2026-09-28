@@ -173,10 +173,11 @@ export class FrozenInstallAuthority {
       'Package installation does not accept network secret handles in the promoted profile'
     );
     const graph = this.#bindGraph();
-    await this.#bindPersistentGraph();
-    // Publication is fail-closed for the entire attempt, including preflight,
-    // hydration and policy validation. Only a complete successful rerun clears it.
+    // Publication is fail-closed from the first moment of a new attempt,
+    // including persistent-graph binding, preflight, hydration and policy
+    // validation. Only a complete successful rerun clears it.
     this.#lastInstallFailed = true;
+    await this.#bindPersistentGraph();
     assertOc(artifactAuthority && typeof artifactAuthority.fetchArtifact === 'function', ErrorCodes.INVALID_ARGUMENT, 'PackageArtifactAuthority is required');
 
     const selected = locations ? new Set(locations) : null;
