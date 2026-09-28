@@ -117,10 +117,14 @@ export async function inspectTarArchive(input, {
   const seenPaths = new Set();
   let offset = 0;
   let totalBytes = 0;
+  let endMarkerOffset = null;
 
   while (offset + 512 <= bytes.length) {
     const header = bytes.subarray(offset, offset + 512);
-    if (header.every((byte) => byte === 0)) break;
+    if (header.every((byte) => byte === 0)) {
+      endMarkerOffset = offset;
+      break;
+    }
 
     const storedChecksum = parseOctal(readNullTerminated(bytes, offset + 148, 8), 'checksum');
     if (storedChecksum !== headerChecksum(bytes, offset)) {
@@ -170,6 +174,35 @@ export async function inspectTarArchive(input, {
     }));
 
     offset = dataStart + Math.ceil(size / 512) * 512;
+  }
+
+  if (endMarkerOffset === null) {
+    throw ocError(
+      ErrorCodes.ARCHIVE_UNSAFE,
+      offset < bytes.length ? 'Truncated tar header/trailer' : 'Tar end-of-archive trailer is missing',
+      { offset, bytes: bytes.length }
+    );
+  }
+
+  if (endMarkerOffset + 1024 > bytes.length) {
+    throw ocError(ErrorCodes.ARCHIVE_UNSAFE, 'Truncated tar end-of-archive trailer', {
+      offset: endMarkerOffset,
+      bytes: bytes.length
+    });
+  }
+
+  const secondEndBlock = bytes.subarray(endMarkerOffset + 512, endMarkerOffset + 1024);
+  if (!secondEndBlock.every((byte) => byte === 0)) {
+    throw ocError(ErrorCodes.ARCHIVE_UNSAFE, 'Tar end-of-archive trailer requires two zero blocks', {
+      offset: endMarkerOffset
+    });
+  }
+
+  const trailing = bytes.subarray(endMarkerOffset + 1024);
+  if (!trailing.every((byte) => byte === 0)) {
+    throw ocError(ErrorCodes.ARCHIVE_UNSAFE, 'Non-zero bytes after tar end-of-archive trailer', {
+      offset: endMarkerOffset + 1024
+    });
   }
 
   return Object.freeze({ entries: Object.freeze(entries), totalBytes });
