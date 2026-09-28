@@ -253,7 +253,10 @@ try{
       assert(result.command?.candidateCount===2,'P4 .bin candidate count drifted',{iteration,result});
       assert(result.ambiguity?.failClosed===true,'P4 .bin ambiguity did not fail closed',{iteration,result});
       assert(result.diagnostics?.leakedSecret===false,'P4 package diagnostics leaked source secret',{iteration,result});
+      assert(result.diagnostics?.analysisScope==='package-provenance-metadata-only','P4 package diagnostics scope drifted',{iteration,result});
+      assert(result.diagnostics?.scaAssessmentPerformed===false,'P4 package diagnostics claimed SCA assessment',{iteration,result});
       assert(result.diagnostics?.installScriptPolicy==='deny-by-default','P4 install-script diagnostics policy drifted',{iteration,result});
+      assert(result.diagnostics?.nativeAddonDetection==='resolver-exact-.node-target-only','P4 native-addon diagnostics detection scope drifted',{iteration,result});
       assert(result.nativeAddon?.genericAliasFailureCode==='OC_NATIVE_ADDON_UNSUPPORTED','P4 generic alias bypassed native-addon boundary',{iteration,result});
       assert(result.nativeAddon?.explicit===true,'P4 explicit native-addon adapter receipt missing',{iteration,result});
       assert(result.nativeAddon?.hostNativeExecution===false,'P4 native-addon court reached host-native execution',{iteration,result});
@@ -278,6 +281,8 @@ try{
     sameScopeBinAmbiguityFailClosed:true,
     lastWriterWinsPrevented:true,
     privacySafePackageProvenance:true,
+    packageDiagnosticsMetadataOnly:true,
+    scaAssessmentPerformed:false,
     installScriptMetadata:true,
     genericAliasNativeAddonBypassPrevented:true,
     exactNativeAddonAdapterOnly:true,
