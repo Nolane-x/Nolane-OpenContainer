@@ -73,6 +73,7 @@ function connectCdp(webSocketUrl){
   return new Promise((resolvePromise,reject)=>{
     const socket=new WebSocket(webSocketUrl);
     const pending=new Map();
+    const listeners=new Map();
     let nextId=0;
     socket.addEventListener('open',()=>resolvePromise({
       async command(method,params={}){
@@ -81,11 +82,21 @@ function connectCdp(webSocketUrl){
         socket.send(JSON.stringify({id,method,params}));
         return response;
       },
+      on(method,listener){
+        if(!listeners.has(method))listeners.set(method,new Set());
+        listeners.get(method).add(listener);
+        return ()=>listeners.get(method)?.delete(listener);
+      },
       close(){socket.close();}
     }));
     socket.addEventListener('message',event=>{
       const message=JSON.parse(String(event.data));
-      if(!message.id)return;
+      if(!message.id){
+        for(const listener of listeners.get(message.method)??[]){
+          try{listener(message.params??{});}catch{}
+        }
+        return;
+      }
       const waiter=pending.get(message.id);
       if(!waiter)return;
       pending.delete(message.id);
@@ -249,10 +260,58 @@ try{
   for(let iteration=1;iteration<=iterations;iteration++){
     const target=await newTarget(debugPort,origin+'/p4-ecosystem-layout.html?iteration='+iteration);
     const cdp=await connectCdp(target.webSocketDebuggerUrl);
+    const diagnostics={
+      exceptions:[],
+      console:[],
+      failedRequests:[],
+      errorResponses:[]
+    };
     try{
+      cdp.on('Runtime.exceptionThrown',params=>{
+        diagnostics.exceptions.push({
+          text:params.exceptionDetails?.text??null,
+          description:params.exceptionDetails?.exception?.description??null,
+          url:params.exceptionDetails?.url??null,
+          lineNumber:params.exceptionDetails?.lineNumber??null,
+          columnNumber:params.exceptionDetails?.columnNumber??null
+        });
+      });
+      cdp.on('Runtime.consoleAPICalled',params=>{
+        diagnostics.console.push({
+          type:params.type,
+          args:(params.args??[]).map(arg=>arg.value??arg.description??arg.type)
+        });
+      });
+      cdp.on('Network.loadingFailed',params=>{
+        diagnostics.failedRequests.push({
+          requestId:params.requestId,
+          errorText:params.errorText,
+          blockedReason:params.blockedReason??null,
+          corsErrorStatus:params.corsErrorStatus??null
+        });
+      });
+      cdp.on('Network.responseReceived',params=>{
+        const status=params.response?.status??0;
+        if(status>=400){
+          diagnostics.errorResponses.push({
+            url:params.response?.url??null,
+            status,
+            statusText:params.response?.statusText??null,
+            mimeType:params.response?.mimeType??null
+          });
+        }
+      });
       await cdp.command('Runtime.enable');
       await cdp.command('Page.enable');
-      const ready=await waitForCourt(cdp);
+      await cdp.command('Network.enable');
+      let ready;
+      try{
+        ready=await waitForCourt(cdp);
+      }catch(error){
+        error.details={...(error.details??{}),iteration,diagnostics};
+        console.error('P4 browser bootstrap diagnostics '+JSON.stringify(diagnostics,null,2));
+        throw error;
+      }
       assert(ready.isolated===true,'P4 ecosystem court lost cross-origin isolation',{iteration,ready});
       const result=await evaluate(cdp,'globalThis.__p4EcosystemLayoutCourt.run()');
       assert(result?.status==='PASS','P4 browser ecosystem layout court did not pass',{iteration,result});
