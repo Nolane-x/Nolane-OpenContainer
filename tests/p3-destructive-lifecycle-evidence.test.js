@@ -54,7 +54,7 @@ test('P3-20 is newly reconciled only by destructive lifecycle browser evidence',
   const p3=ledger.overrides.filter(item=>item.domain==='P3');
   assert.ok(p3.length>=16);
   assert.ok(p3.filter(item=>item.closure_met===true).length>=16);
-  for(const id of preserved.filter(id=>!['P3-07','P3-09','P3-17'].includes(id))){
+  for(const id of preserved.filter(id=>!['P3-07','P3-09','P3-17','P3-18'].includes(id))){
     const open=ledger.overrides.find(item=>item.id===id);
     assert.ok(!open||open.closure_met!==true,id+' was silently promoted');
   }
@@ -68,6 +68,10 @@ test('P3-20 is newly reconciled only by destructive lifecycle browser evidence',
   const laterExternal=ledger.overrides.find(item=>item.id==='P3-17');
   assert.equal(laterExternal?.closure_met,true,'P3-17 later closure missing');
   assert.notEqual(laterExternal?.evidence,'p3-destructive-lifecycle','P3-17 later closure was misattributed to destructive-lifecycle wave');
+  const laterNative=ledger.overrides.find(item=>item.id==='P3-18');
+  assert.equal(laterNative?.closure_met,true,'P3-18 later native closure missing');
+  assert.equal(laterNative?.evidence,'p3-native-external-permission','P3-18 later closure evidence drifted');
+  assert.notEqual(laterNative?.evidence,'p3-destructive-lifecycle','P3-18 later closure was misattributed to destructive-lifecycle wave');
 });
 
 test('P3 destructive lifecycle evidence preserves explicit recoverability truth',()=>{

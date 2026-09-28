@@ -398,3 +398,58 @@ Node/fake-OPFS courts use the async writable fallback and explicitly record `exp
 - P3-18 — native `showDirectoryPicker()` permission revocation after real user selection, plus the already-implemented external-edit conflict boundary on that selected handle.
 
 P3 now has 19/20 gates reconciled and closed for the declared Chrome profile. `production_closed=false` remains mandatory because P3-18 and non-P3 production obligations remain open.
+
+
+## Wave 10 — native external permission revocation
+
+**Implementation evidence:** CI #616 / PR #58 / `0c1a6334cbae8ea3ac4389db76713e20bbccfe96`  
+**Tested checkout:** `7dd1273022d5e7244efce1665dc3c22efb0d583b`  
+**Dedicated native artifact:** `10959309888`  
+**Closure:** `P3-18`
+
+P3-18 is executed against a real user-selected File System Access handle rather than the Wave-7 permission adapter. The declared-profile court launches headful Google Chrome 153 under Xvfb/Openbox, invokes:
+
+```text
+showDirectoryPicker({ mode: 'readwrite' })
+```
+
+and selects a real Linux directory through the native folder picker. Both independent iterations receive a real `FileSystemDirectoryHandle` with:
+
+```text
+read      = granted
+readwrite = granted
+```
+
+The court then proves external-edit conflict fencing on the selected file:
+
+```text
+OpenContainer reads outside-v1 + revision
+external process writes outside-v2
+OpenContainer privileged write
+→ OC_STALE_GENERATION
+→ external-change-detected
+→ silentOverwritePrevented=true
+```
+
+After explicit revision refresh, the reconciled write succeeds as `merged-native` only after `permissionRechecked=true`, and the new value is visible in the selected OS file.
+
+Native revocation is then exercised through the selected handle itself:
+
+```text
+FileSystemDirectoryHandle.remove()
+read/readwrite: granted → denied
+subsequent privileged write
+→ OC_INVALID_STATE
+→ privilegedWriteBlocked=true
+→ localCanonicalUnaffected=true
+```
+
+The independent local canonical recovery value remains `local-canonical-survives` after external authority is lost.
+
+CI #616 passed 431/431 unit tests, 45 critical files × 5 = 225 repeated executions, CodeQL, 2/2 installed-distribution browser product paths, and 2/2 native-picker permission iterations. Closure CI additionally retains two P3-18 source/evidence invariants in the repeated critical campaign.
+
+### P3 domain result
+
+All **20/20 P3 source gates** now meet their declared minimum closure for the Chrome 153 / Ubuntu 24.04 x64 profile.
+
+This is a P3 domain closure, **not** a declaration that OpenContainer is production-complete. `production_closed=false` remains mandatory while any non-P3 production gate is open.

@@ -59,11 +59,11 @@ test('P3 corruption closure changes only the intended production gate',()=>{
   const p3=ledger.overrides.filter(item=>item.domain==='P3');
   assert.ok(p3.length>=14);
   assert.ok(p3.filter(item=>item.closure_met===true).length>=14);
-  for(const id of evidence.preservedOpenGates.filter(id=>!['P3-07','P3-09','P3-14','P3-15','P3-17','P3-20'].includes(id))){
+  for(const id of evidence.preservedOpenGates.filter(id=>!['P3-07','P3-09','P3-14','P3-15','P3-17','P3-18','P3-20'].includes(id))){
     const row=ledger.overrides.find(item=>item.id===id);
     assert.ok(!row||row.closure_met!==true,id+' was silently promoted');
   }
-  for(const id of ['P3-07','P3-09','P3-14','P3-15','P3-17','P3-20']){
+  for(const id of ['P3-07','P3-09','P3-14','P3-15','P3-17','P3-18','P3-20']){
     const later=ledger.overrides.find(item=>item.id===id);
     assert.equal(later?.closure_met,true,id+' later closure missing');
     assert.notEqual(later?.evidence,'p3-corruption-classification',id+' later closure was misattributed to corruption wave');

@@ -71,15 +71,17 @@ test('P3-07 is the only gate promoted by durability boundary evidence',()=>{
     {domain:'P3',state:'EVIDENCE',promotion:'PASS-BROWSER',evidence:'p3-opfs-durability-boundary',closure_met:true}
   );
 
-  assert.equal(ledger.overrides.length,196);
-  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,160);
+  assert.equal(ledger.overrides.length,197);
+  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,161);
 
   const p3=ledger.overrides.filter(item=>item.domain==='P3');
-  assert.equal(p3.length,19);
-  assert.equal(p3.filter(item=>item.closure_met===true).length,19);
+  assert.equal(p3.length,20);
+  assert.equal(p3.filter(item=>item.closure_met===true).length,20);
 
   const p318=ledger.overrides.find(item=>item.id==='P3-18');
-  assert.ok(!p318||p318.closure_met!==true,'P3-18 was silently promoted');
+  assert.equal(p318?.closure_met,true,'P3-18 later closure missing');
+  assert.equal(p318?.evidence,'p3-native-external-permission','P3-18 later closure evidence drifted');
+  assert.notEqual(p318?.evidence,'p3-opfs-durability-boundary','P3-18 later closure was misattributed to P3-07');
   assert.deepEqual(evidence.preservedOpenGates,['P3-18']);
 });
 
@@ -95,8 +97,8 @@ test('P3 durability closure is typed browser evidence retained by repeated criti
     'tests/p3-durability-evidence.test.js'
   ]) assert.ok(flake.contract.testFiles.includes(file),file);
 
-  assert.equal(flake.contract.testFiles.length,45);
-  assert.equal(flake.contract.minimumTestFiles,45);
+  assert.equal(flake.contract.testFiles.length,47);
+  assert.equal(flake.contract.minimumTestFiles,47);
   assert.equal(flake.contract.iterations,5);
   assert.equal(flake.browser.iterations,2);
 });

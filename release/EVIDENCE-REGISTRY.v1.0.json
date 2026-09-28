@@ -482,6 +482,14 @@
       "status": "PASS",
       "ref": "CI #586 / PR #57 implementation head 57e7ee4b9733cfbbceff582160a284999124f2ff",
       "note": "Declared-profile P3-07 closure evidence: canonical payload and manifest writes use dedicated-worker FileSystemSyncAccessHandle readwrite -> truncate -> write -> truncate-final -> flush -> close; fresh authority reopen verifies canonical sequence/digest/full bytes. 427/427 unit tests, 215/215 repeated critical executions, CodeQL and 2/2 installed-distribution Chrome paths passed. Evidence explicitly does not claim power-loss or hardware-cache durability beyond the browser API contract."
+    },
+    {
+      "key": "p3-native-external-permission",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #616 / PR #58 implementation head 0c1a6334cbae8ea3ac4389db76713e20bbccfe96",
+      "note": "Declared-profile P3-18 closure evidence: real headful Chrome showDirectoryPicker returns a native FileSystemDirectoryHandle with read/readwrite granted; external OS edit is rejected OC_STALE_GENERATION before overwrite; reconciled write rechecks permission; native handle removal transitions read/readwrite granted->denied; subsequent privileged write is blocked OC_INVALID_STATE while local canonical recovery state remains unchanged. Dedicated native court passed 2/2."
     }
   ]
 }
