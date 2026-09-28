@@ -90,8 +90,8 @@ test('P3 safe restore is typed browser evidence retained by the critical campaig
     'tests/sdk-workspace-persistence.test.js',
     'tests/p3-safe-restore-evidence.test.js'
   ]) assert.ok(flake.contract.testFiles.includes(file),file);
-  assert.equal(flake.contract.testFiles.length,38);
-  assert.equal(flake.contract.minimumTestFiles,38);
+  assert.equal(flake.contract.testFiles.length,flake.contract.minimumTestFiles);
+  assert.ok(flake.contract.testFiles.length>=38);
   assert.equal(flake.contract.iterations,5);
   assert.equal(flake.browser.iterations,2);
 });
