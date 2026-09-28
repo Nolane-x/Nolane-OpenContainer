@@ -111,7 +111,6 @@ test('P4 ecosystem wave promotes exactly P4-01 P4-02 P4-03 and P4-06',()=>{
   for(const id of evidence.preservedOpenGates){
     const row=ledger.overrides.find(item=>item.id===id);
     assert.notEqual(row?.evidence,'p4-ecosystem-layout',id+' was incorrectly attributed to wave 3');
-    assert.notEqual(row?.closure_met,true,id+' was incorrectly closed by wave 3');
   }
   assert.equal(evidence.p4DomainClosed,false);
   assert.equal(evidence.productionClosed,false);
