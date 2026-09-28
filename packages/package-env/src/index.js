@@ -576,7 +576,7 @@ export { VirtualNodeModulesFS } from './virtual-node-modules.js';
 export { NodeResolver, NODE_BUILTINS } from './resolver.js';
 export { CommonJsLoader } from './commonjs-loader.js';
 
-export { FrozenInstallAuthority, PackageContentStore } from './frozen-install.js';
+export { FrozenInstallAuthority, PackageContentStore, PackageScriptCapability } from './frozen-install.js';
 export { OpfsPackageContentStore } from './opfs-package-content-store.js';
 export { OpfsPackageGraphStore } from './opfs-package-graph-store.js';
 
