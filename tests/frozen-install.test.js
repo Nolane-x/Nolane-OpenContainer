@@ -321,8 +321,11 @@ test('P4 package lifecycle scripts require exact capability grants and receive n
   }});
 
   const calls=[];
+  const scriptedNode=runtime.packages.graph.nodes.find(node=>node.location==='node_modules/scripted');
+  assert.ok(scriptedNode?.contentId);
   const capability=new PackageScriptCapability({
     grants:[{
+      contentId:scriptedNode.contentId,
       location:'node_modules/scripted',
       event:'install',
       command:'node build.cjs'
@@ -347,6 +350,7 @@ test('P4 package lifecycle scripts require exact capability grants and receive n
   assert.equal(calls.length,1);
   assert.deepEqual(receipt.lifecycleScriptsSkipped,[]);
   assert.deepEqual(receipt.lifecycleScriptsExecuted,[{
+    contentId:scriptedNode.contentId,
     location:'node_modules/scripted',
     event:'install',
     command:'node build.cjs',
@@ -391,8 +395,11 @@ test('P4 lifecycle capability grant is invalidated by exact command drift',async
       hasInstallScript:true
     }
   }});
+  const scriptedNode=runtime.packages.graph.nodes.find(node=>node.location==='node_modules/scripted');
+  assert.ok(scriptedNode?.contentId);
   const capability=new PackageScriptCapability({
     grants:[{
+      contentId:scriptedNode.contentId,
       location:'node_modules/scripted',
       event:'install',
       command:'node expected.cjs'
