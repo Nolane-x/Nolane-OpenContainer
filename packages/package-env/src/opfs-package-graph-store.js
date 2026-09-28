@@ -85,6 +85,7 @@ export class OpfsPackageGraphStore{
   get current(){return this.#current;}
   get crossContextLocking(){return true;}
   get directoryName(){return this.#directoryName;}
+  get lockName(){return this.#lockName;}
 
   async open(){
     this.#directory=await this.#root.getDirectoryHandle(this.#directoryName,{create:true});
@@ -163,6 +164,36 @@ export class OpfsPackageGraphStore{
       );
       this.#current=published;
       return Object.freeze({...published,reused:false,crossContextLocking:true});
+    });
+  }
+
+  async withGeneration(expectedGeneration,callback){
+    this.#assertOpen();
+    assertOc(
+      Number.isInteger(expectedGeneration)&&expectedGeneration>=1,
+      ErrorCodes.INVALID_ARGUMENT,
+      'expected persistent package graph generation must be a positive integer',
+      {expectedGeneration}
+    );
+    assertOc(typeof callback==='function',ErrorCodes.INVALID_ARGUMENT,'Package graph generation callback is required');
+
+    return this.#lockManager.request(this.#lockName,{mode:'exclusive'},async()=>{
+      const current=await this.#readVerifiedRoot();
+      const currentGeneration=current?.generation??0;
+      if(currentGeneration!==expectedGeneration){
+        throw ocError(ErrorCodes.STALE_GENERATION,'Persistent package graph changed before PackageFS publication',{
+          expectedGeneration,
+          currentGeneration
+        });
+      }
+      this.#current=current;
+      const result=callback(current);
+      assertOc(
+        !result||typeof result.then!=='function',
+        ErrorCodes.INVALID_ARGUMENT,
+        'PackageFS publication callback must be synchronous while the graph publication lock is held'
+      );
+      return result;
     });
   }
 
