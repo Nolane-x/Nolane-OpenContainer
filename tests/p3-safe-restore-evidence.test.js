@@ -56,10 +56,13 @@ test('P3-15 is newly reconciled only by safe-restore browser evidence',()=>{
   const p3=ledger.overrides.filter(item=>item.domain==='P3');
   assert.ok(p3.length>=15);
   assert.ok(p3.filter(item=>item.closure_met===true).length>=15);
-  for(const id of preserved.filter(id=>id!=='P3-20')){
+  for(const id of preserved.filter(id=>!['P3-17','P3-20'].includes(id))){
     const open=ledger.overrides.find(item=>item.id===id);
     assert.ok(!open||open.closure_met!==true,id+' was silently promoted');
   }
+  const laterExternal=ledger.overrides.find(item=>item.id==='P3-17');
+  assert.equal(laterExternal?.closure_met,true,'P3-17 later closure missing');
+  assert.notEqual(laterExternal?.evidence,'p3-safe-checkpoint-restore','P3-17 later closure was misattributed to safe-restore wave');
   const laterDelete=ledger.overrides.find(item=>item.id==='P3-20');
   assert.equal(laterDelete?.closure_met,true,'P3-20 later closure missing');
   assert.notEqual(laterDelete?.evidence,'p3-safe-checkpoint-restore','P3-20 later closure was misattributed to safe-restore wave');
