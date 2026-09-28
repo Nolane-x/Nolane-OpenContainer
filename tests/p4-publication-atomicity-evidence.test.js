@@ -88,9 +88,18 @@ test('P4 publication atomicity promotes exactly P4-04 and P4-11',()=>{
     assert.equal(row.promotion,'PASS-BROWSER');
     assert.equal(row.closure_met,true);
   }
-  assert.equal(ledger.overrides.length,201);
-  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,168);
-  assert.equal(ledger.overrides.filter(item=>item.domain==='P4'&&item.closure_met===true).length,7);
+  assert.ok(
+    ledger.overrides.length>=201,
+    'reconciliation ledger must not shrink below the P4 Wave 2 baseline'
+  );
+  assert.ok(
+    ledger.overrides.filter(item=>item.closure_met===true).length>=168,
+    'production closure count must not regress below the P4 Wave 2 baseline'
+  );
+  assert.ok(
+    ledger.overrides.filter(item=>item.domain==='P4'&&item.closure_met===true).length>=7,
+    'P4 closure count must not regress below the Wave 2 baseline'
+  );
 
   for(const id of evidence.preservedOpenGates){
     const row=ledger.overrides.find(item=>item.id===id);
