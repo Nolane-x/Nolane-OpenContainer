@@ -308,27 +308,30 @@ function safePackageSource(value,{link=false}={}){
   if(link){
     return Object.freeze({
       kind:'workspace-link',
-      fingerprint:diagnosticFingerprint(text),
+      fingerprint:null,
       url:null
     });
   }
   try{
     const url=new URL(text);
     if(url.protocol==='https:'||url.protocol==='http:'){
+      const redacted=url.username!==''||url.password!==''||url.search!==''||url.hash!=='';
       url.username='';
       url.password='';
       url.search='';
       url.hash='';
+      const sanitized=url.toString();
       return Object.freeze({
         kind:url.protocol.slice(0,-1),
-        fingerprint:diagnosticFingerprint(text),
-        url:url.toString()
+        fingerprint:diagnosticFingerprint(sanitized),
+        url:sanitized,
+        sensitiveComponentsRemoved:redacted
       });
     }
   }catch{}
   return Object.freeze({
     kind:'opaque',
-    fingerprint:diagnosticFingerprint(text),
+    fingerprint:null,
     url:null
   });
 }
