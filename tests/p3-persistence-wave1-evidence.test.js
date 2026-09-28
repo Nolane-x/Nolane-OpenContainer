@@ -45,10 +45,10 @@ test('P3 wave1 receipt closes exactly its ten certified gates and remains histor
 
 test('P3 wave1 preserves its original open-boundary receipt without blocking later stronger evidence',()=>{
   assert.deepEqual(evidence.preservedOpenGates.map(item=>item.id),preserved);
-  for(const id of ['P3-18']){
-    const row=ledger.overrides.find(item=>item.id===id);
-    assert.ok(!row||row.closure_met!==true,id+' was silently promoted');
-  }
+  const laterNative=ledger.overrides.find(item=>item.id==='P3-18');
+  assert.equal(laterNative?.closure_met,true,'P3-18 later native closure missing');
+  assert.equal(laterNative?.evidence,'p3-native-external-permission','P3-18 later closure evidence drifted');
+  assert.notEqual(laterNative?.evidence,'p3-persistence-wave1','P3-18 later closure was misattributed to wave1');
   for(const id of ['P3-03','P3-07','P3-08','P3-09','P3-13','P3-14','P3-15','P3-17','P3-20']){
     assert.ok(evidence.preservedOpenGates.some(item=>item.id===id),id+' wave1 history drifted');
     const row=ledger.overrides.find(item=>item.id===id);
