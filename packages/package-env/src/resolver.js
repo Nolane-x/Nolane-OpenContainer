@@ -115,15 +115,25 @@ export class NodeResolver {
       assertOc(source !== target, ErrorCodes.INVALID_ARGUMENT, 'Path alias cannot target itself', { path: source });
       pathAliases[source] = target;
     }
+    const nativeAddonAdapters = Object.create(null);
+    for (const [from, to] of Object.entries(options.nativeAddonAdapters ?? {})) {
+      const source = normalizeAbsolute(String(from));
+      const target = normalizeAbsolute(String(to));
+      assertOc(source.endsWith('.node'), ErrorCodes.INVALID_ARGUMENT, 'Native addon adapter source must be an exact .node path', { source });
+      assertOc(!target.endsWith('.node'), ErrorCodes.INVALID_ARGUMENT, 'Native addon adapter target cannot be another native addon', { source, target });
+      assertOc(source !== target, ErrorCodes.INVALID_ARGUMENT, 'Native addon adapter cannot target itself', { source });
+      nativeAddonAdapters[source] = target;
+    }
     const aliasKey = [
       ...Object.entries(packageAliases).sort(([a],[b]) => a.localeCompare(b)).map(([from,to]) => 'pkg:' + from + '>' + to),
-      ...Object.entries(pathAliases).sort(([a],[b]) => a.localeCompare(b)).map(([from,to]) => 'path:' + from + '>' + to)
+      ...Object.entries(pathAliases).sort(([a],[b]) => a.localeCompare(b)).map(([from,to]) => 'path:' + from + '>' + to),
+      ...Object.entries(nativeAddonAdapters).sort(([a],[b]) => a.localeCompare(b)).map(([from,to]) => 'addon:' + from + '>' + to)
     ].join(',');
     const generation = String(this.#fs.generation ?? '0');
     const key = [generation, mode, issuerInfo.path, specifier, preserveSymlinks ? '1' : '0', [...conditions].sort().join(','), aliasKey].join('|');
     if (this.#cache.has(key)) return this.#cache.get(key);
 
-    const result = this.#resolveUncached(specifier, issuerInfo.path, { mode, conditions, preserveSymlinks, packageAliases, pathAliases });
+    const result = this.#resolveUncached(specifier, issuerInfo.path, { mode, conditions, preserveSymlinks, packageAliases, pathAliases, nativeAddonAdapters });
     this.#cache.set(key, result);
     return result;
   }
@@ -331,15 +341,11 @@ export class NodeResolver {
 
   #loadAsFile(path) {
     const exact = this.#safeStat(path);
-    if (exact && fileType(exact) === 'file') {
-      if (path.endsWith('.node')) throw ocError(ErrorCodes.NATIVE_ADDON_UNSUPPORTED, 'Native addons are outside the V1 profile', { path });
-      return path;
-    }
+    if (exact && fileType(exact) === 'file') return path;
     for (const extension of ['.js', '.json', '.node']) {
       const candidate = path + extension;
       const stat = this.#safeStat(candidate);
       if (!stat || fileType(stat) !== 'file') continue;
-      if (extension === '.node') throw ocError(ErrorCodes.NATIVE_ADDON_UNSUPPORTED, 'Native addons are outside the V1 profile', { path: candidate });
       return candidate;
     }
     return null;
@@ -363,7 +369,6 @@ export class NodeResolver {
       const candidate = join(path, 'index' + extension);
       const stat = this.#safeStat(candidate);
       if (!stat || fileType(stat) !== 'file') continue;
-      if (extension === '.node') throw ocError(ErrorCodes.NATIVE_ADDON_UNSUPPORTED, 'Native addons are outside the V1 profile', { path: candidate });
       return candidate;
     }
     return null;
@@ -424,17 +429,50 @@ export class NodeResolver {
   }
 
   #finalizeFile(path, suffix, context, packageRoot = null) {
-    let canonical = context.preserveSymlinks || typeof this.#fs.realpath !== 'function' ? normalizeAbsolute(path) : this.#fs.realpath(path);
-    const aliasTarget = context.pathAliases?.[canonical] ?? context.pathAliases?.[normalizeAbsolute(path)];
-    if (aliasTarget) {
-      const stat = this.#safeStat(aliasTarget);
-      assertOc(stat && fileType(stat) === 'file', ErrorCodes.MODULE_NOT_FOUND, 'Path alias target does not exist', { from: canonical, to: aliasTarget });
-      canonical = context.preserveSymlinks || typeof this.#fs.realpath !== 'function' ? normalizeAbsolute(aliasTarget) : this.#fs.realpath(aliasTarget);
+    const requested = context.preserveSymlinks || typeof this.#fs.realpath !== 'function'
+      ? normalizeAbsolute(path)
+      : this.#fs.realpath(path);
+    let canonical = requested;
+    let nativeAddonAdapter = null;
+
+    if (this.#format(requested) === 'addon') {
+      const adapterTarget = context.nativeAddonAdapters?.[requested] ?? context.nativeAddonAdapters?.[normalizeAbsolute(path)];
+      if (!adapterTarget) {
+        throw ocError(ErrorCodes.NATIVE_ADDON_UNSUPPORTED, 'Native addons require an explicit exact-path browser adapter', { path: requested });
+      }
+      const stat = this.#safeStat(adapterTarget);
+      assertOc(stat && fileType(stat) === 'file', ErrorCodes.MODULE_NOT_FOUND, 'Native addon adapter target does not exist', {
+        source: requested,
+        target: adapterTarget
+      });
+      canonical = context.preserveSymlinks || typeof this.#fs.realpath !== 'function'
+        ? normalizeAbsolute(adapterTarget)
+        : this.#fs.realpath(adapterTarget);
+      assertOc(this.#format(canonical) !== 'addon', ErrorCodes.INVALID_ARGUMENT, 'Native addon adapter target cannot resolve to another native addon', {
+        source: requested,
+        target: canonical
+      });
+      nativeAddonAdapter = Object.freeze({ source: requested, target: canonical, explicit: true });
+    } else {
+      const aliasTarget = context.pathAliases?.[canonical] ?? context.pathAliases?.[normalizeAbsolute(path)];
+      if (aliasTarget) {
+        const stat = this.#safeStat(aliasTarget);
+        assertOc(stat && fileType(stat) === 'file', ErrorCodes.MODULE_NOT_FOUND, 'Path alias target does not exist', { from: canonical, to: aliasTarget });
+        canonical = context.preserveSymlinks || typeof this.#fs.realpath !== 'function' ? normalizeAbsolute(aliasTarget) : this.#fs.realpath(aliasTarget);
+      }
     }
+
     const format = this.#format(canonical);
-    if (format === 'addon') throw ocError(ErrorCodes.NATIVE_ADDON_UNSUPPORTED, 'Native addons are outside the V1 profile', { path: canonical });
     const url = pathToFileURL(canonical) + suffix;
-    return Object.freeze({ kind: 'file', path: canonical, url, format, packageRoot, cacheKey: context.mode === 'cjs' ? canonical : url });
+    return Object.freeze({
+      kind: 'file',
+      path: canonical,
+      url,
+      format,
+      packageRoot,
+      cacheKey: context.mode === 'cjs' ? canonical : url,
+      nativeAddonAdapter
+    });
   }
 
   #safeStat(path) {
