@@ -138,3 +138,14 @@ test('P9 dialog families implement explicit focus-loop trapping',()=>{
   assert.match(ui,/destructiveDialog\.addEventListener\('keydown',event=>trapDialogFocus\(destructiveDialog,event\)\)/);
   assert.match(ui,/diagnosticsDialog\.addEventListener\('keydown',event=>trapDialogFocus\(diagnosticsDialog,event\)\)/);
 });
+
+
+test('P9 court waits for authority acknowledgements, not intermediate VFS mutation',()=>{
+  assert.match(runner,/authority-backed destructive removal/);
+  assert.match(runner,/textContent\.includes\('Removed'\)/);
+  assert.match(runner,/authority-backed source restore/);
+  assert.match(runner,/textContent\.includes\('Restored'\)/);
+  assert.doesNotMatch(runner,/declaredProfile:'desktop-chrome153/);
+  assert.match(runner,/declaredProfile:'github-actions-chrome-stable-ubuntu2404-x64'/);
+  assert.match(runner,/exactVersionObserved:version\.product/);
+});
