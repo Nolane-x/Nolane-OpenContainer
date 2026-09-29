@@ -1,0 +1,191 @@
+{
+  "schema": "opencontainer.p4-final-package-evidence.v1.0",
+  "source": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "RELEASE-READY evidence",
+  "pullRequest": 63,
+  "closedGates": [
+    {
+      "id": "P4-07",
+      "requirement": "Fuzz TAR/gzip/manifest/lockfile parsers against the retained coverage guide and preserve minimized failure inputs."
+    },
+    {
+      "id": "P4-13",
+      "requirement": "Package lifecycle scripts require a separately granted capability and receive no ambient secret handles."
+    },
+    {
+      "id": "P4-15",
+      "requirement": "Validate package-layout watchers, readdir and realpath across install/remove/reinstall without claiming generic fs.watch parity."
+    },
+    {
+      "id": "P4-16",
+      "requirement": "Retain real package-tree measurements for package storage amplification and startup graph-load cost."
+    }
+  ],
+  "implementation": {
+    "head": "db400b8fd53213dbefc36dbb02418508d5ef9724",
+    "ciRunNumber": 789,
+    "ciRunId": 36499644834,
+    "testedCheckoutCommit": "40ff570626c3f58fe88b4dc9e8da4ce09af256aa",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "unitTests": 503,
+    "unitPassed": 503,
+    "unitFailed": 0,
+    "criticalTestFiles": 66,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 330,
+    "contractUnexplainedFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2
+  },
+  "dedicatedReleaseCourt": {
+    "artifactId": 11004449702,
+    "artifactDigest": "sha256:74f8ba0cac2ddf77bd4b99230e6e15e603076d2968dfaf376c29717895071941",
+    "schema": "opencontainer.p4-final-package.v1.0",
+    "status": "PASS",
+    "nodeVersion": "v24.21.0",
+    "browser": "Google Chrome 153.0.8010.52",
+    "profile": "declared Chrome / Ubuntu x64 CI profile",
+    "iterations": 2,
+    "passedIterations": 2,
+    "sourceGates": [
+      "P4-07",
+      "P4-13",
+      "P4-15",
+      "P4-16"
+    ]
+  },
+  "parserFuzzing": {
+    "retainedMinimizedInputs": 8,
+    "retainedTargets": [
+      "tar",
+      "gzip",
+      "manifest",
+      "lockfile"
+    ],
+    "nodeMutationCampaigns": 512,
+    "browserMutationCampaigns": 256,
+    "rawParserExceptions": 0,
+    "typedFailureCodes": [
+      "OC_ARCHIVE_UNSAFE",
+      "OC_INVALID_ARGUMENT",
+      "OC_INVALID_PACKAGE_CONFIG"
+    ]
+  },
+  "lifecycleScripts": {
+    "separateCapability": true,
+    "exactGrantIdentity": [
+      "package location",
+      "lifecycle event",
+      "exact command",
+      "frozen content identity"
+    ],
+    "executedInBrowserCourt": 1,
+    "contentIdBound": true,
+    "ambientEnvKeys": 0,
+    "secretHandleCount": 0,
+    "secretBearingInstallRejected": true,
+    "publicationBarrierRetained": true
+  },
+  "packageLayout": {
+    "dedicatedWatcher": true,
+    "genericFsWatchClaimed": false,
+    "reasons": [
+      "unmounted",
+      "install",
+      "reinstall",
+      "remove",
+      "install"
+    ],
+    "catalogGenerations": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "readdirAfterInstall": [
+      "a",
+      "ws"
+    ],
+    "readdirAfterReinstall": [
+      "a",
+      "b",
+      "ws"
+    ],
+    "linkedRealpath": "/workspace/packages/ws/index.cjs"
+  },
+  "measurements": {
+    "storage": {
+      "schema": "opencontainer.p4-package-storage-amplification.v1.0",
+      "formula": "physical-persistent-bytes/unique-verified-logical-content-bytes",
+      "surface": "OpfsPackageContentStore",
+      "physicalMeasurementScope": "stored OPFS file payload bytes (artifact.tgz + manifest.json); browser filesystem metadata overhead excluded",
+      "retainedPackages": [
+        "lightningcss-wasm@1.33.0",
+        "@rolldown/browser@1.2.9"
+      ],
+      "packageCount": 2,
+      "packedArtifactBytes": 7635964,
+      "uniqueVerifiedLogicalContentBytes": 28364367,
+      "physicalPersistentBytes": 7636456,
+      "storageAmplification": 0.2692270904547244,
+      "thresholdClaimed": false
+    },
+    "graphLoad": {
+      "thresholdClaimed": false,
+      "node": {
+        "viteReactTiny": {
+          "nodes": 219,
+          "lockfileBytes": 96726,
+          "iterations": 50,
+          "p50Ms": 1.288724000000002,
+          "p95Ms": 2.2457339999999704
+        },
+        "chokidar": {
+          "nodes": 8,
+          "lockfileBytes": 4120,
+          "iterations": 50,
+          "p50Ms": 0.05508300000008148,
+          "p95Ms": 0.07355799999993451
+        }
+      },
+      "browser": [
+        {
+          "iteration": 1,
+          "viteReactTiny": {
+            "nodes": 219,
+            "iterations": 30,
+            "p50Ms": 1.5100000000020373,
+            "p95Ms": 3.680000000000291
+          },
+          "chokidar": {
+            "nodes": 8,
+            "iterations": 30,
+            "p50Ms": 0.06999999999970896,
+            "p95Ms": 0.08999999999650754
+          }
+        },
+        {
+          "iteration": 2,
+          "viteReactTiny": {
+            "nodes": 219,
+            "iterations": 30,
+            "p50Ms": 1.6450000000040745,
+            "p95Ms": 2.930000000000291
+          },
+          "chokidar": {
+            "nodes": 8,
+            "iterations": 30,
+            "p50Ms": 0.06999999999970896,
+            "p95Ms": 0.08000000000174623
+          }
+        }
+      ]
+    }
+  },
+  "p4DomainClosed": true,
+  "productionClosed": false
+}
