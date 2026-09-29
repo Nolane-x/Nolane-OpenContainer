@@ -568,8 +568,8 @@
       "kind": "EXECUTABLE",
       "level": "INTEGRATION",
       "status": "PASS",
-      "ref": "CI #884 / PR #68 implementation head 2efa32d3fabd80c010ce33468963f32c6ed45fd0",
-      "note": "P6-10 closure: registry-concordant frozen Vitest 3.0.8 from compat/p4/vite-react-tiny.package-lock.json executed twice against an isolated TypeScript fixture (6/6 tests PASS total) on exact Node v24.21.0/npm 11.19.0, then the existing declared-profile P6 Chrome court reran PASS. This does not promote the Vitest root pnpm monorepo, pnpm lockfile parsing, monorepo workspace install, browser-native Vitest execution, or cross-browser support."
+      "ref": "CI #896 / PR #68 implementation head fbeadbdba914230edfbcc1ca0192631084065b07",
+      "note": "P6-10 closure: exact frozen vitest@3.0.8 registry URL/SRI concordance, two real CLI executions over an isolated TypeScript fixture with 3/3 tests PASS each, and a same-exact-head dependency on the existing declared-profile P6 Chrome court. CI #896 passed 585/585 contract tests, 90 critical files ×5 = 450 repeated executions, CodeQL and full browser product path. This does not promote the Vitest root pnpm monorepo, pnpm lockfile parsing, monorepo workspace install, browser-native Vitest execution, or cross-browser support."
     }
   ]
 }
