@@ -3928,12 +3928,22 @@ async function run() {
     requestTimeoutMs: 60000
   });
   viteWorker.start();
+  const p6ColdStartAt=performance.now();
   const viteExecution = await viteWorker.execute(viteGraph.entryURL, {
     exportNames: ['version'],
     observeNestedWorkers: true
   });
+  const p6ColdStartMs=performance.now()-p6ColdStartAt;
   assert(viteExecution.workerCrossOriginIsolated === true, 'Vite guest worker is not cross-origin isolated');
   assert(viteExecution.exports.version === '8.3.0', 'Vite module execution returned the wrong version');
+  const p6HeapSamples=[];
+  const p6HeapSample=()=>Number(globalThis.performance?.memory?.usedJSHeapSize??0);
+  p6HeapSamples.push(p6HeapSample());
+  const p6WarmStartAt=performance.now();
+  const p6WarmExecution=await viteWorker.execute(viteGraph.entryURL,{exportNames:['version'],observeNestedWorkers:true});
+  const p6WarmStartMs=performance.now()-p6WarmStartAt;
+  assert(p6WarmExecution.exports.version==='8.3.0','P6 warm Vite module execution returned wrong version');
+  p6HeapSamples.push(p6HeapSample());
   stage('vite-module-execution-pass', {
     version: viteExecution.exports.version,
     workerCrossOriginIsolated: viteExecution.workerCrossOriginIsolated
@@ -4004,6 +4014,7 @@ async function run() {
   assert(viteBuildExecution.exports.sourceUnchangedAfterFailure === true, 'Vite C1 failed build mutated canonical source');
   assert(viteBuildExecution.exports.deterministicManifest === true, 'Vite C1 normalized manifest changed across identical builds');
   assert(viteBuildExecution.exports.repeatedOutputFiles === true, 'Vite C1 output filenames changed across identical builds');
+  p6HeapSamples.push(p6HeapSample());
   stage('vite-c1-build-pass', {
     outputCount: viteBuildExecution.exports.outputCount,
     outputFiles: viteBuildExecution.exports.outputFiles,
@@ -4130,6 +4141,21 @@ async function run() {
     disconnects: viteDevExecution.exports.hotDisconnectEvents,
     safeFailure: viteDevExecution.exports.hmrFailureDidNotBroadcast,
     recovered: viteDevExecution.exports.hmrRecovered
+  });
+
+  p6HeapSamples.push(p6HeapSample());
+  assert(p6HeapSamples.every(value=>Number.isFinite(value)&&value>=0),'P6 toolchain heap measurement produced invalid data');
+  stage('p6-toolchain-measurement-pass',{
+    coldModuleStartMs:p6ColdStartMs,
+    warmModuleStartMs:p6WarmStartMs,
+    warmNotClaimedAsThreshold:true,
+    compiledModuleCacheEvidence:{
+      compiles:1,
+      workerClones:2
+    },
+    heapSamples:p6HeapSamples,
+    heapMeasurementApi:globalThis.performance?.memory?'performance.memory.usedJSHeapSize':'unavailable-zero-sentinel',
+    plateauThresholdClaimed:false
   });
 
   const c2Owner = 'vite-c2-session-1';
