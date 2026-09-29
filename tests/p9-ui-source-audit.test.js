@@ -5,6 +5,8 @@ import { readFileSync } from 'node:fs';
 const html=readFileSync('apps/playground/public/index.html','utf8');
 const css=readFileSync('apps/playground/public/index.css','utf8');
 const ui=readFileSync('apps/playground/public/index.js','utf8');
+const runner=readFileSync('scripts/p9-ui-rendered.mjs','utf8');
+const workflow=readFileSync('.github/workflows/ci.yml','utf8');
 
 test('P9 reference shell binds Preview Inspect and AI to real runtime authorities',()=>{
   assert.match(ui,/OpenContainer/);
@@ -72,4 +74,30 @@ test('P9 linked-folder conflict state is rendered from external authority truth'
 test('P9 source shell does not pretend to close manual or missing-registry gates',()=>{
   // Promotion evidence must be provided by a separate court; source shell alone must never encode closure.
   for(const id of ['P9-03','P9-05','P9-11','P9-12'])assert.equal(ui.includes(id),false,id);
+});
+
+
+test('P9 rendered promotion scope excludes manual and missing-registry gates',()=>{
+  const block=runner.match(/sourceGates:\[([\s\S]*?)\],\n    intentionallyOpenGates:/)?.[1]??'';
+  for(const id of [
+    'P9-01','P9-02','P9-04','P9-06','P9-07','P9-08','P9-09',
+    'P9-10','P9-13','P9-14','P9-15','P9-16','P9-17','P9-18'
+  ]) assert.ok(block.includes("'"+id+"'"),id);
+  for(const id of ['P9-03','P9-05','P9-11','P9-12'])assert.equal(block.includes(id),false,id);
+  assert.match(runner,/failureRegistry280Claimed:false/);
+  assert.match(runner,/manualScreenReaderClaimed:false/);
+  assert.match(runner,/humanComprehensionClaimed:false/);
+  assert.match(runner,/weakDeviceLongSessionClaimed:false/);
+  assert.match(workflow,/p9-ui-rendered:\n    needs: \[contract, codeql, p3-native-external-permission\]/);
+});
+
+test('P9 rendered court uses accessibility tree keyboard emulation and actual viewport screenshots',()=>{
+  assert.match(runner,/Accessibility\.getFullAXTree/);
+  assert.match(runner,/Input\.dispatchKeyEvent/);
+  assert.match(runner,/Emulation\.setDeviceMetricsOverride/);
+  assert.match(runner,/Emulation\.setEmulatedMedia/);
+  assert.match(runner,/Emulation\.setPageScaleFactor/);
+  assert.match(runner,/Page\.captureScreenshot/);
+  assert.match(runner,/linkedConflictCourt/);
+  assert.match(runner,/Page\.reload/);
 });
