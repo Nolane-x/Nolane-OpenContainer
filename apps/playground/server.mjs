@@ -85,6 +85,7 @@ function contentType(path) {
   const extension = extname(path);
   if (extension === '.html') return 'text/html; charset=utf-8';
   if (extension === '.js' || extension === '.mjs') return 'text/javascript; charset=utf-8';
+  if (extension === '.css') return 'text/css; charset=utf-8';
   if (extension === '.json') return 'application/json; charset=utf-8';
   if (extension === '.wasm') return 'application/wasm';
   return 'application/octet-stream';
