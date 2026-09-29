@@ -562,6 +562,14 @@
       "status": "PASS",
       "ref": "CI #874 / PR #67 implementation head 41069da8f77e2ba6ad0c1ceab5f12d1711f84ea4",
       "note": "P10-01..P10-18 optional AI-consumer authority closure: BYOK session-memory custody/redaction, explicit context manifest and sensitive default deny, untrusted-data authority separation, Discuss/Plan/Build modes, preconditioned ChangeSet/recovery/idempotency/path-aware Undo, child/provider epoch isolation, shared ResourceGovernor concurrency, prompt-injection approval rendering and four cancellation phases. Dedicated Chrome 153 court passed 2/2; fake providers exercise authority semantics only and create no model-quality claim."
+    },
+    {
+      "key": "p6-vitest-real-execution",
+      "kind": "EXECUTABLE",
+      "level": "INTEGRATION",
+      "status": "PASS",
+      "ref": "CI #884 / PR #68 implementation head 2efa32d3fabd80c010ce33468963f32c6ed45fd0",
+      "note": "P6-10 closure: registry-concordant frozen Vitest 3.0.8 from compat/p4/vite-react-tiny.package-lock.json executed twice against an isolated TypeScript fixture (6/6 tests PASS total) on exact Node v24.21.0/npm 11.19.0, then the existing declared-profile P6 Chrome court reran PASS. This does not promote the Vitest root pnpm monorepo, pnpm lockfile parsing, monorepo workspace install, browser-native Vitest execution, or cross-browser support."
     }
   ]
 }
