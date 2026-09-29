@@ -6,24 +6,25 @@
   "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
   "pullRequest": 68,
   "implementation": {
-    "head": "2efa32d3fabd80c010ce33468963f32c6ed45fd0",
-    "ciRunNumber": 884,
-    "ciRunId": 36573817822,
-    "pullRequestContextSha": "ef57422df6c154c2677f0f50f1ea8c8ee9ed7321",
+    "head": "fbeadbdba914230edfbcc1ca0192631084065b07",
+    "ciRunNumber": 896,
+    "ciRunId": 36576004149,
+    "pullRequestContextSha": "ff94698a642283e7b4f69a4141cbb03a5d97b3e8",
     "contract": "PASS",
     "codeql": "PASS",
-    "unitTests": 580,
-    "unitPassed": 580,
+    "unitTests": 585,
+    "unitPassed": 585,
     "unitFailed": 0,
-    "criticalTestFiles": 89,
+    "criticalTestFiles": 90,
     "criticalIterations": 5,
-    "criticalTestFileExecutions": 445,
+    "criticalTestFileExecutions": 450,
     "criticalUnexplainedFailures": 0,
-    "fullBrowserRegression": "PASS"
+    "companionP6ToolchainViteJob": "PASS",
+    "fullBrowserProductPath": "PASS"
   },
   "dedicatedCourt": {
-    "artifactId": 11034964010,
-    "artifactDigest": "sha256:ac8a7916afae7566f55a5c6479df1d2d5a8a23c34161fd1ef2fea8b573a558fc",
+    "artifactId": 11036952101,
+    "artifactDigest": "sha256:593565a62183990836985b1adbbbad486be17b5a54b7cf9b77384683e39cec14",
     "status": "PASS",
     "nodeVersion": "v24.21.0",
     "npmVersion": "11.19.0",
@@ -40,9 +41,10 @@
     "fixtureLanguage": "TypeScript"
   },
   "declaredProfileRegression": {
-    "existingP6BrowserCourtRerun": true,
-    "status": "PASS",
-    "historicalP610OpenBoundaryRetainedByOldReceipt": true
+    "workflowJob": "p6-toolchain-vite",
+    "sameExactHead": true,
+    "evidenceBinding": "workflow-needs",
+    "status": "PASS"
   },
   "boundaries": {
     "vitestRootMonorepoPnpmSupportClaimed": false,
