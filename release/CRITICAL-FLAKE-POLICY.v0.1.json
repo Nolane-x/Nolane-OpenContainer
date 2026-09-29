@@ -70,10 +70,11 @@
       "tests/p4-command-diagnostics-evidence.test.js",
       "tests/p4-parser-fuzz.test.js",
       "tests/p4-package-layout-watch.test.js",
-      "tests/p4-final-package-source-audit.test.js"
+      "tests/p4-final-package-source-audit.test.js",
+      "tests/p4-final-package-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 66
+    "minimumTestFiles": 67
   },
   "browser": {
     "iterations": 2,
