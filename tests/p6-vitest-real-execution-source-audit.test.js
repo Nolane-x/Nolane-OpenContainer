@@ -42,9 +42,11 @@ test('P6-10 evidence keeps unsupported pnpm monorepo boundary explicit',()=>{
   assert.match(runner,/productionClosed:false/);
 });
 
-test('P6-10 new court reruns the existing declared-profile P6 browser court',()=>{
-  assert.match(runner,/capture-p6-toolchain-browser-evidence\.mjs/);
-  assert.match(runner,/browser\.status==='PASS'/);
-  assert.match(runner,/browser\.sourceGates\?\.includes\('P6-10'\)===false/);
-  assert.match(runner,/historicalP610BoundaryRetained:true/);
+test('P6-10 court is gated by the same-head declared-profile P6 Chrome job',()=>{
+  const workflow=readFileSync('.github/workflows/ci.yml','utf8');
+  assert.match(workflow,/p6-vitest-real-execution:\n    needs: \[contract, codeql, p6-toolchain-vite\]/);
+  assert.doesNotMatch(runner,/capture-p6-toolchain-browser-evidence\.mjs/);
+  assert.match(runner,/workflowJob:'p6-toolchain-vite'/);
+  assert.match(runner,/sameExactHead:true/);
+  assert.match(runner,/evidenceBinding:'workflow-needs'/);
 });
