@@ -79,10 +79,15 @@
       "tests/rolldown-browser-execution.test.js",
       "tests/p6-toolchain-authority.test.js",
       "tests/p6-toolchain-vite-source-audit.test.js",
-      "tests/p6-toolchain-vite-evidence.test.js"
+      "tests/p6-toolchain-vite-evidence.test.js",
+      "tests/runtime.test.js",
+      "tests/p2-runtime-contracts.test.js",
+      "tests/worker-authority.test.js",
+      "tests/browser-guest-worker.test.js",
+      "tests/sync-rpc.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 75
+    "minimumTestFiles": 80
   },
   "browser": {
     "iterations": 2,
