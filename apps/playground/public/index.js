@@ -25,6 +25,7 @@ const shellState={
     permissionRead:'unavailable',
     permissionReadwrite:'unavailable'
   }),
+  linkedConflictActions:Object.freeze([]),
   recovery:{kind:null,snapshot:null},
   composing:false,
   lastDialogOpener:null,
@@ -124,7 +125,8 @@ function renderLinked(){
     ['Read permission',state?.permissionRead??'unavailable'],
     ['Write permission',state?.permissionReadwrite??'unavailable'],
     ['External write',state?.externalWrite===true],
-    ['Conflict',state?.state==='external-change-detected']
+    ['Conflict',state?.state==='external-change-detected'],
+    ['Recovery actions',shellState.linkedConflictActions.length?shellState.linkedConflictActions.join(', '):'none']
   ]);
 }
 
@@ -371,6 +373,7 @@ async function attachLinkedFolder(handle){
     handle
   });
   shellState.linkedState=await shellState.linkedAuthority.inspect();
+  shellState.linkedConflictActions=Object.freeze([]);
   renderLinked();
   renderInspect();
   announce('Linked folder state: '+shellState.linkedState.state);
@@ -391,12 +394,14 @@ async function writeLinkedFile(path,data,{expectedRevision=undefined}={}){
   try{
     const result=await shellState.linkedAuthority.writeFile(path,data,{expectedRevision});
     shellState.linkedState=await shellState.linkedAuthority.inspect();
+    shellState.linkedConflictActions=Object.freeze([]);
     announce('External write applied after permission recheck');
     renderLinked();
     renderInspect();
     return Object.freeze({ok:true,before,result,state:shellState.linkedState});
   }catch(error){
     shellState.linkedState=shellState.linkedAuthority.lastState??await shellState.linkedAuthority.inspect();
+    shellState.linkedConflictActions=Object.freeze([...(error?.details?.actions??[])]);
     renderLinked();
     renderInspect();
     announce('External write blocked: '+errorCode(error),{sticky:true});
@@ -407,6 +412,19 @@ async function writeLinkedFile(path,data,{expectedRevision=undefined}={}){
       state:shellState.linkedState
     });
   }
+}
+
+async function pickLinkedFolder(){
+  if(typeof globalThis.showDirectoryPicker!=='function'){
+    announce('Linked folders are unavailable in this browser profile',{sticky:true});
+    return Object.freeze({ok:false,reason:'picker-unavailable'});
+  }
+  const handle=await globalThis.showDirectoryPicker({mode:'readwrite'});
+  const state=await attachLinkedFolder(handle);
+  if(state.permissionReadwrite!=='granted'){
+    announce('Folder linked, but write permission is '+state.permissionReadwrite,{sticky:true});
+  }
+  return Object.freeze({ok:true,name:handle.name,state});
 }
 
 async function clearDiagnostics(){
@@ -482,6 +500,9 @@ for(const tab of $$('.surface-tab')){
 $('#save-source').addEventListener('click',()=>saveSource().catch(error=>announce('Save failed: '+errorCode(error),{sticky:true})));
 $('#run-process').addEventListener('click',()=>runProcess().then(receipt=>announce('Process exited '+receipt.code)).catch(error=>announce('Process failed: '+errorCode(error),{sticky:true})));
 $('#refresh-inspect').addEventListener('click',()=>{renderInspect();announce('Inspection refreshed from runtime state');});
+$('#link-folder').addEventListener('click',()=>{
+  pickLinkedFolder().catch(error=>announce('Link folder failed: '+errorCode(error),{sticky:true}));
+});
 
 for(const button of $$('[data-ai-mode]'))button.addEventListener('click',()=>setAiMode(button.dataset.aiMode));
 $('#create-approval').addEventListener('click',()=>{
@@ -525,6 +546,18 @@ destructiveDialog.addEventListener('close',()=>{
   if(confirmed)removeSource().catch(error=>announce('Remove failed: '+errorCode(error),{sticky:true}));
 });
 
+const diagnosticsDialog=$('#diagnostics-dialog');
+$('#open-clear-diagnostics').addEventListener('click',event=>{
+  shellState.lastDialogOpener=event.currentTarget;
+  diagnosticsDialog.showModal();
+  diagnosticsDialog.querySelector('button[value=cancel]')?.focus();
+});
+diagnosticsDialog.addEventListener('close',()=>{
+  const confirmed=diagnosticsDialog.returnValue==='confirm';
+  shellState.lastDialogOpener?.focus();
+  if(confirmed)clearDiagnostics().catch(error=>announce('Diagnostics clear failed: '+errorCode(error),{sticky:true}));
+});
+
 $('#recover-process').addEventListener('click',()=>{
   if(shellState.recovery.kind==='source'){
     restoreSource().catch(error=>announce('Restore failed: '+errorCode(error),{sticky:true}));
@@ -559,6 +592,7 @@ globalThis.__openContainerUi=Object.freeze({
   applyApproval,
   pendingApprovals:()=>Object.freeze(shellState.pendingApprovals.map(item=>Object.freeze({...item}))),
   attachLinkedFolder,
+  pickLinkedFolder,
   refreshLinkedState,
   writeLinkedFile,
   clearDiagnostics,
