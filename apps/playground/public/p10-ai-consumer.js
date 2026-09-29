@@ -275,7 +275,8 @@ async function run(){
       normal:{committed:normalReceipt.committed,acknowledged:normalReceipt.acknowledged},
       recoveryPoint:destructiveReceipt.recoveryPointId,
       idempotentReplay:replay.idempotentReplay,
-      acknowledgementWithoutReplay:acknowledged.acknowledged&&fs.generation===generationAfterCommit+3,
+      acknowledgementWithoutReplay:acknowledged.acknowledged,
+      idempotentGenerationStable:replay.committedGeneration===generationAfterCommit,
       undoType:undo.inverseType,
       staleUndoRejected:true,
       cancellation
