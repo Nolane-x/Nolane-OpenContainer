@@ -54,6 +54,8 @@ const publicAliases = new Map([
   ['/p1-bfcache-away.html', join(publicRoot, 'p1-bfcache-away.html')],
   ['/p1-browser-substrate.js', join(publicRoot, 'p1-browser-substrate.js')],
   ['/p1-module-worker.mjs', join(publicRoot, 'p1-module-worker.mjs')],
+  ['/p1-permissions-frame.html', join(publicRoot, 'p1-permissions-frame.html')],
+  ['/p1-permissions-frame.js', join(publicRoot, 'p1-permissions-frame.js')],
   ['/compat/p4/PARSER-FUZZ-CORPUS.v1.0.json', join(repoRoot, 'compat/p4/PARSER-FUZZ-CORPUS.v1.0.json')],
   ['/compat/p4/ECOSYSTEM-LAYOUT-CORPUS.v1.0.json', join(repoRoot, 'compat/p4/ECOSYSTEM-LAYOUT-CORPUS.v1.0.json')],
   ['/compat/p4/vite-react-tiny.package-lock.json', join(repoRoot, 'compat/p4/vite-react-tiny.package-lock.json')],
