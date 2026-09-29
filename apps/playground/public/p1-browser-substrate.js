@@ -143,10 +143,33 @@ async function releaseLock(name){
   return true;
 }
 
+async function framePermissionsProbe(){
+  const iframe=document.createElement('iframe');
+  iframe.src='/p1-permissions-frame.html';
+  iframe.setAttribute('title','OpenContainer P1 permissions frame');
+  const receipt=await new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>{
+      window.removeEventListener('message',onMessage);
+      reject(new Error('P1 permissions frame timed out'));
+    },5000);
+    const onMessage=(event)=>{
+      if(event.source!==iframe.contentWindow||event.data?.type!=='opencontainer:p1-permissions-frame')return;
+      clearTimeout(timer);
+      window.removeEventListener('message',onMessage);
+      resolve({origin:event.origin,...event.data});
+    };
+    window.addEventListener('message',onMessage);
+    document.body.appendChild(iframe);
+  });
+  iframe.remove();
+  return Object.freeze(receipt);
+}
+
 async function probe(){
   const headers=await documentHeaders();
   const worker=await workerProbe();
   const storage=await storagePolicy();
+  const embeddedPermissions=await framePermissionsProbe();
   return Object.freeze({
     secureContext:globalThis.isSecureContext===true,
     crossOriginIsolated:globalThis.crossOriginIsolated===true,
@@ -159,6 +182,7 @@ async function probe(){
     worker,
     headers,
     permissions:permissionsPolicy(),
+    embeddedPermissions,
     storage,
     lifecycle:Object.freeze({...lifecycle,timeline:Object.freeze(lifecycle.timeline.map(x=>Object.freeze({...x}))) }),
     sessionBfCache:Object.freeze({
@@ -172,6 +196,7 @@ globalThis.__p1BrowserCourt=Object.freeze({
   probe,
   lifecycle:()=>Object.freeze({...lifecycle,timeline:Object.freeze(lifecycle.timeline.map(x=>Object.freeze({...x}))) }),
   workerProbe,
+  framePermissionsProbe,
   storageSeed,
   storageRead,
   storageRemove,
