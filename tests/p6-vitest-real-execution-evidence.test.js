@@ -12,24 +12,26 @@ test('P6-10 evidence binds exact frozen Vitest artifact and implementation CI',(
   assert.equal(evidence.gate,'P6-10');
   assert.equal(evidence.minimumClosure,'PASS-INTEGRATION + declared-profile evidence');
   assert.equal(evidence.pullRequest,68);
-  assert.equal(evidence.implementation.head,'2efa32d3fabd80c010ce33468963f32c6ed45fd0');
-  assert.equal(evidence.implementation.ciRunNumber,884);
-  assert.equal(evidence.implementation.ciRunId,36573817822);
+  assert.equal(evidence.implementation.head,'fbeadbdba914230edfbcc1ca0192631084065b07');
+  assert.equal(evidence.implementation.ciRunNumber,896);
+  assert.equal(evidence.implementation.ciRunId,36576004149);
   assert.equal(evidence.implementation.contract,'PASS');
   assert.equal(evidence.implementation.codeql,'PASS');
-  assert.equal(evidence.implementation.unitTests,580);
-  assert.equal(evidence.implementation.unitPassed,580);
+  assert.equal(evidence.implementation.unitTests,585);
+  assert.equal(evidence.implementation.unitPassed,585);
   assert.equal(evidence.implementation.unitFailed,0);
-  assert.equal(evidence.implementation.criticalTestFiles,89);
+  assert.equal(evidence.implementation.criticalTestFiles,90);
   assert.equal(evidence.implementation.criticalIterations,5);
-  assert.equal(evidence.implementation.criticalTestFileExecutions,445);
+  assert.equal(evidence.implementation.criticalTestFileExecutions,450);
   assert.equal(evidence.implementation.criticalUnexplainedFailures,0);
+  assert.equal(evidence.implementation.companionP6ToolchainViteJob,'PASS');
+  assert.equal(evidence.implementation.fullBrowserProductPath,'PASS');
 });
 
 test('P6-10 evidence proves real repeated Vitest execution and registry concordance',()=>{
   const court=evidence.dedicatedCourt;
-  assert.equal(court.artifactId,11034964010);
-  assert.equal(court.artifactDigest,'sha256:ac8a7916afae7566f55a5c6479df1d2d5a8a23c34161fd1ef2fea8b573a558fc');
+  assert.equal(court.artifactId,11036952101);
+  assert.equal(court.artifactDigest,'sha256:593565a62183990836985b1adbbbad486be17b5a54b7cf9b77384683e39cec14');
   assert.equal(court.status,'PASS');
   assert.equal(court.nodeVersion,'v24.21.0');
   assert.equal(court.npmVersion,'11.19.0');
@@ -42,7 +44,9 @@ test('P6-10 evidence proves real repeated Vitest execution and registry concorda
   assert.equal(court.totalTestsPassed,6);
   assert.equal(court.totalTestsFailed,0);
   assert.equal(court.fixtureLanguage,'TypeScript');
-  assert.equal(evidence.declaredProfileRegression.existingP6BrowserCourtRerun,true);
+  assert.equal(evidence.declaredProfileRegression.workflowJob,'p6-toolchain-vite');
+  assert.equal(evidence.declaredProfileRegression.sameExactHead,true);
+  assert.equal(evidence.declaredProfileRegression.evidenceBinding,'workflow-needs');
   assert.equal(evidence.declaredProfileRegression.status,'PASS');
 });
 
