@@ -54,11 +54,12 @@ test('P2 bounded transfer channel enforces backpressure and abort races',async()
   const first=await channel.read();
   assert.deepEqual([...first.value],[1,2,3,4]);
   assert.equal(channel.usage.queuedBytes,4);
+  const second=await channel.read();
+  assert.deepEqual([...second.value],[5,6,7,8]);
+  assert.equal(channel.usage.queuedBytes,0);
 
   const controller=new AbortController();
   const pending=channel.read({signal:controller.signal});
-  const queued=await channel.read();
-  assert.deepEqual([...queued.value],[5,6,7,8]);
   controller.abort('consumer-stop');
   await assert.rejects(
     ()=>pending,
