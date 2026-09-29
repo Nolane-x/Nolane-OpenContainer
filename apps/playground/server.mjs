@@ -54,6 +54,8 @@ const publicAliases = new Map([
   ['/p1-bfcache-away.html', join(publicRoot, 'p1-bfcache-away.html')],
   ['/p1-browser-substrate.js', join(publicRoot, 'p1-browser-substrate.js')],
   ['/p1-module-worker.mjs', join(publicRoot, 'p1-module-worker.mjs')],
+  ['/p10-ai-consumer.html', join(publicRoot, 'p10-ai-consumer.html')],
+  ['/p10-ai-consumer.js', join(publicRoot, 'p10-ai-consumer.js')],
   ['/p1-permissions-frame.html', join(publicRoot, 'p1-permissions-frame.html')],
   ['/p1-permissions-frame.js', join(publicRoot, 'p1-permissions-frame.js')],
   ['/compat/p4/PARSER-FUZZ-CORPUS.v1.0.json', join(repoRoot, 'compat/p4/PARSER-FUZZ-CORPUS.v1.0.json')],
@@ -267,6 +269,13 @@ const server = createServer(async (request, response) => {
     }
     if (url.pathname === '/p2-runtime-court.html') {
       response.setHeader('X-OpenContainer-Document-Profile', 'p2-runtime-process-court');
+    }
+    if (url.pathname === '/p10-ai-consumer.html') {
+      response.setHeader(
+        'Content-Security-Policy',
+        "default-src 'self'; script-src 'self'; connect-src 'self'; worker-src 'self'; img-src 'self' data:; style-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+      );
+      response.setHeader('X-OpenContainer-Document-Profile', 'p10-ai-consumer-court');
     }
     if (url.pathname === '/p1-browser-substrate.html' || url.pathname === '/p1-dip.html') {
       response.setHeader(
