@@ -13,9 +13,9 @@ test('P6-10 source audit pins real Vitest 3.0.8 to the frozen lockfile artifact'
   assert.equal(entry.resolved,'https://registry.npmjs.org/vitest/-/vitest-3.0.8.tgz');
   assert.equal(entry.integrity,'sha512-dfqAsNqRGUc8hB9OVR2P0w8PZPEckti2+5rdZip0WIz9WW0MnImJ8XiR61QhqLa92EQzKP2uPkzenKOAHyEIbA==');
   assert.equal(entry.bin.vitest,'vitest.mjs');
-  assert.match(runner,/npm',\['view','vitest@3\.0\.8'/);
-  assert.match(runner,/registry\['dist\.integrity'\]===frozen\.integrity/);
-  assert.match(runner,/registry\['dist\.tarball'\]===frozen\.resolved/);
+  assert.ok(runner.includes("'view','vitest@3.0.8','dist.integrity','dist.tarball','--json'"));
+  assert.ok(runner.includes("registry['dist.integrity']===frozen.integrity"));
+  assert.ok(runner.includes("registry['dist.tarball']===frozen.resolved"));
 });
 
 test('P6-10 source audit requires real repeated Vitest TypeScript execution',()=>{
