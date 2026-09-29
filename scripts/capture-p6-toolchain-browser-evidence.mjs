@@ -89,7 +89,7 @@ const c2DepOpt=required(stages,'vite-c2-dep-opt-pass');
 const measurement=required(stages,'p6-toolchain-measurement-pass');
 
 if(viteModule.version!=='8.3.0'||viteModule.workerCrossOriginIsolated!==true)throw new Error('Vite browser module profile mismatch');
-if(c1.failureAtomicity!==true||c1.mapVersion!==3||c1.failureDiagnosticPath!==true)throw new Error('Vite C1 failure/source-map evidence incomplete');
+if(c1.failureAtomicity!==true||c1.packageGraphGenerationStable!==true||c1.packageLayoutIdentityStable!==true||c1.mapVersion!==3||c1.failureDiagnosticPath!==true)throw new Error('Vite C1 failure/source-map/package-state evidence incomplete');
 if(!Array.isArray(c1.mapSources)||!c1.sourceMapSources.some(x=>String(x).includes('src/main.ts')))throw new Error('Vite C1 source map lost TypeScript source');
 if(c2.safeFailure!==true||c2.recovered!==true)throw new Error('Vite C2 HMR failure/recovery evidence incomplete');
 if(measurement.compiledModuleCacheEvidence?.compiles!==1||measurement.compiledModuleCacheEvidence?.workerClones!==2)throw new Error('P6 cache measurement drifted');
