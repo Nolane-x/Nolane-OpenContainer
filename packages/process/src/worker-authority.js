@@ -90,7 +90,7 @@ export class WorkerRpcAuthority {
     return this.identity;
   }
 
-  request(method, payload, { transfer, background=false } = {}) {
+  request(method, payload, { transfer, background=false, timeoutMs=null } = {}) {
     if (this.#closed) throw ocError(ErrorCodes.WORKER_CLOSED, 'Worker authority is closed');
     if (!this.#transport) throw ocError(ErrorCodes.INVALID_STATE, 'Worker transport is not attached');
     if (typeof method !== 'string' || !method) {
@@ -127,7 +127,10 @@ export class WorkerRpcAuthority {
     });
 
     let timer = null;
-    if (this.#requestTimeoutMs > 0) {
+    const effectiveTimeoutMs=timeoutMs===null||timeoutMs===undefined
+      ? this.#requestTimeoutMs
+      : Math.max(0,Number(timeoutMs)||0);
+    if (effectiveTimeoutMs > 0) {
       timer = setTimeout(() => {
         const pending = this.#pending.get(id);
         if (!pending) return;
@@ -138,11 +141,11 @@ export class WorkerRpcAuthority {
           epoch: this.#epoch,
           id,
           method,
-          timeoutMs: this.#requestTimeoutMs
+          timeoutMs: effectiveTimeoutMs
         });
         this.#diagnostics?.record('worker.timeout', error.details);
         pending.reject(error);
-      }, this.#requestTimeoutMs);
+      }, effectiveTimeoutMs);
     }
 
     this.#pending.set(id, { resolve, reject, method, timer, lease, inFlightBytes, background:background===true });
