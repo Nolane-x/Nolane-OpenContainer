@@ -941,3 +941,15 @@ Child-agent results are epoch-bound; cancelled/stale results remain reviewable e
 Cost/token UI stays hidden unless provider metadata is marked authoritative; the reference layer does not fabricate estimates. CI uses fake provider adapters only to exercise authority/failure/switch/metadata semantics and makes **no model/provider quality claim**.
 
 The production ledger candidate is now **239/304** minimum-closure satisfied with **249** reconciliation rows. **P10 is 18/18 closed.** `production_closed=false` remains mandatory because other production domains still contain external/manual/resource/compatibility blockers.
+
+## P6-10 real Vitest compatibility closure
+
+PR #68 implementation head `2efa32d3fabd80c010ce33468963f32c6ed45fd0` passed CI #884 with **580/580** contract tests, CodeQL, **89 critical files × 5 = 445** repeated executions with zero unexplained failures, the existing declared-profile P6 Chrome court, and every installed-distribution browser regression job.
+
+P6-10 now has real test-runner/CLI execution evidence. The court reads the exact `vitest@3.0.8` entry already frozen in `compat/p4/vite-react-tiny.package-lock.json`, verifies the live npm registry tarball URL and SHA-512 SRI against that frozen lockfile, executes the real Vitest CLI twice against `compat/p6/vitest-smoke.test.ts`, and records **3/3 TypeScript tests PASS on each run (6/6 total)** on exact Node v24.21.0 / npm 11.19.0.
+
+Dedicated artifact **#11034964010** has digest `sha256:ac8a7916afae7566f55a5c6479df1d2d5a8a23c34161fd1ef2fea8b573a558fc`. After the real Vitest runs, the complete P6 declared-profile Chrome court reruns PASS, so the new CLI evidence does not replace the browser integration evidence.
+
+This closure is deliberately narrower than the frozen `vitest-dev/vitest` root repository boundary. It does **not** claim pnpm-lock parsing, Vitest root-monorepo workspace installation, browser-native Vitest execution or cross-browser compatibility.
+
+The production ledger candidate is now **240/304** minimum-closure satisfied with **250** reconciliation rows. **P6 is 16/16 closed.** Overall `production_closed=false` remains mandatory because independent external/manual/release-history gates remain open.
