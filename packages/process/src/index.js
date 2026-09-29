@@ -186,5 +186,5 @@ export class ProcessSupervisor {
 
 export { WorkerRpcAuthority } from './worker-authority.js';
 export { BrowserGuestWorkerAuthority } from './browser-guest-worker.js';
-export { createSyncRpcMailbox, settleSyncRpcMailbox, waitSyncRpcMailbox, SyncRpcConstants } from './sync-rpc.js';
+export { createSyncRpcMailbox, settleSyncRpcMailbox, waitSyncRpcMailbox, SyncRpcConstants, SyncRpcPolicy } from './sync-rpc.js';
 export { MutationReceiptAuthority, CancellationLineage, ProcessPortAuthority, BoundedTransferChannel } from './runtime-contracts.js';
