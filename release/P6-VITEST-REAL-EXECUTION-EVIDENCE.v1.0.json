@@ -1,0 +1,56 @@
+{
+  "schema": "opencontainer.p6-vitest-real-execution-evidence.v1.0",
+  "source": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "gate": "P6-10",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 68,
+  "implementation": {
+    "head": "2efa32d3fabd80c010ce33468963f32c6ed45fd0",
+    "ciRunNumber": 884,
+    "ciRunId": 36573817822,
+    "pullRequestContextSha": "ef57422df6c154c2677f0f50f1ea8c8ee9ed7321",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "unitTests": 580,
+    "unitPassed": 580,
+    "unitFailed": 0,
+    "criticalTestFiles": 89,
+    "criticalIterations": 5,
+    "criticalTestFileExecutions": 445,
+    "criticalUnexplainedFailures": 0,
+    "fullBrowserRegression": "PASS"
+  },
+  "dedicatedCourt": {
+    "artifactId": 11034964010,
+    "artifactDigest": "sha256:ac8a7916afae7566f55a5c6479df1d2d5a8a23c34161fd1ef2fea8b573a558fc",
+    "status": "PASS",
+    "nodeVersion": "v24.21.0",
+    "npmVersion": "11.19.0",
+    "vitestVersion": "3.0.8",
+    "sourceLockfile": "compat/p4/vite-react-tiny.package-lock.json",
+    "tarball": "https://registry.npmjs.org/vitest/-/vitest-3.0.8.tgz",
+    "integrity": "sha512-dfqAsNqRGUc8hB9OVR2P0w8PZPEckti2+5rdZip0WIz9WW0MnImJ8XiR61QhqLa92EQzKP2uPkzenKOAHyEIbA==",
+    "repeatedExecutions": 2,
+    "testsPerExecution": 3,
+    "totalTestsExecuted": 6,
+    "totalTestsPassed": 6,
+    "totalTestsFailed": 0,
+    "fixture": "compat/p6/vitest-smoke.test.ts",
+    "fixtureLanguage": "TypeScript"
+  },
+  "declaredProfileRegression": {
+    "existingP6BrowserCourtRerun": true,
+    "status": "PASS",
+    "historicalP610OpenBoundaryRetainedByOldReceipt": true
+  },
+  "boundaries": {
+    "vitestRootMonorepoPnpmSupportClaimed": false,
+    "pnpmLockfileSupportClaimed": false,
+    "monorepoWorkspaceInstallClaimed": false,
+    "browserNativeVitestExecutionClaimed": false,
+    "crossBrowserClaimed": false,
+    "p6DomainClosed": true,
+    "productionClosed": false
+  }
+}
