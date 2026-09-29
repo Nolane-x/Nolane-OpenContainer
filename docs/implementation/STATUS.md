@@ -922,3 +922,22 @@ Storage evidence distinguishes classes. The best-effort OPFS path is explicitly 
 P1-13 remains open because CI is not a real public CDN/reverse-proxy deployment. P1-14 remains open because a single Chrome 153 profile is not the required frozen-floor + newest-stable RC matrix. P1-15 remains open because internal emergency modeling is not field browser-regression incident evidence.
 
 The production ledger candidate is now **221/304** minimum-closure satisfied with **231** reconciliation rows. P1 is **13/16**; `production_closed=false` remains mandatory.
+
+
+## P10 optional AI consumer authority closure
+
+PR #67 implementation head `41069da8f77e2ba6ad0c1ceab5f12d1711f84ea4` passed CI #874 with **571/571** contract tests, CodeQL, **87 critical files × 5 = 435** repeated executions with zero unexplained failures, **2/2** complete installed-distribution Chrome product paths and a dedicated **2/2** P10 AI-consumer Chrome court (artifact #11031678345, digest `sha256:5372a9aaf563c4819bc8af6c95c1d26b459e2408d70c186da17f4aab71216a8c`).
+
+P10-01 through P10-18 now meet the frozen minimum closure **PASS-INTEGRATION + declared-profile evidence**. The implementation lives in the optional `@nolane/opencontainer-ai-consumer` package and does not add a tenth Core runtime surface.
+
+The court proves session-memory BYOK custody with no plaintext in workspace/localStorage/sessionStorage/support receipts; provider switch advances an epoch and clears credential/context scope. Context egress uses an explicit manifest with file/category/range metadata, and sensitive files remain excluded until an exact override is granted.
+
+Repository text, web pages and tool output remain untrusted data. Discuss/Plan/Build are separate authority modes and canonical mutation requires Build plus an explicit one-use approval. The approval rendering court treats prompt-injection markup as text and proves it cannot alter action/scope or execute event handlers.
+
+Canonical AI writes use a generation-preconditioned ChangeSet, validation, one VFS transaction, a commit receipt and explicit acknowledgement. Broad destructive changes retain a local recovery point. Idempotency identity prevents retry replay after acknowledgement loss, and Undo is path/version-aware so newer user edits are never overwritten by a blind workspace rollback.
+
+Child-agent results are epoch-bound; cancelled/stale results remain reviewable evidence only. Provider rate-limit failure leaves the local workspace generation unchanged. Shared agent/tool concurrency is bounded through `ResourceGovernor`, including resource-pressure admission control. Cancellation is exercised at pre-tool, in-tool, post-commit and acknowledgement-lost phases.
+
+Cost/token UI stays hidden unless provider metadata is marked authoritative; the reference layer does not fabricate estimates. CI uses fake provider adapters only to exercise authority/failure/switch/metadata semantics and makes **no model/provider quality claim**.
+
+The production ledger candidate is now **239/304** minimum-closure satisfied with **249** reconciliation rows. **P10 is 18/18 closed.** `production_closed=false` remains mandatory because other production domains still contain external/manual/resource/compatibility blockers.
