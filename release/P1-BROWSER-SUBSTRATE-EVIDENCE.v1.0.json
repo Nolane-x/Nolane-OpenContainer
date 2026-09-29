@@ -1,0 +1,150 @@
+{
+  "schema": "opencontainer.p1-browser-substrate-evidence.v1.0",
+  "source": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 66,
+  "closedGates": [
+    "P1-01",
+    "P1-02",
+    "P1-03",
+    "P1-04",
+    "P1-05",
+    "P1-06",
+    "P1-07",
+    "P1-08",
+    "P1-09",
+    "P1-10",
+    "P1-11",
+    "P1-12",
+    "P1-16"
+  ],
+  "intentionallyOpenGates": [
+    {
+      "id": "P1-13",
+      "reason": "No retained campaign against a real public CDN/reverse-proxy release topology."
+    },
+    {
+      "id": "P1-14",
+      "reason": "No RC matrix against both the frozen browser floor and newest stable release."
+    },
+    {
+      "id": "P1-15",
+      "reason": "No field browser-regression incident evidence; internal emergency modeling is not field evidence."
+    }
+  ],
+  "implementation": {
+    "head": "d4a08451b78f7891aafb4cd1d10caf04075c50d2",
+    "ciRunNumber": 863,
+    "ciRunId": 36558101758,
+    "testedCheckoutCommit": "bd12c487d18c9bb1c3b6e99924bd2def6cbf5799",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "unitTests": 545,
+    "unitPassed": 545,
+    "unitFailed": 0,
+    "criticalTestFiles": 84,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 420,
+    "contractUnexplainedFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2,
+    "browserUnexplainedFailures": 0
+  },
+  "dedicatedReleaseCourt": {
+    "artifactId": 11028266315,
+    "artifactDigest": "sha256:e584c8f6f95a29d9ff1c1005f2e4139bdb445775fad15e02007845e43bb6b705",
+    "schema": "opencontainer.p1-browser-substrate.v1.0",
+    "status": "PASS",
+    "nodeVersion": "v24.21.0",
+    "browser": "Google Chrome 153.0.8010.52",
+    "profile": "declared Chrome / Ubuntu x64 CI profile",
+    "sourceGates": [
+      "P1-01",
+      "P1-02",
+      "P1-03",
+      "P1-04",
+      "P1-05",
+      "P1-06",
+      "P1-07",
+      "P1-08",
+      "P1-09",
+      "P1-10",
+      "P1-11",
+      "P1-12",
+      "P1-16"
+    ],
+    "bfcacheRestored": true,
+    "persistentStorageGranted": true
+  },
+  "browserHarness": {
+    "secureContext": true,
+    "managedNavigationPolicyObserved": false,
+    "crossOriginIsolated": true,
+    "sharedArrayBuffer": true,
+    "atomics": true,
+    "baselineIsolationWithoutDip": true,
+    "optionalDocumentIsolationPolicy": "isolate-and-require-corp",
+    "documentIsolationPolicyRequired": false
+  },
+  "headersAndIsolation": {
+    "coop": "same-origin",
+    "coep": "require-corp",
+    "corp": "same-origin",
+    "strictHostCsp": true,
+    "strictGuestWorkerCsp": true,
+    "toolchainWorkerCspSeparated": true,
+    "embeddedPermissionsDenied": [
+      "camera",
+      "microphone",
+      "geolocation",
+      "display-capture",
+      "usb",
+      "serial",
+      "hid",
+      "payment"
+    ],
+    "previewOpaqueOrigin": true,
+    "previewParentAccessDenied": true,
+    "previewStorageAccessDenied": true,
+    "previewHostCredentialHeaders": false
+  },
+  "lifecycleAndRecovery": {
+    "realFreezeResume": true,
+    "realBfCacheRestore": true,
+    "fullRefreshRecoveryFromOpfs": true,
+    "unloadFinalSaveDependency": false,
+    "actualMultiTabWebLocks": true,
+    "staleOpfsWriterRejected": "OC_STALE_GENERATION",
+    "canonicalWriterPreserved": true
+  },
+  "storage": {
+    "bestEffortEviction": {
+      "mechanism": "Chrome CDP Storage.clearDataForOrigin(file_systems)",
+      "reopenAsMissing": true
+    },
+    "persistentClass": {
+      "browserPermissionOverride": "persistent-storage/durableStorage declared-profile automation",
+      "persistedAfterGrant": true,
+      "survivesTargetCloseAndReopen": true
+    }
+  },
+  "capabilityAndHosting": {
+    "executableHostingSelfCheck": true,
+    "hostingFailures": 0,
+    "installedSupportBundleBrowserProbe": true,
+    "requiredCapabilities": [
+      "secureContext",
+      "crossOriginIsolated",
+      "SharedArrayBuffer",
+      "Worker",
+      "ServiceWorker",
+      "OPFS",
+      "WebLocks",
+      "storageEstimate"
+    ]
+  },
+  "p1DomainClosed": false,
+  "productionClosed": false
+}

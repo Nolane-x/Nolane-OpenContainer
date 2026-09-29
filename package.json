@@ -60,7 +60,8 @@
     "p4:command-diagnostics:evidence": "node scripts/p4-command-diagnostics.mjs",
     "p4:final-package:evidence": "node scripts/p4-final-package.mjs",
     "p6:toolchain-vite:evidence": "node scripts/capture-p6-toolchain-browser-evidence.mjs",
-    "p2:runtime:evidence": "node scripts/p2-runtime-evidence.mjs"
+    "p2:runtime:evidence": "node scripts/p2-runtime-evidence.mjs",
+    "p1:browser-substrate:evidence": "node scripts/p1-browser-substrate.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",

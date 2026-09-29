@@ -546,6 +546,14 @@
       "status": "PASS",
       "ref": "CI #851 / PR #65 implementation head b2182f11cc03222da96568e06ac9951b7fe3b3fb",
       "note": "P2-01..P2-14 declared-profile release evidence: actual Worker RPC duplicate-terminal suppression, timeout mutation reconciliation, cancellation lineage, bounded output drain, exactly-once process terminals, staged worker-death cleanup, sync-RPC no-reentrancy, bounded process-tree semantics, epoch-bound virtual ports, bounded output retention, stale handle rejection, 8 MiB transferable under Chrome heap pressure, 200 repeated process cycles and stable public errors. Dedicated Chrome court passed 2/2 in artifact #11016743685."
+    },
+    {
+      "key": "p1-browser-substrate",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #863 / PR #66 implementation head d4a08451b78f7891aafb4cd1d10caf04075c50d2",
+      "note": "P1-01/02/03/04/05/06/07/08/09/10/11/12/16 declared-profile closure: clean unmanaged Chrome navigation, COOP/COEP+SAB/Atomics baseline without DIP dependency, optional DIP probe, strict host/worker CSP, embedded Permissions Policy, sandboxed preview origin/credential/storage isolation, module Worker startup/teardown, real freeze/resume+BFCache, refresh OPFS recovery, multi-tab Web Locks+stale OPFS writer rejection, best-effort OPFS eviction/reopen, persistent storage reopen, capability probe and executable hosting self-check. P1-13/14/15 remain open."
     }
   ]
 }

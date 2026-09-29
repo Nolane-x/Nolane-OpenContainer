@@ -49,6 +49,13 @@ const publicAliases = new Map([
   ['/p2-runtime-court.html', join(publicRoot, 'p2-runtime-court.html')],
   ['/p2-runtime-court.js', join(publicRoot, 'p2-runtime-court.js')],
   ['/p2-runtime-worker.mjs', join(publicRoot, 'p2-runtime-worker.mjs')],
+  ['/p1-browser-substrate.html', join(publicRoot, 'p1-browser-substrate.html')],
+  ['/p1-dip.html', join(publicRoot, 'p1-browser-substrate.html')],
+  ['/p1-bfcache-away.html', join(publicRoot, 'p1-bfcache-away.html')],
+  ['/p1-browser-substrate.js', join(publicRoot, 'p1-browser-substrate.js')],
+  ['/p1-module-worker.mjs', join(publicRoot, 'p1-module-worker.mjs')],
+  ['/p1-permissions-frame.html', join(publicRoot, 'p1-permissions-frame.html')],
+  ['/p1-permissions-frame.js', join(publicRoot, 'p1-permissions-frame.js')],
   ['/compat/p4/PARSER-FUZZ-CORPUS.v1.0.json', join(repoRoot, 'compat/p4/PARSER-FUZZ-CORPUS.v1.0.json')],
   ['/compat/p4/ECOSYSTEM-LAYOUT-CORPUS.v1.0.json', join(repoRoot, 'compat/p4/ECOSYSTEM-LAYOUT-CORPUS.v1.0.json')],
   ['/compat/p4/vite-react-tiny.package-lock.json', join(repoRoot, 'compat/p4/vite-react-tiny.package-lock.json')],
@@ -261,6 +268,19 @@ const server = createServer(async (request, response) => {
     if (url.pathname === '/p2-runtime-court.html') {
       response.setHeader('X-OpenContainer-Document-Profile', 'p2-runtime-process-court');
     }
+    if (url.pathname === '/p1-browser-substrate.html' || url.pathname === '/p1-dip.html') {
+      response.setHeader(
+        'Content-Security-Policy',
+        "default-src 'self'; script-src 'self'; connect-src 'self'; worker-src 'self'; img-src 'self' data:; style-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+      );
+      response.setHeader(
+        'X-OpenContainer-Document-Profile',
+        url.pathname === '/p1-dip.html' ? 'p1-browser-dip-optional' : 'p1-browser-baseline'
+      );
+      if(url.pathname === '/p1-dip.html'){
+        response.setHeader('Document-Isolation-Policy','isolate-and-require-corp');
+      }
+    }
     if (url.pathname === '/p3-native-external-permission.html') {
       response.setHeader('X-OpenContainer-Document-Profile', 'p3-native-external-permission-court');
     }
@@ -295,6 +315,13 @@ const server = createServer(async (request, response) => {
         "default-src 'none'; script-src 'self'; connect-src 'self'; worker-src 'self'; child-src 'self'"
       );
       response.setHeader('X-OpenContainer-Worker-Profile', 'p2-runtime-court');
+    }
+    if (url.pathname === '/p1-module-worker.mjs') {
+      response.setHeader(
+        'Content-Security-Policy',
+        "default-src 'none'; script-src 'self'; connect-src 'self'; worker-src 'self'; child-src 'self'"
+      );
+      response.setHeader('X-OpenContainer-Worker-Profile', 'p1-browser-court');
     }
     response.setHeader('Content-Type', contentType(target));
     response.end(await readFile(target));

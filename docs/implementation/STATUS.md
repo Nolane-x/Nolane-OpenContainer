@@ -901,3 +901,24 @@ The browser court uses real Dedicated Workers and proves:
 The P2 boundary remains browser-native and virtual: this does not claim host OS process creation, raw TCP/UDP parity, or complete Node stream parity.
 
 The production ledger candidate is now **208/304** minimum-closure satisfied with **224** reconciliation rows. **P2 is 14/14 closed.** Overall `production_closed=false` remains unchanged because other production domains still contain open gates.
+
+
+## P1 browser substrate declared-profile closure wave
+
+PR #66 implementation head `d4a08451b78f7891aafb4cd1d10caf04075c50d2` passed CI #863 with **545/545** contract tests, CodeQL, **84 critical files × 5 = 420** repeated executions with zero unexplained failures, **2/2** installed-distribution Chrome product paths and a dedicated P1 Chrome/CDP court (artifact #11028266315, digest `sha256:e584c8f6f95a29d9ff1c1005f2e4139bdb445775fad15e02007845e43bb6b705`).
+
+This promotes **13/16 P1 gates** for the declared Chrome profile: P1-01 through P1-12 plus P1-16. P1-13, P1-14 and P1-15 remain intentionally open.
+
+The court proves the baseline shipping topology with COOP `same-origin` + COEP `require-corp`, real `crossOriginIsolated`, SharedArrayBuffer/Atomics and module Worker execution. Document Isolation Policy is exercised only on a separate optional Chromium profile; the baseline page has no DIP header and remains isolated, so DIP is not a required product dependency.
+
+Host CSP, strict/toolchain Worker CSP and the frozen Permissions Policy are checked against live responses. An embedded frame observes camera/microphone/geolocation/display-capture/USB/serial/HID/payment as denied. Existing installed-distribution preview evidence additionally proves opaque sandbox origin, denied parent/storage access and no forwarded host credential headers.
+
+Lifecycle evidence is real-browser evidence: Chrome freeze/resume events are observed; a history restore returns through BFCache with `pageshow.persisted=true`; full page reload reopens previously committed OPFS bytes without any unload-final-save dependency.
+
+Canonical-writer evidence uses two actual browser targets. Web Locks prevent simultaneous writer acquisition and permit failover only after release; a separate two-tab OPFS writer court rejects the stale writer with `OC_STALE_GENERATION` while preserving the canonical value.
+
+Storage evidence distinguishes classes. The best-effort OPFS path is explicitly evicted through Chrome CDP `Storage.clearDataForOrigin(file_systems)` and reopens as missing state. The declared Chrome automation profile grants persistent storage, writes OPFS state, closes the page target and verifies the state survives a fresh target reopen.
+
+P1-13 remains open because CI is not a real public CDN/reverse-proxy deployment. P1-14 remains open because a single Chrome 153 profile is not the required frozen-floor + newest-stable RC matrix. P1-15 remains open because internal emergency modeling is not field browser-regression incident evidence.
+
+The production ledger candidate is now **221/304** minimum-closure satisfied with **231** reconciliation rows. P1 is **13/16**; `production_closed=false` remains mandatory.

@@ -368,6 +368,10 @@
     "p2-runtime-process": {
       "ref": "CI #851 / PR #65 implementation head b2182f11cc03222da96568e06ac9951b7fe3b3fb",
       "note": "P2-01..P2-14 RELEASE-READY browser evidence: actual Worker RPC and staged crash cleanup, timeout mutation reconciliation, cancellation/transfer bounds, bounded synchronous-RPC call graph, exactly-once virtual-process terminal publication after bounded output drain, bounded process-tree/orphan semantics, epoch-bound virtual ports, Chromium pressure transfer evidence, repeated cycle leak checks and stable public errors."
+    },
+    "p1-browser-substrate": {
+      "ref": "CI #863 / PR #66 implementation head d4a08451b78f7891aafb4cd1d10caf04075c50d2",
+      "note": "P1 declared-profile browser integration evidence for clean Chrome harness, COOP/COEP baseline, optional DIP, CSP/Permissions Policy, origin isolation, Workers, lifecycle/BFCache, refresh recovery, multi-tab canonical writer exclusion, storage eviction/persistence classes, capability probes and executable hosting validation. P1-13/14/15 remain intentionally open."
     }
   },
   "overrides": [
@@ -471,41 +475,41 @@
       "id": "P1-01",
       "domain": "P1",
       "state": "EVIDENCE",
-      "promotion": "PASS-BROWSER",
-      "evidence": "chrome",
-      "closure_met": false
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p1-browser-substrate",
+      "closure_met": true
     },
     {
       "id": "P1-02",
       "domain": "P1",
       "state": "EVIDENCE",
-      "promotion": "PASS-BROWSER",
-      "evidence": "chrome",
-      "closure_met": false
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p1-browser-substrate",
+      "closure_met": true
     },
     {
       "id": "P1-07",
       "domain": "P1",
       "state": "EVIDENCE",
-      "promotion": "PASS-BROWSER",
-      "evidence": "chrome",
-      "closure_met": false
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p1-browser-substrate",
+      "closure_met": true
     },
     {
       "id": "P1-10",
       "domain": "P1",
-      "state": "PARTIAL",
-      "promotion": "PASS-BROWSER",
-      "evidence": "opfs-locks",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p1-browser-substrate",
+      "closure_met": true
     },
     {
       "id": "P1-11",
       "domain": "P1",
-      "state": "PARTIAL",
-      "promotion": "PASS-BROWSER",
-      "evidence": "storage",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p1-browser-substrate",
+      "closure_met": true
     },
     {
       "id": "P1-13",
@@ -518,10 +522,10 @@
     {
       "id": "P1-16",
       "domain": "P1",
-      "state": "PARTIAL",
-      "promotion": "PASS-LOCAL",
-      "evidence": "hosting-self-check",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p1-browser-substrate",
+      "closure_met": true
     },
     {
       "id": "P2-01",
@@ -2161,6 +2165,62 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p2-runtime-process",
+      "closure_met": true
+    },
+    {
+      "id": "P1-03",
+      "domain": "P1",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p1-browser-substrate",
+      "closure_met": true
+    },
+    {
+      "id": "P1-04",
+      "domain": "P1",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p1-browser-substrate",
+      "closure_met": true
+    },
+    {
+      "id": "P1-05",
+      "domain": "P1",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p1-browser-substrate",
+      "closure_met": true
+    },
+    {
+      "id": "P1-06",
+      "domain": "P1",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p1-browser-substrate",
+      "closure_met": true
+    },
+    {
+      "id": "P1-08",
+      "domain": "P1",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p1-browser-substrate",
+      "closure_met": true
+    },
+    {
+      "id": "P1-09",
+      "domain": "P1",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p1-browser-substrate",
+      "closure_met": true
+    },
+    {
+      "id": "P1-12",
+      "domain": "P1",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p1-browser-substrate",
       "closure_met": true
     }
   ]
