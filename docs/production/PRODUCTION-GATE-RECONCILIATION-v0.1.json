@@ -372,6 +372,10 @@
     "p1-browser-substrate": {
       "ref": "CI #863 / PR #66 implementation head d4a08451b78f7891aafb4cd1d10caf04075c50d2",
       "note": "P1 declared-profile browser integration evidence for clean Chrome harness, COOP/COEP baseline, optional DIP, CSP/Permissions Policy, origin isolation, Workers, lifecycle/BFCache, refresh recovery, multi-tab canonical writer exclusion, storage eviction/persistence classes, capability probes and executable hosting validation. P1-13/14/15 remain intentionally open."
+    },
+    "p10-ai-consumer": {
+      "ref": "CI #874 / PR #67 implementation head 41069da8f77e2ba6ad0c1ceab5f12d1711f84ea4",
+      "note": "P10 full-domain declared-profile evidence. Optional consumer package keeps Core at nine surfaces; provider keys remain session-memory only; Context Manifest/sensitive default-deny gates egress; untrusted data grants no authority; Discuss/Plan/Build remain distinct; canonical AI writes use validated preconditioned ChangeSets, recovery points, idempotent receipts and path/version-aware Undo; provider/child epochs, shared concurrency, prompt-injection rendering and cancellation phases are browser-tested. Fake providers are authority fixtures only."
     }
   },
   "overrides": [
@@ -2221,6 +2225,150 @@
       "state": "EVIDENCE",
       "promotion": "PASS-INTEGRATION",
       "evidence": "p1-browser-substrate",
+      "closure_met": true
+    },
+    {
+      "id": "P10-01",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P10-02",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P10-03",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P10-04",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P10-05",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P10-06",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P10-07",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P10-08",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P10-09",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P10-10",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P10-11",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P10-12",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P10-13",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P10-14",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P10-15",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P10-16",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P10-17",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P10-18",
+      "domain": "P10",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p10-ai-consumer",
       "closure_met": true
     }
   ]
