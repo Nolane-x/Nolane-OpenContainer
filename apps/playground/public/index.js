@@ -535,9 +535,15 @@ $('#ai-prompt').addEventListener('compositionend',()=>{
   $('#composition-state').textContent='Ready';
 });
 $('#ai-prompt').addEventListener('keydown',event=>{
-  if(event.key==='Enter'&&shellState.composing){
+  if(event.key!=='Enter')return;
+  if(shellState.composing){
     event.preventDefault();
     event.stopPropagation();
+    return;
+  }
+  if(event.ctrlKey||event.metaKey){
+    event.preventDefault();
+    $('#ai-form').requestSubmit();
   }
 });
 $('#ai-form').addEventListener('submit',event=>{
