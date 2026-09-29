@@ -3376,6 +3376,7 @@ async function run() {
       "const fourthRun = await runBuild();",
       "const sourceBeforeFailure = readFileSync(sourcePath, 'utf8');",
       "let expectedFailureObserved = false;",
+      "let expectedFailureMessage = '';",
       "try {",
       "  await build({",
       "    root,",
@@ -3384,8 +3385,9 @@ async function run() {
       "    plugins: [vfsPlugin],",
       "    build: { write: false, rollupOptions: { input: root + '/src/__opencontainer_missing_entry__.ts' } }",
       "  });",
-      "} catch {",
+      "} catch (error) {",
       "  expectedFailureObserved = true;",
+      "  expectedFailureMessage = error?.stack ?? error?.message ?? String(error);",
       "}",
       "const sourceAfterFailure = readFileSync(sourcePath, 'utf8');",
       "export const viteVersion = version;",
@@ -3396,6 +3398,7 @@ async function run() {
       "export const sourceEditObserved = secondJs.includes('source-v2');",
       "export const configReloadObserved = thirdJs.includes('OpenContainer Vite C1 Config V2');",
       "export const expectedBuildFailureObserved = expectedFailureObserved;",
+      "export const expectedBuildFailureMessage = expectedFailureMessage;",
       "export const sourceUnchangedAfterFailure = sourceBeforeFailure === sourceAfterFailure;",
       "export const deterministicManifest = normalizedManifest(thirdRun) === normalizedManifest(fourthRun);",
       "export const repeatedOutputFiles = thirdRun.outputs.map((entry) => entry.fileName).sort().join('|') === fourthRun.outputs.map((entry) => entry.fileName).sort().join('|');"
@@ -3949,6 +3952,7 @@ async function run() {
       'sourceEditObserved',
       'configReloadObserved',
       'expectedBuildFailureObserved',
+      'expectedBuildFailureMessage',
       'sourceUnchangedAfterFailure',
       'deterministicManifest',
       'repeatedOutputFiles'
@@ -3985,7 +3989,10 @@ async function run() {
   assert(!c1CssWithoutMapComment.includes('0px 0px 0px 0px'), 'Vite C1 Lightning CSS did not minify zero margin syntax');
   assert(!/\.card\s+\{/.test(c1CssWithoutMapComment), 'Vite C1 Lightning CSS retained unminified selector spacing');
   assert(c1Js?.content.includes('OpenContainer Vite C1 Config V1'), 'Vite C1 TypeScript config plugin did not execute');
-  assert(JSON.parse(c1Map?.content ?? '{}').version === 3, 'Vite C1 source map is invalid');
+  const c1SourceMap=JSON.parse(c1Map?.content ?? '{}');
+  assert(c1SourceMap.version === 3, 'Vite C1 source map is invalid');
+  assert(Array.isArray(c1SourceMap.sources)&&c1SourceMap.sources.some(source=>String(source).includes('src/main.ts')), 'Vite C1 source map lost TypeScript source identity');
+  assert(Array.isArray(c1SourceMap.sourcesContent)&&c1SourceMap.sourcesContent.some(source=>String(source).includes('source-v1')), 'Vite C1 source map lost original source content');
   assert(c1Svg?.content.includes('<svg'), 'Vite C1 imported asset was not emitted');
   const c1Manifest = JSON.parse(c1ManifestEntry?.content ?? '{}');
   assert(Object.keys(c1Manifest).length >= 1, 'Vite C1 manifest is empty');
@@ -3993,6 +4000,7 @@ async function run() {
   assert(viteBuildExecution.exports.sourceEditObserved === true, 'Vite C1 second build did not observe source edit');
   assert(viteBuildExecution.exports.configReloadObserved === true, 'Vite C1 did not re-read edited TypeScript config');
   assert(viteBuildExecution.exports.expectedBuildFailureObserved === true, 'Vite C1 failure atomicity probe did not fail as expected');
+  assert(String(viteBuildExecution.exports.expectedBuildFailureMessage).includes('__opencontainer_missing_entry__'), 'Vite C1 failure diagnostic lost failing source path');
   assert(viteBuildExecution.exports.sourceUnchangedAfterFailure === true, 'Vite C1 failed build mutated canonical source');
   assert(viteBuildExecution.exports.deterministicManifest === true, 'Vite C1 normalized manifest changed across identical builds');
   assert(viteBuildExecution.exports.repeatedOutputFiles === true, 'Vite C1 output filenames changed across identical builds');
@@ -4005,6 +4013,10 @@ async function run() {
     sourceRebuild: viteBuildExecution.exports.sourceEditObserved,
     configReload: viteBuildExecution.exports.configReloadObserved,
     failureAtomicity: viteBuildExecution.exports.sourceUnchangedAfterFailure,
+    sourceMapVersion:c1SourceMap.version,
+    sourceMapSources:c1SourceMap.sources,
+    sourceMapSourcesContent:c1SourceMap.sourcesContent?.length??0,
+    failureDiagnosticPath:String(viteBuildExecution.exports.expectedBuildFailureMessage).includes('__opencontainer_missing_entry__'),
     deterministicManifest: viteBuildExecution.exports.deterministicManifest
   });
 
