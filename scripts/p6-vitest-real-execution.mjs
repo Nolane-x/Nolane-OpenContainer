@@ -6,7 +6,6 @@ const root=resolve('.');
 const output=resolve(process.argv[2]??'.artifacts/p6-vitest-real-execution/evidence.json');
 const lockPath=resolve('compat/p4/vite-react-tiny.package-lock.json');
 const vitestResult=resolve('.artifacts/p6-vitest-real-execution/vitest-result.json');
-const p6BrowserReceipt=resolve('.artifacts/p6-toolchain-vite/browser-receipt.json');
 
 function assert(condition,message,details={}){
   if(condition)return;
@@ -112,14 +111,12 @@ for(let iteration=1;iteration<=2;iteration++){
   }));
 }
 
-run(process.execPath,[
-  'scripts/capture-p6-toolchain-browser-evidence.mjs',
-  p6BrowserReceipt
-],{timeout:300000});
-const browser=JSON.parse(await readFile(p6BrowserReceipt,'utf8'));
-assert(browser.status==='PASS','Existing P6 browser court regressed after Vitest execution',{status:browser.status});
-assert(browser.sourceGates?.includes('P6-10')===false,'Legacy P6 browser court unexpectedly self-promoted P6-10');
-assert(browser.intentionallyOpenGates?.some(item=>item.id==='P6-10')===true,'Legacy P6 court lost its historical P6-10 boundary');
+const companionP6BrowserJob=Object.freeze({
+  required:true,
+  workflowJob:'p6-toolchain-vite',
+  sameExactHead:true,
+  evidenceBinding:'workflow-needs'
+});
 
 const receipt=Object.freeze({
   schema:'opencontainer.p6-vitest-real-execution.v1.0',
@@ -156,14 +153,7 @@ const receipt=Object.freeze({
     repeatedPasses:executions.length,
     totalTestsPerRun:3
   }),
-  browserRegression:Object.freeze({
-    schema:browser.schema,
-    status:browser.status,
-    browser:browser.browser,
-    declaredProfile:browser.profile??browser.declaredProfile??null,
-    originalClosedGateCount:browser.sourceGates?.length??0,
-    historicalP610BoundaryRetained:true
-  }),
+  declaredProfileRegression:companionP6BrowserJob,
   boundaries:Object.freeze({
     vitestRootMonorepoPnpmSupportClaimed:false,
     pnpmLockfileSupportClaimed:false,
@@ -179,5 +169,5 @@ console.log('P6-10 REAL VITEST EXECUTION PASS '+JSON.stringify({
   version:frozen.version,
   runs:executions.length,
   testsPerRun:3,
-  browser:receipt.browserRegression.browser
+  companionP6BrowserJob:receipt.declaredProfileRegression.workflowJob
 }));
