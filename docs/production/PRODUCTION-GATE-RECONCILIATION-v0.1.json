@@ -356,6 +356,10 @@
     "p4-command-diagnostics": {
       "ref": "CI #729 / PR #62 implementation head dd199a16e921770789e8308cae15922bec89a384",
       "note": "P4-14/P4-17/P4-18 declared-profile release evidence: contextual graph-derived .bin selection with ambiguity rejection; metadata-only package provenance/integrity/script diagnostics with sanitized-source privacy; default .node rejection plus exact explicitly registered non-native adapters only. Dedicated Chrome court 2/2 and full installed product path 2/2."
+    },
+    "p4-final-package": {
+      "ref": "CI #789 / PR #63 implementation head db400b8fd53213dbefc36dbb02418508d5ef9724",
+      "note": "P4-07/P4-13/P4-15/P4-16 declared-profile release evidence: minimized parser fuzz corpus is retained and mutation campaigns emit typed failures; lifecycle scripts require content-bound explicit capability grants and receive no ambient secrets; package-layout watcher/readdir/realpath behavior is verified across install/remove/reinstall; OPFS storage amplification and real graph-load costs are measured on retained package artifacts and frozen real dependency trees."
     }
   },
   "overrides": [
@@ -706,10 +710,10 @@
     {
       "id": "P4-13",
       "domain": "P4",
-      "state": "PARTIAL",
+      "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
-      "evidence": "package-policy",
-      "closure_met": false
+      "evidence": "p4-final-package",
+      "closure_met": true
     },
     {
       "id": "P4-18",
@@ -2005,6 +2009,30 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p4-command-diagnostics",
+      "closure_met": true
+    },
+    {
+      "id": "P4-07",
+      "domain": "P4",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p4-final-package",
+      "closure_met": true
+    },
+    {
+      "id": "P4-15",
+      "domain": "P4",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p4-final-package",
+      "closure_met": true
+    },
+    {
+      "id": "P4-16",
+      "domain": "P4",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p4-final-package",
       "closure_met": true
     }
   ]
