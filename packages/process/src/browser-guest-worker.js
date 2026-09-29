@@ -19,6 +19,7 @@ export class BrowserGuestWorkerAuthority {
   #hostListener = null;
   #closed = false;
   #syncRequestHandler;
+  #syncRpcPolicy;
   #maxSyncResponseBytes;
   #maxExportBytes;
   #resources;
@@ -33,6 +34,7 @@ export class BrowserGuestWorkerAuthority {
     maxPending = 64,
     requestTimeoutMs = 5000,
     syncRequestHandler = null,
+    syncRpcPolicy = null,
     maxSyncResponseBytes = 1024 * 1024,
     maxExportBytes = null,
     resources = null
@@ -59,6 +61,7 @@ export class BrowserGuestWorkerAuthority {
     this.#maxPending = maxPending;
     this.requestTimeoutMs = Math.max(1, Number(requestTimeoutMs) || 5000);
     this.#syncRequestHandler = syncRequestHandler;
+    this.#syncRpcPolicy = syncRpcPolicy;
     this.#maxSyncResponseBytes = Math.max(1024, Number(maxSyncResponseBytes) || 1024 * 1024);
     const resolvedExportLimit = maxExportBytes ?? resources?.limits?.outputBytes ?? 4 * 1024 * 1024;
     assertOc(
@@ -185,7 +188,13 @@ export class BrowserGuestWorkerAuthority {
           method: message.method
         });
       }
-      const value = await this.#syncRequestHandler(message.method, message.payload);
+      const releasePolicy = this.#syncRpcPolicy?.enter?.(message.method) ?? null;
+      let value;
+      try {
+        value = await this.#syncRequestHandler(message.method, message.payload);
+      } finally {
+        releasePolicy?.();
+      }
       settleSyncRpcMailbox(shared, { ok: true, value }, { maxPayloadBytes: this.#maxSyncResponseBytes });
       this.#diagnostics?.record('browser-worker.sync-response', {
         method: message.method,
