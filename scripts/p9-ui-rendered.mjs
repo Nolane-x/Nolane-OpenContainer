@@ -129,11 +129,18 @@ async function waitUntil(cdp,expression,{timeoutMs=15000,label='condition'}={}){
   throw new Error('Timed out waiting for '+label+': '+JSON.stringify(last));
 }
 async function waitReady(cdp){
-  await waitUntil(
-    cdp,
-    "document.documentElement.dataset.opencontainerReady==='true'&&document.querySelector('#app')?.dataset.ready==='true'&&typeof globalThis.__openContainerUi==='object'",
-    {timeoutMs:20000,label:'OpenContainer P9 shell'}
-  );
+  const deadline=Date.now()+20000;
+  let last=null;
+  while(Date.now()<deadline){
+    last=await evaluate(cdp,"({html:document.documentElement.dataset.opencontainerReady??null,app:document.querySelector('#app')?.dataset.ready??null,error:globalThis.__openContainerBootError??null,ui:typeof globalThis.__openContainerUi})");
+    if(last?.app==='error'){
+      const detail=last.error??{code:document?.querySelector?.('#app')?.dataset?.bootErrorCode??null};
+      throw new Error('OpenContainer P9 shell boot failed: '+JSON.stringify(detail));
+    }
+    if(last?.html==='true'&&last?.app==='true'&&last?.ui==='object')break;
+    await delay(75);
+  }
+  assert(last?.html==='true'&&last?.app==='true'&&last?.ui==='object','OpenContainer P9 shell did not become ready',{last});
   await evaluate(cdp,"import('/p9-ui-court.js').then(()=>true)");
   return waitUntil(cdp,"typeof globalThis.__p9RenderedCourt==='object'",{label:'P9 rendered helper'});
 }
