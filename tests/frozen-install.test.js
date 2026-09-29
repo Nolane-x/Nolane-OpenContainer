@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { OpenContainer } from '../packages/sdk/src/index.js';
 import { ErrorCodes } from '../packages/protocol/src/index.js';
+import { PackageScriptCapability } from '../packages/package-env/src/index.js';
 
 const encoder=new TextEncoder();
 
@@ -292,6 +293,131 @@ test('frozen installer denies lifecycle scripts unless skip policy is explicit',
   const mounted=skipped.mountFrozenGraph();
   assert.deepEqual(mounted.lifecycleScriptsSkipped,['node_modules/native-ish']);
   assert.equal(mounted.packageCount,1);
+});
+
+test('P4 package lifecycle scripts require exact capability grants and receive no ambient secrets',async()=>{
+  const runtime=await OpenContainer.boot();
+  const bytes=tar([
+    {path:'package/',type:'5'},
+    {path:'package/package.json',content:JSON.stringify({
+      name:'scripted',
+      version:'1.0.0',
+      main:'index.cjs',
+      type:'commonjs',
+      scripts:{install:'node build.cjs'}
+    })},
+    {path:'package/index.cjs',content:'module.exports=1'},
+    {path:'package/build.cjs',content:'module.exports=1'}
+  ]);
+  const integrity=sri(bytes);
+  runtime.packages.compile({lockfileVersion:3,packages:{
+    'node_modules/scripted':{
+      name:'scripted',
+      version:'1.0.0',
+      resolved:'https://registry.example/scripted.tgz',
+      integrity,
+      hasInstallScript:true
+    }
+  }});
+
+  const calls=[];
+  const scriptedNode=runtime.packages.graph.nodes.find(node=>node.location==='node_modules/scripted');
+  assert.ok(scriptedNode?.contentId);
+  const capability=new PackageScriptCapability({
+    grants:[{
+      contentId:scriptedNode.contentId,
+      location:'node_modules/scripted',
+      event:'install',
+      command:'node build.cjs'
+    }],
+    async execute(context){
+      calls.push(context);
+      assert.deepEqual(context.env,{});
+      assert.deepEqual(context.secretHandles,[]);
+      assert.deepEqual(context.networkSecretHandles,[]);
+      assert.equal(context.cwd,'/workspace/node_modules/scripted');
+      return {exitCode:0};
+    }
+  });
+
+  const installer=runtime.packages.createFrozenInstaller({
+    lifecycleScripts:'authorize',
+    scriptCapability:capability
+  });
+  const receipt=await installer.installAll({
+    artifactAuthority:{async fetchArtifact(){return {bytes,redirects:0};}}
+  });
+  assert.equal(calls.length,1);
+  assert.deepEqual(receipt.lifecycleScriptsSkipped,[]);
+  assert.deepEqual(receipt.lifecycleScriptsExecuted,[{
+    contentId:scriptedNode.contentId,
+    location:'node_modules/scripted',
+    event:'install',
+    command:'node build.cjs',
+    cwd:'/workspace/node_modules/scripted',
+    exitCode:0,
+    ambientEnvKeys:0,
+    secretHandleCount:0
+  }]);
+
+  await assert.rejects(
+    ()=>installer.installAll({
+      artifactAuthority:{async fetchArtifact(){return {bytes,redirects:0};}},
+      secretHandles:['opaque-secret-handle']
+    }),
+    error=>error?.code===ErrorCodes.NETWORK_DENIED
+  );
+  assert.equal(installer.lastInstallFailed,true);
+  assert.throws(
+    ()=>installer.mountFrozenGraph(),
+    error=>error?.code===ErrorCodes.INVALID_STATE&&/rerun install successfully/.test(error.message)
+  );
+});
+
+test('P4 lifecycle capability grant is invalidated by exact command drift',async()=>{
+  const runtime=await OpenContainer.boot();
+  const bytes=tar([
+    {path:'package/',type:'5'},
+    {path:'package/package.json',content:JSON.stringify({
+      name:'scripted',
+      version:'1.0.0',
+      scripts:{install:'node changed.cjs'}
+    })},
+    {path:'package/changed.cjs',content:'module.exports=1'}
+  ]);
+  const integrity=sri(bytes);
+  runtime.packages.compile({lockfileVersion:3,packages:{
+    'node_modules/scripted':{
+      name:'scripted',
+      version:'1.0.0',
+      resolved:'https://registry.example/scripted.tgz',
+      integrity,
+      hasInstallScript:true
+    }
+  }});
+  const scriptedNode=runtime.packages.graph.nodes.find(node=>node.location==='node_modules/scripted');
+  assert.ok(scriptedNode?.contentId);
+  const capability=new PackageScriptCapability({
+    grants:[{
+      contentId:scriptedNode.contentId,
+      location:'node_modules/scripted',
+      event:'install',
+      command:'node expected.cjs'
+    }],
+    async execute(){throw new Error('drifted command must never execute');}
+  });
+  const installer=runtime.packages.createFrozenInstaller({
+    lifecycleScripts:'authorize',
+    scriptCapability:capability
+  });
+  await assert.rejects(
+    ()=>installer.installAll({
+      artifactAuthority:{async fetchArtifact(){return {bytes,redirects:0};}}
+    }),
+    error=>error?.code===ErrorCodes.NETWORK_DENIED
+  );
+  assert.equal(installer.lastInstallFailed,true);
+  assert.equal(runtime.packages.nodeModules,null);
 });
 
 test('Vite browser closure remains lifecycle-script clean with optional native packages excluded',async()=>{

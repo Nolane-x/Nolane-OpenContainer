@@ -44,6 +44,9 @@ const publicAliases = new Map([
   ['/p4-ecosystem-layout.js', join(publicRoot, 'p4-ecosystem-layout.js')],
   ['/p4-command-diagnostics.html', join(publicRoot, 'p4-command-diagnostics.html')],
   ['/p4-command-diagnostics.js', join(publicRoot, 'p4-command-diagnostics.js')],
+  ['/p4-final-package.html', join(publicRoot, 'p4-final-package.html')],
+  ['/p4-final-package.js', join(publicRoot, 'p4-final-package.js')],
+  ['/compat/p4/PARSER-FUZZ-CORPUS.v1.0.json', join(repoRoot, 'compat/p4/PARSER-FUZZ-CORPUS.v1.0.json')],
   ['/compat/p4/ECOSYSTEM-LAYOUT-CORPUS.v1.0.json', join(repoRoot, 'compat/p4/ECOSYSTEM-LAYOUT-CORPUS.v1.0.json')],
   ['/compat/p4/vite-react-tiny.package-lock.json', join(repoRoot, 'compat/p4/vite-react-tiny.package-lock.json')],
   ['/compat/p4/chokidar.package-lock.json', join(repoRoot, 'compat/p4/chokidar.package-lock.json')],
@@ -247,6 +250,9 @@ const server = createServer(async (request, response) => {
     }
     if (url.pathname === '/p4-command-diagnostics.html') {
       response.setHeader('X-OpenContainer-Document-Profile', 'p4-command-diagnostics-court');
+    }
+    if (url.pathname === '/p4-final-package.html') {
+      response.setHeader('X-OpenContainer-Document-Profile', 'p4-final-package-court');
     }
     if (url.pathname === '/p3-native-external-permission.html') {
       response.setHeader('X-OpenContainer-Document-Profile', 'p3-native-external-permission-court');

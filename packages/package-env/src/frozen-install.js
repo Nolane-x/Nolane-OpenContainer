@@ -7,6 +7,62 @@ function cloneFiles(files) {
   return out;
 }
 
+const LIFECYCLE_EVENTS=Object.freeze(['preinstall','install','postinstall']);
+
+function scriptGrantKey({contentId,location,event,command}){
+  return String(contentId)+'\n'+String(location)+'\n'+String(event)+'\n'+String(command);
+}
+
+export class PackageScriptCapability {
+  #grants;
+  #execute;
+
+  constructor({grants=[],execute}={}){
+    assertOc(typeof execute==='function',ErrorCodes.INVALID_ARGUMENT,'Package script capability requires an explicit executor');
+    assertOc(Array.isArray(grants)&&grants.length>0,ErrorCodes.INVALID_ARGUMENT,'Package script capability requires explicit grants');
+    this.#grants=new Set();
+    for(const grant of grants){
+      assertOc(grant&&typeof grant.contentId==='string'&&grant.contentId.length>0,ErrorCodes.INVALID_ARGUMENT,'Package script grant contentId is required');
+      assertOc(typeof grant.location==='string'&&grant.location.length>0,ErrorCodes.INVALID_ARGUMENT,'Package script grant location is required');
+      assertOc(LIFECYCLE_EVENTS.includes(grant.event),ErrorCodes.INVALID_ARGUMENT,'Unsupported package lifecycle event',{event:grant.event});
+      assertOc(typeof grant.command==='string'&&grant.command.length>0,ErrorCodes.INVALID_ARGUMENT,'Package script grant command is required');
+      this.#grants.add(scriptGrantKey(grant));
+    }
+    this.#execute=execute;
+  }
+
+  authorizes({contentId,location,event,command}={}){
+    return this.#grants.has(scriptGrantKey({contentId,location,event,command}));
+  }
+
+  async run({contentId,location,event,command,cwd}={}){
+    assertOc(this.authorizes({contentId,location,event,command}),ErrorCodes.NETWORK_DENIED,'Package lifecycle script is not explicitly authorized',{
+      contentId,location,event
+    });
+    const context=Object.freeze({
+      contentId,
+      location,
+      event,
+      command,
+      cwd,
+      env:Object.freeze({}),
+      secretHandles:Object.freeze([]),
+      networkSecretHandles:Object.freeze([])
+    });
+    const result=await this.#execute(context);
+    const exitCode=typeof result==='number'?result:Number(result?.exitCode??0);
+    assertOc(Number.isInteger(exitCode),ErrorCodes.INVALID_STATE,'Package lifecycle executor returned invalid exit code',{location,event});
+    if(exitCode!==0){
+      throw ocError(ErrorCodes.INVALID_STATE,'Authorized package lifecycle script failed',{location,event,exitCode});
+    }
+    return Object.freeze({
+      contentId,location,event,command,cwd,exitCode,
+      ambientEnvKeys:0,
+      secretHandleCount:0
+    });
+  }
+}
+
 export class PackageContentStore {
   #contents = new Map();
 
@@ -40,6 +96,12 @@ export class PackageContentStore {
     } catch {
       throw ocError(ErrorCodes.INVALID_PACKAGE_CONFIG, 'Package artifact has invalid package.json', { contentId });
     }
+    assertOc(
+      packageJson && typeof packageJson === 'object' && !Array.isArray(packageJson),
+      ErrorCodes.INVALID_PACKAGE_CONFIG,
+      'Package artifact package.json must be a JSON object',
+      { contentId }
+    );
 
     if (expectedName && packageJson.name && packageJson.name !== expectedName) {
       throw ocError(ErrorCodes.INVALID_PACKAGE_CONFIG, 'Artifact package name disagrees with lockfile', { expected: expectedName, actual: packageJson.name });
@@ -76,14 +138,20 @@ export class FrozenInstallAuthority {
   #packages;
   #store;
   #lifecycleScripts;
+  #scriptCapability;
   #graphStore;
   #boundGraphGeneration = null;
   #boundPersistentGraphGeneration = null;
   #lastInstallFailed = false;
 
-  constructor({ packages, contentStore = new PackageContentStore(), graphStore = null, lifecycleScripts = 'deny' } = {}) {
+  constructor({ packages, contentStore = new PackageContentStore(), graphStore = null, lifecycleScripts = 'deny', scriptCapability = null } = {}) {
     assertOc(packages && typeof packages.mountCatalog === 'function', ErrorCodes.INVALID_ARGUMENT, 'PackageGraphAuthority is required');
-    assertOc(['deny', 'skip'].includes(lifecycleScripts), ErrorCodes.INVALID_ARGUMENT, 'Unsupported lifecycle script policy', { lifecycleScripts });
+    assertOc(['deny', 'skip', 'authorize'].includes(lifecycleScripts), ErrorCodes.INVALID_ARGUMENT, 'Unsupported lifecycle script policy', { lifecycleScripts });
+    if(lifecycleScripts==='authorize'){
+      assertOc(scriptCapability&&typeof scriptCapability.run==='function'&&typeof scriptCapability.authorizes==='function',ErrorCodes.INVALID_ARGUMENT,'Authorized lifecycle scripts require a PackageScriptCapability');
+    }else{
+      assertOc(scriptCapability===null,ErrorCodes.INVALID_ARGUMENT,'PackageScriptCapability is only valid with lifecycleScripts=authorize');
+    }
     if(graphStore!==null){
       assertOc(
         typeof graphStore.read==='function'&&typeof graphStore.withGeneration==='function',
@@ -95,6 +163,7 @@ export class FrozenInstallAuthority {
     this.#store = contentStore;
     this.#graphStore = graphStore;
     this.#lifecycleScripts = lifecycleScripts;
+    this.#scriptCapability = scriptCapability;
   }
 
   get contentStore() { return this.#store; }
@@ -158,6 +227,39 @@ export class FrozenInstallAuthority {
     return true;
   }
 
+  async #runAuthorizedLifecycleScripts(graph,{locations=null}={}){
+    if(this.#lifecycleScripts!=='authorize')return Object.freeze([]);
+    const selected=locations?new Set(locations):null;
+    const receipts=[];
+    for(const node of graph.nodes){
+      if(selected&&!selected.has(node.location))continue;
+      if(node.link||!node.hasInstallScript)continue;
+      const content=this.#store.get(node.contentId);
+      assertOc(content,ErrorCodes.PACKAGE_CONTENT_MISSING,'Lifecycle script package content is missing',{
+        location:node.location,contentId:node.contentId
+      });
+      const scripts=content.packageJson?.scripts??{};
+      const recognized=LIFECYCLE_EVENTS.filter(event=>typeof scripts[event]==='string'&&scripts[event].length>0);
+      assertOc(recognized.length>0,ErrorCodes.INVALID_PACKAGE_CONFIG,'Lockfile marks install script but artifact exposes no supported lifecycle command',{
+        location:node.location,name:node.name
+      });
+      for(const event of recognized){
+        const command=scripts[event];
+        assertOc(this.#scriptCapability.authorizes({contentId:node.contentId,location:node.location,event,command}),ErrorCodes.NETWORK_DENIED,'Package lifecycle script lacks an exact capability grant',{
+          contentId:node.contentId,location:node.location,event
+        });
+        receipts.push(await this.#scriptCapability.run({
+          contentId:node.contentId,
+          location:node.location,
+          event,
+          command,
+          cwd:'/workspace/'+node.location
+        }));
+      }
+    }
+    return Object.freeze(receipts);
+  }
+
   async installAll({
     artifactAuthority,
     concurrency = 4,
@@ -167,16 +269,17 @@ export class FrozenInstallAuthority {
     artifactUrlResolver = null,
     secretHandles = null
   } = {}) {
+    // Publication is fail-closed from the first moment of every attempt,
+    // including capability/secret policy, graph binding, persistent-graph
+    // binding, hydration and lifecycle-script authorization. Only a
+    // complete successful rerun clears the barrier.
+    this.#lastInstallFailed = true;
     assertOc(
       secretHandles == null || (Array.isArray(secretHandles) && secretHandles.length === 0),
       ErrorCodes.NETWORK_DENIED,
       'Package installation does not accept network secret handles in the promoted profile'
     );
     const graph = this.#bindGraph();
-    // Publication is fail-closed from the first moment of a new attempt,
-    // including persistent-graph binding, preflight, hydration and policy
-    // validation. Only a complete successful rerun clears it.
-    this.#lastInstallFailed = true;
     await this.#bindPersistentGraph();
     assertOc(artifactAuthority && typeof artifactAuthority.fetchArtifact === 'function', ErrorCodes.INVALID_ARGUMENT, 'PackageArtifactAuthority is required');
 
@@ -192,7 +295,7 @@ export class FrozenInstallAuthority {
         if (this.#lifecycleScripts === 'deny') {
           throw ocError(ErrorCodes.INVALID_PACKAGE_CONFIG, 'Package lifecycle scripts are disabled by policy', { location: node.location, name: node.name });
         }
-        lifecycleScriptsSkipped.push(node.location);
+        if (this.#lifecycleScripts === 'skip') lifecycleScriptsSkipped.push(node.location);
       }
       if (node.inBundle) { embeddedInstances++; continue; }
       packageInstances++;
@@ -265,6 +368,14 @@ export class FrozenInstallAuthority {
       this.#lastInstallFailed = true;
       throw error;
     }
+    let lifecycleScriptsExecuted;
+    try{
+      lifecycleScriptsExecuted=await this.#runAuthorizedLifecycleScripts(graph,{locations});
+      await this.#assertPublicationCurrent();
+    }catch(error){
+      this.#lastInstallFailed=true;
+      throw error;
+    }
     this.#lastInstallFailed = false;
     return Object.freeze({
       packageInstances,
@@ -274,7 +385,8 @@ export class FrozenInstallAuthority {
       contentCount: this.#store.size,
       bytes,
       redirects,
-      lifecycleScriptsSkipped: Object.freeze([...lifecycleScriptsSkipped].sort())
+      lifecycleScriptsSkipped: Object.freeze([...lifecycleScriptsSkipped].sort()),
+      lifecycleScriptsExecuted
     });
   }
 
@@ -306,7 +418,7 @@ export class FrozenInstallAuthority {
         if (this.#lifecycleScripts === 'deny') {
           throw ocError(ErrorCodes.INVALID_PACKAGE_CONFIG, 'Package lifecycle scripts are disabled by policy', { location: node.location, name: node.name });
         }
-        lifecycleScriptsSkipped.push(node.location);
+        if (this.#lifecycleScripts === 'skip') lifecycleScriptsSkipped.push(node.location);
       }
       if (node.inBundle) { embeddedCount++; continue; }
       if (node.link) {

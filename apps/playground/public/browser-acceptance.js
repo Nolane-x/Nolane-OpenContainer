@@ -2303,7 +2303,7 @@ async function run() {
   p4Hostile.truncatedGzip = await p4ExpectCode(
     'P4 truncated gzip stream',
     () => inspectTarArchive(p4LightningBytes.subarray(0, p4LightningBytes.byteLength - 8), { requiredPrefix: 'package/' }),
-    'TypeError'
+    'OC_ARCHIVE_UNSAFE'
   );
   p4Hostile.decompressionBudget = await p4ExpectCode(
     'P4 decompression budget',

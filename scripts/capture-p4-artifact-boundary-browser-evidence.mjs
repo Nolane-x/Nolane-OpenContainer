@@ -8,7 +8,7 @@ const expectedHostile={
   truncatedHeader:'OC_ARCHIVE_UNSAFE',
   truncatedPayload:'OC_ARCHIVE_UNSAFE',
   truncatedTrailer:'OC_ARCHIVE_UNSAFE',
-  truncatedGzip:'TypeError',
+  truncatedGzip:'OC_ARCHIVE_UNSAFE',
   decompressionBudget:'OC_ARTIFACT_TOO_LARGE',
   pathTraversal:'OC_ARCHIVE_UNSAFE',
   absolutePath:'OC_ARCHIVE_UNSAFE',

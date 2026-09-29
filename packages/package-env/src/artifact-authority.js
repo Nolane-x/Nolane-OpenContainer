@@ -93,6 +93,12 @@ async function gunzipIfNeeded(bytes, { maxInflatedBytes = 512 * 1024 * 1024 } = 
       }
       chunks.push(new Uint8Array(chunk));
     }
+  } catch (error) {
+    if (error?.code === ErrorCodes.ARTIFACT_TOO_LARGE) throw error;
+    throw Object.assign(
+      ocError(ErrorCodes.ARCHIVE_UNSAFE, 'Invalid or truncated gzip stream'),
+      { cause: error }
+    );
   } finally {
     try { reader.releaseLock(); } catch {}
   }
