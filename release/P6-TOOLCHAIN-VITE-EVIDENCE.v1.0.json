@@ -1,0 +1,166 @@
+{
+  "schema": "opencontainer.p6-toolchain-vite-evidence.v1.0",
+  "source": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "declaredProfile": "desktop-chrome153-ubuntu2404-x64-ci",
+  "pullRequest": 64,
+  "closedGates": [
+    "P6-01",
+    "P6-02",
+    "P6-03",
+    "P6-04",
+    "P6-05",
+    "P6-06",
+    "P6-07",
+    "P6-08",
+    "P6-09",
+    "P6-11",
+    "P6-12",
+    "P6-13",
+    "P6-14",
+    "P6-15",
+    "P6-16"
+  ],
+  "intentionallyOpenGates": [
+    {
+      "id": "P6-10",
+      "state": "OPEN",
+      "reason": "The frozen compatibility corpus records vitest-monorepo as PNPM_LOCKFILE_UNSUPPORTED / MONOREPO_WORKSPACE_INSTALL_NOT_PROMOTED; no real promoted Vitest execution exists yet."
+    }
+  ],
+  "implementation": {
+    "head": "eaf3386f9d4a39e837243feb71f63c8673b98ca0",
+    "ciRunNumber": 814,
+    "ciRunId": 36528103226,
+    "testedCheckoutCommit": "702e317899b7dc9e5f6e410fff1c19320283b980",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "unitTests": 515,
+    "unitPassed": 515,
+    "unitFailed": 0,
+    "criticalTestFiles": 74,
+    "criticalIterations": 5,
+    "criticalTestFileExecutions": 370,
+    "criticalUnexplainedFailures": 0,
+    "fullProductPathIterations": 2,
+    "fullProductPathPassed": 2,
+    "browserUnexplainedFailures": 0
+  },
+  "dedicatedCourt": {
+    "artifactId": 11015178902,
+    "artifactDigest": "sha256:0f87f7b66acfec78eaf03fe7c541f298fd26bf9c001ef91b831d63ca301addad",
+    "schema": "opencontainer.p6-toolchain-vite-browser.v1.0",
+    "status": "PASS",
+    "nodeVersion": "v24.21.0",
+    "browser": "Google Chrome 153.0.8010.52",
+    "localIntegrationTests": 10,
+    "localIntegrationPassed": 10,
+    "localIntegrationFailed": 0,
+    "sourceGates": 15
+  },
+  "artifactIdentity": {
+    "rolldownBrowser": {
+      "package": "@rolldown/browser",
+      "version": "1.2.9",
+      "tarballSha256": "9accf3cdfe3d2287ad7d5f49cd2cfcddbc9c112abfcbc295863e401ef44b8576",
+      "wasmSha256": "629aa10c37a9920cd5729a35af148983c881f4ff9edd6368a7d63b5acbf89dc2",
+      "semanticProfile": "rolldown-browser-wasi-v1"
+    },
+    "lightningCss": {
+      "package": "lightningcss-wasm",
+      "version": "1.33.0",
+      "tarballSha256": "266866c1b0efd7ca5307fe312411e4f1895b997086fb76f392ec5b60aadf31c8",
+      "wasmSha256": "479c64bb651164b6fd9a834055e65ab507d3e39f8d8a8b683b7e83787a69e7b1",
+      "semanticProfile": "lightningcss-browser-default-v1"
+    },
+    "exactTupleFields": [
+      "packageName",
+      "toolVersion",
+      "artifactDigest",
+      "adapterSemanticProfile"
+    ],
+    "silentSubstitutionForbidden": true
+  },
+  "browserAuthority": {
+    "crossOriginIsolated": true,
+    "globalWorkerBudget": 2,
+    "overBudgetCode": "OC_RESOURCE_EXHAUSTED",
+    "versionSkewCode": "OC_TOOLCHAIN_SKEW",
+    "digestMismatchCode": "OC_DIGEST_MISMATCH",
+    "unsupportedVersionCode": "OC_TOOLCHAIN_UNSUPPORTED",
+    "genericWasiExpansionCode": "OC_TOOLCHAIN_UNSUPPORTED",
+    "compiledModuleCompiles": 1,
+    "compiledModuleWorkerClones": 2,
+    "compiledModuleExports": [
+      [
+        "answer"
+      ],
+      [
+        "answer"
+      ]
+    ],
+    "sharedMemoryInitialBytes": 65536,
+    "sharedMemoryFinalBytes": 196608,
+    "sharedMemoryGrowCount": 2,
+    "sharedMemoryViewGeneration": 2
+  },
+  "viteC1": {
+    "version": "8.3.0",
+    "outputCount": 6,
+    "sourceRebuild": true,
+    "configReload": true,
+    "failureAtomicity": true,
+    "packageGraphGenerationStable": true,
+    "packageLayoutIdentityStable": true,
+    "sourceMapVersion": 3,
+    "sourceMapSources": [
+      "../../src/logo.svg",
+      "../../src/main.ts"
+    ],
+    "sourceMapSourcesContent": 2,
+    "failureDiagnosticPath": true,
+    "deterministicManifest": true
+  },
+  "viteC2": {
+    "hmrUpdates": 2,
+    "hotConnects": 2,
+    "hotDisconnects": 2,
+    "safeFailure": true,
+    "recovered": true,
+    "virtualHttp": true,
+    "restartEpoch": true,
+    "staleRouteRejected": true,
+    "previewRehydration": true,
+    "dependencyOptimization": {
+      "package": "nanoid",
+      "optimizedFile": "/workspace/node_modules/.vite/deps/nanoid.js",
+      "bytes": 1168,
+      "metadataHash": "d1bd919f"
+    }
+  },
+  "measurements": {
+    "coldModuleStartMs": 643.5500000000029,
+    "warmModuleStartMs": 1.235000000000582,
+    "heapSamples": [
+      527373257,
+      527373257,
+      366742714,
+      403586313
+    ],
+    "heapMeasurementApi": "performance.memory.usedJSHeapSize",
+    "compiledModuleCache": {
+      "compiles": 1,
+      "workerClones": 2
+    },
+    "performanceThresholdClaimed": false,
+    "plateauThresholdClaimed": false
+  },
+  "boundaries": {
+    "p6DomainClosed": false,
+    "vitestPromoted": false,
+    "genericWasiLinuxExpansionPromoted": false,
+    "crossBrowserClaimed": false,
+    "productionClosed": false
+  }
+}
