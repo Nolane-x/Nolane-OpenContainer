@@ -221,7 +221,7 @@ try{
   assert(accessibility.filter(row=>row.role==='tab'&&!row.ignored).length===3,'P9 accessibility tree does not expose three tabs',{accessibility});
 
   // Keyboard-only surface navigation.
-  await evaluate(cdp,"document.querySelector('[data-view="preview"]').focus();true");
+  await evaluate(cdp,"document.querySelector('[data-view=preview]').focus();true");
   await key(cdp,'ArrowRight',{code:'ArrowRight'});
   assert(await evaluate(cdp,"globalThis.__openContainerUi.activeView()==='inspect'&&document.activeElement?.dataset?.view==='inspect'"),'P9 ArrowRight did not move to Inspect');
   await key(cdp,'ArrowRight',{code:'ArrowRight'});
@@ -242,7 +242,7 @@ try{
   assert(afterIme&&afterIme.sent===true,'P9 AI send did not fire after composition ended',{afterIme});
 
   // Approval survives mode switches; keyboard activation removes item with deterministic focus.
-  await evaluate(cdp,"document.querySelector('[data-ai-mode="Build"]').focus();true");
+  await evaluate(cdp,"document.querySelector('[data-ai-mode=Build]').focus();true");
   await key(cdp,'Enter',{code:'Enter'});
   await evaluate(cdp,"document.querySelector('#create-approval').focus();true");
   await key(cdp,'Enter',{code:'Enter'});
@@ -337,7 +337,7 @@ try{
   // History/reload cannot undo canonical source.
   await uiCall(cdp,'setView',['preview']);
   const sourceBeforeHistory=await call(cdp,'source');
-  await evaluate(cdp,"document.querySelector('[data-view="inspect"]').click();document.querySelector('[data-view="ai"]').click();true");
+  await evaluate(cdp,"document.querySelector('[data-view=inspect]').click();document.querySelector('[data-view=ai]').click();true");
   await waitUntil(cdp,"history.length>=3",{label:'P9 surface history'});
   await evaluate(cdp,"history.back();true");
   await waitUntil(cdp,"globalThis.__openContainerUi.activeView()==='inspect'",{label:'P9 back navigation'});
