@@ -5,7 +5,7 @@ import { BrowserGuestWorkerAuthority } from '/packages/process/src/browser-guest
 import { WorkerRpcAuthority } from '/packages/process/src/worker-authority.js';
 import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority, OpfsWorkspaceLifecycleAuthority, ExternalWorkspaceSourceAuthority, ExternalSourceMode, ExternalSourceState } from '/packages/vfs/src/index.js';
 import { BrowserPreviewServiceWorkerBridge, createSandboxedPreviewFrame } from '/packages/preview/src/index.js';
-import { ResourceGovernor } from '/packages/resources/src/index.js';
+import { ResourceGovernor } from '/packages/resources/src/index.js';\nimport { FrozenToolchains, certifyToolchain, ToolchainAuthority, SharedWasmMemoryViews } from '/packages/toolchain/src/index.js';
 import { OpfsReleaseStorageAuthority, OpfsDerivedIndexStore, PersistenceCorruptionClass, corruptionDisposition, StorageCleanupCoordinator, StorageCleanupTier } from '/packages/persistence/src/index.js';
 import { checkHostingHeaders } from '/scripts/hosting-self-check-lib.mjs';
 
