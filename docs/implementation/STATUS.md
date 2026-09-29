@@ -944,11 +944,11 @@ The production ledger candidate is now **239/304** minimum-closure satisfied wit
 
 ## P6-10 real Vitest compatibility closure
 
-PR #68 implementation head `2efa32d3fabd80c010ce33468963f32c6ed45fd0` passed CI #884 with **580/580** contract tests, CodeQL, **89 critical files × 5 = 445** repeated executions with zero unexplained failures, the existing declared-profile P6 Chrome court, and every installed-distribution browser regression job.
+PR #68 implementation head `fbeadbdba914230edfbcc1ca0192631084065b07` passed CI #896 with **585/585** contract tests, CodeQL, **90 critical files × 5 = 450** repeated executions with zero unexplained failures, the same-exact-head declared-profile P6 Chrome court and the full installed-distribution browser product path.
 
 P6-10 now has real test-runner/CLI execution evidence. The court reads the exact `vitest@3.0.8` entry already frozen in `compat/p4/vite-react-tiny.package-lock.json`, verifies the live npm registry tarball URL and SHA-512 SRI against that frozen lockfile, executes the real Vitest CLI twice against `compat/p6/vitest-smoke.test.ts`, and records **3/3 TypeScript tests PASS on each run (6/6 total)** on exact Node v24.21.0 / npm 11.19.0.
 
-Dedicated artifact **#11034964010** has digest `sha256:ac8a7916afae7566f55a5c6479df1d2d5a8a23c34161fd1ef2fea8b573a558fc`. After the real Vitest runs, the complete P6 declared-profile Chrome court reruns PASS, so the new CLI evidence does not replace the browser integration evidence.
+Dedicated artifact **#11036952101** has digest `sha256:593565a62183990836985b1adbbbad486be17b5a54b7cf9b77384683e39cec14`. The Vitest job is workflow-gated on the existing `p6-toolchain-vite` job, so real Vitest execution is accepted only when the declared-profile Chrome court passes on the same exact head; it does not redundantly rerun that browser court.
 
 This closure is deliberately narrower than the frozen `vitest-dev/vitest` root repository boundary. It does **not** claim pnpm-lock parsing, Vitest root-monorepo workspace installation, browser-native Vitest execution or cross-browser compatibility.
 
