@@ -360,6 +360,10 @@
     "p4-final-package": {
       "ref": "CI #789 / PR #63 implementation head db400b8fd53213dbefc36dbb02418508d5ef9724",
       "note": "P4-07/P4-13/P4-15/P4-16 declared-profile release evidence: minimized parser fuzz corpus is retained and mutation campaigns emit typed failures; lifecycle scripts require content-bound explicit capability grants and receive no ambient secrets; package-layout watcher/readdir/realpath behavior is verified across install/remove/reinstall; OPFS storage amplification and real graph-load costs are measured on retained package artifacts and frozen real dependency trees."
+    },
+    "p6-toolchain-vite": {
+      "ref": "CI #814 / PR #64 implementation head eaf3386f9d4a39e837243feb71f63c8673b98ca0",
+      "note": "P6 15-gate declared-profile integration court: exact retained Rolldown/LightningCSS artifacts + differentials; actual-browser compiled Wasm module reuse; shared-memory grow/rebind; global ToolchainAuthority; Vite 8.3 build/dev/HMR/restart/preview/dep-opt; source-map/failure diagnostics; cold/warm/cache/heap measurements; workspace/package failure atomicity; explicit generic-WASI boundary; exact BCR tuple/no silent substitution. P6-10 remains OPEN because real promoted Vitest execution is absent."
     }
   },
   "overrides": [
@@ -871,65 +875,65 @@
       "id": "P6-01",
       "domain": "P6",
       "state": "EVIDENCE",
-      "promotion": "PASS-BROWSER",
-      "evidence": "toolchain",
-      "closure_met": false
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p6-toolchain-vite",
+      "closure_met": true
     },
     {
       "id": "P6-02",
       "domain": "P6",
       "state": "EVIDENCE",
-      "promotion": "PASS-BROWSER",
-      "evidence": "toolchain",
-      "closure_met": false
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p6-toolchain-vite",
+      "closure_met": true
     },
     {
       "id": "P6-07",
       "domain": "P6",
       "state": "EVIDENCE",
-      "promotion": "PASS-BROWSER",
-      "evidence": "c1",
-      "closure_met": false
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p6-toolchain-vite",
+      "closure_met": true
     },
     {
       "id": "P6-08",
       "domain": "P6",
       "state": "EVIDENCE",
-      "promotion": "PASS-BROWSER",
-      "evidence": "c2",
-      "closure_met": false
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p6-toolchain-vite",
+      "closure_met": true
     },
     {
       "id": "P6-09",
       "domain": "P6",
       "state": "EVIDENCE",
-      "promotion": "PASS-BROWSER",
-      "evidence": "c2",
-      "closure_met": false
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p6-toolchain-vite",
+      "closure_met": true
     },
     {
       "id": "P6-13",
       "domain": "P6",
       "state": "EVIDENCE",
-      "promotion": "PASS-BROWSER",
-      "evidence": "c1",
-      "closure_met": false
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p6-toolchain-vite",
+      "closure_met": true
     },
     {
       "id": "P6-15",
       "domain": "P6",
       "state": "EVIDENCE",
-      "promotion": "PASS-LOCAL",
-      "evidence": "toolchain-profile",
-      "closure_met": false
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p6-toolchain-vite",
+      "closure_met": true
     },
     {
       "id": "P6-16",
       "domain": "P6",
       "state": "EVIDENCE",
-      "promotion": "PASS-LOCAL",
-      "evidence": "toolchain-profile",
-      "closure_met": false
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p6-toolchain-vite",
+      "closure_met": true
     },
     {
       "id": "P7-07",
@@ -2033,6 +2037,62 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p4-final-package",
+      "closure_met": true
+    },
+    {
+      "id": "P6-03",
+      "domain": "P6",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p6-toolchain-vite",
+      "closure_met": true
+    },
+    {
+      "id": "P6-04",
+      "domain": "P6",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p6-toolchain-vite",
+      "closure_met": true
+    },
+    {
+      "id": "P6-05",
+      "domain": "P6",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p6-toolchain-vite",
+      "closure_met": true
+    },
+    {
+      "id": "P6-06",
+      "domain": "P6",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p6-toolchain-vite",
+      "closure_met": true
+    },
+    {
+      "id": "P6-11",
+      "domain": "P6",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p6-toolchain-vite",
+      "closure_met": true
+    },
+    {
+      "id": "P6-12",
+      "domain": "P6",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p6-toolchain-vite",
+      "closure_met": true
+    },
+    {
+      "id": "P6-14",
+      "domain": "P6",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p6-toolchain-vite",
       "closure_met": true
     }
   ]
