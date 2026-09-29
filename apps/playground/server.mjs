@@ -36,6 +36,8 @@ const publicAliases = new Map([
   ['/', join(publicRoot, 'index.html')],
   ['/index.html', join(publicRoot, 'index.html')],
   ['/index.js', join(publicRoot, 'index.js')],
+  ['/index.css', join(publicRoot, 'index.css')],
+  ['/p9-ui-court.js', join(publicRoot, 'p9-ui-court.js')],
   ['/browser-acceptance.html', join(publicRoot, 'browser-acceptance.html')],
   ['/browser-acceptance.js', join(publicRoot, 'browser-acceptance.js')],
   ['/p4-publication-atomicity.html', join(publicRoot, 'p4-publication-atomicity.html')],
