@@ -108,7 +108,7 @@ test('P9 root import map is CSP-hashed without unsafe-inline',()=>{
   assert.match(html,/"es-module-lexer\/minimal\/js": "\/__deps__\/es-module-lexer-minimal\.js"/);
   assert.match(workflow,/p9-ui-rendered:/);
   const server=readFileSync('apps/playground/server.mjs','utf8');
-  assert.match(server,/sha256-PBb3mOO75MOBA8uAPKRCZVC3fsI\+FTkefTsO\/kn4eoU=/);
+  assert.match(server,/sha256-rkMvapmVZt\+MUBo5i8Nx4sVYZ0HtjK3on\/kn9IG2F10=/);
   const rootCsp=server.slice(server.indexOf("if (url.pathname === '/' || url.pathname === '/index.html')"),server.indexOf("if (url.pathname === '/browser-acceptance.html')"));
   assert.doesNotMatch(rootCsp,/unsafe-inline/);
 });
