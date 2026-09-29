@@ -24,6 +24,8 @@ function workerErrorFromEnvelope(error) {
 export class WorkerRpcAuthority {
   #transport = null;
   #listener = null;
+  #errorListener = null;
+  #messageErrorListener = null;
   #diagnostics;
   #maxPending;
   #pending = new Map();
@@ -67,8 +69,21 @@ export class WorkerRpcAuthority {
     this.#nextId = 0;
 
     this.#listener = (event) => this.receive(event && 'data' in event ? event.data : event);
+    this.#errorListener = (event) => this.#failTransport(
+      ocError(ErrorCodes.GUEST_WORKER_FAILED,'Worker transport failed',{
+        message:event?.message??null,
+        filename:event?.filename??null,
+        lineno:event?.lineno??null,
+        colno:event?.colno??null
+      })
+    );
+    this.#messageErrorListener = () => this.#failTransport(
+      ocError(ErrorCodes.GUEST_WORKER_FAILED,'Worker transport emitted messageerror')
+    );
     if (typeof transport.addEventListener === 'function') {
       transport.addEventListener('message', this.#listener);
+      transport.addEventListener('error', this.#errorListener);
+      transport.addEventListener('messageerror', this.#messageErrorListener);
     }
 
     this.#diagnostics?.record('worker.session', this.identity);
@@ -208,10 +223,28 @@ export class WorkerRpcAuthority {
     this.#pending.clear();
   }
 
+  #failTransport(error) {
+    if (!this.#transport) return false;
+    this.#diagnostics?.record('worker.transport-failed', {
+      session: this.#session,
+      epoch: this.#epoch,
+      code: error?.code ?? ErrorCodes.GUEST_WORKER_FAILED,
+      message: error?.message ?? String(error)
+    });
+    this.#rejectPending(error);
+    this.#detach();
+    this.#transport = null;
+    return true;
+  }
+
   #detach() {
-    if (this.#transport && this.#listener && typeof this.#transport.removeEventListener === 'function') {
-      this.#transport.removeEventListener('message', this.#listener);
+    if (this.#transport && typeof this.#transport.removeEventListener === 'function') {
+      if(this.#listener)this.#transport.removeEventListener('message', this.#listener);
+      if(this.#errorListener)this.#transport.removeEventListener('error', this.#errorListener);
+      if(this.#messageErrorListener)this.#transport.removeEventListener('messageerror', this.#messageErrorListener);
     }
     this.#listener = null;
+    this.#errorListener = null;
+    this.#messageErrorListener = null;
   }
 }
