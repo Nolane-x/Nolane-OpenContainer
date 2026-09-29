@@ -78,10 +78,11 @@
       "tests/rolldown-browser-artifact.test.js",
       "tests/rolldown-browser-execution.test.js",
       "tests/p6-toolchain-authority.test.js",
-      "tests/p6-toolchain-vite-source-audit.test.js"
+      "tests/p6-toolchain-vite-source-audit.test.js",
+      "tests/p6-toolchain-vite-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 74
+    "minimumTestFiles": 75
   },
   "browser": {
     "iterations": 2,
