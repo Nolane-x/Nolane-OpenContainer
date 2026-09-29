@@ -1,14 +1,149 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>OpenContainer Playground</title>
+  <link rel="stylesheet" href="/index.css">
 </head>
 <body>
-  <h1>Nolane OpenContainer</h1>
-  <p>Browser-native runtime foundation.</p>
-  <p>crossOriginIsolated: <strong id="isolated"></strong></p>
+  <a class="skip-link" href="#workspace-canvas">Skip to workspace</a>
+  <div id="app" class="app-shell" data-ready="false" data-active-view="preview">
+    <header class="topbar">
+      <div class="brand-block">
+        <span class="brand-mark" aria-hidden="true">OC</span>
+        <div>
+          <h1>OpenContainer</h1>
+          <p>Browser-native runtime playground</p>
+        </div>
+      </div>
+      <div class="runtime-badges" aria-label="Runtime status">
+        <span class="status-pill"><span class="status-dot" aria-hidden="true"></span><span id="runtime-state">Booting</span></span>
+        <span class="status-pill">Gen <strong id="workspace-generation">–</strong></span>
+        <span class="status-pill">Isolated <strong id="isolated">–</strong></span>
+      </div>
+    </header>
+
+    <nav class="surface-tabs" aria-label="Workspace surfaces">
+      <button type="button" class="surface-tab is-active" data-view="preview" aria-controls="view-preview" aria-selected="true">Preview</button>
+      <button type="button" class="surface-tab" data-view="inspect" aria-controls="view-inspect" aria-selected="false">Inspect</button>
+      <button type="button" class="surface-tab" data-view="ai" aria-controls="view-ai" aria-selected="false">AI</button>
+    </nav>
+
+    <main id="workspace-canvas" class="workspace-canvas" tabindex="-1">
+      <section id="view-preview" class="surface-view is-active" data-surface="preview" aria-labelledby="preview-title">
+        <div class="surface-heading">
+          <div>
+            <p class="eyebrow">Runtime preview</p>
+            <h2 id="preview-title">Preview</h2>
+          </div>
+          <div class="surface-actions">
+            <button type="button" id="save-source">Save source</button>
+            <button type="button" id="run-process">Run process</button>
+            <button type="button" id="open-destructive" class="button-secondary">Remove source…</button>
+          </div>
+        </div>
+        <div class="canvas-grid">
+          <label class="editor-card">
+            <span>index.html</span>
+            <textarea id="source-editor" spellcheck="false" aria-describedby="save-state"></textarea>
+          </label>
+          <div class="preview-card">
+            <div class="preview-meta">
+              <span id="preview-route">Preview route unavailable</span>
+              <span id="save-state" role="status" aria-live="polite">No pending changes</span>
+            </div>
+            <div id="preview-mount" class="preview-mount"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-inspect" class="surface-view" data-surface="inspect" aria-labelledby="inspect-title" hidden>
+        <div class="surface-heading">
+          <div>
+            <p class="eyebrow">Live authority state</p>
+            <h2 id="inspect-title">Inspect</h2>
+          </div>
+          <button type="button" id="refresh-inspect">Refresh</button>
+        </div>
+        <div class="inspect-grid">
+          <article class="inspect-card">
+            <h3>Project</h3>
+            <dl id="project-state"></dl>
+          </article>
+          <article class="inspect-card">
+            <h3>Process</h3>
+            <dl id="process-state"></dl>
+          </article>
+          <article class="inspect-card">
+            <h3>AI</h3>
+            <dl id="ai-state"></dl>
+          </article>
+          <article class="inspect-card">
+            <h3>Linked folder</h3>
+            <dl id="linked-state"></dl>
+          </article>
+        </div>
+        <details class="diagnostic-details">
+          <summary>Diagnostic receipt</summary>
+          <pre id="diagnostic-receipt"></pre>
+        </details>
+      </section>
+
+      <section id="view-ai" class="surface-view" data-surface="ai" aria-labelledby="ai-title" hidden>
+        <div class="surface-heading">
+          <div>
+            <p class="eyebrow">Optional AI consumer</p>
+            <h2 id="ai-title">AI</h2>
+          </div>
+          <span id="ai-mode-label" class="mode-label">Discuss only</span>
+        </div>
+        <div class="ai-layout">
+          <div class="mode-switcher" role="group" aria-label="AI authority mode">
+            <button type="button" data-ai-mode="Discuss" aria-pressed="true">Discuss</button>
+            <button type="button" data-ai-mode="Plan" aria-pressed="false">Plan</button>
+            <button type="button" data-ai-mode="Build" aria-pressed="false">Build</button>
+          </div>
+          <form id="ai-form" class="composer">
+            <label for="ai-prompt">Prompt</label>
+            <textarea id="ai-prompt" rows="5" placeholder="Ask about this workspace…"></textarea>
+            <div class="composer-actions">
+              <span id="composition-state" aria-live="polite">Ready</span>
+              <button type="submit" id="send-ai">Send</button>
+            </div>
+          </form>
+          <div class="approval-panel">
+            <div class="approval-heading">
+              <h3>Pending approvals</h3>
+              <button type="button" id="create-approval">Create write approval</button>
+            </div>
+            <ul id="approval-list" class="approval-list" aria-live="polite"></ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <aside id="recovery-panel" class="recovery-panel" hidden aria-labelledby="recovery-title">
+      <div>
+        <strong id="recovery-title">A process failed</strong>
+        <p id="recovery-message">The workspace is still available.</p>
+      </div>
+      <button type="button" id="recover-process">Recover process</button>
+    </aside>
+
+    <div id="authority-status" class="authority-status" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <dialog id="destructive-dialog" aria-labelledby="destructive-title" aria-describedby="destructive-description">
+      <form method="dialog" class="dialog-card">
+        <h2 id="destructive-title">Remove preview source?</h2>
+        <p id="destructive-description">A recovery point will be created first. You can restore the source after removal.</p>
+        <div class="dialog-actions">
+          <button value="cancel" type="submit">Cancel</button>
+          <button value="confirm" type="submit" id="confirm-destructive" class="button-danger">Remove source</button>
+        </div>
+      </form>
+    </dialog>
+  </div>
   <script type="module" src="/index.js"></script>
 </body>
 </html>
