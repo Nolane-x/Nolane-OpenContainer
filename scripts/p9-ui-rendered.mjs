@@ -151,8 +151,18 @@ async function uiCall(cdp,method,args=[]){
   return evaluate(cdp,'globalThis.__openContainerUi['+JSON.stringify(method)+'](...'+JSON.stringify(args)+')');
 }
 async function key(cdp,keyValue,{code=keyValue,modifiers=0}={}){
-  await cdp.command('Input.dispatchKeyEvent',{type:'keyDown',key:keyValue,code,modifiers});
-  await cdp.command('Input.dispatchKeyEvent',{type:'keyUp',key:keyValue,code,modifiers});
+  const virtualKeys=Object.freeze({
+    Enter:13,Tab:9,Escape:27,ArrowLeft:37,ArrowUp:38,ArrowRight:39,ArrowDown:40,
+    Home:36,End:35,Space:32
+  });
+  const windowsVirtualKeyCode=virtualKeys[keyValue]??0;
+  const base={key:keyValue,code,modifiers};
+  if(windowsVirtualKeyCode){
+    base.windowsVirtualKeyCode=windowsVirtualKeyCode;
+    base.nativeVirtualKeyCode=windowsVirtualKeyCode;
+  }
+  await cdp.command('Input.dispatchKeyEvent',{type:'rawKeyDown',...base});
+  await cdp.command('Input.dispatchKeyEvent',{type:'keyUp',...base});
 }
 async function screenshot(cdp,name){
   const result=await cdp.command('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:false});
