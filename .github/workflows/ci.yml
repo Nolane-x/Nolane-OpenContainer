@@ -137,6 +137,30 @@ jobs:
 
 
 
+
+  p6-vitest-real-execution:
+    needs: [contract, codeql]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - run: npm ci
+      - run: test "$(npm --version)" = "11.19.0"
+      - run: google-chrome-stable --version || google-chrome --version || chromium --version
+      - name: Run real frozen Vitest compatibility court
+        run: npm run p6:vitest:evidence
+      - name: Archive P6 Vitest receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-p6-vitest-${{ github.sha }}
+          path: .artifacts/p6-vitest-real-execution/evidence.json
+          if-no-files-found: error
+          retention-days: 90
+
   p10-ai-consumer:
     needs: [contract, codeql]
     runs-on: ubuntu-latest
