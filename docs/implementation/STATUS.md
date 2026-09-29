@@ -878,3 +878,26 @@ Actual Chrome evidence compiles one WebAssembly module and structured-clones it 
 The retained measurement receipt records a **643.55 ms** cold module start and **1.235 ms** warm module start for this CI observation, one compiled module reused by two workers, and four Chrome heap samples. These are measurements, not performance floors or product claims; `performanceThresholdClaimed=false` and `plateauThresholdClaimed=false`.
 
 The production ledger candidate is now **194/304** minimum-closure satisfied with **216** reconciliation rows. P6 is **15/16**; `production_closed=false` remains mandatory.
+
+
+## P2 runtime/process closure
+
+PR #65 implementation head `b2182f11cc03222da96568e06ac9951b7fe3b3fb` passed CI #851 with **538/538** contract tests, CodeQL, **81 critical files × 5 = 405** repeated executions with zero unexplained failures, the full installed-distribution browser path, and a dedicated **2/2** P2 Chrome court (artifact #11016743685).
+
+P2-01 through P2-14 now meet RELEASE-READY minimum closure for the declared Chrome profile.
+
+The browser court uses real Dedicated Workers and proves:
+- one request id publishes one terminal RPC result even when the Worker emits a duplicate response;
+- a timeout is reconciled as an unknown mutation outcome rather than assumed absence;
+- stale worker epochs fail closed after authority restart;
+- three staged Worker failures, including after a transferable and after a mutation, reject pending RPCs and leave task/in-flight usage at zero;
+- 8 MiB transferable traffic succeeds while the page holds a bounded heap-pressure allocation and the sender buffer is actually detached by Chromium;
+- caller → broker → producer → consumer cancellation aborts all descendants and leaves no pending reader;
+- synchronous RPC is allowlisted and reentrancy fails immediately;
+- virtual-process exit waits for bounded stdout/stderr drain, kill/natural/throw races publish exactly one terminal receipt, parent/child teardown follows explicit orphan policy, stdout retention is bounded, and 200 repeated spawn/kill cycles retain zero active processes/resource leases;
+- virtual ports reject stale pid/epoch proof;
+- public failures retain stable `OC_*` codes without exposing Worker/MessagePort topology.
+
+The P2 boundary remains browser-native and virtual: this does not claim host OS process creation, raw TCP/UDP parity, or complete Node stream parity.
+
+The production ledger candidate is now **208/304** minimum-closure satisfied with **224** reconciliation rows. **P2 is 14/14 closed.** Overall `production_closed=false` remains unchanged because other production domains still contain open gates.

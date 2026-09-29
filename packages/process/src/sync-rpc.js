@@ -138,3 +138,39 @@ export const SyncRpcConstants = Object.freeze({
   STATE_ERROR,
   DEFAULT_PAYLOAD_BYTES
 });
+
+
+export class SyncRpcPolicy {
+  #allowed;
+  #active=null;
+
+  constructor({allowedMethods=[]}={}){
+    if(!Array.isArray(allowedMethods)||allowedMethods.some(method=>typeof method!=='string'||method.length===0)){
+      throw ocError(ErrorCodes.INVALID_ARGUMENT,'Sync RPC allowedMethods must be non-empty strings');
+    }
+    this.#allowed=new Set(allowedMethods);
+  }
+
+  enter(method){
+    if(!this.#allowed.has(method)){
+      throw ocError(ErrorCodes.BUILTIN_UNAVAILABLE,'Synchronous RPC method is not allowed',{method});
+    }
+    if(this.#active!==null){
+      throw ocError(ErrorCodes.INVALID_STATE,'Synchronous RPC reentrancy is forbidden',{
+        method,
+        activeMethod:this.#active
+      });
+    }
+    this.#active=method;
+    let released=false;
+    return ()=>{
+      if(released)return false;
+      released=true;
+      if(this.#active===method)this.#active=null;
+      return true;
+    };
+  }
+
+  get activeMethod(){return this.#active;}
+  get allowedMethods(){return Object.freeze([...this.#allowed].sort());}
+}

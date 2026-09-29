@@ -1,0 +1,188 @@
+{
+  "schema": "opencontainer.p2-runtime-process-evidence.v1.0",
+  "source": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "RELEASE-READY evidence",
+  "pullRequest": 65,
+  "closedGates": [
+    {
+      "id": "P2-01",
+      "requirement": "Bind the single-terminal RPC contract to the real browser runtime implementation."
+    },
+    {
+      "id": "P2-02",
+      "requirement": "Prove timeout never implies mutation absence; reconcile mutation identity after unknown outcomes."
+    },
+    {
+      "id": "P2-03",
+      "requirement": "Prove cancellation lineage through caller, broker, producer and consumer for byte streams."
+    },
+    {
+      "id": "P2-04",
+      "requirement": "Prove process exit publication waits for required stdout/stderr drain without hanging forever."
+    },
+    {
+      "id": "P2-05",
+      "requirement": "Prove kill/natural-exit/throw/timeout races emit exactly one public terminal state."
+    },
+    {
+      "id": "P2-06",
+      "requirement": "Inject worker death at acquisition stages and prove idempotent cleanup of ports, timers, streams and leases."
+    },
+    {
+      "id": "P2-07",
+      "requirement": "Freeze allowed synchronous RPC call graph and prove forbidden reentrancy cannot deadlock module loading."
+    },
+    {
+      "id": "P2-08",
+      "requirement": "Test parent/child teardown and orphan policy for bounded process-tree semantics."
+    },
+    {
+      "id": "P2-09",
+      "requirement": "Prove virtual-port allocation/release cannot leak or route to a stale process after PID reuse."
+    },
+    {
+      "id": "P2-10",
+      "requirement": "Test stdout/stderr floods with backpressure and bounded UI retention."
+    },
+    {
+      "id": "P2-11",
+      "requirement": "Prove resource handles are epoch-bound and stale handles fail closed after authority restart."
+    },
+    {
+      "id": "P2-12",
+      "requirement": "Test large transferable streams and abort races under actual Chromium memory pressure."
+    },
+    {
+      "id": "P2-13",
+      "requirement": "Run repeated boot/teardown and spawn/kill cycles long enough to detect retained worker/port state."
+    },
+    {
+      "id": "P2-14",
+      "requirement": "Expose structured stable errors instead of leaking internal worker topology to consumers."
+    }
+  ],
+  "implementation": {
+    "head": "b2182f11cc03222da96568e06ac9951b7fe3b3fb",
+    "ciRunNumber": 851,
+    "ciRunId": 36531642488,
+    "testedCheckoutCommit": "adaff9d616188b227c96d37fcd0d7bec30485c83",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "unitTests": 538,
+    "unitPassed": 538,
+    "unitFailed": 0,
+    "criticalTestFiles": 81,
+    "contractIterations": 5,
+    "criticalTestFileExecutions": 405,
+    "contractUnexplainedFailures": 0,
+    "browserIterations": 2,
+    "fullProductPathPasses": 2
+  },
+  "dedicatedReleaseCourt": {
+    "artifactId": 11016743685,
+    "artifactDigest": "sha256:5c96152181fd0f10a9ad274e381c34c5df3d624dc2a0d92a77f7ecf7eb06fb5f",
+    "schema": "opencontainer.p2-runtime-process.v1.0",
+    "status": "PASS",
+    "nodeVersion": "v24.21.0",
+    "browser": "Google Chrome 153.0.8010.52",
+    "profile": "declared Chrome / Ubuntu x64 CI profile",
+    "iterations": 2,
+    "passedIterations": 2,
+    "sourceGates": [
+      "P2-01",
+      "P2-02",
+      "P2-03",
+      "P2-04",
+      "P2-05",
+      "P2-06",
+      "P2-07",
+      "P2-08",
+      "P2-09",
+      "P2-10",
+      "P2-11",
+      "P2-12",
+      "P2-13",
+      "P2-14"
+    ]
+  },
+  "rpc": {
+    "actualBrowserWorker": true,
+    "duplicateTerminalSuppression": true,
+    "timeoutCode": "OC_WORKER_TIMEOUT",
+    "timeoutMutationState": "UNKNOWN",
+    "reconciledMutationState": "APPLIED",
+    "staleEpochCode": "OC_WORKER_STALE",
+    "workerCrashCode": "OC_GUEST_WORKER_FAILED",
+    "workerCrashStages": 3,
+    "crashStageResourceLeaks": 0
+  },
+  "cancellation": {
+    "lineage": [
+      "root",
+      "broker",
+      "producer",
+      "consumer"
+    ],
+    "allAborted": true,
+    "pendingReadersAfterAbort": 0
+  },
+  "syncRpc": {
+    "allowedMethods": [
+      "fs.readFile",
+      "path.resolve"
+    ],
+    "reentrantCode": "OC_INVALID_STATE",
+    "deniedCode": "OC_BUILTIN_UNAVAILABLE"
+  },
+  "process": {
+    "terminalRaceCasesPerIteration": 60,
+    "terminalCountsUnique": [
+      1
+    ],
+    "terminalReasons": [
+      "killed",
+      "natural-exit",
+      "throw"
+    ],
+    "drainTimeoutBounded": true,
+    "parentCode": 128,
+    "childCode": 128,
+    "detachedCode": 0,
+    "staleVirtualPortCode": "OC_PREVIEW_STALE",
+    "floodLimitBytes": 16384,
+    "floodObservedBytes": 16384,
+    "repeatedCyclesPerIteration": 200,
+    "retainedActiveProcesses": 0,
+    "retainedResourceUsageZero": true
+  },
+  "chromiumPressure": {
+    "transferableBytes": 8388608,
+    "transferableDetached": true,
+    "checksum": 14336,
+    "pressureArrays": 8,
+    "pressureElements": 2000000,
+    "iterationHeapBytes": [
+      {
+        "before": 1546892,
+        "underPressure": 9400296,
+        "after": 9413162
+      },
+      {
+        "before": 1541897,
+        "underPressure": 9400385,
+        "after": 9413251
+      }
+    ],
+    "thresholdClaimed": false
+  },
+  "boundaries": {
+    "hostOsProcessesClaimed": false,
+    "rawTcpUdpParityClaimed": false,
+    "fullNodeStreamsClaimed": false,
+    "productionClosed": false
+  },
+  "p2DomainClosed": true,
+  "productionClosed": false
+}

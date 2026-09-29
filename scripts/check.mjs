@@ -14,6 +14,7 @@ const required=[
   'release/RELEASE-COMPATIBILITY-REPORT.v1.0.json','release/P11-RELEASE-COMPATIBILITY-EVIDENCE.v1.0.json','release/RELEASE-COMPATIBILITY-MATRIX.v1.0.json','release/P15-RELEASE-COMPATIBILITY-MATRIX-EVIDENCE.v1.0.json',
   'docs/compatibility/RELEASE-COMPATIBILITY-REPORT.md','docs/compatibility/RELEASE-COMPATIBILITY-MATRIX.md',
   'docs/compatibility/P4-PACKAGE-COMMAND-DIAGNOSTICS-NATIVE-BOUNDARY.md',
+  'docs/compatibility/P2-RUNTIME-PROCESS-BOUNDARY.md',
   'docs/compatibility/P4-FINAL-PACKAGE-CLOSURE.md',
   'scripts/release-compatibility-report.mjs','scripts/release-compatibility-matrix.mjs',
   'tests/release-compatibility-report.test.js','tests/release-compatibility-matrix.test.js','tests/p11-release-report-evidence.test.js','tests/p15-compatibility-matrix-evidence.test.js',

@@ -24,6 +24,8 @@ function workerErrorFromEnvelope(error) {
 export class WorkerRpcAuthority {
   #transport = null;
   #listener = null;
+  #errorListener = null;
+  #messageErrorListener = null;
   #diagnostics;
   #maxPending;
   #pending = new Map();
@@ -67,15 +69,28 @@ export class WorkerRpcAuthority {
     this.#nextId = 0;
 
     this.#listener = (event) => this.receive(event && 'data' in event ? event.data : event);
+    this.#errorListener = (event) => this.#failTransport(
+      ocError(ErrorCodes.GUEST_WORKER_FAILED,'Worker transport failed',{
+        message:event?.message??null,
+        filename:event?.filename??null,
+        lineno:event?.lineno??null,
+        colno:event?.colno??null
+      })
+    );
+    this.#messageErrorListener = () => this.#failTransport(
+      ocError(ErrorCodes.GUEST_WORKER_FAILED,'Worker transport emitted messageerror')
+    );
     if (typeof transport.addEventListener === 'function') {
       transport.addEventListener('message', this.#listener);
+      transport.addEventListener('error', this.#errorListener);
+      transport.addEventListener('messageerror', this.#messageErrorListener);
     }
 
     this.#diagnostics?.record('worker.session', this.identity);
     return this.identity;
   }
 
-  request(method, payload, { transfer, background=false } = {}) {
+  request(method, payload, { transfer, background=false, timeoutMs=null } = {}) {
     if (this.#closed) throw ocError(ErrorCodes.WORKER_CLOSED, 'Worker authority is closed');
     if (!this.#transport) throw ocError(ErrorCodes.INVALID_STATE, 'Worker transport is not attached');
     if (typeof method !== 'string' || !method) {
@@ -112,7 +127,10 @@ export class WorkerRpcAuthority {
     });
 
     let timer = null;
-    if (this.#requestTimeoutMs > 0) {
+    const effectiveTimeoutMs=timeoutMs===null||timeoutMs===undefined
+      ? this.#requestTimeoutMs
+      : Math.max(0,Number(timeoutMs)||0);
+    if (effectiveTimeoutMs > 0) {
       timer = setTimeout(() => {
         const pending = this.#pending.get(id);
         if (!pending) return;
@@ -123,11 +141,11 @@ export class WorkerRpcAuthority {
           epoch: this.#epoch,
           id,
           method,
-          timeoutMs: this.#requestTimeoutMs
+          timeoutMs: effectiveTimeoutMs
         });
         this.#diagnostics?.record('worker.timeout', error.details);
         pending.reject(error);
-      }, this.#requestTimeoutMs);
+      }, effectiveTimeoutMs);
     }
 
     this.#pending.set(id, { resolve, reject, method, timer, lease, inFlightBytes, background:background===true });
@@ -208,10 +226,28 @@ export class WorkerRpcAuthority {
     this.#pending.clear();
   }
 
+  #failTransport(error) {
+    if (!this.#transport) return false;
+    this.#diagnostics?.record('worker.transport-failed', {
+      session: this.#session,
+      epoch: this.#epoch,
+      code: error?.code ?? ErrorCodes.GUEST_WORKER_FAILED,
+      message: error?.message ?? String(error)
+    });
+    this.#rejectPending(error);
+    this.#detach();
+    this.#transport = null;
+    return true;
+  }
+
   #detach() {
-    if (this.#transport && this.#listener && typeof this.#transport.removeEventListener === 'function') {
-      this.#transport.removeEventListener('message', this.#listener);
+    if (this.#transport && typeof this.#transport.removeEventListener === 'function') {
+      if(this.#listener)this.#transport.removeEventListener('message', this.#listener);
+      if(this.#errorListener)this.#transport.removeEventListener('error', this.#errorListener);
+      if(this.#messageErrorListener)this.#transport.removeEventListener('messageerror', this.#messageErrorListener);
     }
     this.#listener = null;
+    this.#errorListener = null;
+    this.#messageErrorListener = null;
   }
 }

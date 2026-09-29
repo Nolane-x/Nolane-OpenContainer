@@ -538,6 +538,14 @@
       "status": "PASS",
       "ref": "CI #814 / PR #64 implementation head eaf3386f9d4a39e837243feb71f63c8673b98ca0",
       "note": "Declared Chrome/Ubuntu P6 court closes 15/16 gates: exact Rolldown/LightningCSS artifacts and differentials, cloned compiled Wasm module reuse across bounded browser Workers, shared-memory grow/rebind, global ToolchainAuthority budget, Vite 8.3 C1/C2 build/HMR/restart/preview/dep-opt, source-map and failure diagnostics, cold/warm/cache/heap measurements, canonical package/workspace failure atomicity, explicit generic-WASI boundary and exact BCR tuple/no-silent-substitution. P6-10 remains open because real Vitest execution is not promoted."
+    },
+    {
+      "key": "p2-runtime-process",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #851 / PR #65 implementation head b2182f11cc03222da96568e06ac9951b7fe3b3fb",
+      "note": "P2-01..P2-14 declared-profile release evidence: actual Worker RPC duplicate-terminal suppression, timeout mutation reconciliation, cancellation lineage, bounded output drain, exactly-once process terminals, staged worker-death cleanup, sync-RPC no-reentrancy, bounded process-tree semantics, epoch-bound virtual ports, bounded output retention, stale handle rejection, 8 MiB transferable under Chrome heap pressure, 200 repeated process cycles and stable public errors. Dedicated Chrome court passed 2/2 in artifact #11016743685."
     }
   ]
 }

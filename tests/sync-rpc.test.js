@@ -4,7 +4,8 @@ import {
   createSyncRpcMailbox,
   settleSyncRpcMailbox,
   waitSyncRpcMailbox,
-  SyncRpcConstants
+  SyncRpcConstants,
+  SyncRpcPolicy
 } from '../packages/process/src/sync-rpc.js';
 import { ErrorCodes } from '../packages/protocol/src/index.js';
 
@@ -36,4 +37,29 @@ test('sync RPC mailbox rejects oversized host response',()=>{
 test('sync RPC mailbox uses bounded shared memory',()=>{
   const shared=createSyncRpcMailbox(2048);
   assert.equal(shared.byteLength,SyncRpcConstants.HEADER_BYTES+2048);
+});
+
+
+test('sync RPC policy rejects unlisted methods and forbids reentrancy',()=>{
+  const policy=new SyncRpcPolicy({allowedMethods:['fs.readFile','path.resolve']});
+  assert.deepEqual(policy.allowedMethods,['fs.readFile','path.resolve']);
+
+  assert.throws(
+    ()=>policy.enter('net.fetch'),
+    error=>error.code===ErrorCodes.BUILTIN_UNAVAILABLE&&error.details?.method==='net.fetch'
+  );
+
+  const release=policy.enter('fs.readFile');
+  assert.equal(policy.activeMethod,'fs.readFile');
+  assert.throws(
+    ()=>policy.enter('path.resolve'),
+    error=>error.code===ErrorCodes.INVALID_STATE&&error.details?.activeMethod==='fs.readFile'
+  );
+  assert.equal(release(),true);
+  assert.equal(release(),false);
+  assert.equal(policy.activeMethod,null);
+
+  const releaseNext=policy.enter('path.resolve');
+  assert.equal(policy.activeMethod,'path.resolve');
+  releaseNext();
 });
