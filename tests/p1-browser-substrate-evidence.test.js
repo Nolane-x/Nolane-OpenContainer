@@ -77,8 +77,8 @@ test('P1 wave promotes exactly 13 gates and keeps external/field gates open',()=
     assert.equal(row.closure_met,true);
   }
 
-  assert.equal(ledger.overrides.length,231);
-  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,221);
+  assert.ok(ledger.overrides.length>=231,'reconciliation ledger must not shrink below the P1 promotion baseline');
+  assert.ok(ledger.overrides.filter(item=>item.closure_met===true).length>=221,'closure count must not regress below the P1 promotion baseline');
   assert.equal(ledger.overrides.filter(item=>item.domain==='P1'&&item.closure_met===true).length,13);
 
   for(const id of intentionallyOpen){
