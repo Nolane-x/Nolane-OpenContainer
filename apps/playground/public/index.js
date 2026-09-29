@@ -552,7 +552,39 @@ $('#ai-form').addEventListener('submit',event=>{
   submitAiPrompt().catch(error=>announce('AI action blocked: '+errorCode(error),{sticky:true}));
 });
 
+function focusableDialogControls(dialog){
+  return [...dialog.querySelectorAll(
+    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )].filter(node=>{
+    const style=getComputedStyle(node);
+    return style.visibility!=='hidden'&&style.display!=='none';
+  });
+}
+
+function trapDialogFocus(dialog,event){
+  if(event.key!=='Tab'||!dialog.open)return;
+  const controls=focusableDialogControls(dialog);
+  if(controls.length===0){
+    event.preventDefault();
+    dialog.focus();
+    return;
+  }
+  const first=controls[0];
+  const last=controls.at(-1);
+  const active=document.activeElement;
+  if(event.shiftKey&&(active===first||!dialog.contains(active))){
+    event.preventDefault();
+    last.focus();
+    return;
+  }
+  if(!event.shiftKey&&(active===last||!dialog.contains(active))){
+    event.preventDefault();
+    first.focus();
+  }
+}
+
 const destructiveDialog=$('#destructive-dialog');
+destructiveDialog.addEventListener('keydown',event=>trapDialogFocus(destructiveDialog,event));
 $('#open-destructive').addEventListener('click',event=>{
   shellState.lastDialogOpener=event.currentTarget;
   destructiveDialog.showModal();
@@ -565,6 +597,7 @@ destructiveDialog.addEventListener('close',()=>{
 });
 
 const diagnosticsDialog=$('#diagnostics-dialog');
+diagnosticsDialog.addEventListener('keydown',event=>trapDialogFocus(diagnosticsDialog,event));
 $('#open-clear-diagnostics').addEventListener('click',event=>{
   shellState.lastDialogOpener=event.currentTarget;
   diagnosticsDialog.showModal();
