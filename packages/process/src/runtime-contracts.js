@@ -77,7 +77,9 @@ export class CancellationLineage {
   #nodes=new Map();
 
   constructor({id='root'}={}){
-    this.#root=this.#node(String(id),null);
+    const rootId=String(id);
+    this.#node(rootId,null);
+    this.#root=this.#nodes.get(rootId);
   }
 
   get signal(){return this.#root.controller.signal;}
