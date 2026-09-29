@@ -217,3 +217,12 @@ Every substantive PR should update the JSON ledger only for gate IDs it directly
 - P4-18: `.node` resolution denies by default; generic aliases cannot bypass the boundary; only exact explicitly registered `nativeAddonAdapters` mappings to existing non-native files are accepted, with no host-native execution.
 - Dedicated artifact **#10979651177** passed **2/2** Chrome iterations; CI #729 passed **485/485** tests, **62 critical files × 5 = 310** repeated executions, CodeQL and **2/2** installed-distribution browser paths.
 - P4 remains open as a domain: source gates P4-07, P4-13, P4-15 and P4-16 remain open; `production_closed=false` remains mandatory.
+
+
+- **P4-07 / P4-13 / P4-15 / P4-16** now meet RELEASE-READY minimum closure through PR #63 / CI #789 implementation head `db400b8fd53213dbefc36dbb02418508d5ef9724`.
+- P4-07 retains **8 minimized parser failures** and runs **512 Node + 256 Chrome mutations** across TAR/gzip/manifest/lockfile parsing with **0 raw parser exceptions**.
+- P4-13 uses an exact content-bound lifecycle-script capability. Browser evidence records **0 ambient env keys**, **0 secret handles**, secret-bearing install rejection and retained publication fencing.
+- P4-15 verifies the dedicated package-layout watcher plus `readdir`/`realpath` behavior across install/remove/reinstall while explicitly making **no generic fs.watch parity claim**.
+- P4-16 retains real Chrome OPFS storage measurements on two retained toolchain tarballs and Node/Chrome graph-load measurements on the 219-node Vite and 8-node Chokidar package graphs. The retained OPFS payload metric is **7,636,456 / 28,364,367 = 0.2692270904547244×**; filesystem metadata overhead and performance thresholds are explicitly not claimed.
+- Dedicated artifact **#11004449702** passed **2/2** Chrome iterations; CI #789 passed **503/503** contract tests, **66 critical files × 5 = 330** repeated executions, CodeQL and **2/2** installed-distribution browser paths.
+- **P4 is now 18/18 closed.** The overall production ledger is **179/304** with **209** reconciliation rows; `production_closed=false` remains mandatory because other domains remain open.
