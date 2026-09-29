@@ -846,3 +846,20 @@ For P4-17, support bundles emit package name/version/location, content/instance 
 For P4-18, native `.node` execution remains denied by default with `OC_NATIVE_ADDON_UNSUPPORTED`. Generic package/path aliases cannot authorize a fallback. Only an exact `nativeAddonAdapters` mapping from a specific absolute `.node` source to an existing non-`.node` target is accepted; the mapping participates in resolver cache identity and emits an explicit source→target receipt. No host-native execution is introduced. The boundary is documented in both the dedicated P4 compatibility note and the public limitations guide.
 
 The production ledger candidate is now **175/304** minimum-closure satisfied with **206** reconciliation rows. P4 is **14/18** closed. Source gates P4-07, P4-13, P4-15 and P4-16 remain open; `production_closed=false` remains unchanged.
+
+
+## P4 final package closure wave 5
+
+PR #63 implementation head `db400b8fd53213dbefc36dbb02418508d5ef9724` passed CI #789 with **503/503** contract tests, CodeQL, **66 critical files × 5 = 330** repeated executions with zero unexplained failures, **2/2** installed-distribution Chrome product paths and a dedicated **2/2** final P4 package court (artifact #11004449702).
+
+P4-07, P4-13, P4-15 and P4-16 now meet RELEASE-READY minimum closure for the declared Chrome profile. This closes **P4 18/18**.
+
+For P4-07, the retained parser-fuzz corpus contains **8 minimized failure inputs** spanning TAR, gzip, package manifest and package-lock parsing. CI runs **512 Node mutation campaigns** plus **256 Chrome mutation campaigns**; malformed input remains inside typed OpenContainer failures with **0 raw parser exceptions**.
+
+For P4-13, package lifecycle scripts require a dedicated `PackageScriptCapability` grant bound to package location, lifecycle event, exact command and frozen content identity. The Chrome court executes an authorized script with **0 ambient environment keys** and **0 secret handles**; secret-bearing attempts fail closed and keep the PackageFS publication barrier armed.
+
+For P4-15, `PackageGraphAuthority.watchPackageLayout()` is a dedicated package-layout generation watcher, not a claim of generic `fs.watch` compatibility. The court observes unmounted/install/reinstall/remove/install transitions and checks `readdir()` plus linked-workspace `realpath()` coherence at each relevant generation.
+
+For P4-16, measurements are retained rather than converted into marketing thresholds. Two retained production toolchain tarballs total **7,635,964 packed bytes** and **28,364,367 unique verified logical bytes**. Real Chrome OPFS persistence stores **7,636,456 payload bytes**, giving a measured amplification of **0.2692270904547244×** under the frozen formula `physical-persistent-bytes / unique-verified-logical-content-bytes`. Filesystem metadata overhead is explicitly outside this measurement. Real graph-load measurements are also retained for the 219-node Vite graph and 8-node Chokidar graph in both Node and Chrome; no pass/fail performance threshold is claimed.
+
+The production ledger candidate is now **179/304** minimum-closure satisfied with **209** reconciliation rows. **P4 is 18/18 closed for the declared profile.** Overall `production_closed=false` remains unchanged because other production domains still contain open gates.
