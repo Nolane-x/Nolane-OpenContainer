@@ -323,15 +323,10 @@ try{
   await waitReady(storageCdp);
   await evaluate(storageCdp,`globalThis.__p1BrowserCourt.storageSeed(${JSON.stringify(bestEffortDirectory)},'best-effort')`);
   assert((await evaluate(storageCdp,`globalThis.__p1BrowserCourt.storageRead(${JSON.stringify(bestEffortDirectory)})`)).exists===true,'P1 best-effort OPFS seed failed');
-  await closeTarget(debugPort,storageTarget);
-  const storageIndex=targets.indexOf(storageTarget);if(storageIndex>=0)targets.splice(storageIndex,1);
-  storageCdp.close();
-  await browserCdp.command('Storage.clearDataForOrigin',{origin,storageTypes:'all'});
-  const reopenedTarget=await newTarget(debugPort,origin+'/p1-browser-substrate.html?storage=reopened');
-  targets.push(reopenedTarget);
-  const reopened=await prepareTarget(reopenedTarget);
-  await waitReady(reopened);
-  const evictedRead=await evaluate(reopened,`globalThis.__p1BrowserCourt.storageRead(${JSON.stringify(bestEffortDirectory)})`);
+  await storageCdp.command('Storage.clearDataForOrigin',{origin,storageTypes:'file_systems'});
+  await storageCdp.command('Page.reload',{ignoreCache:true});
+  await waitReady(storageCdp);
+  const evictedRead=await evaluate(storageCdp,`globalThis.__p1BrowserCourt.storageRead(${JSON.stringify(bestEffortDirectory)})`);
   assert(evictedRead.exists===false,'P1 best-effort eviction did not reopen as missing state',{evictedRead});
 
   let persistenceOverride='setPermission';
@@ -345,13 +340,13 @@ try{
     persistenceOverride='grantPermissions';
     await browserCdp.command('Browser.grantPermissions',{permissions:['durableStorage'],origin});
   }
-  const persistentPolicy=await evaluate(reopened,'globalThis.__p1BrowserCourt.storagePolicy()');
+  const persistentPolicy=await evaluate(storageCdp,'globalThis.__p1BrowserCourt.storagePolicy()');
   assert(persistentPolicy.after.persisted===true,'P1 persistent storage class was not granted in declared Chrome profile',{persistentPolicy,persistenceOverride});
   const persistentDirectory='p1-persistent-'+Date.now();
-  await evaluate(reopened,`globalThis.__p1BrowserCourt.storageSeed(${JSON.stringify(persistentDirectory)},'persistent')`);
-  await closeTarget(debugPort,reopenedTarget);
-  const reopenIndex=targets.indexOf(reopenedTarget);if(reopenIndex>=0)targets.splice(reopenIndex,1);
-  reopened.close();
+  await evaluate(storageCdp,`globalThis.__p1BrowserCourt.storageSeed(${JSON.stringify(persistentDirectory)},'persistent')`);
+  await closeTarget(debugPort,storageTarget);
+  const storageIndex=targets.indexOf(storageTarget);if(storageIndex>=0)targets.splice(storageIndex,1);
+  storageCdp.close();
   const persistedTarget=await newTarget(debugPort,origin+'/p1-browser-substrate.html?storage=persistent-reopen');
   targets.push(persistedTarget);
   const persisted=await prepareTarget(persistedTarget);
