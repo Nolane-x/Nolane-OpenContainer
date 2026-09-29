@@ -4070,6 +4070,8 @@ async function run() {
   });
 
   stage('vite-c1-build-start');
+  const p6PackageGenerationBefore=runtime.packages.generation;
+  const p6PackageLayoutBefore=runtime.packages.graph?.layout?.fingerprint??null;
   const viteBuildEntryUrl = vitePublication.moduleURL('./vite-build-probe.mjs', '/workspace/src/entry.mjs');
   const viteBuildGraph = await vitePublication.graph(viteBuildEntryUrl);
   const viteBuildExecution = await viteWorker.execute(viteBuildGraph.entryURL, {
@@ -4132,6 +4134,8 @@ async function run() {
   assert(viteBuildExecution.exports.expectedBuildFailureObserved === true, 'Vite C1 failure atomicity probe did not fail as expected');
   assert(String(viteBuildExecution.exports.expectedBuildFailureMessage).includes('__opencontainer_missing_entry__'), 'Vite C1 failure diagnostic lost failing source path');
   assert(viteBuildExecution.exports.sourceUnchangedAfterFailure === true, 'Vite C1 failed build mutated canonical source');
+  assert(runtime.packages.generation===p6PackageGenerationBefore,'Vite C1 adapter path mutated canonical package graph generation');
+  assert((runtime.packages.graph?.layout?.fingerprint??null)===p6PackageLayoutBefore,'Vite C1 adapter path mutated canonical package layout identity');
   assert(viteBuildExecution.exports.deterministicManifest === true, 'Vite C1 normalized manifest changed across identical builds');
   assert(viteBuildExecution.exports.repeatedOutputFiles === true, 'Vite C1 output filenames changed across identical builds');
   p6HeapSamples.push(p6HeapSample());
@@ -4144,6 +4148,8 @@ async function run() {
     sourceRebuild: viteBuildExecution.exports.sourceEditObserved,
     configReload: viteBuildExecution.exports.configReloadObserved,
     failureAtomicity: viteBuildExecution.exports.sourceUnchangedAfterFailure,
+    packageGraphGenerationStable:runtime.packages.generation===p6PackageGenerationBefore,
+    packageLayoutIdentityStable:(runtime.packages.graph?.layout?.fingerprint??null)===p6PackageLayoutBefore,
     mapVersion:c1MapData.version,
     mapSources:c1MapData.sources,
     mapSourcesContent:c1MapData.sourcesContent?.length??0,
