@@ -628,8 +628,16 @@ globalThis.__openContainerUi=Object.freeze({
 
 boot().catch(error=>{
   shellState.project.state='failed';
+  const receipt=Object.freeze({
+    name:error?.name??'Error',
+    code:errorCode(error),
+    message:error?.message??String(error),
+    stack:typeof error?.stack==='string'?error.stack:null
+  });
+  globalThis.__openContainerBootError=receipt;
   renderHeader();
   $('#app').dataset.ready='error';
-  announce('Runtime boot failed: '+errorCode(error),{sticky:true});
+  $('#app').dataset.bootErrorCode=receipt.code;
+  announce('Runtime boot failed: '+receipt.code,{sticky:true});
   console.error(error);
 });
