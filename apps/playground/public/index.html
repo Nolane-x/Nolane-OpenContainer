@@ -24,14 +24,14 @@
       </div>
     </header>
 
-    <nav class="surface-tabs" aria-label="Workspace surfaces">
-      <button type="button" class="surface-tab is-active" data-view="preview" aria-controls="view-preview" aria-selected="true">Preview</button>
-      <button type="button" class="surface-tab" data-view="inspect" aria-controls="view-inspect" aria-selected="false">Inspect</button>
-      <button type="button" class="surface-tab" data-view="ai" aria-controls="view-ai" aria-selected="false">AI</button>
+    <nav class="surface-tabs" aria-label="Workspace surfaces" role="tablist">
+      <button type="button" class="surface-tab is-active" data-view="preview" role="tab" aria-controls="view-preview" aria-selected="true">Preview</button>
+      <button type="button" class="surface-tab" data-view="inspect" role="tab" aria-controls="view-inspect" aria-selected="false">Inspect</button>
+      <button type="button" class="surface-tab" data-view="ai" role="tab" aria-controls="view-ai" aria-selected="false">AI</button>
     </nav>
 
     <main id="workspace-canvas" class="workspace-canvas" tabindex="-1">
-      <section id="view-preview" class="surface-view is-active" data-surface="preview" aria-labelledby="preview-title">
+      <section id="view-preview" class="surface-view is-active" data-surface="preview" role="tabpanel" aria-labelledby="preview-title">
         <div class="surface-heading">
           <div>
             <p class="eyebrow">Runtime preview</p>
@@ -58,7 +58,7 @@
         </div>
       </section>
 
-      <section id="view-inspect" class="surface-view" data-surface="inspect" aria-labelledby="inspect-title" hidden>
+      <section id="view-inspect" class="surface-view" data-surface="inspect" role="tabpanel" aria-labelledby="inspect-title" hidden>
         <div class="surface-heading">
           <div>
             <p class="eyebrow">Live authority state</p>
@@ -94,7 +94,7 @@
         </details>
       </section>
 
-      <section id="view-ai" class="surface-view" data-surface="ai" aria-labelledby="ai-title" hidden>
+      <section id="view-ai" class="surface-view" data-surface="ai" role="tabpanel" aria-labelledby="ai-title" hidden>
         <div class="surface-heading">
           <div>
             <p class="eyebrow">Optional AI consumer</p>
