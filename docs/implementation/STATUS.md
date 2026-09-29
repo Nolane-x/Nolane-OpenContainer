@@ -863,3 +863,18 @@ For P4-15, `PackageGraphAuthority.watchPackageLayout()` is a dedicated package-l
 For P4-16, measurements are retained rather than converted into marketing thresholds. Two retained production toolchain tarballs total **7,635,964 packed bytes** and **28,364,367 unique verified logical bytes**. Real Chrome OPFS persistence stores **7,636,456 payload bytes**, giving a measured amplification of **0.2692270904547244×** under the frozen formula `physical-persistent-bytes / unique-verified-logical-content-bytes`. Filesystem metadata overhead is explicitly outside this measurement. Real graph-load measurements are also retained for the 219-node Vite graph and 8-node Chokidar graph in both Node and Chrome; no pass/fail performance threshold is claimed.
 
 The production ledger candidate is now **179/304** minimum-closure satisfied with **209** reconciliation rows. **P4 is 18/18 closed for the declared profile.** Overall `production_closed=false` remains unchanged because other production domains still contain open gates.
+
+
+## P6 toolchain and Vite declared-profile closure wave
+
+PR #64 implementation head `eaf3386f9d4a39e837243feb71f63c8673b98ca0` passed CI #814 with **515/515** contract tests, CodeQL, **74 critical files × 5 = 370** repeated executions with zero unexplained failures, **2/2** installed-distribution Chrome product paths and a dedicated P6 toolchain/Vite browser court (artifact #11015178902, digest `sha256:0f87f7b66acfec78eaf03fe7c541f298fd26bf9c001ef91b831d63ca301addad`).
+
+This promotes **15/16 P6 gates** to their minimum `PASS-INTEGRATION + declared-profile evidence`: P6-01 through P6-09 and P6-11 through P6-16. **P6-10 remains OPEN/UNRECONCILED** because the frozen Vitest monorepo case is still an explicit pnpm/monorepo unsupported boundary; no real promoted Vitest execution exists yet.
+
+The court keeps exact Rolldown 1.2.9 and Lightning CSS WASM 1.33.0 artifact identities, rejects version skew/digest substitution/unsupported versions, and versions every BCR entry by package + tool version + artifact digest + semantic profile. A global `ToolchainAuthority` enforces a shared worker budget across agents instead of per-agent runtime pools. Generic WASI/Linux expansion is rejected as a separate unsupported semantic profile rather than silently widening the browser adapter.
+
+Actual Chrome evidence compiles one WebAssembly module and structured-clones it into two bounded workers, then grows shared WebAssembly memory twice and proves stale typed-array views are rebound without data loss. Vite 8.3 C1 retains production build, TypeScript config/plugin reload, Lightning CSS, assets, source maps, deterministic output and failure atomicity. The failed-build court proves both workspace source and package graph/layout canonical identity remain unchanged. C2 retains virtual HTTP, HMR failure/recovery/reconnect/stale-client rejection, same-port epoch restart, preview rehydration and real dependency optimization into `.vite/deps/nanoid.js`.
+
+The retained measurement receipt records a **643.55 ms** cold module start and **1.235 ms** warm module start for this CI observation, one compiled module reused by two workers, and four Chrome heap samples. These are measurements, not performance floors or product claims; `performanceThresholdClaimed=false` and `plateauThresholdClaimed=false`.
+
+The production ledger candidate is now **194/304** minimum-closure satisfied with **216** reconciliation rows. P6 is **15/16**; `production_closed=false` remains mandatory.
