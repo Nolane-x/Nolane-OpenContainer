@@ -61,3 +61,5 @@ export { WorkerRpcAuthority } from './worker-authority.js';
 export { BrowserGuestWorkerAuthority } from './browser-guest-worker.js';
 
 export { createSyncRpcMailbox, settleSyncRpcMailbox, waitSyncRpcMailbox, SyncRpcConstants } from './sync-rpc.js';
+
+export { MutationReceiptAuthority, CancellationLineage, ProcessPortAuthority, BoundedTransferChannel } from './runtime-contracts.js';
