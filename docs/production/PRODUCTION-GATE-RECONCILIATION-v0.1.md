@@ -235,3 +235,11 @@ Every substantive PR should update the JSON ledger only for gate IDs it directly
 - CI #814 passed **515/515** contract tests, **74 critical files × 5 = 370** repeated executions, CodeQL and **2/2** installed-distribution Chrome paths. Dedicated artifact **#11015178902** has digest `sha256:0f87f7b66acfec78eaf03fe7c541f298fd26bf9c001ef91b831d63ca301addad`.
 - **P6-10 remains OPEN/UNRECONCILED**. The frozen Vitest monorepo case still carries the pnpm/monorepo unsupported boundary, so this wave does not claim a real promoted Vitest run.
 - The production ledger candidate is now **194/304** with **216** reconciliation rows. P6 is **15/16** and `production_closed=false` remains mandatory.
+
+
+- **P2-01 through P2-14** meet RELEASE-READY minimum closure through PR #65 / CI #851 implementation head `b2182f11cc03222da96568e06ac9951b7fe3b3fb`.
+- Dedicated Chrome artifact **#11016743685** passed **2/2** fresh iterations on Chrome 153.0.8010.52 and exact Node v24.21.0.
+- The court binds actual browser Worker RPC, duplicate-terminal suppression, timeout mutation reconciliation, stale epoch rejection, three staged Worker-death cleanup paths, caller→broker→producer→consumer cancellation, no-reentrant synchronous RPC, bounded output drain, exactly-once process terminals, process-tree/orphan policy, epoch-bound virtual ports, bounded stdout retention, an **8 MiB** transferable under bounded Chrome heap pressure, **200** repeated process cycles and stable public errors.
+- Implementation CI #851 passed **538/538** contract tests and **81 critical files × 5 = 405** repeated executions with zero unexplained failures.
+- P2 remains a browser-native virtual process/stream boundary and does not claim host OS processes, raw TCP/UDP or full Node stream parity.
+- **P2 is now 14/14 closed.** The overall production ledger is **208/304** with **224** reconciliation rows; `production_closed=false` remains mandatory because other domains remain open.
