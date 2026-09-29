@@ -222,3 +222,13 @@ test('worker messageerror fails session closed idempotently',async()=>{
   transport.emit('messageerror',{data:null});
   assert.throws(()=>authority.request('stale',{}),error=>error.code===ErrorCodes.INVALID_STATE);
 });
+
+
+test('worker per-request timeout override can be stricter than session default',async()=>{
+  const transport=new MockWorkerTransport();
+  const authority=new WorkerRpcAuthority({transport,requestTimeoutMs:1000});
+  const pending=authority.request('strict-deadline',{}, {timeoutMs:10});
+  await expectCode(pending,ErrorCodes.WORKER_TIMEOUT);
+  assert.equal(authority.pendingCount,0);
+  authority.close();
+});
