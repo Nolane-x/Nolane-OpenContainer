@@ -127,6 +127,125 @@ async function run() {
   acceptanceRuntime = runtime;
   stage('runtime-ready', { crossOriginIsolated: globalThis.crossOriginIsolated });
 
+  stage('p6-runtime-authority-start');
+
+  const p6RolldownEntry={
+    packageName:'@rolldown/browser',
+    toolVersion:'1.2.9',
+    artifactDigest:'9accf3cdfe3d2287ad7d5f49cd2cfcddbc9c112abfcbc295863e401ef44b8576',
+    adapterSemanticProfile:'rolldown-browser-wasi-v1'
+  };
+  const p6LightningEntry={
+    packageName:'lightningcss-wasm',
+    toolVersion:'1.33.0',
+    artifactDigest:'266866c1b0efd7ca5307fe312411e4f1895b997086fb76f392ec5b60aadf31c8',
+    adapterSemanticProfile:'lightningcss-browser-default-v1'
+  };
+  const p6Authority=new ToolchainAuthority({
+    entries:[p6RolldownEntry,p6LightningEntry],
+    maxWorkers:2
+  });
+  const p6LeaseA=p6Authority.acquireWorker({agentId:'p6-agent-a',entry:p6RolldownEntry});
+  const p6LeaseB=p6Authority.acquireWorker({agentId:'p6-agent-b',entry:p6RolldownEntry});
+  let p6BudgetCode=null;
+  try{
+    p6Authority.acquireWorker({agentId:'p6-agent-c',entry:p6RolldownEntry});
+  }catch(error){
+    p6BudgetCode=error?.code??null;
+  }
+  assert(p6BudgetCode==='OC_RESOURCE_EXHAUSTED','P6 ToolchainAuthority did not enforce one global worker budget');
+  p6LeaseA.release();
+  const p6LeaseC=p6Authority.acquireWorker({agentId:'p6-agent-c',entry:p6RolldownEntry});
+  p6LeaseB.release();
+  p6LeaseC.release();
+  assert(p6Authority.usage.workers===0,'P6 ToolchainAuthority leaked worker leases');
+
+  const p6Exact=certifyToolchain({...FrozenToolchains.vite830});
+  assert(p6Exact.status==='EXACT_PROFILE','P6 exact toolchain tuple did not certify');
+  let p6SkewCode=null;
+  let p6DigestCode=null;
+  let p6UnsupportedCode=null;
+  let p6GenericWasiCode=null;
+  try{certifyToolchain({...FrozenToolchains.vite830,rolldownBinding:'1.2.8'});}catch(error){p6SkewCode=error?.code??null;}
+  try{certifyToolchain({...FrozenToolchains.vite830,lightningcssWasmSha256:'0'.repeat(64)});}catch(error){p6DigestCode=error?.code??null;}
+  try{certifyToolchain({...FrozenToolchains.vite830,consumerVersion:'8.2.0'});}catch(error){p6UnsupportedCode=error?.code??null;}
+  try{
+    p6Authority.resolve({...p6RolldownEntry,adapterSemanticProfile:'generic-wasi-linux'});
+  }catch(error){
+    p6GenericWasiCode=error?.code??null;
+  }
+  assert(p6SkewCode==='OC_TOOLCHAIN_SKEW','P6 live toolchain loader did not reject Rolldown binding skew');
+  assert(p6DigestCode==='OC_DIGEST_MISMATCH','P6 live toolchain loader did not reject artifact digest substitution');
+  assert(p6UnsupportedCode==='OC_TOOLCHAIN_UNSUPPORTED','P6 live toolchain loader did not reject unsupported Vite version');
+  assert(p6GenericWasiCode==='OC_TOOLCHAIN_UNSUPPORTED','P6 adapter authority implicitly widened into generic WASI/Linux');
+
+  const p6Memory=new WebAssembly.Memory({initial:1,maximum:4,shared:true});
+  const p6Views=new SharedWasmMemoryViews(p6Memory);
+  const p6BytesBefore=p6Views.bind('bytes',Uint8Array,0);
+  const p6WordsBefore=p6Views.bind('words',Uint32Array,0,8);
+  p6BytesBefore[0]=23;
+  p6WordsBefore[1]=0x12345678;
+  const p6OldBuffer=p6BytesBefore.buffer;
+  const p6OldLength=p6BytesBefore.byteLength;
+  const p6Growth=[];
+  for(let index=0;index<2;index++){
+    const receipt=p6Views.grow(1);
+    p6Growth.push(receipt);
+    assert(receipt.rebound===true,'P6 shared memory growth did not trigger view rebind');
+  }
+  const p6BytesAfter=p6Views.view('bytes');
+  const p6WordsAfter=p6Views.view('words');
+  assert(p6BytesAfter.buffer!==p6OldBuffer,'P6 shared-memory buffer identity did not advance after growth');
+  assert(p6BytesBefore.byteLength===p6OldLength,'P6 stale TypedArray unexpectedly changed length instead of requiring rebind');
+  assert(p6BytesAfter.byteLength===3*65536,'P6 rebound byte view did not cover grown shared memory');
+  assert(p6BytesAfter[0]===23&&p6WordsAfter[1]===0x12345678,'P6 memory.grow rebind lost shared-memory contents');
+
+  const p6ModuleBytes=Uint8Array.from([
+    0x00,0x61,0x73,0x6d,0x01,0x00,0x00,0x00,
+    0x01,0x05,0x01,0x60,0x00,0x01,0x7f,
+    0x03,0x02,0x01,0x00,
+    0x07,0x0a,0x01,0x06,0x61,0x6e,0x73,0x77,0x65,0x72,0x00,0x00,
+    0x0a,0x06,0x01,0x04,0x00,0x41,0x2a,0x0b
+  ]);
+  const p6CompiledModule=await WebAssembly.compile(p6ModuleBytes);
+  const p6ModuleProbe=(id)=>new Promise((resolve,reject)=>{
+    const worker=new Worker('/p6-wasm-module-worker.mjs',{type:'module'});
+    const timer=setTimeout(()=>{worker.terminate();reject(new Error('P6 module reuse worker timed out'));},10000);
+    worker.onmessage=(event)=>{
+      if(event.data?.id!==id)return;
+      clearTimeout(timer);
+      worker.terminate();
+      if(event.data?.ok!==true)reject(new Error('P6 module worker failed: '+event.data?.message));
+      else resolve(event.data);
+    };
+    worker.onerror=(event)=>{
+      clearTimeout(timer);
+      worker.terminate();
+      reject(new Error('P6 module reuse worker error: '+event.message));
+    };
+    worker.postMessage({id,module:p6CompiledModule});
+  });
+  const p6ModuleReceipts=await Promise.all([p6ModuleProbe('worker-a'),p6ModuleProbe('worker-b')]);
+  assert(p6ModuleReceipts.every(item=>item.exports.includes('answer')),'P6 cloned compiled module did not instantiate in every bounded worker');
+
+  stage('p6-runtime-authority-pass',{
+    exactToolchainStatus:p6Exact.status,
+    globalWorkerBudget:p6Authority.limits.workers,
+    budgetFailureCode:p6BudgetCode,
+    versionSkewCode:p6SkewCode,
+    digestMismatchCode:p6DigestCode,
+    unsupportedVersionCode:p6UnsupportedCode,
+    genericWasiExpansionCode:p6GenericWasiCode,
+    sharedMemoryInitialBytes:p6OldLength,
+    sharedMemoryFinalBytes:p6BytesAfter.byteLength,
+    sharedMemoryGrowCount:p6Growth.length,
+    sharedMemoryViewGeneration:p6Views.generation,
+    compiledModuleCompiles:1,
+    compiledModuleWorkerClones:p6ModuleReceipts.length,
+    compiledModuleExports:p6ModuleReceipts.map(item=>item.exports)
+  });
+
+
   stage('p7-pressure-start');
   const p7Resources=new ResourceGovernor({tasks:1,inFlightBytes:4096,workers:1});
   const p7Channel=new MessageChannel();
