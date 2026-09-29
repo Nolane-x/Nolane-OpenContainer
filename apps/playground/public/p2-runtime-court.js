@@ -31,6 +31,10 @@ async function rpcCourt(){
   const rpc=new WorkerRpcAuthority({transport:worker,requestTimeoutMs:1000});
   const echo=await rpc.request('echo',{answer:42});
   assert(echo.answer===42,'actual browser worker RPC echo failed');
+  const doubleTerminal=await rpc.request('double-response',{});
+  assert(doubleTerminal.terminal==='first','P2 single-terminal RPC did not publish first response');
+  await delay(20);
+  assert(rpc.pendingCount===0,'duplicate terminal response resurrected pending RPC');
 
   const mutationAuthority=new MutationReceiptAuthority();
   const mutation=mutationAuthority.begin('browser-worker-mutation',{identity:'p2-browser-mutation'});
@@ -67,17 +71,36 @@ async function rpcCourt(){
   oldWorker.terminate();
   newWorker.terminate();
 
-  const crashResources=new ResourceGovernor({tasks:4,inFlightBytes:16*1024*1024,workers:2});
-  const crashWorker=new Worker('/p2-runtime-worker.mjs',{type:'module',name:'p2-rpc-crash'});
-  const crashRpc=new WorkerRpcAuthority({transport:crashWorker,requestTimeoutMs:1000,resources:crashResources});
-  const crashPending=crashRpc.request('crash',{stage:'after-acquire'});
-  const crashError=await expectCode(()=>crashPending,ErrorCodes.GUEST_WORKER_FAILED);
-  await delay(20);
-  assert(crashRpc.pendingCount===0,'worker crash retained pending RPC',{pending:crashRpc.pendingCount});
-  assert(crashResources.usage.tasks===0&&crashResources.usage.inFlightBytes===0,'worker crash leaked task/in-flight leases',{usage:crashResources.usage});
-  assert(crashWorker instanceof Worker,'worker crash court did not use browser Worker');
-  crashRpc.close();
-  crashWorker.terminate();
+  const crashStages=[];
+  const runCrashStage=async({method,payload={},transfer=undefined,name})=>{
+    const resources=new ResourceGovernor({tasks:4,inFlightBytes:16*1024*1024,workers:2});
+    const worker=new Worker('/p2-runtime-worker.mjs',{type:'module',name});
+    const authority=new WorkerRpcAuthority({transport:worker,requestTimeoutMs:1000,resources});
+    const pending=authority.request(method,payload,{transfer});
+    const error=await expectCode(()=>pending,ErrorCodes.GUEST_WORKER_FAILED);
+    await delay(20);
+    assert(authority.pendingCount===0,'worker crash retained pending RPC',{method,pending:authority.pendingCount});
+    assert(resources.usage.tasks===0&&resources.usage.inFlightBytes===0,'worker crash leaked task/in-flight leases',{method,usage:resources.usage});
+    crashStages.push({method,code:error.code,usage:resources.usage});
+    authority.close();
+    worker.terminate();
+    return error;
+  };
+  const crashError=await runCrashStage({method:'crash',name:'p2-rpc-crash'});
+  const crashBuffer=new ArrayBuffer(1024*1024);
+  new Uint8Array(crashBuffer)[0]=91;
+  await runCrashStage({
+    method:'crash-after-transfer',
+    payload:{buffer:crashBuffer},
+    transfer:[crashBuffer],
+    name:'p2-rpc-crash-transfer'
+  });
+  assert(crashBuffer.byteLength===0,'crash-after-transfer buffer was not transferred');
+  await runCrashStage({
+    method:'crash-after-mutation',
+    payload:{mutationId:'crash-mutation',value:{applied:true}},
+    name:'p2-rpc-crash-mutation'
+  });
 
   let pressure=[];
   const heapBefore=Number(performance?.memory?.usedJSHeapSize??0);
@@ -103,6 +126,8 @@ async function rpcCourt(){
   return Object.freeze({
     actualWorkerRpc:true,
     echo,
+    doubleTerminal,
+    duplicateTerminalIgnored:rpc.pendingCount===0,
     timeoutCode:timeoutError.code,
     timeoutMutationState:unknown.state,
     reconciledMutationState:reconciled.state,
@@ -110,7 +135,7 @@ async function rpcCourt(){
     oldEpoch:oldIdentity.epoch,
     newEpoch:newIdentity.epoch,
     workerCrashCode:crashError.code,
-    workerCrashLeaseUsage:crashResources.usage,
+    workerCrashStages:crashStages,
     transferBytes:transfer.byteLength,
     transferChecksum:transfer.checksum,
     transferDetached:true,
