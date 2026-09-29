@@ -84,10 +84,11 @@
       "tests/p2-runtime-contracts.test.js",
       "tests/worker-authority.test.js",
       "tests/browser-guest-worker.test.js",
-      "tests/sync-rpc.test.js"
+      "tests/sync-rpc.test.js",
+      "tests/p2-runtime-source-audit.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 80
+    "minimumTestFiles": 81
   },
   "browser": {
     "iterations": 2,
