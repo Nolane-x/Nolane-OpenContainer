@@ -158,3 +158,67 @@ test('worker response before timeout cancels the deadline', async () => {
   await new Promise((resolve) => setTimeout(resolve, 120));
   assert.equal(authority.pendingCount, 0);
 });
+
+
+class CrashTransport {
+  sent=[];
+  listeners=new Map();
+  postMessage(message){this.sent.push(message);}
+  addEventListener(type,listener){
+    if(!this.listeners.has(type))this.listeners.set(type,new Set());
+    this.listeners.get(type).add(listener);
+  }
+  removeEventListener(type,listener){this.listeners.get(type)?.delete(listener);}
+  emit(type,payload={}){
+    for(const listener of this.listeners.get(type)??[])listener(payload);
+  }
+}
+
+test('worker transport error rejects pending requests and releases resource leases',async()=>{
+  const resources={
+    active:0,
+    reserve(){
+      this.active++;
+      let released=false;
+      return {release:()=>{if(released)return false;released=true;this.active--;return true;}};
+    }
+  };
+  const transport=new CrashTransport();
+  const authority=new WorkerRpcAuthority({transport,resources});
+  const a=authority.request('a',{});
+  const b=authority.request('b',{});
+  assert.equal(authority.pendingCount,2);
+  assert.equal(resources.active,2);
+
+  transport.emit('error',{message:'worker-crashed',filename:'guest.mjs',lineno:9,colno:3});
+  await expectCode(a,ErrorCodes.GUEST_WORKER_FAILED);
+  await expectCode(b,ErrorCodes.GUEST_WORKER_FAILED);
+  assert.equal(authority.pendingCount,0);
+  assert.equal(resources.active,0);
+  assert.throws(
+    ()=>authority.request('after-crash',{}),
+    error=>error.code===ErrorCodes.INVALID_STATE
+  );
+
+  const replacement=new CrashTransport();
+  const next=authority.restart(replacement);
+  assert.equal(next.epoch,2);
+  const pending=authority.request('fresh',{});
+  const req=replacement.sent.at(-1);
+  replacement.emit('message',{data:{
+    v:1,type:'response',session:req.session,epoch:req.epoch,id:req.id,ok:true,value:'ok'
+  }});
+  assert.equal(await pending,'ok');
+  authority.close();
+});
+
+test('worker messageerror fails session closed idempotently',async()=>{
+  const transport=new CrashTransport();
+  const authority=new WorkerRpcAuthority({transport});
+  const pending=authority.request('a',{});
+  transport.emit('messageerror',{data:null});
+  await expectCode(pending,ErrorCodes.GUEST_WORKER_FAILED);
+  assert.equal(authority.pendingCount,0);
+  transport.emit('messageerror',{data:null});
+  assert.throws(()=>authority.request('stale',{}),error=>error.code===ErrorCodes.INVALID_STATE);
+});
