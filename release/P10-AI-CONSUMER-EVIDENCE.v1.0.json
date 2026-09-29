@@ -1,0 +1,153 @@
+{
+  "schema": "opencontainer.p10-ai-consumer-evidence.v1.0",
+  "source": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 67,
+  "closedGates": [
+    "P10-01",
+    "P10-02",
+    "P10-03",
+    "P10-04",
+    "P10-05",
+    "P10-06",
+    "P10-07",
+    "P10-08",
+    "P10-09",
+    "P10-10",
+    "P10-11",
+    "P10-12",
+    "P10-13",
+    "P10-14",
+    "P10-15",
+    "P10-16",
+    "P10-17",
+    "P10-18"
+  ],
+  "implementation": {
+    "head": "41069da8f77e2ba6ad0c1ceab5f12d1711f84ea4",
+    "ciRunNumber": 874,
+    "ciRunId": 36565669530,
+    "contract": "PASS",
+    "codeql": "PASS",
+    "unitTests": 571,
+    "unitPassed": 571,
+    "unitFailed": 0,
+    "criticalTestFiles": 87,
+    "criticalIterations": 5,
+    "criticalTestFileExecutions": 435,
+    "criticalUnexplainedFailures": 0,
+    "installedDistributionBrowserIterations": 2,
+    "installedDistributionBrowserPassed": 2,
+    "installedDistributionBrowserFailed": 0,
+    "installedDistributionUnexplainedFailures": 0
+  },
+  "dedicatedBrowserCourt": {
+    "artifactId": 11031678345,
+    "artifactDigest": "sha256:5372a9aaf563c4819bc8af6c95c1d26b459e2408d70c186da17f4aab71216a8c",
+    "status": "PASS",
+    "nodeVersion": "v24.21.0",
+    "browser": "Google Chrome 153.0.8010.52",
+    "profile": "declared Chrome / Ubuntu x64 CI profile",
+    "iterations": 2,
+    "passedIterations": 2,
+    "sourceGates": [
+      "P10-01",
+      "P10-02",
+      "P10-03",
+      "P10-04",
+      "P10-05",
+      "P10-06",
+      "P10-07",
+      "P10-08",
+      "P10-09",
+      "P10-10",
+      "P10-11",
+      "P10-12",
+      "P10-13",
+      "P10-14",
+      "P10-15",
+      "P10-16",
+      "P10-17",
+      "P10-18"
+    ]
+  },
+  "boundaries": {
+    "optionalConsumerPackage": "@nolane/opencontainer-ai-consumer",
+    "coreSurfaceCount": 9,
+    "coreRuntimeRequiresAi": false,
+    "modelProviderAgnostic": true,
+    "fakeProviderUsedOnlyForAuthoritySemantics": true,
+    "providerQualityClaimed": false,
+    "providerSpecificCoreApiAdded": false,
+    "keyPersistenceClaimed": false
+  },
+  "guarantees": {
+    "byok": {
+      "custody": "session-memory",
+      "supportPlaintext": false,
+      "workspacePlaintext": false,
+      "localStoragePlaintext": false,
+      "sessionStoragePlaintext": false,
+      "providerSwitchAdvancesEpoch": true,
+      "providerSwitchClearsCredentialAndContextScope": true
+    },
+    "context": {
+      "explicitManifest": true,
+      "categoriesFilesRanges": true,
+      "sensitiveDefaultDeny": true,
+      "exactOverrideRequired": true
+    },
+    "authority": {
+      "modes": [
+        "Discuss",
+        "Plan",
+        "Build"
+      ],
+      "mutationApprovalExplicit": true,
+      "untrustedRepositoryWebToolDataGrantsAuthority": false,
+      "approvalRenderingExecutesUntrustedMarkup": false
+    },
+    "changeset": {
+      "preconditioned": true,
+      "validated": true,
+      "singleCanonicalVfsTransaction": true,
+      "explicitCommitReceipt": true,
+      "explicitAcknowledgement": true,
+      "broadDestructiveRecoveryPoint": true,
+      "idempotencyIdentity": true,
+      "retryDoesNotReplayCommittedSideEffect": true,
+      "undo": "path-version-aware",
+      "staleUndoRefusesNewerUserEdits": true
+    },
+    "childAgents": {
+      "epochBound": true,
+      "staleResultsCanonical": false,
+      "staleResultsRetainedAsReviewEvidence": true
+    },
+    "provider": {
+      "failureIndependentFromWorkspace": true,
+      "rateLimitFailureTested": true,
+      "providerSwitchScopeIsolation": true
+    },
+    "concurrency": {
+      "sharedResourceGovernor": true,
+      "maxAgentsTested": 2,
+      "overBudgetCode": "OC_RESOURCE_EXHAUSTED",
+      "resourcePressureBlocksBackgroundWork": true,
+      "leakedTasksAfterRelease": 0
+    },
+    "cancellation": {
+      "preTool": "OC_WORKER_STALE",
+      "inTool": "OC_WORKER_STALE",
+      "postCommitKeepsCommittedSideEffect": true,
+      "acknowledgementLostUsesIdempotentReceipt": true
+    },
+    "usageDisplay": {
+      "hiddenWithoutAuthoritativeProviderMetadata": true,
+      "fabricatedEstimates": false,
+      "authoritativeMetadataDisplayed": true
+    }
+  },
+  "productionClosed": false
+}
