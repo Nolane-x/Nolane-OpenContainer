@@ -111,6 +111,14 @@ export class AiProviderSession {
 
   get contextScope(){return Object.freeze([...this.#contextScope].sort());}
 
+  sanitizeText(value){
+    let text=String(value??'');
+    for(const record of this.#credentials.values()){
+      if(record.plaintext)text=text.split(record.plaintext).join('[REDACTED_AI_CREDENTIAL]');
+    }
+    return text;
+  }
+
   supportReceipt(){
     return Object.freeze({
       provider:this.#provider,
@@ -352,6 +360,19 @@ export class AiChangeSetAuthority {
     const receipt=this.#commits.get(id);
     assertOc(receipt,ErrorCodes.NOT_FOUND,'AI ChangeSet receipt not found',{id});
     return receipt;
+  }
+
+  acknowledge(id){
+    const receipt=this.receipt(id);
+    if(receipt.acknowledged===true)return Object.freeze({...receipt,idempotentAcknowledge:true});
+    const acknowledged=Object.freeze({
+      ...receipt,
+      acknowledged:true,
+      cancelledAfterCommit:false,
+      idempotentAcknowledge:false
+    });
+    this.#commits.set(id,acknowledged);
+    return acknowledged;
   }
 
   recoveryPoint(id){
