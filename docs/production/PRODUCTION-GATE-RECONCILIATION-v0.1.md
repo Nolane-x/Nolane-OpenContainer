@@ -243,3 +243,10 @@ Every substantive PR should update the JSON ledger only for gate IDs it directly
 - Implementation CI #851 passed **538/538** contract tests and **81 critical files × 5 = 405** repeated executions with zero unexplained failures.
 - P2 remains a browser-native virtual process/stream boundary and does not claim host OS processes, raw TCP/UDP or full Node stream parity.
 - **P2 is now 14/14 closed.** The overall production ledger is **208/304** with **224** reconciliation rows; `production_closed=false` remains mandatory because other domains remain open.
+
+
+- **P1-01 through P1-12 and P1-16** now meet PASS-INTEGRATION + declared-profile evidence through PR #66 / CI #863 implementation head `d4a08451b78f7891aafb4cd1d10caf04075c50d2`.
+- The dedicated Chrome court proves clean navigation, COOP/COEP + SAB/Atomics without relying on DIP, optional DIP operation, strict host/Worker CSP, embedded Permissions Policy denial, sandboxed preview origin/credential/storage isolation, module Worker startup/teardown, real freeze/resume + BFCache, full-refresh OPFS recovery, two-target Web Locks + stale OPFS writer rejection, best-effort OPFS eviction/reopen, persistent-storage target reopen, capability probes and the executable hosting self-check.
+- Artifact **#11028266315** passed on Chrome 153.0.8010.52. CI #863 passed **545/545** tests, **84 critical files × 5 = 420** repeated executions, CodeQL and **2/2** full installed-distribution browser paths.
+- **P1-13 remains OPEN** pending a real public CDN/reverse-proxy campaign; **P1-14 remains OPEN** pending the frozen-floor + newest-stable RC browser matrix; **P1-15 remains OPEN** pending actual field browser-regression evidence.
+- The ledger candidate is **221/304** with **231** reconciliation rows; P1 is **13/16** and `production_closed=false`.
