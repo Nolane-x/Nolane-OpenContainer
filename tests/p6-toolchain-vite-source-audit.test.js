@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 const authority=readFileSync('packages/toolchain/src/authority.js','utf8');
 const browser=readFileSync('apps/playground/public/browser-acceptance.js','utf8');
 const capture=readFileSync('scripts/capture-p6-toolchain-browser-evidence.mjs','utf8');
+const server=readFileSync('apps/playground/server.mjs','utf8');
 
 test('P6 source audit retains exact BCR identity and no silent substitution',()=>{
   for(const token of [
@@ -31,8 +32,13 @@ test('P6 browser court exercises runtime mechanisms rather than source-only clai
     'compiledModuleCompiles:1',
     'compiledModuleWorkerClones:p6ModuleReceipts.length',
     'sharedMemoryGrowCount:p6Growth.length',
-    'failureDiagnosticPath:'
+    'failureDiagnosticPath:',
+    'packageGraphGenerationStable:',
+    'packageLayoutIdentityStable:'
   ]) assert.ok(browser.includes(token),token);
+  assert.ok(server.includes("'/p6-wasm-module-worker.mjs'"));
+  assert.ok(server.includes("'p6-module-reuse'"));
+  assert.ok(server.includes("'wasm-unsafe-eval'"));
 });
 
 test('P6 dedicated court keeps Vitest corpus gate open instead of overclaiming closure',()=>{
