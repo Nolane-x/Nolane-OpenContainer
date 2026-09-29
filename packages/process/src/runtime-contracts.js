@@ -187,6 +187,7 @@ export class BoundedTransferChannel {
     if(this.#waiters.length){
       const waiter=this.#waiters.shift();
       this.#queuedBytes-=copy.byteLength;
+      waiter.cleanup?.();
       waiter.resolve({value:copy,done:false});
     }else this.#queue.push(copy);
     return Promise.resolve(copy.byteLength);
@@ -202,14 +203,16 @@ export class BoundedTransferChannel {
     if(this.#aborted)return Promise.reject(ocError(ErrorCodes.WORKER_STALE,'Transfer channel aborted',{reason:this.#reason}));
     if(this.#closed)return Promise.resolve({value:undefined,done:true});
     return new Promise((resolve,reject)=>{
-      const waiter={resolve,reject};
+      const waiter={resolve,reject,cleanup:null};
       this.#waiters.push(waiter);
       if(signal){
         const onAbort=()=>{
           const index=this.#waiters.indexOf(waiter);
           if(index>=0)this.#waiters.splice(index,1);
+          waiter.cleanup?.();
           reject(ocError(ErrorCodes.WORKER_STALE,'Transfer consumer cancelled',{reason:signal.reason}));
         };
+        waiter.cleanup=()=>signal.removeEventListener('abort',onAbort);
         signal.addEventListener('abort',onAbort,{once:true});
       }
     });
@@ -218,7 +221,7 @@ export class BoundedTransferChannel {
   close(){
     if(this.#closed||this.#aborted)return false;
     this.#closed=true;
-    for(const waiter of this.#waiters.splice(0))waiter.resolve({value:undefined,done:true});
+    for(const waiter of this.#waiters.splice(0)){waiter.cleanup?.();waiter.resolve({value:undefined,done:true});}
     return true;
   }
 
@@ -228,7 +231,7 @@ export class BoundedTransferChannel {
     this.#reason=reason;
     this.#queue=[];
     this.#queuedBytes=0;
-    for(const waiter of this.#waiters.splice(0))waiter.reject(ocError(ErrorCodes.WORKER_STALE,'Transfer channel aborted',{reason}));
+    for(const waiter of this.#waiters.splice(0)){waiter.cleanup?.();waiter.reject(ocError(ErrorCodes.WORKER_STALE,'Transfer channel aborted',{reason}));}
     return true;
   }
 
