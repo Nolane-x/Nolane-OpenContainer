@@ -312,13 +312,13 @@ try{
   }
   await evaluate(cdp,"document.querySelector('#confirm-destructive').focus();true");
   await key(cdp,'Enter',{code:'Enter'});
-  await waitUntil(cdp,"!globalThis.__openContainerUi.runtime().fs.exists('index.html')",{label:'P9 destructive removal'});
+  await waitUntil(cdp,"!globalThis.__openContainerUi.runtime().fs.exists('index.html')&&document.querySelector('#save-state').textContent.includes('Removed')&&!document.querySelector('#recovery-panel').hidden",{label:'P9 authority-backed destructive removal'});
   const removedStatus=await call(cdp,'status');
   assert(removedStatus.recoveryHidden===false&&removedStatus.save.includes('Removed'),'P9 destructive action did not expose recovery',{removedStatus});
   assert(removedStatus.activeId==='open-destructive','P9 dialog did not restore opener focus',{removedStatus});
   await evaluate(cdp,"document.querySelector('#recover-process').focus();true");
   await key(cdp,'Enter',{code:'Enter'});
-  await waitUntil(cdp,"globalThis.__openContainerUi.runtime().fs.exists('index.html')",{label:'P9 source restore'});
+  await waitUntil(cdp,"globalThis.__openContainerUi.runtime().fs.exists('index.html')&&document.querySelector('#save-state').textContent.includes('Restored')&&document.querySelector('#recovery-panel').hidden",{label:'P9 authority-backed source restore'});
   const restoredStatus=await call(cdp,'status');
   const restoredSource=await call(cdp,'source');
   assert(restoredStatus.save.includes('Restored')&&restoredSource.includes(marker),'P9 source recovery did not restore canonical state',{restoredStatus,restoredSource});
@@ -422,7 +422,7 @@ try{
     source:'OPENCONTAINER-PRODUCTION-GATES-v0.9.json',
     sourceGateSha256:'b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146',
     minimumClosure:'PASS-INTEGRATION + declared-profile evidence',
-    declaredProfile:'desktop-chrome153-ubuntu2404-x64-ci',
+    declaredProfile:'github-actions-chrome-stable-ubuntu2404-x64',
     sourceGates:[
       'P9-01','P9-02','P9-04','P9-06','P9-07','P9-08','P9-09',
       'P9-10','P9-13','P9-14','P9-15','P9-16','P9-17','P9-18'
@@ -436,6 +436,7 @@ try{
     browser:Object.freeze({
       binary:browser.version,
       product:version.product,
+      exactVersionObserved:version.product,
       userAgent:version.userAgent,
       protocolVersion:version.protocolVersion,
       crossOriginIsolated:initial.isolated
