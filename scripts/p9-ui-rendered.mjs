@@ -210,7 +210,7 @@ try{
   assert(initial.isolated===true,'P9 root shell lost cross-origin isolation',{initial});
   assert(initial.activeView==='preview','P9 initial surface is not Preview',{initial});
   assert(initial.layout.visibleSurfaces.length===1&&initial.layout.visibleSurfaces[0]==='preview','P9 progressive disclosure shows multiple surfaces',{initial});
-  assert(initial.receipt&&initial.receipt.status&&initial.receipt.status.state==='RUNNING','P9 shell is not bound to running runtime',{initial});
+  assert(initial.receipt&&initial.receipt.status&&initial.receipt.status.state==='READY','P9 shell is not bound to READY runtime',{initial});
   assert(initial.layout.canvas.height>initial.layout.topbar.height+initial.layout.tabs.height,'P9 permanent chrome dominates the work canvas',{initial});
   assert(initial.layout.visibleButtons.length>=3,'P9 dominant canvas lost primary controls',{initial});
 
