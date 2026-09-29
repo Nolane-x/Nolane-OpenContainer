@@ -115,6 +115,15 @@ test('P2 process exit waits for stdout drain but never hangs forever',async()=>{
   assert.equal(stuckTerminal.drainTimedOut,true);
   assert.equal(stuckTerminal.stdoutDrained,false);
   assert.equal(stuckTerminal.terminalCount,1);
+
+  const rejected=supervisor.spawn('emit',[],{
+    stdoutSink:async()=>{throw new Error('sink-failed');},
+    drainTimeoutMs:100
+  });
+  assert.equal(await rejected.exit,1);
+  const rejectedTerminal=await rejected.terminal;
+  assert.equal(rejectedTerminal.drainFailed,true);
+  assert.equal(rejectedTerminal.drainTimedOut,false);
 });
 
 test('P2 kill natural exit and throw races publish exactly one terminal state',async()=>{
@@ -179,7 +188,7 @@ test('P2 repeated spawn kill cycles release all process/output resource leases',
   assert.equal(supervisor.activeCount,0);
   assert.equal(resources.usage.processes,0);
   assert.equal(resources.usage.outputBytes,0);
-  assert.equal(supervisor.list().filter(item=>item.state==='RUNNING').length,0);
+  assert.equal(supervisor.list().length,0);
 });
 
 test('P2 stable process errors expose public codes without worker topology',async()=>{
