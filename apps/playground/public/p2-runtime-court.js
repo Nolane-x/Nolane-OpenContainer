@@ -28,7 +28,7 @@ async function expectCode(action,code){
 
 async function rpcCourt(){
   const worker=new Worker('/p2-runtime-worker.mjs',{type:'module',name:'p2-rpc-primary'});
-  const rpc=new WorkerRpcAuthority({transport:worker,requestTimeoutMs:20});
+  const rpc=new WorkerRpcAuthority({transport:worker,requestTimeoutMs:1000});
   const echo=await rpc.request('echo',{answer:42});
   assert(echo.answer===42,'actual browser worker RPC echo failed');
 
@@ -38,7 +38,7 @@ async function rpcCourt(){
     mutationId:mutation.id,
     value:{generation:7},
     delayMs:80
-  });
+  },{timeoutMs:20});
   const timeoutError=await expectCode(()=>timeoutPromise,ErrorCodes.WORKER_TIMEOUT);
   const unknown=mutationAuthority.timeout(mutation);
   assert(unknown.state==='UNKNOWN'&&unknown.mutationMayHaveOccurred===true,'timeout incorrectly implied mutation absence',{unknown});
