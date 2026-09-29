@@ -3999,10 +3999,10 @@ async function run() {
   assert(!c1CssWithoutMapComment.includes('0px 0px 0px 0px'), 'Vite C1 Lightning CSS did not minify zero margin syntax');
   assert(!/\.card\s+\{/.test(c1CssWithoutMapComment), 'Vite C1 Lightning CSS retained unminified selector spacing');
   assert(c1Js?.content.includes('OpenContainer Vite C1 Config V1'), 'Vite C1 TypeScript config plugin did not execute');
-  const c1SourceMap=JSON.parse(c1Map?.content ?? '{}');
-  assert(c1SourceMap.version === 3, 'Vite C1 source map is invalid');
-  assert(Array.isArray(c1SourceMap.sources)&&c1SourceMap.sources.some(source=>String(source).includes('src/main.ts')), 'Vite C1 source map lost TypeScript source identity');
-  assert(Array.isArray(c1SourceMap.sourcesContent)&&c1SourceMap.sourcesContent.some(source=>String(source).includes('source-v1')), 'Vite C1 source map lost original source content');
+  const c1MapData=JSON.parse(c1Map?.content ?? '{}');
+  assert(c1MapData.version === 3, 'Vite C1 source map is invalid');
+  assert(Array.isArray(c1MapData.sources)&&c1MapData.sources.some(source=>String(source).includes('src/main.ts')), 'Vite C1 source map is invalid: TypeScript source identity missing');
+  assert(Array.isArray(c1MapData.sourcesContent)&&c1MapData.sourcesContent.some(source=>String(source).includes('source-v1')), 'Vite C1 source map is invalid: original source content missing');
   assert(c1Svg?.content.includes('<svg'), 'Vite C1 imported asset was not emitted');
   const c1Manifest = JSON.parse(c1ManifestEntry?.content ?? '{}');
   assert(Object.keys(c1Manifest).length >= 1, 'Vite C1 manifest is empty');
@@ -4024,9 +4024,9 @@ async function run() {
     sourceRebuild: viteBuildExecution.exports.sourceEditObserved,
     configReload: viteBuildExecution.exports.configReloadObserved,
     failureAtomicity: viteBuildExecution.exports.sourceUnchangedAfterFailure,
-    sourceMapVersion:c1SourceMap.version,
-    sourceMapSources:c1SourceMap.sources,
-    sourceMapSourcesContent:c1SourceMap.sourcesContent?.length??0,
+    mapVersion:c1MapData.version,
+    mapSources:c1MapData.sources,
+    mapSourcesContent:c1MapData.sourcesContent?.length??0,
     failureDiagnosticPath:String(viteBuildExecution.exports.expectedBuildFailureMessage).includes('__opencontainer_missing_entry__'),
     deterministicManifest: viteBuildExecution.exports.deterministicManifest
   });
