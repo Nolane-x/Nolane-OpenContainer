@@ -64,7 +64,11 @@
             <p class="eyebrow">Live authority state</p>
             <h2 id="inspect-title">Inspect</h2>
           </div>
-          <button type="button" id="refresh-inspect">Refresh</button>
+          <div class="surface-actions">
+            <button type="button" id="link-folder">Link folder…</button>
+            <button type="button" id="refresh-inspect">Refresh</button>
+            <button type="button" id="open-clear-diagnostics" class="button-secondary">Clear diagnostics…</button>
+          </div>
         </div>
         <div class="inspect-grid">
           <article class="inspect-card">
@@ -140,6 +144,17 @@
         <div class="dialog-actions">
           <button value="cancel" type="submit">Cancel</button>
           <button value="confirm" type="submit" id="confirm-destructive" class="button-danger">Remove source</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="diagnostics-dialog" aria-labelledby="diagnostics-title" aria-describedby="diagnostics-description">
+      <form method="dialog" class="dialog-card">
+        <h2 id="diagnostics-title">Clear diagnostic history?</h2>
+        <p id="diagnostics-description">This removes the local diagnostic history only. It cannot be undone and does not change workspace files.</p>
+        <div class="dialog-actions">
+          <button value="cancel" type="submit">Cancel</button>
+          <button value="confirm" type="submit" id="confirm-clear-diagnostics" class="button-danger">Clear diagnostics</button>
         </div>
       </form>
     </dialog>
