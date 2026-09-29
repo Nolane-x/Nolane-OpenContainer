@@ -219,9 +219,12 @@ try{
       assert(result?.status==='PASS','P2 runtime browser court did not pass',{iteration,result});
       assert(JSON.stringify(result.sourceGates)===JSON.stringify(Array.from({length:14},(_,index)=>'P2-'+String(index+1).padStart(2,'0'))),'P2 gate set drifted',{iteration,result});
       assert(result.rpc?.actualWorkerRpc===true,'P2 RPC court did not use actual Worker',{iteration,result});
+      assert(result.rpc?.doubleTerminal?.terminal==='first'&&result.rpc?.duplicateTerminalIgnored===true,'P2 single-terminal RPC contract drifted',{iteration,result});
       assert(result.rpc?.timeoutCode==='OC_WORKER_TIMEOUT','P2 timeout contract drifted',{iteration,result});
       assert(result.rpc?.reconciledMutationState==='APPLIED','P2 mutation reconciliation failed',{iteration,result});
       assert(result.rpc?.workerCrashCode==='OC_GUEST_WORKER_FAILED','P2 worker death did not fail closed',{iteration,result});
+      assert(Array.isArray(result.rpc?.workerCrashStages)&&result.rpc.workerCrashStages.length===3,'P2 staged worker-death coverage incomplete',{iteration,result});
+      assert(result.rpc.workerCrashStages.every(stage=>stage.code==='OC_GUEST_WORKER_FAILED'&&stage.usage?.tasks===0&&stage.usage?.inFlightBytes===0),'P2 worker-death cleanup leaked resources',{iteration,result});
       assert(result.rpc?.transferBytes===8*1024*1024&&result.rpc?.transferDetached===true,'P2 transferable pressure court failed',{iteration,result});
       assert(result.cancellation?.allAborted===true&&result.cancellation?.pendingReaders===0,'P2 cancellation lineage leaked consumer',{iteration,result});
       assert(result.syncRpc?.reentrantCode==='OC_INVALID_STATE'&&result.syncRpc?.deniedCode==='OC_BUILTIN_UNAVAILABLE','P2 sync RPC policy failed',{iteration,result});
@@ -249,11 +252,13 @@ try{
     iterations,
     passedIterations:runs.length,
     actualBrowserWorkerRpc:true,
+    duplicateTerminalSuppression:true,
     timeoutMutationReconciliation:true,
     cancellationLineage:true,
     outputDrainBounded:true,
     exactlyOnceTerminalPublication:true,
     workerDeathCleanup:true,
+    workerDeathStages:3,
     syncRpcNoReentrancy:true,
     boundedProcessTree:true,
     epochBoundVirtualPorts:true,
