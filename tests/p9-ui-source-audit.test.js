@@ -128,3 +128,13 @@ test('P9 runner and browser modules remain syntax-valid before Chrome execution'
     assert.equal(result.status,0,file+' syntax failed: '+String(result.stderr||result.stdout));
   }
 });
+
+
+test('P9 dialog families implement explicit focus-loop trapping',()=>{
+  assert.match(ui,/function trapDialogFocus\(dialog,event\)/);
+  assert.match(ui,/event\.key!=='Tab'/);
+  assert.match(ui,/active===first/);
+  assert.match(ui,/active===last/);
+  assert.match(ui,/destructiveDialog\.addEventListener\('keydown',event=>trapDialogFocus\(destructiveDialog,event\)\)/);
+  assert.match(ui,/diagnosticsDialog\.addEventListener\('keydown',event=>trapDialogFocus\(diagnosticsDialog,event\)\)/);
+});
