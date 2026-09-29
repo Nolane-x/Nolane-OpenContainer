@@ -388,6 +388,18 @@ async function refreshLinkedState(){
   return shellState.linkedState;
 }
 
+async function readLinkedFile(path='linked.txt'){
+  if(!shellState.linkedAuthority)throw new Error('No linked folder authority is attached');
+  const before=await refreshLinkedState();
+  const result=await shellState.linkedAuthority.readFile(path);
+  shellState.linkedState=await shellState.linkedAuthority.inspect();
+  shellState.linkedConflictActions=Object.freeze([]);
+  renderLinked();
+  renderInspect();
+  announce('External file revision observed');
+  return Object.freeze({before,result,state:shellState.linkedState});
+}
+
 async function writeLinkedFile(path,data,{expectedRevision=undefined}={}){
   if(!shellState.linkedAuthority)throw new Error('No linked folder authority is attached');
   const before=await refreshLinkedState();
@@ -594,6 +606,7 @@ globalThis.__openContainerUi=Object.freeze({
   attachLinkedFolder,
   pickLinkedFolder,
   refreshLinkedState,
+  readLinkedFile,
   writeLinkedFile,
   clearDiagnostics,
   lifecycle:()=>Object.freeze({
