@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 
 const html=readFileSync('apps/playground/public/index.html','utf8');
 const css=readFileSync('apps/playground/public/index.css','utf8');
@@ -103,12 +105,26 @@ test('P9 rendered court uses accessibility tree keyboard emulation and actual vi
 });
 
 
-test('P9 root import map is CSP-hashed without unsafe-inline',()=>{
+test('P9 root import map is exact-byte CSP-hashed without unsafe-inline',()=>{
   assert.match(html,/type="importmap"/);
   assert.match(html,/"es-module-lexer\/minimal\/js": "\/__deps__\/es-module-lexer-minimal\.js"/);
   assert.match(workflow,/p9-ui-rendered:/);
+  const match=html.match(/<script type="importmap">([\s\S]*?)<\/script>/);
+  assert.ok(match,'P9 import map text is missing');
+  const digest=createHash('sha256').update(match[1]).digest('base64');
   const server=readFileSync('apps/playground/server.mjs','utf8');
-  assert.match(server,/sha256-rkMvapmVZt\+MUBo5i8Nx4sVYZ0HtjK3on\/kn9IG2F10=/);
   const rootCsp=server.slice(server.indexOf("if (url.pathname === '/' || url.pathname === '/index.html')"),server.indexOf("if (url.pathname === '/browser-acceptance.html')"));
+  assert.ok(rootCsp.includes("'sha256-"+digest+"'"),'P9 root CSP does not authorize the exact import-map bytes');
   assert.doesNotMatch(rootCsp,/unsafe-inline/);
+});
+
+test('P9 runner and browser modules remain syntax-valid before Chrome execution',()=>{
+  for(const file of [
+    'scripts/p9-ui-rendered.mjs',
+    'apps/playground/public/index.js',
+    'apps/playground/public/p9-ui-court.js'
+  ]){
+    const result=spawnSync(process.execPath,['--check',file],{encoding:'utf8'});
+    assert.equal(result.status,0,file+' syntax failed: '+String(result.stderr||result.stdout));
+  }
 });
