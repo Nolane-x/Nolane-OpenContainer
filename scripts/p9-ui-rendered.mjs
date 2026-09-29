@@ -157,11 +157,20 @@ async function key(cdp,keyValue,{code=keyValue,modifiers=0}={}){
   });
   const windowsVirtualKeyCode=virtualKeys[keyValue]??0;
   const base={key:keyValue,code,modifiers};
-  if(windowsVirtualKeyCode){
-    base.windowsVirtualKeyCode=windowsVirtualKeyCode;
-    base.nativeVirtualKeyCode=windowsVirtualKeyCode;
-  }
+  if(windowsVirtualKeyCode)base.windowsVirtualKeyCode=windowsVirtualKeyCode;
   await cdp.command('Input.dispatchKeyEvent',{type:'rawKeyDown',...base});
+  if(keyValue==='Enter'||keyValue==='Space'){
+    const text=keyValue==='Enter'?'\r':' ';
+    await cdp.command('Input.dispatchKeyEvent',{
+      type:'char',
+      key:keyValue==='Space'?' ':keyValue,
+      code,
+      modifiers,
+      windowsVirtualKeyCode,
+      text,
+      unmodifiedText:text
+    });
+  }
   await cdp.command('Input.dispatchKeyEvent',{type:'keyUp',...base});
 }
 async function screenshot(cdp,name){
