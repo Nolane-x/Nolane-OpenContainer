@@ -59,10 +59,14 @@ test('P2 browser court covers exactly all fourteen P2 source gates and remains n
     assert.ok(runner.includes("'"+id+"'")||runner.includes("Array.from({length:14}"),id);
   }
   assert.match(browserCourt,/actualWorkerRpc:true/);
+  assert.match(browserCourt,/doubleTerminal/);
+  assert.match(browserCourt,/workerCrashStages/);
   assert.match(browserCourt,/transferBytes/);
   assert.match(browserCourt,/repeatedCycles:200/);
   assert.match(runner,/iterations=Number\(process\.env\.OPENCONTAINER_P2_RUNTIME_ITERATIONS\|\|2\)/);
   assert.match(runner,/actualBrowserWorkerRpc:true/);
+  assert.match(runner,/duplicateTerminalSuppression:true/);
+  assert.match(runner,/workerDeathStages:3/);
   assert.match(runner,/productionClosed:false/);
   assert.match(workflow,/p2-runtime-process:/);
   assert.match(workflow,/npm run p2:runtime:evidence/);
