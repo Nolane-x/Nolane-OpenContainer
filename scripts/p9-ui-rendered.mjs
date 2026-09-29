@@ -249,7 +249,8 @@ try{
   await waitUntil(cdp,"globalThis.__openContainerUi.pendingApprovals().length===1",{label:'P9 approval creation'});
   const approval=(await uiCall(cdp,'pendingApprovals'))[0];
   for(const mode of ['Discuss','Plan','Build']){
-    await evaluate(cdp,'document.querySelector("[data-ai-mode='+JSON.stringify(mode)+']").focus();true');
+    const selector='[data-ai-mode="'+mode+'"]';
+    await evaluate(cdp,'document.querySelector('+JSON.stringify(selector)+').focus();true');
     await key(cdp,'Enter',{code:'Enter'});
   }
   const approvalsAfterSwitch=await uiCall(cdp,'pendingApprovals');
