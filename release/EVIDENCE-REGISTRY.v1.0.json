@@ -530,6 +530,14 @@
       "status": "PASS",
       "ref": "CI #789 / PR #63 implementation head db400b8fd53213dbefc36dbb02418508d5ef9724",
       "note": "P4-07/P4-13/P4-15/P4-16 declared-profile closure: retained minimized parser fuzz corpus + mutation campaigns, exact content-bound lifecycle-script capability with zero ambient secret handles, dedicated package-layout watcher/readdir/realpath lifecycle, and retained OPFS storage amplification plus Node/Chrome graph-load measurements. Dedicated Chrome court passed 2/2 in artifact #11004449702."
+    },
+    {
+      "key": "p6-toolchain-vite",
+      "kind": "EXECUTABLE",
+      "level": "INTEGRATION",
+      "status": "PASS",
+      "ref": "CI #814 / PR #64 implementation head eaf3386f9d4a39e837243feb71f63c8673b98ca0",
+      "note": "Declared Chrome/Ubuntu P6 court closes 15/16 gates: exact Rolldown/LightningCSS artifacts and differentials, cloned compiled Wasm module reuse across bounded browser Workers, shared-memory grow/rebind, global ToolchainAuthority budget, Vite 8.3 C1/C2 build/HMR/restart/preview/dep-opt, source-map and failure diagnostics, cold/warm/cache/heap measurements, canonical package/workspace failure atomicity, explicit generic-WASI boundary and exact BCR tuple/no-silent-substitution. P6-10 remains open because real Vitest execution is not promoted."
     }
   ]
 }

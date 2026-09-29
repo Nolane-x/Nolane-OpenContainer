@@ -6,6 +6,7 @@ import { WorkerRpcAuthority } from '/packages/process/src/worker-authority.js';
 import { BrowserStoragePolicy, MemoryVFS, OpfsCheckpointAuthority, OpfsWorkspaceLifecycleAuthority, ExternalWorkspaceSourceAuthority, ExternalSourceMode, ExternalSourceState } from '/packages/vfs/src/index.js';
 import { BrowserPreviewServiceWorkerBridge, createSandboxedPreviewFrame } from '/packages/preview/src/index.js';
 import { ResourceGovernor } from '/packages/resources/src/index.js';
+import { FrozenToolchains, certifyToolchain, ToolchainAuthority, SharedWasmMemoryViews } from '/packages/toolchain/src/index.js';
 import { OpfsReleaseStorageAuthority, OpfsDerivedIndexStore, PersistenceCorruptionClass, corruptionDisposition, StorageCleanupCoordinator, StorageCleanupTier } from '/packages/persistence/src/index.js';
 import { checkHostingHeaders } from '/scripts/hosting-self-check-lib.mjs';
 
@@ -125,6 +126,125 @@ async function run() {
   const runtime = await OpenContainer.boot({ network: { allowLocal: true } });
   acceptanceRuntime = runtime;
   stage('runtime-ready', { crossOriginIsolated: globalThis.crossOriginIsolated });
+
+  stage('p6-runtime-authority-start');
+
+  const p6RolldownEntry={
+    packageName:'@rolldown/browser',
+    toolVersion:'1.2.9',
+    artifactDigest:'9accf3cdfe3d2287ad7d5f49cd2cfcddbc9c112abfcbc295863e401ef44b8576',
+    adapterSemanticProfile:'rolldown-browser-wasi-v1'
+  };
+  const p6LightningEntry={
+    packageName:'lightningcss-wasm',
+    toolVersion:'1.33.0',
+    artifactDigest:'266866c1b0efd7ca5307fe312411e4f1895b997086fb76f392ec5b60aadf31c8',
+    adapterSemanticProfile:'lightningcss-browser-default-v1'
+  };
+  const p6Authority=new ToolchainAuthority({
+    entries:[p6RolldownEntry,p6LightningEntry],
+    maxWorkers:2
+  });
+  const p6LeaseA=p6Authority.acquireWorker({agentId:'p6-agent-a',entry:p6RolldownEntry});
+  const p6LeaseB=p6Authority.acquireWorker({agentId:'p6-agent-b',entry:p6RolldownEntry});
+  let p6BudgetCode=null;
+  try{
+    p6Authority.acquireWorker({agentId:'p6-agent-c',entry:p6RolldownEntry});
+  }catch(error){
+    p6BudgetCode=error?.code??null;
+  }
+  assert(p6BudgetCode==='OC_RESOURCE_EXHAUSTED','P6 ToolchainAuthority did not enforce one global worker budget');
+  p6LeaseA.release();
+  const p6LeaseC=p6Authority.acquireWorker({agentId:'p6-agent-c',entry:p6RolldownEntry});
+  p6LeaseB.release();
+  p6LeaseC.release();
+  assert(p6Authority.usage.workers===0,'P6 ToolchainAuthority leaked worker leases');
+
+  const p6Exact=certifyToolchain({...FrozenToolchains.vite830});
+  assert(p6Exact.status==='EXACT_PROFILE','P6 exact toolchain tuple did not certify');
+  let p6SkewCode=null;
+  let p6DigestCode=null;
+  let p6UnsupportedCode=null;
+  let p6GenericWasiCode=null;
+  try{certifyToolchain({...FrozenToolchains.vite830,rolldownBinding:'1.2.8'});}catch(error){p6SkewCode=error?.code??null;}
+  try{certifyToolchain({...FrozenToolchains.vite830,lightningcssWasmSha256:'0'.repeat(64)});}catch(error){p6DigestCode=error?.code??null;}
+  try{certifyToolchain({...FrozenToolchains.vite830,consumerVersion:'8.2.0'});}catch(error){p6UnsupportedCode=error?.code??null;}
+  try{
+    p6Authority.resolve({...p6RolldownEntry,adapterSemanticProfile:'generic-wasi-linux'});
+  }catch(error){
+    p6GenericWasiCode=error?.code??null;
+  }
+  assert(p6SkewCode==='OC_TOOLCHAIN_SKEW','P6 live toolchain loader did not reject Rolldown binding skew');
+  assert(p6DigestCode==='OC_DIGEST_MISMATCH','P6 live toolchain loader did not reject artifact digest substitution');
+  assert(p6UnsupportedCode==='OC_TOOLCHAIN_UNSUPPORTED','P6 live toolchain loader did not reject unsupported Vite version');
+  assert(p6GenericWasiCode==='OC_TOOLCHAIN_UNSUPPORTED','P6 adapter authority implicitly widened into generic WASI/Linux');
+
+  const p6Memory=new WebAssembly.Memory({initial:1,maximum:4,shared:true});
+  const p6Views=new SharedWasmMemoryViews(p6Memory);
+  const p6BytesBefore=p6Views.bind('bytes',Uint8Array,0);
+  const p6WordsBefore=p6Views.bind('words',Uint32Array,0,8);
+  p6BytesBefore[0]=23;
+  p6WordsBefore[1]=0x12345678;
+  const p6OldBuffer=p6BytesBefore.buffer;
+  const p6OldLength=p6BytesBefore.byteLength;
+  const p6Growth=[];
+  for(let index=0;index<2;index++){
+    const receipt=p6Views.grow(1);
+    p6Growth.push(receipt);
+    assert(receipt.rebound===true,'P6 shared memory growth did not trigger view rebind');
+  }
+  const p6BytesAfter=p6Views.view('bytes');
+  const p6WordsAfter=p6Views.view('words');
+  assert(p6BytesAfter.buffer!==p6OldBuffer,'P6 shared-memory buffer identity did not advance after growth');
+  assert(p6BytesBefore.byteLength===p6OldLength,'P6 stale TypedArray unexpectedly changed length instead of requiring rebind');
+  assert(p6BytesAfter.byteLength===3*65536,'P6 rebound byte view did not cover grown shared memory');
+  assert(p6BytesAfter[0]===23&&p6WordsAfter[1]===0x12345678,'P6 memory.grow rebind lost shared-memory contents');
+
+  const p6ModuleBytes=Uint8Array.from([
+    0x00,0x61,0x73,0x6d,0x01,0x00,0x00,0x00,
+    0x01,0x05,0x01,0x60,0x00,0x01,0x7f,
+    0x03,0x02,0x01,0x00,
+    0x07,0x0a,0x01,0x06,0x61,0x6e,0x73,0x77,0x65,0x72,0x00,0x00,
+    0x0a,0x06,0x01,0x04,0x00,0x41,0x2a,0x0b
+  ]);
+  const p6CompiledModule=await WebAssembly.compile(p6ModuleBytes);
+  const p6ModuleProbe=(id)=>new Promise((resolve,reject)=>{
+    const worker=new Worker('/p6-wasm-module-worker.mjs',{type:'module'});
+    const timer=setTimeout(()=>{worker.terminate();reject(new Error('P6 module reuse worker timed out'));},10000);
+    worker.onmessage=(event)=>{
+      if(event.data?.id!==id)return;
+      clearTimeout(timer);
+      worker.terminate();
+      if(event.data?.ok!==true)reject(new Error('P6 module worker failed: '+event.data?.message));
+      else resolve(event.data);
+    };
+    worker.onerror=(event)=>{
+      clearTimeout(timer);
+      worker.terminate();
+      reject(new Error('P6 module reuse worker error: '+event.message));
+    };
+    worker.postMessage({id,module:p6CompiledModule});
+  });
+  const p6ModuleReceipts=await Promise.all([p6ModuleProbe('worker-a'),p6ModuleProbe('worker-b')]);
+  assert(p6ModuleReceipts.every(item=>item.exports.includes('answer')),'P6 cloned compiled module did not instantiate in every bounded worker');
+
+  stage('p6-runtime-authority-pass',{
+    exactToolchainStatus:p6Exact.status,
+    globalWorkerBudget:p6Authority.limits.workers,
+    budgetFailureCode:p6BudgetCode,
+    versionSkewCode:p6SkewCode,
+    digestMismatchCode:p6DigestCode,
+    unsupportedVersionCode:p6UnsupportedCode,
+    genericWasiExpansionCode:p6GenericWasiCode,
+    sharedMemoryInitialBytes:p6OldLength,
+    sharedMemoryFinalBytes:p6BytesAfter.byteLength,
+    sharedMemoryGrowCount:p6Growth.length,
+    sharedMemoryViewGeneration:p6Views.generation,
+    compiledModuleCompiles:1,
+    compiledModuleWorkerClones:p6ModuleReceipts.length,
+    compiledModuleExports:p6ModuleReceipts.map(item=>item.exports)
+  });
+
 
   stage('p7-pressure-start');
   const p7Resources=new ResourceGovernor({tasks:1,inFlightBytes:4096,workers:1});
@@ -3376,6 +3496,7 @@ async function run() {
       "const fourthRun = await runBuild();",
       "const sourceBeforeFailure = readFileSync(sourcePath, 'utf8');",
       "let expectedFailureObserved = false;",
+      "let expectedFailureMessage = '';",
       "try {",
       "  await build({",
       "    root,",
@@ -3384,8 +3505,9 @@ async function run() {
       "    plugins: [vfsPlugin],",
       "    build: { write: false, rollupOptions: { input: root + '/src/__opencontainer_missing_entry__.ts' } }",
       "  });",
-      "} catch {",
+      "} catch (error) {",
       "  expectedFailureObserved = true;",
+      "  expectedFailureMessage = error?.stack ?? error?.message ?? String(error);",
       "}",
       "const sourceAfterFailure = readFileSync(sourcePath, 'utf8');",
       "export const viteVersion = version;",
@@ -3396,6 +3518,7 @@ async function run() {
       "export const sourceEditObserved = secondJs.includes('source-v2');",
       "export const configReloadObserved = thirdJs.includes('OpenContainer Vite C1 Config V2');",
       "export const expectedBuildFailureObserved = expectedFailureObserved;",
+      "export const expectedBuildFailureMessage = expectedFailureMessage;",
       "export const sourceUnchangedAfterFailure = sourceBeforeFailure === sourceAfterFailure;",
       "export const deterministicManifest = normalizedManifest(thirdRun) === normalizedManifest(fourthRun);",
       "export const repeatedOutputFiles = thirdRun.outputs.map((entry) => entry.fileName).sort().join('|') === fourthRun.outputs.map((entry) => entry.fileName).sort().join('|');"
@@ -3925,18 +4048,30 @@ async function run() {
     requestTimeoutMs: 60000
   });
   viteWorker.start();
+  const p6ColdStartAt=performance.now();
   const viteExecution = await viteWorker.execute(viteGraph.entryURL, {
     exportNames: ['version'],
     observeNestedWorkers: true
   });
+  const p6ColdStartMs=performance.now()-p6ColdStartAt;
   assert(viteExecution.workerCrossOriginIsolated === true, 'Vite guest worker is not cross-origin isolated');
   assert(viteExecution.exports.version === '8.3.0', 'Vite module execution returned the wrong version');
+  const p6HeapSamples=[];
+  const p6HeapSample=()=>Number(globalThis.performance?.memory?.usedJSHeapSize??0);
+  p6HeapSamples.push(p6HeapSample());
+  const p6WarmStartAt=performance.now();
+  const p6WarmExecution=await viteWorker.execute(viteGraph.entryURL,{exportNames:['version'],observeNestedWorkers:true});
+  const p6WarmStartMs=performance.now()-p6WarmStartAt;
+  assert(p6WarmExecution.exports.version==='8.3.0','P6 warm Vite module execution returned wrong version');
+  p6HeapSamples.push(p6HeapSample());
   stage('vite-module-execution-pass', {
     version: viteExecution.exports.version,
     workerCrossOriginIsolated: viteExecution.workerCrossOriginIsolated
   });
 
   stage('vite-c1-build-start');
+  const p6PackageGenerationBefore=runtime.packages.generation;
+  const p6PackageLayoutBefore=runtime.packages.graph?.layout?.fingerprint??null;
   const viteBuildEntryUrl = vitePublication.moduleURL('./vite-build-probe.mjs', '/workspace/src/entry.mjs');
   const viteBuildGraph = await vitePublication.graph(viteBuildEntryUrl);
   const viteBuildExecution = await viteWorker.execute(viteBuildGraph.entryURL, {
@@ -3949,6 +4084,7 @@ async function run() {
       'sourceEditObserved',
       'configReloadObserved',
       'expectedBuildFailureObserved',
+      'expectedBuildFailureMessage',
       'sourceUnchangedAfterFailure',
       'deterministicManifest',
       'repeatedOutputFiles'
@@ -3985,7 +4121,10 @@ async function run() {
   assert(!c1CssWithoutMapComment.includes('0px 0px 0px 0px'), 'Vite C1 Lightning CSS did not minify zero margin syntax');
   assert(!/\.card\s+\{/.test(c1CssWithoutMapComment), 'Vite C1 Lightning CSS retained unminified selector spacing');
   assert(c1Js?.content.includes('OpenContainer Vite C1 Config V1'), 'Vite C1 TypeScript config plugin did not execute');
-  assert(JSON.parse(c1Map?.content ?? '{}').version === 3, 'Vite C1 source map is invalid');
+  const c1MapData=JSON.parse(c1Map?.content ?? '{}');
+  assert(c1MapData.version === 3, 'Vite C1 source map is invalid');
+  assert(Array.isArray(c1MapData.sources)&&c1MapData.sources.some(source=>String(source).includes('src/main.ts')), 'Vite C1 source map is invalid: TypeScript source identity missing');
+  assert(Array.isArray(c1MapData.sourcesContent)&&c1MapData.sourcesContent.some(source=>String(source).includes('source-v1')), 'Vite C1 source map is invalid: original source content missing');
   assert(c1Svg?.content.includes('<svg'), 'Vite C1 imported asset was not emitted');
   const c1Manifest = JSON.parse(c1ManifestEntry?.content ?? '{}');
   assert(Object.keys(c1Manifest).length >= 1, 'Vite C1 manifest is empty');
@@ -3993,9 +4132,13 @@ async function run() {
   assert(viteBuildExecution.exports.sourceEditObserved === true, 'Vite C1 second build did not observe source edit');
   assert(viteBuildExecution.exports.configReloadObserved === true, 'Vite C1 did not re-read edited TypeScript config');
   assert(viteBuildExecution.exports.expectedBuildFailureObserved === true, 'Vite C1 failure atomicity probe did not fail as expected');
+  assert(String(viteBuildExecution.exports.expectedBuildFailureMessage).includes('__opencontainer_missing_entry__'), 'Vite C1 failure diagnostic lost failing source path');
   assert(viteBuildExecution.exports.sourceUnchangedAfterFailure === true, 'Vite C1 failed build mutated canonical source');
+  assert(runtime.packages.generation===p6PackageGenerationBefore,'Vite C1 adapter path mutated canonical package graph generation');
+  assert((runtime.packages.graph?.layout?.fingerprint??null)===p6PackageLayoutBefore,'Vite C1 adapter path mutated canonical package layout identity');
   assert(viteBuildExecution.exports.deterministicManifest === true, 'Vite C1 normalized manifest changed across identical builds');
   assert(viteBuildExecution.exports.repeatedOutputFiles === true, 'Vite C1 output filenames changed across identical builds');
+  p6HeapSamples.push(p6HeapSample());
   stage('vite-c1-build-pass', {
     outputCount: viteBuildExecution.exports.outputCount,
     outputFiles: viteBuildExecution.exports.outputFiles,
@@ -4005,6 +4148,12 @@ async function run() {
     sourceRebuild: viteBuildExecution.exports.sourceEditObserved,
     configReload: viteBuildExecution.exports.configReloadObserved,
     failureAtomicity: viteBuildExecution.exports.sourceUnchangedAfterFailure,
+    packageGraphGenerationStable:runtime.packages.generation===p6PackageGenerationBefore,
+    packageLayoutIdentityStable:(runtime.packages.graph?.layout?.fingerprint??null)===p6PackageLayoutBefore,
+    mapVersion:c1MapData.version,
+    mapSources:c1MapData.sources,
+    mapSourcesContent:c1MapData.sourcesContent?.length??0,
+    failureDiagnosticPath:String(viteBuildExecution.exports.expectedBuildFailureMessage).includes('__opencontainer_missing_entry__'),
     deterministicManifest: viteBuildExecution.exports.deterministicManifest
   });
 
@@ -4118,6 +4267,21 @@ async function run() {
     disconnects: viteDevExecution.exports.hotDisconnectEvents,
     safeFailure: viteDevExecution.exports.hmrFailureDidNotBroadcast,
     recovered: viteDevExecution.exports.hmrRecovered
+  });
+
+  p6HeapSamples.push(p6HeapSample());
+  assert(p6HeapSamples.every(value=>Number.isFinite(value)&&value>=0),'P6 toolchain heap measurement produced invalid data');
+  stage('p6-toolchain-measurement-pass',{
+    coldModuleStartMs:p6ColdStartMs,
+    warmModuleStartMs:p6WarmStartMs,
+    warmNotClaimedAsThreshold:true,
+    compiledModuleCacheEvidence:{
+      compiles:1,
+      workerClones:2
+    },
+    heapSamples:p6HeapSamples,
+    heapMeasurementApi:globalThis.performance?.memory?'performance.memory.usedJSHeapSize':'unavailable-zero-sentinel',
+    plateauThresholdClaimed:false
   });
 
   const c2Owner = 'vite-c2-session-1';

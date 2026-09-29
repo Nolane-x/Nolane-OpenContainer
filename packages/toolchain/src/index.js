@@ -28,3 +28,5 @@ export { LightningCssPackage133Profile, verifyRetainedLightningCssPackage } from
 export { RolldownBrowser129Profile, verifyRetainedRolldownBrowserPackage } from './rolldown-browser-profile.js';
 
 export { createBrowserToolchainVfsBridge } from './browser-vfs-bridge.js';
+
+export { ToolchainAuthority, SharedWasmMemoryViews, createBcrEntryIdentity } from './authority.js';
