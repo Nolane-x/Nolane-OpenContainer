@@ -24,6 +24,11 @@ self.addEventListener('message',(event)=>{
     respond(request,{value:payload});
     return;
   }
+  if(method==='double-response'){
+    respond(request,{value:{terminal:'first'}});
+    setTimeout(()=>respond(request,{value:{terminal:'second'}}),5);
+    return;
+  }
   if(method==='delayed-mutation'){
     mutations.set(String(payload.mutationId),payload.value);
     setTimeout(()=>respond(request,{value:{applied:true,mutationId:String(payload.mutationId)}}),Number(payload.delayMs)||80);
@@ -48,6 +53,17 @@ self.addEventListener('message',(event)=>{
   }
   if(method==='crash'){
     setTimeout(()=>{throw new Error('P2 intentional worker crash');},0);
+    return;
+  }
+  if(method==='crash-after-transfer'){
+    const bytes=new Uint8Array(payload.buffer);
+    const first=bytes[0]??0;
+    setTimeout(()=>{throw new Error('P2 intentional worker crash after transfer '+first);},0);
+    return;
+  }
+  if(method==='crash-after-mutation'){
+    mutations.set(String(payload.mutationId),payload.value);
+    setTimeout(()=>{throw new Error('P2 intentional worker crash after mutation');},0);
     return;
   }
   respond(request,{ok:false,error:{code:'OC_INVALID_ARGUMENT',message:'Unknown P2 worker method',details:{method}}});
