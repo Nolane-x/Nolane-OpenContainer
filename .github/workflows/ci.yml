@@ -139,7 +139,7 @@ jobs:
 
 
   p6-vitest-real-execution:
-    needs: [contract, codeql]
+    needs: [contract, codeql, p6-toolchain-vite]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -150,7 +150,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: test "$(npm --version)" = "11.19.0"
-      - run: google-chrome-stable --version || google-chrome --version || chromium --version
       - name: Run real frozen Vitest compatibility court
         run: npm run p6:vitest:evidence
       - name: Archive P6 Vitest receipt
