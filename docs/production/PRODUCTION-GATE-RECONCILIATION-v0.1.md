@@ -250,3 +250,12 @@ Every substantive PR should update the JSON ledger only for gate IDs it directly
 - Artifact **#11028266315** passed on Chrome 153.0.8010.52. CI #863 passed **545/545** tests, **84 critical files × 5 = 420** repeated executions, CodeQL and **2/2** full installed-distribution browser paths.
 - **P1-13 remains OPEN** pending a real public CDN/reverse-proxy campaign; **P1-14 remains OPEN** pending the frozen-floor + newest-stable RC browser matrix; **P1-15 remains OPEN** pending actual field browser-regression evidence.
 - The ledger candidate is **221/304** with **231** reconciliation rows; P1 is **13/16** and `production_closed=false`.
+
+
+- **P10-01 through P10-18** now meet PASS-INTEGRATION + declared-profile closure through PR #67 / CI #874 implementation head `41069da8f77e2ba6ad0c1ceab5f12d1711f84ea4`.
+- The optional `@nolane/opencontainer-ai-consumer` package leaves Core at **9 surfaces** and remains provider agnostic. BYOK is session-memory only; provider switch resets credential/context scope.
+- Context egress is manifest-driven with category/file/range receipts and sensitive-path default deny. Repository/web/tool text is untrusted data and cannot grant authority. Discuss/Plan/Build remain distinct and mutation requires an explicit one-use approval.
+- Canonical writes use generation-preconditioned validated ChangeSets, recovery points for broad destructive edits, idempotent receipts across acknowledgement loss and path/version-aware Undo that refuses newer-user-edit overwrite.
+- Dedicated Chrome 153 evidence passed **2/2** iterations. Prompt-injection markup remained inert in approval rendering; stale child results stayed review-only; provider failure left workspace state unchanged; shared concurrency/resource-pressure guards failed closed; all four cancellation phases were exercised.
+- CI #874 also passed **571/571** contract tests, **87 critical files × 5 = 435** repeated executions, CodeQL and **2/2** complete installed-distribution Chrome paths with zero unexplained failures. P10 artifact #11031678345 has digest `sha256:5372a9aaf563c4819bc8af6c95c1d26b459e2408d70c186da17f4aab71216a8c`.
+- The production ledger candidate is **239/304** with **249** reconciliation rows; P10 is **18/18**. Fake provider fixtures prove authority semantics only; no model-quality/provider-performance claim is made and `production_closed=false` remains explicit.
