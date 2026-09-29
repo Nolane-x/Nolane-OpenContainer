@@ -16,16 +16,22 @@ class OutputBuffer {
   }
   async drain(timeoutMs=5000){
     const pending=this.#drains.splice(0);
-    if(pending.length===0)return Object.freeze({pending:0,timedOut:false});
+    if(pending.length===0)return Object.freeze({pending:0,timedOut:false,failed:false,error:null});
     let timer;
     try{
       const timeout=new Promise((_,reject)=>{
         timer=setTimeout(()=>reject(ocError(ErrorCodes.WORKER_TIMEOUT,'Process output drain timed out',{timeoutMs,pending:pending.length})),Math.max(1,Number(timeoutMs)||5000));
       });
-      await Promise.race([Promise.allSettled(pending),timeout]);
-      return Object.freeze({pending:pending.length,timedOut:false});
+      const results=await Promise.race([Promise.allSettled(pending),timeout]);
+      const rejected=Array.isArray(results)?results.find(item=>item.status==='rejected'):null;
+      return Object.freeze({
+        pending:pending.length,
+        timedOut:false,
+        failed:!!rejected,
+        error:rejected?.reason??null
+      });
     }catch(error){
-      return Object.freeze({pending:pending.length,timedOut:true,error});
+      return Object.freeze({pending:pending.length,timedOut:true,failed:false,error});
     }finally{
       if(timer)clearTimeout(timer);
     }
@@ -125,14 +131,16 @@ export class ProcessSupervisor {
       }finally{
         const drainTimeoutMs=Math.max(1,Number(options.drainTimeoutMs??5000)||5000);
         const [stdoutDrain,stderrDrain]=await Promise.all([stdout.drain(drainTimeoutMs),stderr.drain(drainTimeoutMs)]);
-        if((stdoutDrain.timedOut||stderrDrain.timedOut)&&!record.killed)code=1;
+        if(record.killed)code=128;
+        else if(stdoutDrain.timedOut||stderrDrain.timedOut||stdoutDrain.failed||stderrDrain.failed)code=1;
         this.#finalize(record,{
           code,
           signal:record.signal,
           reason:record.killed?'killed':thrown?'throw':'natural-exit',
           stdoutDrained:!stdoutDrain.timedOut,
           stderrDrained:!stderrDrain.timedOut,
-          drainTimedOut:stdoutDrain.timedOut||stderrDrain.timedOut
+          drainTimedOut:stdoutDrain.timedOut||stderrDrain.timedOut,
+          drainFailed:stdoutDrain.failed||stderrDrain.failed
         });
       }
     });
@@ -153,7 +161,7 @@ export class ProcessSupervisor {
     return true;
   }
 
-  #finalize(record,{code,signal,reason,stdoutDrained,stderrDrained,drainTimedOut}){
+  #finalize(record,{code,signal,reason,stdoutDrained,stderrDrained,drainTimedOut,drainFailed}){
     if(record.state!=='RUNNING')return false;
     record.state='EXITED';record.code=code;record.signal=signal;record.terminalCount++;
     for(const childPid of this.#children.get(record.pid)??[]){
@@ -175,11 +183,13 @@ export class ProcessSupervisor {
       stdoutDrained,
       stderrDrained,
       drainTimedOut,
+      drainFailed,
       terminalCount:record.terminalCount
     });
     this.#diagnostics?.record('process.exit',receipt);
     record.resolveTerminal(receipt);
     record.resolveExit(code);
+    this.#processes.delete(record.pid);
     return true;
   }
 }
