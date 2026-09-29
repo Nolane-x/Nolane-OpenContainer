@@ -376,6 +376,10 @@
     "p10-ai-consumer": {
       "ref": "CI #874 / PR #67 implementation head 41069da8f77e2ba6ad0c1ceab5f12d1711f84ea4",
       "note": "P10 full-domain declared-profile evidence. Optional consumer package keeps Core at nine surfaces; provider keys remain session-memory only; Context Manifest/sensitive default-deny gates egress; untrusted data grants no authority; Discuss/Plan/Build remain distinct; canonical AI writes use validated preconditioned ChangeSets, recovery points, idempotent receipts and path/version-aware Undo; provider/child epochs, shared concurrency, prompt-injection rendering and cancellation phases are browser-tested. Fake providers are authority fixtures only."
+    },
+    "p6-vitest-real-execution": {
+      "ref": "CI #896 / PR #68 implementation head fbeadbdba914230edfbcc1ca0192631084065b07",
+      "note": "P6-10 real Vitest integration evidence: exact frozen vitest@3.0.8 registry URL/SRI concordance, two real CLI executions over a TypeScript fixture with 3/3 tests PASS each, and same-exact-head workflow dependency on the declared-profile P6 Chrome court. CI #896 also passed 585/585 contract tests, 90×5 critical executions, CodeQL and full browser product path. Vitest root pnpm monorepo support remains explicitly outside scope."
     }
   },
   "overrides": [
@@ -2369,6 +2373,14 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p10-ai-consumer",
+      "closure_met": true
+    },
+    {
+      "id": "P6-10",
+      "domain": "P6",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p6-vitest-real-execution",
       "closure_met": true
     }
   ]

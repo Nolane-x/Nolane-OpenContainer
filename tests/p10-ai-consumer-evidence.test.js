@@ -102,8 +102,14 @@ test('P10 promotion closes exactly P10-01 through P10-18 and nothing implies pro
     assert.equal(row.evidence,'p10-ai-consumer');
     assert.equal(row.closure_met,true);
   }
-  assert.equal(ledger.overrides.length,249);
-  assert.equal(ledger.overrides.filter(row=>row.closure_met===true).length,239);
+  assert.ok(
+    ledger.overrides.length>=249,
+    'reconciliation ledger must not shrink below the P10 closure baseline'
+  );
+  assert.ok(
+    ledger.overrides.filter(row=>row.closure_met===true).length>=239,
+    'production closure count must not regress below the P10 closure baseline'
+  );
   assert.equal(ledger.production_closed,false);
   assert.equal(evidence.productionClosed,false);
 

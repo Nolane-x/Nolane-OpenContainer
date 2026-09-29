@@ -562,6 +562,14 @@
       "status": "PASS",
       "ref": "CI #874 / PR #67 implementation head 41069da8f77e2ba6ad0c1ceab5f12d1711f84ea4",
       "note": "P10-01..P10-18 optional AI-consumer authority closure: BYOK session-memory custody/redaction, explicit context manifest and sensitive default deny, untrusted-data authority separation, Discuss/Plan/Build modes, preconditioned ChangeSet/recovery/idempotency/path-aware Undo, child/provider epoch isolation, shared ResourceGovernor concurrency, prompt-injection approval rendering and four cancellation phases. Dedicated Chrome 153 court passed 2/2; fake providers exercise authority semantics only and create no model-quality claim."
+    },
+    {
+      "key": "p6-vitest-real-execution",
+      "kind": "EXECUTABLE",
+      "level": "INTEGRATION",
+      "status": "PASS",
+      "ref": "CI #896 / PR #68 implementation head fbeadbdba914230edfbcc1ca0192631084065b07",
+      "note": "P6-10 closure: exact frozen vitest@3.0.8 registry URL/SRI concordance, two real CLI executions over an isolated TypeScript fixture with 3/3 tests PASS each, and a same-exact-head dependency on the existing declared-profile P6 Chrome court. CI #896 passed 585/585 contract tests, 90 critical files ×5 = 450 repeated executions, CodeQL and full browser product path. This does not promote the Vitest root pnpm monorepo, pnpm lockfile parsing, monorepo workspace install, browser-native Vitest execution, or cross-browser support."
     }
   ]
 }

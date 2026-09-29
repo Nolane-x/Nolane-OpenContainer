@@ -941,3 +941,15 @@ Child-agent results are epoch-bound; cancelled/stale results remain reviewable e
 Cost/token UI stays hidden unless provider metadata is marked authoritative; the reference layer does not fabricate estimates. CI uses fake provider adapters only to exercise authority/failure/switch/metadata semantics and makes **no model/provider quality claim**.
 
 The production ledger candidate is now **239/304** minimum-closure satisfied with **249** reconciliation rows. **P10 is 18/18 closed.** `production_closed=false` remains mandatory because other production domains still contain external/manual/resource/compatibility blockers.
+
+## P6-10 real Vitest compatibility closure
+
+PR #68 implementation head `fbeadbdba914230edfbcc1ca0192631084065b07` passed CI #896 with **585/585** contract tests, CodeQL, **90 critical files × 5 = 450** repeated executions with zero unexplained failures, the same-exact-head declared-profile P6 Chrome court and the full installed-distribution browser product path.
+
+P6-10 now has real test-runner/CLI execution evidence. The court reads the exact `vitest@3.0.8` entry already frozen in `compat/p4/vite-react-tiny.package-lock.json`, verifies the live npm registry tarball URL and SHA-512 SRI against that frozen lockfile, executes the real Vitest CLI twice against `compat/p6/vitest-smoke.test.ts`, and records **3/3 TypeScript tests PASS on each run (6/6 total)** on exact Node v24.21.0 / npm 11.19.0.
+
+Dedicated artifact **#11036952101** has digest `sha256:593565a62183990836985b1adbbbad486be17b5a54b7cf9b77384683e39cec14`. The Vitest job is workflow-gated on the existing `p6-toolchain-vite` job, so real Vitest execution is accepted only when the declared-profile Chrome court passes on the same exact head; it does not redundantly rerun that browser court.
+
+This closure is deliberately narrower than the frozen `vitest-dev/vitest` root repository boundary. It does **not** claim pnpm-lock parsing, Vitest root-monorepo workspace installation, browser-native Vitest execution or cross-browser compatibility.
+
+The production ledger candidate is now **240/304** minimum-closure satisfied with **250** reconciliation rows. **P6 is 16/16 closed.** Overall `production_closed=false` remains mandatory because independent external/manual/release-history gates remain open.

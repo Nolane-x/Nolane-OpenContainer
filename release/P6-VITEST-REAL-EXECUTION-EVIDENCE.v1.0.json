@@ -1,0 +1,58 @@
+{
+  "schema": "opencontainer.p6-vitest-real-execution-evidence.v1.0",
+  "source": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "gate": "P6-10",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 68,
+  "implementation": {
+    "head": "fbeadbdba914230edfbcc1ca0192631084065b07",
+    "ciRunNumber": 896,
+    "ciRunId": 36576004149,
+    "pullRequestContextSha": "ff94698a642283e7b4f69a4141cbb03a5d97b3e8",
+    "contract": "PASS",
+    "codeql": "PASS",
+    "unitTests": 585,
+    "unitPassed": 585,
+    "unitFailed": 0,
+    "criticalTestFiles": 90,
+    "criticalIterations": 5,
+    "criticalTestFileExecutions": 450,
+    "criticalUnexplainedFailures": 0,
+    "companionP6ToolchainViteJob": "PASS",
+    "fullBrowserProductPath": "PASS"
+  },
+  "dedicatedCourt": {
+    "artifactId": 11036952101,
+    "artifactDigest": "sha256:593565a62183990836985b1adbbbad486be17b5a54b7cf9b77384683e39cec14",
+    "status": "PASS",
+    "nodeVersion": "v24.21.0",
+    "npmVersion": "11.19.0",
+    "vitestVersion": "3.0.8",
+    "sourceLockfile": "compat/p4/vite-react-tiny.package-lock.json",
+    "tarball": "https://registry.npmjs.org/vitest/-/vitest-3.0.8.tgz",
+    "integrity": "sha512-dfqAsNqRGUc8hB9OVR2P0w8PZPEckti2+5rdZip0WIz9WW0MnImJ8XiR61QhqLa92EQzKP2uPkzenKOAHyEIbA==",
+    "repeatedExecutions": 2,
+    "testsPerExecution": 3,
+    "totalTestsExecuted": 6,
+    "totalTestsPassed": 6,
+    "totalTestsFailed": 0,
+    "fixture": "compat/p6/vitest-smoke.test.ts",
+    "fixtureLanguage": "TypeScript"
+  },
+  "declaredProfileRegression": {
+    "workflowJob": "p6-toolchain-vite",
+    "sameExactHead": true,
+    "evidenceBinding": "workflow-needs",
+    "status": "PASS"
+  },
+  "boundaries": {
+    "vitestRootMonorepoPnpmSupportClaimed": false,
+    "pnpmLockfileSupportClaimed": false,
+    "monorepoWorkspaceInstallClaimed": false,
+    "browserNativeVitestExecutionClaimed": false,
+    "crossBrowserClaimed": false,
+    "p6DomainClosed": true,
+    "productionClosed": false
+  }
+}

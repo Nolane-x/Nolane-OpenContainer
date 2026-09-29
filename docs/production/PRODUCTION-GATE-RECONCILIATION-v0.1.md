@@ -259,3 +259,10 @@ Every substantive PR should update the JSON ledger only for gate IDs it directly
 - Dedicated Chrome 153 evidence passed **2/2** iterations. Prompt-injection markup remained inert in approval rendering; stale child results stayed review-only; provider failure left workspace state unchanged; shared concurrency/resource-pressure guards failed closed; all four cancellation phases were exercised.
 - CI #874 also passed **571/571** contract tests, **87 critical files × 5 = 435** repeated executions, CodeQL and **2/2** complete installed-distribution Chrome paths with zero unexplained failures. P10 artifact #11031678345 has digest `sha256:5372a9aaf563c4819bc8af6c95c1d26b459e2408d70c186da17f4aab71216a8c`.
 - The production ledger candidate is **239/304** with **249** reconciliation rows; P10 is **18/18**. Fake provider fixtures prove authority semantics only; no model-quality/provider-performance claim is made and `production_closed=false` remains explicit.
+
+- **P6-10** now meets PASS-INTEGRATION + declared-profile evidence through PR #68 / CI #896 implementation head `fbeadbdba914230edfbcc1ca0192631084065b07`.
+- The court uses the exact frozen `vitest@3.0.8` registry URL and SHA-512 SRI from `compat/p4/vite-react-tiny.package-lock.json`, verifies live npm registry concordance, then runs the real Vitest CLI **twice** on a TypeScript fixture with **3/3 tests PASS per run (6/6 total)** under exact Node v24.21.0 / npm 11.19.0.
+- Dedicated artifact **#11036952101** retains the receipt with digest `sha256:593565a62183990836985b1adbbbad486be17b5a54b7cf9b77384683e39cec14`.
+- The Vitest evidence job has an explicit workflow dependency on the existing P6 declared-profile Chrome court, so both must PASS on the same exact head. The older P6 evidence remains historically correct that P6-10 was open in Wave #64.
+- This does **not** claim support for the frozen Vitest root pnpm monorepo, pnpm lockfile parsing, monorepo workspace install, browser-native Vitest execution or cross-browser behavior.
+- **P6 is now 16/16 closed.** The production ledger candidate is **240/304** with **250** reconciliation rows; `production_closed=false` remains mandatory.

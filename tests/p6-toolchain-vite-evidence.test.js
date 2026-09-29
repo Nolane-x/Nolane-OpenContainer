@@ -98,7 +98,7 @@ test('P6 Vite C1 C2 failure atomicity diagnostics and measurements remain explic
   assert.equal(evidence.measurements.plateauThresholdClaimed,false);
 });
 
-test('P6 promotes exactly fifteen gates and preserves P6-10 open',()=>{
+test('P6 Wave #64 closes exactly fifteen historical gates without claiming P6-10',()=>{
   const rows=ledger.overrides.filter(item=>item.evidence==='p6-toolchain-vite');
   assert.deepEqual(rows.map(item=>item.id).sort(),[...closed].sort());
   for(const row of rows){
@@ -115,11 +115,12 @@ test('P6 promotes exactly fifteen gates and preserves P6-10 open',()=>{
     ledger.overrides.filter(item=>item.closure_met===true).length>=194,
     'production closure count must not regress below the P6 closure baseline'
   );
-  assert.equal(
-    ledger.overrides.filter(item=>item.domain==='P6'&&item.closure_met===true).length,
-    15
+  assert.ok(
+    ledger.overrides.filter(item=>item.domain==='P6'&&item.closure_met===true).length>=15,
+    'P6 closure count must not regress below the Wave #64 baseline'
   );
-  assert.equal(ledger.overrides.some(item=>item.id==='P6-10'),false);
+  const p610=ledger.overrides.find(item=>item.id==='P6-10');
+  assert.notEqual(p610?.evidence,'p6-toolchain-vite','Wave #64 must never be retroactively credited with P6-10');
   assert.equal(evidence.intentionallyOpenGates.length,1);
   assert.equal(evidence.intentionallyOpenGates[0].id,'P6-10');
   assert.equal(evidence.boundaries.p6DomainClosed,false);
