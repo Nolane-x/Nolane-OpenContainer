@@ -554,6 +554,14 @@
       "status": "PASS",
       "ref": "CI #863 / PR #66 implementation head d4a08451b78f7891aafb4cd1d10caf04075c50d2",
       "note": "P1-01/02/03/04/05/06/07/08/09/10/11/12/16 declared-profile closure: clean unmanaged Chrome navigation, COOP/COEP+SAB/Atomics baseline without DIP dependency, optional DIP probe, strict host/worker CSP, embedded Permissions Policy, sandboxed preview origin/credential/storage isolation, module Worker startup/teardown, real freeze/resume+BFCache, refresh OPFS recovery, multi-tab Web Locks+stale OPFS writer rejection, best-effort OPFS eviction/reopen, persistent storage reopen, capability probe and executable hosting self-check. P1-13/14/15 remain open."
+    },
+    {
+      "key": "p10-ai-consumer",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #874 / PR #67 implementation head 41069da8f77e2ba6ad0c1ceab5f12d1711f84ea4",
+      "note": "P10-01..P10-18 optional AI-consumer authority closure: BYOK session-memory custody/redaction, explicit context manifest and sensitive default deny, untrusted-data authority separation, Discuss/Plan/Build modes, preconditioned ChangeSet/recovery/idempotency/path-aware Undo, child/provider epoch isolation, shared ResourceGovernor concurrency, prompt-injection approval rendering and four cancellation phases. Dedicated Chrome 153 court passed 2/2; fake providers exercise authority semantics only and create no model-quality claim."
     }
   ]
 }
