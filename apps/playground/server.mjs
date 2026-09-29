@@ -251,7 +251,7 @@ const server = createServer(async (request, response) => {
     if (url.pathname === '/' || url.pathname === '/index.html') {
       response.setHeader(
         'Content-Security-Policy',
-        "default-src 'self'; script-src 'self' 'sha256-PBb3mOO75MOBA8uAPKRCZVC3fsI+FTkefTsO/kn4eoU='; connect-src 'self'; worker-src 'self'; img-src 'self' data:; style-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+        "default-src 'self'; script-src 'self' 'sha256-rkMvapmVZt+MUBo5i8Nx4sVYZ0HtjK3on/kn9IG2F10='; connect-src 'self'; worker-src 'self'; img-src 'self' data:; style-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
       );
       response.setHeader('X-OpenContainer-Document-Profile', 'strict');
     }
