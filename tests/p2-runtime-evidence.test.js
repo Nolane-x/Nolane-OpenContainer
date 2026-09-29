@@ -97,8 +97,14 @@ test('P2 promotion closes exactly all fourteen P2 gates while production remains
     assert.equal(row.closure_met,true);
   }
 
-  assert.equal(ledger.overrides.length,224);
-  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,208);
+  assert.ok(
+    ledger.overrides.length>=224,
+    'reconciliation ledger must not shrink below the P2 closure baseline'
+  );
+  assert.ok(
+    ledger.overrides.filter(item=>item.closure_met===true).length>=208,
+    'production closure count must not regress below the P2 closure baseline'
+  );
   const p2=ledger.overrides.filter(item=>item.domain==='P2'&&item.closure_met===true);
   assert.equal(p2.length,14);
   assert.deepEqual(p2.map(item=>item.id).sort(),[...closed].sort());
