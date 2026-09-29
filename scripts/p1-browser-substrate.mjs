@@ -219,7 +219,7 @@ try{
 
   chrome=spawn(browser.command,[
     '--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage',
-    '--no-first-run','--no-default-browser-check',
+    '--no-first-run','--no-default-browser-check','--enable-automation',
     '--user-data-dir='+profile,'--remote-debugging-port=0','about:blank'
   ],{stdio:['ignore','ignore','pipe']});
   const browserWebSocket=await waitForDevTools(chrome,profile);
