@@ -94,10 +94,11 @@
       "tests/p10-ai-consumer-source-audit.test.js",
       "tests/p10-ai-consumer-evidence.test.js",
       "tests/p6-vitest-real-execution-source-audit.test.js",
-      "tests/p6-vitest-real-execution-evidence.test.js"
+      "tests/p6-vitest-real-execution-evidence.test.js",
+      "tests/p9-ui-source-audit.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 90
+    "minimumTestFiles": 91
   },
   "browser": {
     "iterations": 2,
