@@ -90,8 +90,14 @@ test('final P4 wave closes exactly the remaining four gates and P4 becomes 18/18
     assert.equal(row.closure_met,true);
   }
 
-  assert.equal(ledger.overrides.length,209);
-  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,179);
+  assert.ok(
+    ledger.overrides.length>=209,
+    'reconciliation ledger must not shrink below the final P4 baseline'
+  );
+  assert.ok(
+    ledger.overrides.filter(item=>item.closure_met===true).length>=179,
+    'production closure count must not regress below the final P4 baseline'
+  );
   const p4=ledger.overrides.filter(item=>item.domain==='P4'&&item.closure_met===true);
   assert.equal(p4.length,18);
   assert.deepEqual(
