@@ -364,6 +364,10 @@
     "p6-toolchain-vite": {
       "ref": "CI #814 / PR #64 implementation head eaf3386f9d4a39e837243feb71f63c8673b98ca0",
       "note": "P6 15-gate declared-profile integration court: exact retained Rolldown/LightningCSS artifacts + differentials; actual-browser compiled Wasm module reuse; shared-memory grow/rebind; global ToolchainAuthority; Vite 8.3 build/dev/HMR/restart/preview/dep-opt; source-map/failure diagnostics; cold/warm/cache/heap measurements; workspace/package failure atomicity; explicit generic-WASI boundary; exact BCR tuple/no silent substitution. P6-10 remains OPEN because real promoted Vitest execution is absent."
+    },
+    "p2-runtime-process": {
+      "ref": "CI #851 / PR #65 implementation head b2182f11cc03222da96568e06ac9951b7fe3b3fb",
+      "note": "P2-01..P2-14 RELEASE-READY browser evidence: actual Worker RPC and staged crash cleanup, timeout mutation reconciliation, cancellation/transfer bounds, bounded synchronous-RPC call graph, exactly-once virtual-process terminal publication after bounded output drain, bounded process-tree/orphan semantics, epoch-bound virtual ports, Chromium pressure transfer evidence, repeated cycle leak checks and stable public errors."
     }
   },
   "overrides": [
@@ -524,48 +528,48 @@
       "domain": "P2",
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
-      "evidence": "chrome",
-      "closure_met": false
+      "evidence": "p2-runtime-process",
+      "closure_met": true
     },
     {
       "id": "P2-05",
       "domain": "P2",
-      "state": "PARTIAL",
-      "promotion": "PASS-LOCAL",
-      "evidence": "process",
-      "closure_met": false
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p2-runtime-process",
+      "closure_met": true
     },
     {
       "id": "P2-06",
       "domain": "P2",
-      "state": "PARTIAL",
+      "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
-      "evidence": "guest-timeout",
-      "closure_met": false
+      "evidence": "p2-runtime-process",
+      "closure_met": true
     },
     {
       "id": "P2-10",
       "domain": "P2",
-      "state": "PARTIAL",
+      "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
-      "evidence": "guest-output",
-      "closure_met": false
+      "evidence": "p2-runtime-process",
+      "closure_met": true
     },
     {
       "id": "P2-11",
       "domain": "P2",
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
-      "evidence": "c2",
-      "closure_met": false
+      "evidence": "p2-runtime-process",
+      "closure_met": true
     },
     {
       "id": "P2-14",
       "domain": "P2",
       "state": "EVIDENCE",
-      "promotion": "PASS-LOCAL",
-      "evidence": "errors",
-      "closure_met": false
+      "promotion": "PASS-BROWSER",
+      "evidence": "p2-runtime-process",
+      "closure_met": true
     },
     {
       "id": "P3-01",
@@ -2093,6 +2097,70 @@
       "state": "EVIDENCE",
       "promotion": "PASS-INTEGRATION",
       "evidence": "p6-toolchain-vite",
+      "closure_met": true
+    },
+    {
+      "id": "P2-02",
+      "domain": "P2",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p2-runtime-process",
+      "closure_met": true
+    },
+    {
+      "id": "P2-03",
+      "domain": "P2",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p2-runtime-process",
+      "closure_met": true
+    },
+    {
+      "id": "P2-04",
+      "domain": "P2",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p2-runtime-process",
+      "closure_met": true
+    },
+    {
+      "id": "P2-07",
+      "domain": "P2",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p2-runtime-process",
+      "closure_met": true
+    },
+    {
+      "id": "P2-08",
+      "domain": "P2",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p2-runtime-process",
+      "closure_met": true
+    },
+    {
+      "id": "P2-09",
+      "domain": "P2",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p2-runtime-process",
+      "closure_met": true
+    },
+    {
+      "id": "P2-12",
+      "domain": "P2",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p2-runtime-process",
+      "closure_met": true
+    },
+    {
+      "id": "P2-13",
+      "domain": "P2",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p2-runtime-process",
       "closure_met": true
     }
   ]
