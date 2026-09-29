@@ -107,8 +107,14 @@ test('P6 promotes exactly fifteen gates and preserves P6-10 open',()=>{
     assert.equal(row.promotion,'PASS-INTEGRATION');
     assert.equal(row.closure_met,true);
   }
-  assert.equal(ledger.overrides.length,216);
-  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,194);
+  assert.ok(
+    ledger.overrides.length>=216,
+    'reconciliation ledger must not shrink below the P6 closure baseline'
+  );
+  assert.ok(
+    ledger.overrides.filter(item=>item.closure_met===true).length>=194,
+    'production closure count must not regress below the P6 closure baseline'
+  );
   assert.equal(
     ledger.overrides.filter(item=>item.domain==='P6'&&item.closure_met===true).length,
     15
