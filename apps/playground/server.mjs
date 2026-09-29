@@ -46,6 +46,9 @@ const publicAliases = new Map([
   ['/p4-command-diagnostics.js', join(publicRoot, 'p4-command-diagnostics.js')],
   ['/p4-final-package.html', join(publicRoot, 'p4-final-package.html')],
   ['/p4-final-package.js', join(publicRoot, 'p4-final-package.js')],
+  ['/p2-runtime-court.html', join(publicRoot, 'p2-runtime-court.html')],
+  ['/p2-runtime-court.js', join(publicRoot, 'p2-runtime-court.js')],
+  ['/p2-runtime-worker.mjs', join(publicRoot, 'p2-runtime-worker.mjs')],
   ['/compat/p4/PARSER-FUZZ-CORPUS.v1.0.json', join(repoRoot, 'compat/p4/PARSER-FUZZ-CORPUS.v1.0.json')],
   ['/compat/p4/ECOSYSTEM-LAYOUT-CORPUS.v1.0.json', join(repoRoot, 'compat/p4/ECOSYSTEM-LAYOUT-CORPUS.v1.0.json')],
   ['/compat/p4/vite-react-tiny.package-lock.json', join(repoRoot, 'compat/p4/vite-react-tiny.package-lock.json')],
@@ -255,6 +258,9 @@ const server = createServer(async (request, response) => {
     if (url.pathname === '/p4-final-package.html') {
       response.setHeader('X-OpenContainer-Document-Profile', 'p4-final-package-court');
     }
+    if (url.pathname === '/p2-runtime-court.html') {
+      response.setHeader('X-OpenContainer-Document-Profile', 'p2-runtime-process-court');
+    }
     if (url.pathname === '/p3-native-external-permission.html') {
       response.setHeader('X-OpenContainer-Document-Profile', 'p3-native-external-permission-court');
     }
@@ -282,6 +288,13 @@ const server = createServer(async (request, response) => {
         "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; worker-src 'self'; child-src 'self'"
       );
       response.setHeader('X-OpenContainer-Worker-Profile', 'p6-module-reuse');
+    }
+    if (url.pathname === '/p2-runtime-worker.mjs') {
+      response.setHeader(
+        'Content-Security-Policy',
+        "default-src 'none'; script-src 'self'; connect-src 'self'; worker-src 'self'; child-src 'self'"
+      );
+      response.setHeader('X-OpenContainer-Worker-Profile', 'p2-runtime-court');
     }
     response.setHeader('Content-Type', contentType(target));
     response.end(await readFile(target));
