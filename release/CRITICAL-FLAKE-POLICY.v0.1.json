@@ -89,10 +89,11 @@
       "tests/p2-runtime-evidence.test.js",
       "tests/p1-browser-substrate-source-audit.test.js",
       "tests/browser-storage-policy.test.js",
-      "tests/p1-browser-substrate-evidence.test.js"
+      "tests/p1-browser-substrate-evidence.test.js",
+      "tests/p10-ai-consumer.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 85
+    "minimumTestFiles": 86
   },
   "browser": {
     "iterations": 2,
