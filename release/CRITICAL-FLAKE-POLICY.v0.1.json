@@ -85,10 +85,11 @@
       "tests/worker-authority.test.js",
       "tests/browser-guest-worker.test.js",
       "tests/sync-rpc.test.js",
-      "tests/p2-runtime-source-audit.test.js"
+      "tests/p2-runtime-source-audit.test.js",
+      "tests/p2-runtime-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 81
+    "minimumTestFiles": 82
   },
   "browser": {
     "iterations": 2,
