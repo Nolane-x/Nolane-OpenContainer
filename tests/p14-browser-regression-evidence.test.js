@@ -70,7 +70,11 @@ test('registry matrix and negative-result history preserve P14-13 evidence bound
   assert.deepEqual({kind:entry.kind,level:entry.level,status:entry.status},{kind:'EXECUTABLE',level:'BROWSER',status:'PASS'});
   assert.equal(matrix.releaseRegressionEvidence.gate,'P14-13');
   assert.equal(matrix.releaseRegressionEvidence.status,'PASS-BROWSER');
-  assert.equal(matrix.releaseRegressionEvidence.browserMinimumFrozen,false);
+  assert.equal(matrix.releaseRegressionEvidence.browserMinimumFrozen,true);
+  assert.equal(matrix.browserMinimumPolicy.evidenceGate,'P14-13');
+  assert.equal(matrix.browserMinimumPolicy.evidenceRun,960);
+  assert.equal(matrix.browserMinimumPolicy.minimumVersion,'153.0.8010.52');
+  assert.equal(matrix.browserMinimumPolicy.validatedThroughStable,'154.0.8037.92');
   assert.equal(matrix.releaseRegressionEvidence.crossBrowserClaimed,false);
   assert.ok(matrix.openBoundaries.some(x=>x.startsWith('P11-13')));
   assert.ok(matrix.openBoundaries.some(x=>x.includes('weak-device')));
