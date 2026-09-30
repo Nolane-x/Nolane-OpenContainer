@@ -24,8 +24,13 @@ function assertIdentityMatches(expected,actual){
 }
 
 export class PreviewAuthority {
-  #routes=new Map();#epoch=0;
+  #routes=new Map();#epoch=0;#resources=null;
+  constructor({resources=null}={}){
+    if(resources!==null&&typeof resources?.acquireTask!=='function')throw ocError(ErrorCodes.INVALID_ARGUMENT,'Preview resource governor must expose acquireTask()');
+    this.#resources=resources;
+  }
   get epoch(){return this.#epoch;}
+  get resourceBound(){return this.#resources!==null;}
   publish({port,owner,handler,identity={}}){
     if(!Number.isInteger(port)||port<1||port>65535||!owner||typeof handler!=='function')throw ocError(ErrorCodes.INVALID_ARGUMENT,'Invalid preview route');
     const epoch=++this.#epoch;
@@ -42,7 +47,9 @@ export class PreviewAuthority {
     if(proof.epoch!==undefined&&proof.epoch!==route.epoch)throw ocError(ErrorCodes.PREVIEW_STALE,'Stale preview epoch',{expected:route.epoch,actual:proof.epoch});
     if(proof.owner!==undefined&&proof.owner!==route.owner)throw ocError(ErrorCodes.PREVIEW_STALE,'Stale preview owner',{expected:route.owner,actual:proof.owner});
     assertIdentityMatches(route.identity,proof.identity);
-    return route.handler(request);
+    const lease=this.#resources?.acquireTask({owner:'preview',inFlightBytes:0})??null;
+    try{return await route.handler(request);}
+    finally{lease?.release();}
   }
   list(){return [...this.#routes.values()].map(({handler,...route})=>Object.freeze(route));}
 }
