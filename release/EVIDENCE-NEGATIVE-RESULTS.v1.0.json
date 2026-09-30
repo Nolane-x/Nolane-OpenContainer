@@ -36,6 +36,17 @@
       "finding": "The fixture emitted an escaped closing script token into actual HTML, so the HTML parser never closed the script and no postMessage occurred.",
       "resolution": "Emit a real closing script tag in the external harness source; keep sandbox isolation requirements unchanged.",
       "exclusionReasonCode": "HARNESS_CORRUPT_FIXTURE"
+    },
+    {
+      "id": "NEG-004",
+      "date": "2026-09-30",
+      "classification": "HARNESS_INVALID",
+      "hypothesis": "Synthetic CDP Enter activation of the rendered P9 process-recovery control is stable under CI load.",
+      "outcome": "HARNESS-FAIL",
+      "evidence": "CI #959 / PR #72",
+      "finding": "The rendered Chrome 153 court reached the failed-process recovery state, but synthetic CDP key activation did not complete process recovery before the 15 second harness deadline. PR #72 did not modify the product UI recovery handler, and the immediately preceding main CI #958 passed the same rendered recovery path.",
+      "resolution": "Use deterministic DOM click activation on the actual production recovery button handler for the lifecycle-specific assertion. Keep keyboard, focus, IME and accessibility-tree coverage in the independent rendered interaction courts.",
+      "exclusionReasonCode": "HARNESS_TOOLING_BUG"
     }
   ]
 }
