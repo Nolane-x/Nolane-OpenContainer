@@ -1,0 +1,39 @@
+name: OpenSSF Scorecard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 6 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  scorecard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - run: npm ci
+      - run: mkdir -p .artifacts/p13-openssf-scorecard
+      - name: Run OpenSSF Scorecard v2.4.4
+        uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
+        with:
+          results_file: .artifacts/p13-openssf-scorecard/raw.json
+          results_format: json
+          publish_results: false
+      - name: Verify and summarize Scorecard receipt
+        run: npm run p13:openssf:verify
+      - name: Archive P13 OpenSSF hygiene evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-p13-openssf-scorecard-${{ github.sha }}
+          path: .artifacts/p13-openssf-scorecard/
+          if-no-files-found: error
+          retention-days: 90

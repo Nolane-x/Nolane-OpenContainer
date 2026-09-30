@@ -6,7 +6,8 @@
   "minimumClosure": "SECURITY-REVIEWED / RELEASE-VERIFIED",
   "workflowFiles": [
     ".github/workflows/ci.yml",
-    ".github/workflows/maintenance.yml"
+    ".github/workflows/maintenance.yml",
+    ".github/workflows/scorecard.yml"
   ],
   "workflowRules": {
     "remoteActionRef": "full-40-hex-commit",
@@ -173,5 +174,15 @@
       "reason": "90-day CI artifacts are retained, but long-term historical verification storage policy is not yet closed."
     }
   },
-  "productionClosed": false
+  "productionClosed": false,
+  "openssfHygiene": {
+    "action": "ossf/scorecard-action",
+    "actionRelease": "v2.4.4",
+    "actionCommit": "2d1146689b8cda280b9bc96326124645441f03bc",
+    "resultsFormat": "json",
+    "publishResults": false,
+    "artifactRetentionDays": 90,
+    "releaseProof": false,
+    "purpose": "Supplemental OpenSSF project-hygiene evidence for P13-18; no release-proof or minimum-score claim."
+  }
 }

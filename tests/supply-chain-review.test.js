@@ -12,19 +12,18 @@ const operations=JSON.parse(readFileSync('release/OPERATIONS-POLICY.v1.0.json','
 const scenarios=JSON.parse(readFileSync('release/OPERATIONS-DISASTER-SCENARIOS.v1.0.json','utf8'));
 const ci=readFileSync('.github/workflows/ci.yml','utf8');
 const maintenance=readFileSync('.github/workflows/maintenance.yml','utf8');
+const scorecard=readFileSync('.github/workflows/scorecard.yml','utf8');
+const workflows={'.github/workflows/ci.yml':ci,'.github/workflows/maintenance.yml':maintenance,'.github/workflows/scorecard.yml':scorecard};
 
 test('P13 workflow court requires immutable actions least privilege and no untrusted release credentials',()=>{
-  assert.deepEqual(reviewWorkflowSecurity({policy,workflows:{
-    '.github/workflows/ci.yml':ci,
-    '.github/workflows/maintenance.yml':maintenance
-  }}),[]);
+  assert.deepEqual(reviewWorkflowSecurity({policy,workflows}),[]);
   const unpinned=ci.replace(/actions\/checkout@[0-9a-f]{40}/,'actions/checkout@v4');
-  assert.ok(reviewWorkflowSecurity({policy,workflows:{'.github/workflows/ci.yml':unpinned,'.github/workflows/maintenance.yml':maintenance}}).some(x=>x.includes('not pinned')));
+  assert.ok(reviewWorkflowSecurity({policy,workflows:{...workflows,'.github/workflows/ci.yml':unpinned}}).some(x=>x.includes('not pinned')));
   const privileged=ci.replace('contents: read','contents: write');
-  assert.ok(reviewWorkflowSecurity({policy,workflows:{'.github/workflows/ci.yml':privileged,'.github/workflows/maintenance.yml':maintenance}}).some(x=>/contents: read|forbidden|unexpected write/.test(x)));
+  assert.ok(reviewWorkflowSecurity({policy,workflows:{...workflows,'.github/workflows/ci.yml':privileged}}).some(x=>/contents: read|forbidden|unexpected write/.test(x)));
   const expression='$'+'{{ secrets.NPM_TOKEN }}';
   const secret=ci+'\n# '+expression+'\n';
-  assert.ok(reviewWorkflowSecurity({policy,workflows:{'.github/workflows/ci.yml':secret,'.github/workflows/maintenance.yml':maintenance}}).some(x=>x.includes('forbidden untrusted release signal')));
+  assert.ok(reviewWorkflowSecurity({policy,workflows:{...workflows,'.github/workflows/ci.yml':secret}}).some(x=>x.includes('forbidden untrusted release signal')));
 });
 
 test('P13 gate authority refuses to machine-close external trust publication signing tag and long-archive gates',()=>{
