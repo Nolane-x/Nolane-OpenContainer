@@ -19,7 +19,7 @@ export class OpenContainer {
     const process=new ProcessSupervisor({resources,diagnostics,outputLimitBytes:options.processOutputLimitBytes});
     const packages=new PackageGraphAuthority({fs});
     const net=new NetworkAuthority(options.network);
-    const preview=new PreviewAuthority();
+    const preview=new PreviewAuthority({resources});
     const snapshots=new MemoryPersistenceAuthority({fs});
     const kernel=new OpenContainerKernel({diagnostics});
     Object.assign(this,{fs,process,packages,net,preview,snapshots,resources,diagnostics,workspacePersistence:null,packageContentStore:null,packageGraphStore:null});
