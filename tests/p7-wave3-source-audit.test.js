@@ -51,9 +51,13 @@ test('P7 wave3 source promotion is permitted only by the retained stronger evide
     assert.equal(row.closure_met,true,id);
     assert.equal(row.evidence,'p7-resource-wave3',id);
   }
-  for(const id of ['P7-01','P7-06','P7-09','P7-10','P7-11','P7-12']){
+  for(const id of ['P7-01','P7-09','P7-10','P7-12']){
     const row=ledger.overrides.find((item)=>item.id===id);
     assert.ok(!row||row.closure_met!==true,id+' must remain open');
+  }
+  for(const id of ['P7-06','P7-11']){
+    const row=ledger.overrides.find((item)=>item.id===id);
+    if(row?.closure_met===true)assert.equal(row.evidence,'p7-resource-wave4',id+' later promotion must bind Wave 4 evidence');
   }
   assert.equal(policy.gateAuthority['P7-01'].machineClosable,false);
   assert.equal(policy.gateAuthority['P7-09'].machineClosable,false);
