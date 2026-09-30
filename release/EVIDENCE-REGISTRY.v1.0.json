@@ -594,6 +594,14 @@
       "status": "PASS",
       "ref": "CI #950 / PR #71 head 5f0c7ddbbc3671036804485d9ad1d140200d10ed",
       "note": "P7 Wave 4 exact Chrome 153 evidence: five product lanes coexist under one global ResourceGovernor with pressure fail-closed and zero leaked usage; OPFS storage amplification is retained across source snapshots, package artifacts, checkpoint metadata, interrupted temporary transaction bytes and derived caches. Artifact #11085189245."
+    },
+    {
+      "key": "p14-browser-regression",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #960 / PR #72 head 2f67306726e4d5ded6b60ee7d2483f502638e7b7",
+      "note": "P14-13 retained dual-browser campaign: Chrome 153 frozen floor + live CfT Stable 154.0.8037.92, 2/2 full installed-distribution paths each, zero unexplained failures. Artifacts #11090364706 and #11091009915."
     }
   ]
 }
