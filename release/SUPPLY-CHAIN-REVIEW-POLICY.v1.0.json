@@ -172,9 +172,11 @@
       "reason": "P17 exercises compromised-publishing-credential revocation, rebuild and consumer-warning actions."
     },
     "P13-20": {
-      "machineClosable": false,
-      "state": "OPEN_EXTERNAL",
-      "reason": "Long-term Git-history archive machinery and third-party notices exist, but no generated release record is committed under release/history yet."
+      "machineClosable": true,
+      "state": "CLOSED_BY_HISTORY",
+      "minimumClosure": "SECURITY-REVIEWED / RELEASE-VERIFIED",
+      "evidence": "p13-historical-release-archive",
+      "reason": "A source-controlled, non-expiring historical verification record for 0.1.0-alpha.1 is committed under release/history and independently re-verifies its embedded manifest, checksums, SPDX SBOM, provenance, dependency/license inventory, third-party notices and reproducibility evidence."
     }
   },
   "productionClosed": false,
@@ -215,7 +217,14 @@
     ],
     "artifactBytesRequired": false,
     "reason": "The historical archive preserves verification metadata and artifact digests; binary artifact distribution remains a separate publication concern.",
-    "implementationState": "CANDIDATE_MACHINERY_READY",
-    "closureState": "AWAITING_GIT_TRACKED_RELEASE_RECORD"
+    "implementationState": "PROMOTED",
+    "closureState": "GIT_TRACKED_VERIFIED",
+    "promotedRecord": {
+      "path": "release/history/0.1.0-alpha.1/974fa1032c0d95c98889ca6f9bfaaa696c95fe9e/record.json",
+      "sourceCommit": "974fa1032c0d95c98889ca6f9bfaaa696c95fe9e",
+      "recordSha256": "b10283f7c456c2a9f2af7713e23e37aaa37139e91d8fd0e91fd8472a76803375",
+      "ciRun": 988,
+      "candidateArtifactId": 11101696511
+    }
   }
 }
