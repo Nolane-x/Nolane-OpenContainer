@@ -167,9 +167,18 @@
   ],
   "openBoundaries": [
     "P11-13 remains open: minimum browser versions are not frozen from this publication matrix.",
-    "P14-13 remains open: frozen-floor-versus-newest-stable regression evidence is not created here.",
     "P14-14/P7 weak-device resource floors remain open.",
     "Rows without retained receipts are publication transparency, not support evidence."
   ],
-  "productionClosed": false
+  "productionClosed": false,
+  "releaseRegressionEvidence": {
+    "gate": "P14-13",
+    "status": "PASS-BROWSER",
+    "frozenFloor": "Google Chrome 153.0.8010.52",
+    "newestStable": "Google Chrome 154.0.8037.92",
+    "ciRun": 960,
+    "fullProductPathPasses": 4,
+    "browserMinimumFrozen": false,
+    "crossBrowserClaimed": false
+  }
 }

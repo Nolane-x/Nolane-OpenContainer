@@ -291,3 +291,14 @@ Every substantive PR should update the JSON ledger only for gate IDs it directly
 - The same exact-profile Chrome court measures OPFS storage amplification for source snapshots, packages, checkpoint metadata, interrupted temporary transactions and derived caches. Both iterations retained **0.253688× steady** and **0.277769× transient-peak** amplification; the **397,191-byte** interrupted transaction was reclaimed by GC.
 - Dedicated artifact **#11085189245**, digest `sha256:64b2aaf99453b33391a7a153efa75c4befad5ecc9da3854bb55a6138ef09c7dc`, retains the two Chrome 153 iterations. Implementation CI #950 passed **611/611** contract tests and **96 × 5 = 480** critical-file executions with zero unexplained failures.
 - **P7 is now 10/14 closed.** P7-01, P7-09, P7-10 and P7-12 remain open; `production_closed=false` remains mandatory.
+
+
+## P14-13 dual-browser release regression
+
+- **P14-13** now meets RELEASE-READY evidence through PR #72 / implementation CI #960 on head `2f67306726e4d5ded6b60ee7d2483f502638e7b7`.
+- The frozen-floor lane ran exact **Google Chrome 153.0.8010.52** and passed **2/2 complete installed-distribution product paths**. Retained artifact **#11090364706** has digest `sha256:b7bf15dc48ccb442c28dce9f24fb051f6e370dc83358037dc85b9ac3e4ce2dd0`.
+- The newest-Stable lane resolved Google's live Chrome for Testing **Stable** channel, installed **Google Chrome 154.0.8037.92**, retained manifest/archive SHA-256 values, and passed **2/2 complete installed-distribution product paths**. Artifact **#11091009915** has digest `sha256:2b367b1bad16619ecf68c2274ecf84cc0ed7951dc3bf0f90ee7917c2ce8b706d`.
+- CI #960 passed **618/618 contract tests**, **98 critical files × 5 = 490 repeated executions**, CodeQL, P9 rendered UI, P7/P6 regressions and the ordinary installed-distribution browser path with zero unexplained failures.
+- CI #959 is retained as **NEG-004**: the earlier P9 failure was isolated to timing-sensitive synthetic CDP Enter activation in the lifecycle recovery assertion. The court now activates the same production recovery button handler deterministically while preserving independent keyboard/focus/IME/accessibility coverage.
+- This closure does **not** freeze P11-13 browser minimums, does not claim Firefox/Safari/Windows/macOS/mobile support, does not close P14-04 adjacent real-release compatibility, P14-12 production CDN topology, P14-14 weak-device budgets, or P1-14 every-RC browser matrices.
+- The ledger candidate is **261/304 CLOSED** with **271** reconciliation rows. P14 is **15/18** closed and `production_closed=false` remains mandatory.

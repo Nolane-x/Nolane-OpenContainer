@@ -392,6 +392,10 @@
     "p7-resource-wave4": {
       "ref": "CI #950 / PR #71 implementation head 5f0c7ddbbc3671036804485d9ad1d140200d10ed",
       "note": "P7-06/P7-11 declared-profile closure: one runtime ResourceGovernor simultaneously accounts UI, Core process, preview dispatch, toolchain worker and AI agent lanes; critical pressure blocks new AI background admission and teardown returns every counter to zero. Real Chrome OPFS court measures source snapshot, package persistence, checkpoint metadata, interrupted temporary transaction peak/reclamation and derived-cache payload bytes. 611/611 contract tests, 96 critical files x5 = 480 executions, CodeQL, full installed-distribution browser path and 2/2 dedicated Chrome 153 iterations passed. Device/8h/system-sleep/weak-device claims remain open."
+    },
+    "p14-browser-regression": {
+      "ref": "CI #960 / PR #72 implementation head 2f67306726e4d5ded6b60ee7d2483f502638e7b7",
+      "note": "P14-13 dual-browser release regression: exact frozen floor Chrome 153.0.8010.52 and live Chrome for Testing Stable 154.0.8037.92 each passed 2/2 complete installed-distribution product paths on the same PR head. The Stable lane resolves Google's live last-known-good Stable manifest and retains manifest/archive digests. 618/618 contract tests, 98 critical files x5 = 490 executions, CodeQL, P9 rendered and full browser regressions passed. No browser minimum, cross-browser, production-CDN, adjacent-release or weak-device claim is inferred."
     }
   },
   "overrides": [
@@ -2553,6 +2557,14 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p7-resource-wave4",
+      "closure_met": true
+    },
+    {
+      "id": "P14-13",
+      "domain": "P14",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p14-browser-regression",
       "closure_met": true
     }
   ]

@@ -1,0 +1,77 @@
+{
+  "schema": "opencontainer.p14-browser-regression-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P14-13",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "requirement": "Run browser regression campaign against frozen floor and newest stable before promotion.",
+  "minimumClosure": "RELEASE-READY evidence",
+  "pullRequest": 72,
+  "implementationHead": "2f67306726e4d5ded6b60ee7d2483f502638e7b7",
+  "ci": {
+    "runNumber": 960,
+    "runId": 36703869292,
+    "testedCheckoutCommit": "56e7478ae0da70582d0852d2247b678f9fc02a73",
+    "contractTests": 618,
+    "contractPassed": 618,
+    "contractFailed": 0,
+    "criticalTestFiles": 98,
+    "criticalIterations": 5,
+    "criticalTestFileExecutions": 490,
+    "criticalUnexplainedFailures": 0,
+    "codeql": "PASS",
+    "fullInstalledDistributionBrowserPath": "PASS",
+    "p9RenderedRegression": "PASS",
+    "p7DeclaredProfileRegression": "PASS",
+    "p6VitestRegression": "PASS"
+  },
+  "campaigns": {
+    "frozenFloor": {
+      "browser": "Google Chrome 153.0.8010.52",
+      "source": "pinned Chrome for Testing archive",
+      "iterations": 2,
+      "passedIterations": 2,
+      "fullProductPathPasses": 2,
+      "unexplainedFailures": 0,
+      "artifact": {
+        "id": 11090364706,
+        "digest": "sha256:b7bf15dc48ccb442c28dce9f24fb051f6e370dc83358037dc85b9ac3e4ce2dd0"
+      }
+    },
+    "newestStable": {
+      "browser": "Google Chrome 154.0.8037.92",
+      "source": "Chrome for Testing live last-known-good Stable manifest",
+      "manifest": "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json",
+      "iterations": 2,
+      "passedIterations": 2,
+      "fullProductPathPasses": 2,
+      "unexplainedFailures": 0,
+      "installReceiptRetained": true,
+      "manifestAndArchiveSha256Retained": true,
+      "artifact": {
+        "id": 11091009915,
+        "digest": "sha256:2b367b1bad16619ecf68c2274ecf84cc0ed7951dc3bf0f90ee7917c2ce8b706d"
+      }
+    }
+  },
+  "aggregate": {
+    "browserProfiles": 2,
+    "fullProductPathPasses": 4,
+    "unexplainedFailures": 0
+  },
+  "closure": {
+    "id": "P14-13",
+    "state": "EVIDENCE",
+    "promotion": "PASS-BROWSER",
+    "closureMet": true,
+    "evidence": "p14-browser-regression"
+  },
+  "boundaries": {
+    "p11_13BrowserMinimumFrozen": false,
+    "crossBrowserMatrixClaimed": false,
+    "p14_04AdjacentReleaseCertification": false,
+    "p14_12ProductionCdnTopology": false,
+    "p14_14WeakDeviceBudget": false,
+    "p1_14EveryRcMatrix": false,
+    "productionClosed": false
+  },
+  "productionClosed": false
+}

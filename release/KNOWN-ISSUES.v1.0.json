@@ -14,7 +14,6 @@
       "safeWorkaround": true,
       "relatedGates": [
         "P11-13",
-        "P14-13",
         "P15-05"
       ]
     },
