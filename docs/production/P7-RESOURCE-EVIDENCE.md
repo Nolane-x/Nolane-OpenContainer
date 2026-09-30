@@ -53,3 +53,55 @@ The resource receipt now retains per-iteration and aggregate timing for runtime 
 These measurements strengthen P7-02 through P7-05 but do **not** close them. Their source requirements still demand stronger controlled-contention, realistic-project/toolchain-memory or regression-baseline evidence.
 
 No weak-device floor, 4/8 GiB campaign, 8-hour plateau, thermal floor, cross-browser floor or latency floor is claimed.
+
+
+## Wave 3 — declared-profile performance courts
+
+CI #937 / PR #70 implementation head `7101bae81a258e6a60c4ebb1642f8085aa11a63b` closes **P7-02, P7-03, P7-04 and P7-05** for the declared Chrome 153 / Ubuntu x64 profile.
+
+### P7-02 — boot bytes and module startup path
+
+A dedicated browser page performs a fresh dynamic import of Core SDK/process/resource modules, records the browser Resource Timing set, and measures the complete import/parse/compile/evaluate path before runtime boot. Both retained runs observed **49 module resources / 576,636 bytes**, with import/parse/compile/evaluate-path time **203.28 ms / 191.82 ms** and runtime boot **2.97 ms / 3.28 ms**.
+
+This is browser-observed end-to-end module startup evidence. It is **not** represented as isolated V8 parser/compiler timing.
+
+### P7-03 — first command, warm open, package graph and VFS
+
+The same dedicated court measures:
+- warm runtime open: **0.245 / 0.230 ms**
+- first registered virtual command: **1.445 / 2.785 ms**
+- frozen package-graph compile/load: **14.460 / 9.385 ms**, **63** locations
+- VFS operations over **128 × 4 KiB** files: batched write, full read, readdir, 32 renames and recursive removal
+
+Every iteration verifies the expected byte and entry counts rather than accepting timing alone.
+
+### P7-04 — worker lifecycle and sustained transfer contention
+
+Each iteration runs **4 WorkerRpcAuthority lanes** under one ResourceGovernor for **16 rounds / 64 RPCs**. Every RPC round-trips a **256 KiB ArrayBuffer**, for **16 MiB transferred per iteration**.
+
+Observed:
+- worker spawn→ready: **24.835 / 26.970 ms**
+- sustained transfer: **30.255 / 28.145 ms**
+- measured throughput: **528.838 / 568.485 MiB/s**
+- teardown: **1.665 / 1.530 ms**
+
+The court rejects checksum/size drift and requires every ResourceGovernor counter to return to zero after teardown.
+
+### P7-05 — Vite/HMR and toolchain memory on a larger fixture
+
+The same-head P6 browser court now expands the Vite fixture to **128 generated TypeScript modules, 130 TypeScript modules total, 84,372 source bytes, one CSS file, one SVG asset and nanoid**.
+
+The repeated installed-product browser path measured:
+- Vite build: **1752 / 1620 ms**
+- Vite dev→HMR: **752 / 786 ms**
+
+The dedicated P6 court additionally retains cold/warm Vite module execution and four `performance.memory.usedJSHeapSize` samples. These are measured profile values, not a performance floor or memory-plateau claim.
+
+### Retained artifacts and remaining boundaries
+
+- P7 dedicated browser evidence: artifact **#11080919293**, digest `sha256:43d9619cd8a57450aa35cae62a443459dc5383bbcba3f496f15c07c5a5952730`
+- same-head P6/Vite evidence: artifact **#11081561859**, digest `sha256:44287de98406350585c2145acd015e73c7b35838f767f6266f26b6946ecf9c9e`
+- resource measurement evidence: artifact **#11081543001**
+- critical browser flake evidence: artifact **#11082055401**
+
+**P7-01, P7-06, P7-09, P7-10, P7-11 and P7-12 remain open.** Wave 3 does not manufacture 4/8 GiB hardware evidence, an 8-hour plateau, whole-product shared-governor coexistence, visibility/sleep/CPU-contention evidence, storage-amplification measurement or weak-device regression budgets.

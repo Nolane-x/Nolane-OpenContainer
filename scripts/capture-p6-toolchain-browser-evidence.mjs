@@ -87,6 +87,7 @@ const c2Restart=required(stages,'vite-c2-restart-pass');
 const c2Rehydrate=required(stages,'vite-c2-preview-rehydration-pass');
 const c2DepOpt=required(stages,'vite-c2-dep-opt-pass');
 const measurement=required(stages,'p6-toolchain-measurement-pass');
+const realisticProject=required(stages,'p7-realistic-vite-project-profile');
 
 if(viteModule.version!=='8.3.0'||viteModule.workerCrossOriginIsolated!==true)throw new Error('Vite browser module profile mismatch');
 if(c1.failureAtomicity!==true||c1.packageGraphGenerationStable!==true||c1.packageLayoutIdentityStable!==true||c1.mapVersion!==3||c1.failureDiagnosticPath!==true)throw new Error('Vite C1 failure/source-map/package-state evidence incomplete');
@@ -135,7 +136,8 @@ const receipt={
     c2Restart,
     c2Rehydrate,
     c2DepOpt,
-    measurement
+    measurement,
+    realisticProject
   },
   boundaries:{
     genericWasiLinuxExpansionPromoted:false,
@@ -155,5 +157,6 @@ console.log(JSON.stringify({
   browser:receipt.browser.browser,
   coldModuleStartMs:measurement.coldModuleStartMs,
   warmModuleStartMs:measurement.warmModuleStartMs,
-  heapSamples:measurement.heapSamples
+  heapSamples:measurement.heapSamples,
+  realisticProject
 },null,2));

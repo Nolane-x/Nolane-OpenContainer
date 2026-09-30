@@ -578,6 +578,14 @@
       "status": "PASS",
       "ref": "CI #931 / PR #69 implementation head 4ff13eded0d073f3cb69e209d36b439ee5949f6e",
       "note": "P9 machine-closable UI/UX/accessibility evidence: Chrome 153.0.8010.52 rendered court passed 14 gates across five real viewports with keyboard primary flows, modal focus loop/restore, IME composition safety, authority-backed save/remove/restore acknowledgements, approval persistence across modes, process recovery/lifecycle separation, back-forward-reload canonical-mutation safety, forced-colors/reduced-motion/RTL/text-expansion/zoom stress and linked-folder conflict/permission visibility. Artifact #11068103043 digest sha256:bf5583dff66bef7a0fe37b0de3bbf5b6bc5d2d7c68fa73251e48e70bbe8eb7d9. P9-03/05/11/12 remain intentionally open for failure-registry, manual screen-reader, human-comprehension and weak-device/long-session evidence."
+    },
+    {
+      "key": "p7-resource-wave3",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #937 / PR #70 implementation head 7101bae81a258e6a60c4ebb1642f8085aa11a63b",
+      "note": "P7 wave-3 declared-profile closure for P7-02/03/04/05. Exact Chrome 153 court passed 2/2 and retained cold module bytes plus module import/parse/compile/evaluate path, runtime boot, warm open, first command, package-graph load, common VFS operations, 4-lane sustained Worker RPC transfer totaling 16 MiB per iteration with zero ResourceGovernor leakage, plus a same-head Vite profile expanded to 130 TypeScript modules / 84,372 source bytes with CSS, SVG and nanoid. Same-head full browser product path retained Vite build 1752/1620 ms and dev-to-HMR 752/786 ms; dedicated toolchain receipt retained heap samples. Artifacts #11080919293, #11081561859, #11081543001 and #11082055401. No weak-device, 4/8 GiB, 8-hour, cross-browser, regression-budget, isolated V8 parse-time or memory-plateau claim."
     }
   ]
 }

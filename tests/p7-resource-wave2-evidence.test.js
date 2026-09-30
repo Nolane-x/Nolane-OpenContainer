@@ -37,8 +37,12 @@ test('P7 wave2 closes exactly P7-08 and P7-13 without promoting measurement-only
     assert.equal(gate.evidence,'p7-resource-wave2',id);
   }
   for(const id of evidence.measurementEvidenceOnly){
+    assert.equal(evidence.closedGates.some(item=>item.id===id),false,id+' was historically closed by Wave 2');
     const gate=ledger.overrides.find(item=>item.id===id);
-    assert.ok(!gate||gate.closure_met!==true,id+' was promoted from timing evidence alone');
+    if(gate?.closure_met===true){
+      assert.notEqual(gate.evidence,'p7-resource-wave2',id+' was promoted from Wave 2 timing evidence alone');
+      assert.equal(gate.evidence,'p7-resource-wave3',id+' later promotion must bind the stronger Wave 3 court');
+    }
   }
   for(const id of ['P7-01','P7-06','P7-09','P7-10','P7-11','P7-12']){
     const gate=ledger.overrides.find(item=>item.id===id);
@@ -54,7 +58,9 @@ test('P7 wave2 policy and registry retain closure boundaries',()=>{
   );
   assert.equal(policy.gateAuthority['P7-08'].machineClosable,true);
   assert.equal(policy.gateAuthority['P7-13'].machineClosable,true);
-  assert.deepEqual(policy.stageMeasurements.evidenceOnlyFor,['P7-02','P7-03','P7-04','P7-05']);
+  assert.deepEqual(evidence.measurementEvidenceOnly,['P7-02','P7-03','P7-04','P7-05']);
+  assert.deepEqual(policy.stageMeasurements.evidenceOnlyFor,[]);
+  assert.deepEqual(policy.stageMeasurements.promotedByWave3,['P7-02','P7-03','P7-04','P7-05']);
   for(const value of Object.values(evidence.boundaries))assert.equal(value,false);
 });
 

@@ -1,0 +1,216 @@
+{
+  "schema": "opencontainer.p7-resource-wave3-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P7",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 70,
+  "implementationHead": "7101bae81a258e6a60c4ebb1642f8085aa11a63b",
+  "ci": {
+    "runNumber": 937,
+    "runId": 36680064608,
+    "testedCheckoutCommit": "93e6e1c81149f630a8541c784048e2f377fc10eb",
+    "contractTests": 604,
+    "contractPassed": 604,
+    "contractFailed": 0,
+    "codeql": "PASS",
+    "fullBrowserProductPath": "PASS",
+    "fullBrowserProductPathIterations": 2,
+    "fullBrowserProductPathPasses": 2,
+    "criticalTestFiles": 93,
+    "criticalIterations": 5,
+    "criticalTestFileExecutions": 465,
+    "criticalUnexplainedFailures": 0
+  },
+  "artifacts": {
+    "declaredProfile": {
+      "id": 11080919293,
+      "digest": "sha256:43d9619cd8a57450aa35cae62a443459dc5383bbcba3f496f15c07c5a5952730"
+    },
+    "p6ToolchainVite": {
+      "id": 11081561859,
+      "digest": "sha256:44287de98406350585c2145acd015e73c7b35838f767f6266f26b6946ecf9c9e"
+    },
+    "resourceMeasurement": {
+      "id": 11081543001,
+      "digest": "sha256:5717ef920cb391333d6d392ba845d897ca0ac2ee8919901a03ba8c2e586bc41f"
+    },
+    "criticalBrowserFlake": {
+      "id": 11082055401,
+      "digest": "sha256:7c4eec30d36a0f06225d4bceafebd883c9bf3287e42688841615b45bf1d47eed"
+    }
+  },
+  "evidenceProfile": {
+    "id": "desktop-chrome153-ubuntu2404-x64-ci",
+    "browser": "Google Chrome 153.0.8010.52",
+    "iterations": 2,
+    "crossOriginIsolated": true
+  },
+  "closedGates": [
+    "P7-02",
+    "P7-03",
+    "P7-04",
+    "P7-05"
+  ],
+  "p7_02": {
+    "interpretation": "Browser-observed module fetch plus import/parse/compile/evaluate path; no isolated V8 parse/compile claim.",
+    "moduleResourceCount": [
+      49,
+      49
+    ],
+    "moduleResourceBytes": [
+      576636,
+      576636
+    ],
+    "moduleImportParseCompileEvaluateMs": [
+      203.28,
+      191.82
+    ],
+    "runtimeBootMs": [
+      2.97,
+      3.28
+    ],
+    "isolatedV8ParseCompileClaimed": false
+  },
+  "p7_03": {
+    "warmOpenMs": [
+      0.245,
+      0.23
+    ],
+    "firstCommandMs": [
+      1.445,
+      2.785
+    ],
+    "packageGraphLoadMs": [
+      14.46,
+      9.385
+    ],
+    "packageGraphLocations": [
+      63,
+      63
+    ],
+    "vfs": {
+      "files": 128,
+      "payloadBytesPerFile": 4096,
+      "bytesReadPerIteration": 524288,
+      "writeMs": [
+        4.41,
+        1.9
+      ],
+      "readMs": [
+        2.66,
+        2.825
+      ],
+      "readdirMs": [
+        0.335,
+        0.225
+      ],
+      "rename32Ms": [
+        3.65,
+        3.155
+      ],
+      "removeTreeMs": [
+        0.715,
+        0.37
+      ]
+    }
+  },
+  "p7_04": {
+    "concurrency": 4,
+    "rounds": 16,
+    "requestsPerIteration": 64,
+    "transferBytesPerRequest": 262144,
+    "transferredBytesPerIteration": 16777216,
+    "workerSpawnReadyMs": [
+      24.835,
+      26.97
+    ],
+    "sustainedTransferMs": [
+      30.255,
+      28.145
+    ],
+    "transferMiBPerSecond": [
+      528.838,
+      568.485
+    ],
+    "workerTeardownMs": [
+      1.665,
+      1.53
+    ],
+    "finalGovernorUsageZero": true
+  },
+  "p7_05": {
+    "realisticProject": {
+      "generatedTsModules": 128,
+      "totalTsModules": 130,
+      "sourceBytes": 84372,
+      "minimumFixtureSourceBytes": 65536,
+      "cssFiles": 1,
+      "svgAssets": 1,
+      "npmDependency": "nanoid"
+    },
+    "fullProductPath": {
+      "viteBuildMs": [
+        1752,
+        1620
+      ],
+      "viteDevToHmrMs": [
+        752,
+        786
+      ],
+      "fullPathDurationsMs": [
+        40254,
+        38802
+      ]
+    },
+    "dedicatedToolchain": {
+      "coldModuleStartMs": 678.1549999999988,
+      "warmModuleStartMs": 1.389999999999418,
+      "heapSamples": [
+        524849622,
+        524849622,
+        523412279,
+        572511030
+      ],
+      "heapMeasurementApi": "performance.memory.usedJSHeapSize"
+    },
+    "performanceThresholdClaimed": false,
+    "memoryPlateauClaimed": false
+  },
+  "preservedOpenGates": [
+    {
+      "id": "P7-01",
+      "reason": "No retained 4 GiB and 8 GiB reference-device campaign exists."
+    },
+    {
+      "id": "P7-06",
+      "reason": "Core + UI + preview + toolchain + AI consumer are not yet proven to coexist under one shared global governor in one court."
+    },
+    {
+      "id": "P7-09",
+      "reason": "No 8-hour plateau campaign exists."
+    },
+    {
+      "id": "P7-10",
+      "reason": "Visibility/background throttling, sleep/resume and controlled CPU-contention evidence is incomplete."
+    },
+    {
+      "id": "P7-11",
+      "reason": "Storage amplification across source/packages/checkpoints/temp/derived caches is not yet measured as one retained profile."
+    },
+    {
+      "id": "P7-12",
+      "reason": "Weak-device regression budgets are not frozen."
+    }
+  ],
+  "boundaries": {
+    "weakDeviceFloorClaimed": false,
+    "fourGiBCampaignClaimed": false,
+    "eightGiBCampaignClaimed": false,
+    "eightHourPlateauClaimed": false,
+    "regressionBudgetClaimed": false,
+    "crossBrowserClaimed": false,
+    "isolatedV8ParseCompileClaimed": false,
+    "memoryPlateauClaimed": false,
+    "productionClosed": false
+  }
+}

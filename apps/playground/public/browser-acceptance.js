@@ -3892,6 +3892,47 @@ async function run() {
     ].join('\n'))
     .commit();
 
+  const p7RealisticModuleCount=128;
+  const p7RealisticModuleBytes=640;
+  const p7ProjectTx=runtime.fs.beginTransaction().mkdir('c1-app/src/generated');
+  const p7GeneratedImports=[];
+  for(let index=0;index<p7RealisticModuleCount;index++){
+    const name='m'+String(index).padStart(3,'0');
+    p7GeneratedImports.push("import { value as v"+index+" } from './"+name+".ts';");
+    const padding='x'.repeat(Math.max(0,p7RealisticModuleBytes-96));
+    p7ProjectTx.writeFile(
+      'c1-app/src/generated/'+name+'.ts',
+      "export const value: number = "+index+"; export const label: string = '"+padding+"';"
+    );
+  }
+  p7ProjectTx.writeFile(
+    'c1-app/src/generated/index.ts',
+    p7GeneratedImports.join('\n')+'\nexport const generatedTotal = '+Array.from({length:p7RealisticModuleCount},(_,index)=>'v'+index).join('+')+';'
+  );
+  const p7MainSource=runtime.fs.readFile('c1-app/src/main.ts');
+  p7ProjectTx.writeFile(
+    'c1-app/src/main.ts',
+    "import { generatedTotal } from './generated/index.ts';\n"+p7MainSource+"\nexport const generatedTotalObserved: number = generatedTotal;"
+  );
+  p7ProjectTx.commit();
+  let p7RealisticSourceBytes=0;
+  for(let index=0;index<p7RealisticModuleCount;index++){
+    p7RealisticSourceBytes+=runtime.fs.stat('c1-app/src/generated/m'+String(index).padStart(3,'0')+'.ts').size;
+  }
+  p7RealisticSourceBytes+=runtime.fs.stat('c1-app/src/generated/index.ts').size;
+  p7RealisticSourceBytes+=runtime.fs.stat('c1-app/src/main.ts').size;
+  p7RealisticSourceBytes+=runtime.fs.stat('c1-app/src/style.css').size;
+  stage('p7-realistic-vite-project-profile',{
+    generatedTsModules:p7RealisticModuleCount,
+    totalTsModules:p7RealisticModuleCount+2,
+    cssFiles:1,
+    svgAssets:1,
+    npmDependency:'nanoid',
+    sourceBytes:p7RealisticSourceBytes,
+    targetMinimumSourceBytes:64*1024
+  });
+  assert(p7RealisticSourceBytes>=64*1024,'P7 realistic Vite fixture is too small',{p7RealisticSourceBytes});
+
   stage('vite-publication-graph-start');
   const viteNodeCompat = runtime.packages.createBrowserNodeCompat({
     cwd: '/workspace',
