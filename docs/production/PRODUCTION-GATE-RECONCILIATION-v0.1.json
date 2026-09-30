@@ -396,6 +396,10 @@
     "p14-browser-regression": {
       "ref": "CI #960 / PR #72 implementation head 2f67306726e4d5ded6b60ee7d2483f502638e7b7",
       "note": "P14-13 dual-browser release regression: exact frozen floor Chrome 153.0.8010.52 and live Chrome for Testing Stable 154.0.8037.92 each passed 2/2 complete installed-distribution product paths on the same PR head. The Stable lane resolves Google's live last-known-good Stable manifest and retains manifest/archive digests. 618/618 contract tests, 98 critical files x5 = 490 executions, CodeQL, P9 rendered and full browser regressions passed. No browser minimum, cross-browser, production-CDN, adjacent-release or weak-device claim is inferred."
+    },
+    "p13-openssf-scorecard": {
+      "ref": "OpenSSF Scorecard #2 + CI #969 / PR #73 implementation head 9811c0f6423aa3a1a4aff21711b5116e95c75dd7",
+      "note": "P13-18 supplemental project-hygiene closure. Official pinned OpenSSF Scorecard Action v2.4.4 (2d1146689...) produced retained raw JSON on Scorecard v5.5.0: aggregate 6.9 across 11 checks, with low/unavailable checks preserved rather than thresholded. Artifact #11093017366 digest sha256:a09995085ce8d2fcb1dbc8b4a2c959bd23b688f507a5a0e20b2103e54e7e0b57. Same implementation head passed CI #969: 625/625 tests, 100 critical files x5 = 500 executions, CodeQL and full browser regressions. No publication/signing/branch-protection/legal claim."
     }
   },
   "overrides": [
@@ -2565,6 +2569,14 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p14-browser-regression",
+      "closure_met": true
+    },
+    {
+      "id": "P13-18",
+      "domain": "P13",
+      "state": "EVIDENCE",
+      "promotion": "RELEASE-VERIFIED",
+      "evidence": "p13-openssf-scorecard",
       "closure_met": true
     }
   ]
