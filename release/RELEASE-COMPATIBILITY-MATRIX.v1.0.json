@@ -6,7 +6,7 @@
   "version": "0.1.0-alpha.1",
   "channel": "canary",
   "productionProfileId": "opencontainer-alpha-chromium-node24-v1",
-  "browserMinimumsFrozen": false,
+  "browserMinimumsFrozen": true,
   "crossBrowserReleaseMatrixClosed": false,
   "resourceFloorClaimed": false,
   "rows": [
@@ -15,7 +15,12 @@
       "browser": {
         "product": "Google Chrome",
         "version": "153.0.8010.52",
-        "minimumVersionClaimed": false
+        "minimumVersionClaimed": true,
+        "minimumVersion": "153.0.8010.52",
+        "validatedVersions": [
+          "153.0.8010.52",
+          "154.0.8037.92"
+        ]
       },
       "os": {
         "family": "Linux",
@@ -29,8 +34,8 @@
       },
       "evidenceProfile": "desktop-chrome153-ubuntu2404-x64-ci",
       "status": "SUPPORTED-EVIDENCE-BACKED",
-      "claim": "Supported only for the named retained CI evidence profile.",
-      "evidence": "P0 browser profile receipt + repeated installed-distribution Chrome product path"
+      "claim": "Minimum supported browser for the named Ubuntu 24.04 x64 evidence profile is Google Chrome 153.0.8010.52; Chrome 154.0.8037.92 also passed the full installed-distribution path. No support is inferred for any other browser/OS/device row.",
+      "evidence": "P0 declared profile + P14-13 frozen-floor/newest-Stable dual-browser full product paths"
     },
     {
       "id": "chrome-windows",
@@ -166,9 +171,10 @@
     }
   ],
   "openBoundaries": [
-    "P11-13 remains open: minimum browser versions are not frozen from this publication matrix.",
+    "P11-13 floor is scoped only to the evidence-backed Chrome/Ubuntu row; unverified browser/OS/device rows have no minimum-version or support claim.",
     "P14-14/P7 weak-device resource floors remain open.",
-    "Rows without retained receipts are publication transparency, not support evidence."
+    "Rows without retained receipts are publication transparency, not support evidence.",
+    "crossBrowserReleaseMatrixClosed remains false."
   ],
   "productionClosed": false,
   "releaseRegressionEvidence": {
@@ -178,7 +184,21 @@
     "newestStable": "Google Chrome 154.0.8037.92",
     "ciRun": 960,
     "fullProductPathPasses": 4,
-    "browserMinimumFrozen": false,
-    "crossBrowserClaimed": false
+    "browserMinimumFrozen": true,
+    "crossBrowserClaimed": false,
+    "browserMinimumScope": "declared Chrome/Ubuntu evidence profile only"
+  },
+  "browserMinimumPolicy": {
+    "scope": "declared-evidence-profile-only",
+    "browser": "Google Chrome",
+    "os": "Ubuntu 24.04 x64",
+    "minimumVersion": "153.0.8010.52",
+    "validatedThroughStable": "154.0.8037.92",
+    "evidenceGate": "P14-13",
+    "evidenceRun": 960,
+    "crossBrowserClaimed": false,
+    "otherOsClaimed": false,
+    "mobileClaimed": false,
+    "weakDeviceClaimed": false
   }
 }
