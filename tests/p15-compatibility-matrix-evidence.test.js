@@ -43,7 +43,8 @@ test('P15-05 closes while P15-12 and broader browser/resource gates remain open'
   const entry=registry.entries.find(x=>x.key==='p15-release-compatibility-matrix');
   assert.deepEqual({kind:entry.kind,level:entry.level,status:entry.status},{kind:'EXECUTABLE',level:'BROWSER',status:'PASS'});
   assert.equal(ledger.overrides.some(x=>x.id==='P11-13'&&x.closure_met===true),false);
-  assert.equal(ledger.overrides.some(x=>x.id==='P14-13'&&x.closure_met===true),false);
+  const p1413=ledger.overrides.find(x=>x.id==='P14-13');
+  if(p1413?.closure_met===true)assert.equal(p1413.evidence,'p14-browser-regression','later P14-13 closure must bind the dedicated dual-browser campaign');
   assert.equal(matrix.browserMinimumsFrozen,false);
   assert.equal(matrix.resourceFloorClaimed,false);
   // P15 owns exact P15 closure; later domains may legitimately grow global totals.
