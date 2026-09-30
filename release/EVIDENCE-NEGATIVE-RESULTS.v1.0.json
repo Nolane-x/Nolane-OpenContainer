@@ -69,6 +69,17 @@
       "finding": "Adding the P13-18 source audit legitimately expanded the critical campaign from 99 to 100 files, while the historical P14 evidence test treated the old global count as immutable.",
       "resolution": "Keep P14-owned evidence assertions exact, but make later global critical-file growth monotonic and equal to the current policy minimum.",
       "exclusionReasonCode": "HARNESS_TOOLING_BUG"
+    },
+    {
+      "id": "NEG-007",
+      "date": "2026-09-30",
+      "classification": "HARNESS_INVALID",
+      "hypothesis": "Historical source-audit and P14 promotion tests may treat pre-P13-18 policy and global ledger totals as permanent invariants.",
+      "outcome": "HARNESS-FAIL",
+      "evidence": "CI #978 / PR #73",
+      "finding": "The P13-18 source audit still expected machineClosable=false after its own evidence promotion, while the P14 historical test still required exact global ledger totals 271/261. Gate-specific P14 assertions remained correct; only cross-wave global assumptions were stale.",
+      "resolution": "Assert the promoted P13-18 authority directly and keep historical P14 gate-specific evidence exact while allowing later global reconciliation and closure totals to grow monotonically.",
+      "exclusionReasonCode": "HARNESS_TOOLING_BUG"
     }
   ]
 }
