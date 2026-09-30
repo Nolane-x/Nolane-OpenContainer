@@ -44,9 +44,13 @@ test('P7 wave2 closes exactly P7-08 and P7-13 without promoting measurement-only
       assert.equal(gate.evidence,'p7-resource-wave3',id+' later promotion must bind the stronger Wave 3 court');
     }
   }
-  for(const id of ['P7-01','P7-06','P7-09','P7-10','P7-11','P7-12']){
+  for(const id of ['P7-01','P7-09','P7-10','P7-12']){
     const gate=ledger.overrides.find(item=>item.id===id);
     assert.ok(!gate||gate.closure_met!==true,id+' external/device obligation was erased');
+  }
+  for(const id of ['P7-06','P7-11']){
+    const gate=ledger.overrides.find(item=>item.id===id);
+    if(gate?.closure_met===true)assert.equal(gate.evidence,'p7-resource-wave4',id+' later promotion must bind Wave 4 evidence');
   }
 });
 

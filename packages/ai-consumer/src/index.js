@@ -451,11 +451,11 @@ export class AiSharedConcurrencyAuthority {
     this.#maxAgents=maxAgents;
   }
 
-  acquire({background=true,inFlightBytes=0}={}){
+  acquire({background=true,inFlightBytes=0,owner='ai-consumer'}={}){
     if(this.#active>=this.#maxAgents){
       throw ocError(ErrorCodes.RESOURCE_EXHAUSTED,'AI shared agent concurrency exhausted',{active:this.#active,maxAgents:this.#maxAgents});
     }
-    const task=this.#resources.acquireTask({background,inFlightBytes});
+    const task=this.#resources.acquireTask({background,inFlightBytes,owner});
     this.#active++;
     let released=false;
     return Object.freeze({

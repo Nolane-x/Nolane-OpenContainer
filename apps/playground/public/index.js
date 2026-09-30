@@ -207,6 +207,13 @@ function setView(view,{pushHistory=false,focus=true}={}){
   return true;
 }
 
+async function withUiTask(callback,{inFlightBytes=0,background=false}={}){
+  const governor=shellState.runtime?.resources??null;
+  const lease=governor?.acquireTask({owner:'ui',inFlightBytes,background})??null;
+  try{return await callback();}
+  finally{lease?.release();}
+}
+
 async function persistCanonical(label){
   const receipt=await shellState.runtime.persistWorkspace();
   shellState.project.lastReceipt=Object.freeze({
@@ -509,8 +516,8 @@ for(const tab of $$('.surface-tab')){
   });
 }
 
-$('#save-source').addEventListener('click',()=>saveSource().catch(error=>announce('Save failed: '+errorCode(error),{sticky:true})));
-$('#run-process').addEventListener('click',()=>runProcess().then(receipt=>announce('Process exited '+receipt.code)).catch(error=>announce('Process failed: '+errorCode(error),{sticky:true})));
+$('#save-source').addEventListener('click',()=>withUiTask(()=>saveSource()).catch(error=>announce('Save failed: '+errorCode(error),{sticky:true})));
+$('#run-process').addEventListener('click',()=>withUiTask(()=>runProcess()).then(receipt=>announce('Process exited '+receipt.code)).catch(error=>announce('Process failed: '+errorCode(error),{sticky:true})));
 $('#refresh-inspect').addEventListener('click',()=>{renderInspect();announce('Inspection refreshed from runtime state');});
 $('#link-folder').addEventListener('click',()=>{
   pickLinkedFolder().catch(error=>announce('Link folder failed: '+errorCode(error),{sticky:true}));
@@ -523,7 +530,7 @@ $('#create-approval').addEventListener('click',()=>{
 $('#approval-list').addEventListener('click',event=>{
   const button=event.target.closest('[data-apply-approval]');
   if(!button)return;
-  applyApproval(button.dataset.applyApproval).catch(error=>announce('Approval not applied: '+errorCode(error),{sticky:true}));
+  withUiTask(()=>applyApproval(button.dataset.applyApproval)).catch(error=>announce('Approval not applied: '+errorCode(error),{sticky:true}));
 });
 
 $('#ai-prompt').addEventListener('compositionstart',()=>{
@@ -549,7 +556,7 @@ $('#ai-prompt').addEventListener('keydown',event=>{
 $('#ai-form').addEventListener('submit',event=>{
   event.preventDefault();
   if(shellState.composing)return;
-  submitAiPrompt().catch(error=>announce('AI action blocked: '+errorCode(error),{sticky:true}));
+  withUiTask(()=>submitAiPrompt(),{inFlightBytes:4096}).catch(error=>announce('AI action blocked: '+errorCode(error),{sticky:true}));
 });
 
 function focusableDialogControls(dialog){

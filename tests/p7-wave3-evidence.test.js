@@ -9,7 +9,8 @@ const registry=JSON.parse(readFileSync('release/EVIDENCE-REGISTRY.v1.0.json','ut
 const flake=JSON.parse(readFileSync('release/CRITICAL-FLAKE-POLICY.v0.1.json','utf8'));
 
 const closed=['P7-02','P7-03','P7-04','P7-05'];
-const retainedOpen=['P7-01','P7-06','P7-09','P7-10','P7-11','P7-12'];
+const currentOpen=['P7-01','P7-09','P7-10','P7-12'];
+const laterWave4=['P7-06','P7-11'];
 
 test('P7 wave3 binds exact CI and retained browser artifacts',()=>{
   assert.equal(evidence.schema,'opencontainer.p7-resource-wave3-evidence.v1.0');
@@ -81,10 +82,14 @@ test('P7 wave3 promotion closes exactly four additional P7 gates',()=>{
     assert.equal(policy.gateAuthority[id].evidence,'p7-resource-wave3',id);
   }
   const p7Closed=ledger.overrides.filter(item=>item.domain==='P7'&&item.closure_met===true);
-  assert.equal(p7Closed.length,8);
-  for(const id of retainedOpen){
+  assert.ok(p7Closed.length>=8);
+  for(const id of currentOpen){
     const row=ledger.overrides.find(item=>item.id===id);
     assert.ok(!row||row.closure_met!==true,id+' must remain open');
+  }
+  for(const id of laterWave4){
+    const row=ledger.overrides.find(item=>item.id===id);
+    if(row?.closure_met===true)assert.equal(row.evidence,'p7-resource-wave4',id+' later promotion must bind Wave 4 evidence');
   }
   assert.ok(ledger.overrides.length>=268);
   assert.ok(ledger.overrides.filter(item=>item.closure_met===true).length>=258);

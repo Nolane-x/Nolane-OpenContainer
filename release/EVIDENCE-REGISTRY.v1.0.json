@@ -586,6 +586,14 @@
       "status": "PASS",
       "ref": "CI #937 / PR #70 implementation head 7101bae81a258e6a60c4ebb1642f8085aa11a63b",
       "note": "P7 wave-3 declared-profile closure for P7-02/03/04/05. Exact Chrome 153 court passed 2/2 and retained cold module bytes plus module import/parse/compile/evaluate path, runtime boot, warm open, first command, package-graph load, common VFS operations, 4-lane sustained Worker RPC transfer totaling 16 MiB per iteration with zero ResourceGovernor leakage, plus a same-head Vite profile expanded to 130 TypeScript modules / 84,372 source bytes with CSS, SVG and nanoid. Same-head full browser product path retained Vite build 1752/1620 ms and dev-to-HMR 752/786 ms; dedicated toolchain receipt retained heap samples. Artifacts #11080919293, #11081561859, #11081543001 and #11082055401. No weak-device, 4/8 GiB, 8-hour, cross-browser, regression-budget, isolated V8 parse-time or memory-plateau claim."
+    },
+    {
+      "key": "p7-resource-wave4",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #950 / PR #71 head 5f0c7ddbbc3671036804485d9ad1d140200d10ed",
+      "note": "P7 Wave 4 exact Chrome 153 evidence: five product lanes coexist under one global ResourceGovernor with pressure fail-closed and zero leaked usage; OPFS storage amplification is retained across source snapshots, package artifacts, checkpoint metadata, interrupted temporary transaction bytes and derived caches. Artifact #11085189245."
     }
   ]
 }

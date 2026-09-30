@@ -34,10 +34,13 @@ export class ToolchainAuthority {
   #activeWorkers=0;
   #leases=new Map();
   #nextLease=0;
+  #resources=null;
 
-  constructor({entries=[],maxWorkers=2}={}){
+  constructor({entries=[],maxWorkers=2,resources=null}={}){
     assertOc(Number.isInteger(maxWorkers)&&maxWorkers>=1,ErrorCodes.INVALID_ARGUMENT,'ToolchainAuthority maxWorkers must be >= 1');
+    if(resources!==null)assertOc(typeof resources?.reserve==='function',ErrorCodes.INVALID_ARGUMENT,'ToolchainAuthority resources must expose reserve()');
     this.#maxWorkers=maxWorkers;
+    this.#resources=resources;
     for(const entry of entries)this.register(entry);
   }
 
@@ -71,6 +74,7 @@ export class ToolchainAuthority {
         {maxWorkers:this.#maxWorkers,activeWorkers:this.#activeWorkers,agentId}
       );
     }
+    const globalLease=this.#resources?.reserve({workers:1,owner:'toolchain'})??null;
     const id=++this.#nextLease;
     this.#activeWorkers++;
     let released=false;
@@ -82,6 +86,7 @@ export class ToolchainAuthority {
         if(released)return false;
         released=true;
         if(this.#leases.delete(id))this.#activeWorkers--;
+        globalLease?.release();
         return true;
       }
     });
@@ -91,6 +96,7 @@ export class ToolchainAuthority {
 
   get limits(){return Object.freeze({workers:this.#maxWorkers});}
   get usage(){return Object.freeze({workers:this.#activeWorkers});}
+  get resourceBound(){return this.#resources!==null;}
   get entryCount(){return this.#entries.size;}
 }
 
