@@ -54,7 +54,9 @@ test('P7 wave2 policy and registry retain closure boundaries',()=>{
   );
   assert.equal(policy.gateAuthority['P7-08'].machineClosable,true);
   assert.equal(policy.gateAuthority['P7-13'].machineClosable,true);
-  assert.deepEqual(policy.stageMeasurements.evidenceOnlyFor,['P7-02','P7-03','P7-04','P7-05']);
+  assert.deepEqual(evidence.measurementEvidenceOnly,['P7-02','P7-03','P7-04','P7-05']);
+  assert.deepEqual(policy.stageMeasurements.evidenceOnlyFor,[]);
+  assert.deepEqual(policy.stageMeasurements.promotedByWave3,['P7-02','P7-03','P7-04','P7-05']);
   for(const value of Object.values(evidence.boundaries))assert.equal(value,false);
 });
 
