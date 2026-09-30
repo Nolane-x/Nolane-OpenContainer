@@ -96,7 +96,7 @@ async function waitForPageTarget(debugPort, expectedUrl, timeoutMs = 10000) {
         const targets = await response.json();
         last = targets;
         const target = targets.find((entry) => entry.type === 'page' && entry.url === expectedUrl)
-          ?? targets.find((entry) => entry.type === 'page' && entry.url.includes('/browser-acceptance.html'));
+          ?? targets.find((entry) => entry.type === 'page' && entry.url.includes(new URL(expectedUrl).pathname));
         if (target?.webSocketDebuggerUrl) return target;
       }
     } catch {}
@@ -227,7 +227,9 @@ let cdp = null;
 
 try {
   await waitForServer(server);
-  const url = 'http://127.0.0.1:' + port + '/browser-acceptance.html';
+  const requestedPage=String(process.env.OPENCONTAINER_BROWSER_PAGE||'/browser-acceptance.html');
+  const pagePath=requestedPage.startsWith('/')?requestedPage:'/'+requestedPage;
+  const url = 'http://127.0.0.1:' + port + pagePath;
 
   chrome = spawn(browser.command, [
     '--headless=new',
