@@ -78,16 +78,35 @@
       "state": "CLOSED_BY_WAVE2",
       "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
       "evidence": "p7-resource-wave2"
+    },
+    "P7-02": {
+      "machineClosable": true,
+      "state": "CLOSED_BY_WAVE3",
+      "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+      "evidence": "p7-resource-wave3"
+    },
+    "P7-03": {
+      "machineClosable": true,
+      "state": "CLOSED_BY_WAVE3",
+      "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+      "evidence": "p7-resource-wave3"
+    },
+    "P7-04": {
+      "machineClosable": true,
+      "state": "CLOSED_BY_WAVE3",
+      "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+      "evidence": "p7-resource-wave3"
+    },
+    "P7-05": {
+      "machineClosable": true,
+      "state": "CLOSED_BY_WAVE3",
+      "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+      "evidence": "p7-resource-wave3"
     }
   },
   "productionClosed": false,
   "stageMeasurements": {
-    "evidenceOnlyFor": [
-      "P7-02",
-      "P7-03",
-      "P7-04",
-      "P7-05"
-    ],
+    "evidenceOnlyFor": [],
     "required": [
       "runtimeBootMs",
       "authorityWorkerStartupMs",
@@ -99,6 +118,12 @@
       "viteDevToHmrMs",
       "pressurePauseResumeMs"
     ],
-    "promotionRule": "Measurement existence does not close a gate when the source requirement also demands controlled contention, realistic-project memory, weak-device or regression-budget evidence."
+    "promotionRule": "Wave 3 may close P7-02/03/04/05 only when the dedicated declared-profile browser court proves cold module/boot measurement, first-command/package-graph/VFS measurement, sustained multi-worker transfer under ResourceGovernor, and a materially larger Vite fixture with build/HMR and heap evidence. Device, long-run, cross-browser and regression-budget claims remain separate.",
+    "promotedByWave3": [
+      "P7-02",
+      "P7-03",
+      "P7-04",
+      "P7-05"
+    ]
   }
 }
