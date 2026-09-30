@@ -63,8 +63,7 @@ for(const item of inventoryRows){
 }
 
 if(requireRepository){
-  const repoRoot=resolve(new URL('..',import.meta.url).pathname,'..');
-  const rel=relative(repoRoot,path).replaceAll('\\','/');
+  const rel=relative(repositoryRoot,path).replaceAll('\\','/');
   if(isAbsolute(rel)||rel.startsWith('..')||!rel.startsWith('release/history/'))throw new Error('historical archive is not stored under release/history');
   execFileSync('git',['ls-files','--error-unmatch',rel],{cwd:repositoryRoot,stdio:'ignore'});
 }
