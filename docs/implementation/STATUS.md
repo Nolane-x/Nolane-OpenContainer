@@ -962,3 +962,14 @@ PR #71 promotes P7-06/P7-11 only after declared-profile browser evidence. Produc
 The storage court uses real Chrome OPFS and production authorities. Across two identical iterations it retained 262,144 logical source bytes, a 353,438-byte source snapshot, 3,826,763 persistent package bytes for a retained 3,826,518-byte tarball / 16,232,340 logical package bytes, 252 checkpoint-metadata bytes, a 397,191-byte interrupted temporary transaction reclaimed by GC, and a 4,005-byte derived cache. Total amplification was 0.253688× steady and 0.277769× at transient peak.
 
 P7 closure is now 10/14 in the promotion candidate. The remaining device/long-run/system-lifecycle/regression-budget gates are intentionally not claimed.
+
+
+## P14-13 frozen-floor + newest-Stable regression
+
+PR #72 implementation head `2f67306726e4d5ded6b60ee7d2483f502638e7b7` passed CI #960 with **618/618 contract tests**, **98 critical files × 5 = 490 executions**, CodeQL and the complete historical regression suite.
+
+The release-regression court is deliberately dual-lane. Frozen floor Chrome **153.0.8010.52** passed 2/2 full installed-distribution paths; live Chrome for Testing Stable resolved to **154.0.8037.92** and also passed 2/2. Stable installation records the live manifest source plus manifest/archive SHA-256 identities instead of trusting the runner's preinstalled browser.
+
+The prior CI #959 P9 timeout is retained as NEG-004 and was fixed as a harness activation race without changing the product recovery handler. P9 rendered passed on CI #960.
+
+P14-13 is promoted; P14 is now **15/18** in the promotion candidate. P14-04 adjacent-release certification, P14-12 production CDN topology and P14-14 weak-device performance budget remain open. Overall ledger: **261/304**; `production_closed=false`.
