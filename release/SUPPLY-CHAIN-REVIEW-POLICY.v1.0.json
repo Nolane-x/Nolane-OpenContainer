@@ -160,9 +160,11 @@
       "reason": "Repository branch/tag/release protection settings are external GitHub state and are not yet certified."
     },
     "P13-18": {
-      "machineClosable": false,
-      "state": "OPEN_EXTERNAL",
-      "reason": "No retained OpenSSF Scorecard/OSPS Baseline receipt exists yet."
+      "machineClosable": true,
+      "state": "CLOSED_BY_OPENSSF",
+      "minimumClosure": "SECURITY-REVIEWED / RELEASE-VERIFIED",
+      "evidence": "p13-openssf-scorecard",
+      "reason": "A pinned official OpenSSF Scorecard action runs independently, retains raw JSON plus a verified normalized receipt, and is paired with same-head full regression evidence."
     },
     "P13-19": {
       "machineClosable": true,
@@ -183,6 +185,14 @@
     "publishResults": false,
     "artifactRetentionDays": 90,
     "releaseProof": false,
-    "purpose": "Supplemental OpenSSF project-hygiene evidence for P13-18; no release-proof or minimum-score claim."
+    "purpose": "Supplemental OpenSSF project-hygiene evidence for P13-18; no release-proof or minimum-score claim.",
+    "evidence": "p13-openssf-scorecard",
+    "actualRun": {
+      "scorecardVersion": "v5.5.0",
+      "aggregateScore": 6.9,
+      "checkCount": 11,
+      "artifactId": 11093017366,
+      "rawSha256": "6db20bee3c94f5d377ca49b3265e804c9382c9fffaa4df4a0f426d94997515a7"
+    }
   }
 }
