@@ -15,7 +15,7 @@
   "scripts": {
     "check": "node scripts/check.mjs",
     "test": "node --test tests/*.test.js",
-    "ci": "npm run check && npm run product:scope:verify && npm run docs:verify && npm test && npm run security:dependencies && npm run security:regressions && npm run security:review && npm run operations:drill && npm run compat:corpus:verify && npm run compat:promotion && npm run compat:matrix && npm run compat:release-report && npm run distribution:certify && npm run release:evidence && npm run release:verify && npm run security:supply-chain && npm run resource:retention:audit && npm run critical:contract-flake && npm run release:preflight && npm run release:governance && npm run evidence:assure:contract",
+    "ci": "npm run check && npm run product:scope:verify && npm run docs:verify && npm test && npm run security:dependencies && npm run security:regressions && npm run security:review && npm run operations:drill && npm run compat:corpus:verify && npm run compat:promotion && npm run compat:matrix && npm run compat:release-report && npm run distribution:certify && npm run release:evidence && npm run release:verify && npm run release:archive:candidate && npm run release:archive:verify && npm run security:supply-chain && npm run resource:retention:audit && npm run critical:contract-flake && npm run release:preflight && npm run release:governance && npm run evidence:assure:contract",
     "playground": "node apps/playground/server.mjs",
     "browser:acceptance": "node scripts/browser-acceptance.mjs",
     "hosting:self-check": "node scripts/hosting-self-check.mjs",
@@ -68,7 +68,9 @@
     "p7:declared-profile:evidence": "node scripts/p7-declared-profile.mjs",
     "p7:wave4:evidence": "node scripts/p7-wave4.mjs",
     "p14:browser-regression": "node scripts/p14-browser-regression.mjs",
-    "p13:openssf:verify": "node scripts/p13-openssf-scorecard.mjs"
+    "p13:openssf:verify": "node scripts/p13-openssf-scorecard.mjs",
+    "release:archive:candidate": "node scripts/build-historical-release-archive.mjs .artifacts/release",
+    "release:archive:verify": "node scripts/verify-historical-release-archive.mjs .artifacts/p13-history/0.1.0-alpha.1/$(git rev-parse HEAD)/record.json"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",
