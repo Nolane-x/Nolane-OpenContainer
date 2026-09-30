@@ -31,11 +31,11 @@ esac
 cat >"${WRAPPER}" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
-if [[ "${1:-}" == "--version" ]]; then
+if [[ "\${1:-}" == "--version" ]]; then
   echo "Google Chrome 153.0.8010.52"
   exit 0
 fi
-exec "${REAL}" "$@"
+exec "${REAL}" "\$@"
 EOF
 chmod +x "${WRAPPER}"
 
