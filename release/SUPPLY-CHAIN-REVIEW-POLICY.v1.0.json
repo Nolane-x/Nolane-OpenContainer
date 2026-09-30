@@ -173,7 +173,7 @@
     },
     "P13-20": {
       "machineClosable": false,
-      "state": "IMPLEMENTED_AWAITING_ARCHIVE_RECORD",
+      "state": "OPEN_EXTERNAL",
       "reason": "Long-term Git-history archive machinery and third-party notices exist, but no generated release record is committed under release/history yet."
     }
   },
@@ -214,6 +214,8 @@
       "reproducibility.json"
     ],
     "artifactBytesRequired": false,
-    "reason": "The historical archive preserves verification metadata and artifact digests; binary artifact distribution remains a separate publication concern."
+    "reason": "The historical archive preserves verification metadata and artifact digests; binary artifact distribution remains a separate publication concern.",
+    "implementationState": "CANDIDATE_MACHINERY_READY",
+    "closureState": "AWAITING_GIT_TRACKED_RELEASE_RECORD"
   }
 }
