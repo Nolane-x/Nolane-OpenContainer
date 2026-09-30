@@ -973,3 +973,10 @@ The release-regression court is deliberately dual-lane. Frozen floor Chrome **15
 The prior CI #959 P9 timeout is retained as NEG-004 and was fixed as a harness activation race without changing the product recovery handler. P9 rendered passed on CI #960.
 
 P14-13 is promoted; P14 is now **15/18** in the promotion candidate. P14-04 adjacent-release certification, P14-12 production CDN topology and P14-14 weak-device performance budget remain open. Overall ledger: **261/304**; `production_closed=false`.
+
+
+## P13-18 OpenSSF hygiene
+
+P13-18 is now promoted from an external evidence gap to retained RELEASE-VERIFIED hygiene evidence. Official Scorecard v5.5.0, invoked through pinned Scorecard Action v2.4.4, recorded 6.9/10 across 11 checks without a project-defined pass threshold. The raw result and normalized receipt are archived, and CI #969 keeps the promotion bound to full OpenContainer regression coverage.
+
+This moves the whole-product ledger to **262/304 closed** and P13 to **12/20**. OIDC/trusted publication, public provenance identity, tagged release builds, signing/verification, registry staging, branch/tag/release protections and long-term historical archive evidence remain open.
