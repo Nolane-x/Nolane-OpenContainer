@@ -28,13 +28,15 @@ test('P13 workflow court requires immutable actions least privilege and no untru
 
 test('P13 gate authority refuses to machine-close external trust publication signing tag and long-archive gates',()=>{
   const closable=Object.entries(policy.gateAuthority).filter(([,v])=>v.machineClosable).map(([k])=>k);
-  assert.deepEqual(closable,['P13-01','P13-02','P13-05','P13-06','P13-08','P13-11','P13-12','P13-13','P13-14','P13-15','P13-18','P13-19']);
-  for(const id of ['P13-03','P13-04','P13-07','P13-09','P13-10','P13-16','P13-17','P13-20']){
+  assert.deepEqual(closable,['P13-01','P13-02','P13-05','P13-06','P13-08','P13-11','P13-12','P13-13','P13-14','P13-15','P13-18','P13-19','P13-20']);
+  for(const id of ['P13-03','P13-04','P13-07','P13-09','P13-10','P13-16','P13-17']){
     assert.equal(policy.gateAuthority[id].machineClosable,false,id);
     assert.equal(policy.gateAuthority[id].state,'OPEN_EXTERNAL',id);
   }
   assert.equal(policy.gateAuthority['P13-18'].machineClosable,true);
   assert.equal(policy.gateAuthority['P13-18'].state,'CLOSED_BY_OPENSSF');
+  assert.equal(policy.gateAuthority['P13-20'].machineClosable,true);
+  assert.equal(policy.gateAuthority['P13-20'].state,'CLOSED_BY_HISTORY');
 });
 
 test('P13 release-evidence review binds tested artifact SBOM provenance inventory checksums and reproducibility',()=>{
