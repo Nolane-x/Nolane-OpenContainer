@@ -102,6 +102,17 @@
       "finding": "The floor evidence itself was unchanged, but the generated compatibility baseline still emitted the pre-floor limitation, the historical P14 evidence test permanently expected the current matrix to keep browserMinimumFrozen=false, and the human matrix paraphrased the machine-readable Chrome row claim so its exact drift check rejected it.",
       "resolution": "Update the baseline generator source, preserve historical P14 evidence while allowing a later floor only when bound to P14-13 CI #960, and publish the exact machine-readable Chrome/Ubuntu claim in the human matrix.",
       "exclusionReasonCode": "HARNESS_TOOLING_BUG"
+    },
+    {
+      "id": "NEG-010",
+      "date": "2026-10-01",
+      "classification": "HARNESS_INVALID",
+      "hypothesis": "Historical P13 promotion courts allow later unrelated domain promotions to extend global reconciliation row and closure totals.",
+      "outcome": "HARNESS-FAIL",
+      "evidence": "CI #1003 / PR #76",
+      "finding": "P11-13 added one legitimate reconciliation row and one closure, moving the global ledger from 272/263 to 273/264. P13-20 and P13-18 gate-specific evidence remained correct, but two historical P13 tests still treated the prior global row total as immutable.",
+      "resolution": "Keep every P13-owned gate, evidence, authority and open-blocker assertion exact while making only cross-domain global ledger row/closure totals monotonic.",
+      "exclusionReasonCode": "HARNESS_TOOLING_BUG"
     }
   ]
 }
