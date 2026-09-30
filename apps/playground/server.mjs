@@ -42,6 +42,8 @@ const publicAliases = new Map([
   ['/browser-acceptance.js', join(publicRoot, 'browser-acceptance.js')],
   ['/p7-resource-profile.html', join(publicRoot, 'p7-resource-profile.html')],
   ['/p7-resource-profile.js', join(publicRoot, 'p7-resource-profile.js')],
+  ['/p7-resource-wave4.html', join(publicRoot, 'p7-resource-wave4.html')],
+  ['/p7-resource-wave4.js', join(publicRoot, 'p7-resource-wave4.js')],
   ['/p7-transfer-worker.mjs', join(publicRoot, 'p7-transfer-worker.mjs')],
   ['/p4-publication-atomicity.html', join(publicRoot, 'p4-publication-atomicity.html')],
   ['/p4-publication-atomicity.js', join(publicRoot, 'p4-publication-atomicity.js')],
