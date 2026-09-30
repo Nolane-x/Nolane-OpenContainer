@@ -35,10 +35,10 @@ This result is intentionally not treated as a release score. Low findings remain
 
 ## Historical release verification archive
 
-P13-20 now has implementation-level archive machinery, but the gate remains **OPEN_EXTERNAL** until a record generated from a real `main` commit is committed back into Git history.
+P13-20 now has a **RELEASE-VERIFIED** source-controlled historical verification record generated from the real post-merge `main` commit.
 
 Every release-evidence build now emits `third-party-notices.json` from the installed production dependency inventory. The historical archive candidate embeds seven exact verification files: release manifest, SHA-256/SHA-512 checksums, SPDX 2.3 SBOM, in-toto/SLSA provenance, dependency/license inventory, third-party notices and reproducibility evidence. Each payload is base64-retained with byte count and SHA-256.
 
 The archive policy uses `git-source-history`, has no automated expiry, specifies at least ten years of retention, requires retention while any historical version may need verification, and forbids deletion without a superseding archive. Artifact binary bytes are deliberately not claimed as archived; the record preserves the cryptographic identity and verification evidence needed to authenticate a historical artifact obtained through its distribution channel.
 
-Closure is intentionally two-stage. PR #74 proves the machinery and candidate format only. After it merges, post-merge `main` CI must generate a candidate bound to the real main commit. A follow-up promotion must commit those exact bytes under `release/history/<version>/<sourceCommit>/record.json` and pass `--require-repository` verification before P13-20 can close. A temporary pull-request merge SHA is never accepted as the historical source identity.
+PR #74 completed the first stage and merged at `974fa1032c0d95c98889ca6f9bfaaa696c95fe9e`. Post-merge main CI #988 generated record SHA-256 `b10283f7c456c2a9f2af7713e23e37aaa37139e91d8fd0e91fd8472a76803375`; those exact bytes are now committed under the canonical `release/history/0.1.0-alpha.1/974fa1032c0d95c98889ca6f9bfaaa696c95fe9e/record.json` path and must pass `--require-repository` verification. This closes P13-20 only; external publication, signing, OIDC, repository protections and legal/FTO remain independent.
