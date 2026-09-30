@@ -102,6 +102,23 @@
       "state": "CLOSED_BY_WAVE3",
       "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
       "evidence": "p7-resource-wave3"
+    },
+    "P7-06": {
+      "machineClosable": true,
+      "state": "CLOSED_BY_WAVE4",
+      "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+      "evidence": "p7-resource-wave4"
+    },
+    "P7-11": {
+      "machineClosable": true,
+      "state": "CLOSED_BY_WAVE4",
+      "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+      "evidence": "p7-resource-wave4"
+    },
+    "P7-10": {
+      "machineClosable": false,
+      "state": "OPEN_SYSTEM_LIFECYCLE",
+      "reason": "Background/visibility automation exists in parts of the suite, but real system sleep/resume plus CPU-contention evidence is not complete."
     }
   },
   "productionClosed": false,
@@ -124,6 +141,11 @@
       "P7-03",
       "P7-04",
       "P7-05"
+    ],
+    "promotionRuleWave4": "Wave 4 may close P7-06/P7-11 only when one declared-profile Chrome court proves simultaneous Core/UI/preview/toolchain/AI ownership under runtime.resources with zero leaked leases and retained OPFS byte accounting for source snapshots, package persistence, checkpoint metadata, interrupted temporary transactions and derived caches. Filesystem allocation metadata, 4/8 GiB devices, 8-hour plateau, real system sleep/resume and weak-device regression budgets remain separate.",
+    "promotedByWave4": [
+      "P7-06",
+      "P7-11"
     ]
   }
 }
