@@ -980,3 +980,10 @@ P14-13 is promoted; P14 is now **15/18** in the promotion candidate. P14-04 adja
 P13-18 is now promoted from an external evidence gap to retained RELEASE-VERIFIED hygiene evidence. Official Scorecard v5.5.0, invoked through pinned Scorecard Action v2.4.4, recorded 6.9/10 across 11 checks without a project-defined pass threshold. The raw result and normalized receipt are archived, and CI #969 keeps the promotion bound to full OpenContainer regression coverage.
 
 This moves the whole-product ledger to **262/304 closed** and P13 to **12/20**. OIDC/trusted publication, public provenance identity, tagged release builds, signing/verification, registry staging, branch/tag/release protections and long-term historical archive evidence remain open.
+
+
+## P13-20 historical archive machinery
+
+PR #74 adds non-expiring Git-history archive machinery plus generated third-party notices. CI #983 at implementation head `420fd8aced85f316bdc28dd4fcb844ef30d8cd6f` passed the implementation court and produced a seven-file content-addressed archive candidate. P13-20 deliberately remains open: the candidate was generated from the synthetic PR checkout, so it is evidence that the machinery works, not the historical record to retain.
+
+The closure path is: merge PR #74, generate a new candidate on the real post-merge `main` commit, commit that exact record under `release/history/`, verify it is Git-tracked, then promote P13-20. `production_closed=false` remains unchanged.
