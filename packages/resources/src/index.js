@@ -55,6 +55,22 @@ export class ResourceGovernor {
   }
   get limits(){return this.#limits;}
   get usage(){return Object.freeze({...this.#used});}
+  get activeLeases(){
+    return Object.freeze([...this.#leases.values()].map(lease=>Object.freeze({
+      id:lease.id,
+      owner:lease.owner,
+      resources:lease.resources
+    })));
+  }
+  get usageByOwner(){
+    const totals=new Map();
+    for(const lease of this.#leases.values()){
+      if(!totals.has(lease.owner))totals.set(lease.owner,Object.fromEntries(Object.keys(this.#used).map(key=>[key,0])));
+      const usage=totals.get(lease.owner);
+      for(const [key,amount] of Object.entries(lease.resources))usage[key]+=amount;
+    }
+    return Object.freeze(Object.fromEntries([...totals].map(([owner,usage])=>[owner,Object.freeze({...usage})])));
+  }
   get workerPolicy(){return this.#workerPolicy;}
   get pressure(){
     return Object.freeze({
@@ -74,7 +90,7 @@ export class ResourceGovernor {
     if(nextPaused&&!wasPaused)this.#pressureEpoch+=1;
     return this.pressure;
   }
-  acquireTask({background=false,inFlightBytes=0}={}){
+  acquireTask({background=false,inFlightBytes=0,owner='task'}={}){
     const isBackground=background===true;
     if(isBackground&&(this.#pressureState==='serious'||this.#pressureState==='critical')){
       throw ocError(ErrorCodes.RESOURCE_EXHAUSTED,'Background task admission paused by resource pressure',{
@@ -83,11 +99,12 @@ export class ResourceGovernor {
       });
     }
     const pressureEpoch=this.#pressureEpoch;
-    const lease=this.reserve({tasks:1,inFlightBytes});
+    const lease=this.reserve({tasks:1,inFlightBytes,owner});
     const governor=this;
     let released=false;
     return Object.freeze({
       id:lease.id,
+      owner:lease.owner,
       background:isBackground,
       pressureEpoch,
       assertPublish(){
@@ -108,6 +125,7 @@ export class ResourceGovernor {
     });
   }
   reserve(request={}) {
+    const owner=typeof request.owner==='string'&&request.owner.trim()?request.owner.trim().slice(0,96):'unscoped';
     const normalized={};
     for (const key of Object.keys(this.#used)) normalized[key]=Math.max(0,Number(request[key]??0));
     for (const [key,amount] of Object.entries(normalized)) {
@@ -123,6 +141,7 @@ export class ResourceGovernor {
     let released=false;
     const lease=Object.freeze({
       id,
+      owner,
       resources:Object.freeze(normalized),
       release:()=>{
         if(released)return false;
