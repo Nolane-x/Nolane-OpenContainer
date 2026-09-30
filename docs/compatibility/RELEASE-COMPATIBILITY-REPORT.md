@@ -2,7 +2,7 @@
 
 This report is the human-readable companion to `release/RELEASE-COMPATIBILITY-REPORT.v1.0.json`. It is generated for the current canary candidate and the declared evidence profile **desktop-chrome153-ubuntu2404-x64-ci**.
 
-It is **not** a cross-browser support matrix, a browser-floor declaration, proof of an externally published OpenContainer package, or a production-closure claim.
+It is **not** a cross-browser support matrix, proof of an externally published OpenContainer package, or a production-closure claim. Its only browser-floor declaration is the evidence-backed Chrome 153.0.8010.52 minimum for the named Ubuntu 24.04 x64 profile.
 
 ## Compatibility surfaces
 
