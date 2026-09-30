@@ -32,7 +32,7 @@ test('P11 report fails closed when unsupported product classes are omitted',()=>
   assert.ok(validateReleaseCompatibilityReport({report:broken,candidate,baseline,scope,knownIssues,profile,humanDoc}).some(x=>x.includes('unsupported classes')));
 });
 
-test('P11 report preserves P11-12 publication and P11-13 browser-floor boundaries',()=>{
+test('P11 report preserves P11-12 publication and profile-scoped P11-13 browser-floor boundaries',()=>{
   assert.ok(report.requiredOpenBoundaries.some(x=>x.startsWith('P11-12')));
   assert.ok(report.requiredOpenBoundaries.some(x=>x.startsWith('P11-13')));
   assert.ok(report.forbiddenClaims.includes('externally published @nolane/opencontainer package'));

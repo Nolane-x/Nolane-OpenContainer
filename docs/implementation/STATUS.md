@@ -989,3 +989,10 @@ PR #74 merged the non-expiring Git-history archive machinery and generated third
 CI #988 generated historical record SHA-256 `b10283f7c456c2a9f2af7713e23e37aaa37139e91d8fd0e91fd8472a76803375`. The exact bytes are retained at `release/history/0.1.0-alpha.1/974fa1032c0d95c98889ca6f9bfaaa696c95fe9e/record.json` and are re-verified with the repository-tracked court.
 
 P13-20 is now RELEASE-VERIFIED. P13 is **13/20 closed**, the whole-product ledger is **263/304**, and `production_closed=false` remains unchanged.
+
+
+## P11-13 declared browser floor closure
+
+PR #76 freezes a browser minimum only after real retained matrix evidence existed. The supported evidence profile is **Google Chrome 153.0.8010.52 minimum on Ubuntu 24.04 x64**, profile `desktop-chrome153-ubuntu2404-x64-ci`. P14-13 CI #960 independently ran Chrome 153 and live Stable Chrome 154.0.8037.92 twice each through the full installed-distribution product path, with 4/4 passes and zero unexplained failures.
+
+Implementation CI #995 passed **639/639** tests and **520/520** repeated critical-file executions. P11-13 is promoted without claiming Firefox, Safari, Windows, macOS, Android/mobile or weak-device support. P11 is **13/14 closed**, the whole-product ledger is **264/304**, P11-12 remains publication-blocked, and `production_closed=false`.

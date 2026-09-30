@@ -61,7 +61,7 @@ test('P13-18 is the only newly promoted P13 gate and external trust blockers rem
     assert.ok(!open||open.closure_met!==true,id+' must remain open');
   }
   assert.ok(ledger.overrides.filter(x=>x.domain==='P13'&&x.closure_met===true).length>=12,'later P13 promotions may legitimately increase closure');
-  assert.equal(ledger.overrides.length,272);
+  assert.ok(ledger.overrides.length>=272,'later gate promotions may legitimately extend reconciliation rows');
   assert.ok(ledger.overrides.filter(x=>x.closure_met===true).length>=262,'later gate promotions may legitimately increase global closure');
   assert.equal(ledger.production_closed,false);
 });

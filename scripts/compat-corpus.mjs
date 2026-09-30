@@ -145,7 +145,7 @@ export function buildCompatibilityBaseline(corpus,adapters){
       'native .node addons and arbitrary node-gyp/native binary execution are unsupported',
       'generic fs.watch/chokidar parity is not promoted',
       'raw guest TCP/UDP and arbitrary host process creation are unsupported',
-      'minimum cross-browser versions are intentionally not frozen before browser matrix evidence'
+      'browser minimum is frozen only for the declared Chrome/Ubuntu evidence profile; other browser/OS profiles remain unverified'
     ]
   };
 }

@@ -1,0 +1,86 @@
+{
+  "schema": "opencontainer.p11-browser-floor-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P11-13",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "requirement": "Freeze minimum browser versions only after real matrix evidence exists.",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 76,
+  "implementationHead": "343fe72b5021040d2f2fbd617499a413b3735c32",
+  "implementationCi": {
+    "runNumber": 995,
+    "runId": 36737430787,
+    "contractTests": 639,
+    "contractPassed": 639,
+    "contractFailed": 0,
+    "criticalTestFiles": 104,
+    "criticalIterations": 5,
+    "criticalTestFileExecutions": 520,
+    "criticalUnexplainedFailures": 0,
+    "codeql": "PASS",
+    "fullInstalledDistributionBrowserPath": "PASS",
+    "p14FrozenFloor": "PASS",
+    "p14NewestStable": "PASS",
+    "p9Rendered": "PASS"
+  },
+  "scorecard": {
+    "runNumber": 28,
+    "runId": 36737430868,
+    "status": "PASS"
+  },
+  "floor": {
+    "scope": "declared-evidence-profile-only",
+    "browser": "Google Chrome",
+    "minimumVersion": "153.0.8010.52",
+    "os": "Ubuntu 24.04 x64",
+    "profile": "desktop-chrome153-ubuntu2404-x64-ci",
+    "validatedVersions": [
+      "153.0.8010.52",
+      "154.0.8037.92"
+    ],
+    "newestStableAtEvidence": "154.0.8037.92",
+    "crossBrowserClaimed": false,
+    "otherOsClaimed": false,
+    "mobileClaimed": false,
+    "weakDeviceClaimed": false
+  },
+  "underlyingMatrixEvidence": {
+    "gate": "P14-13",
+    "runNumber": 960,
+    "runId": 36703869292,
+    "frozenFloor": {
+      "browser": "Google Chrome 153.0.8010.52",
+      "iterations": 2,
+      "fullProductPathPasses": 2,
+      "unexplainedFailures": 0,
+      "artifactId": 11090364706,
+      "digest": "sha256:b7bf15dc48ccb442c28dce9f24fb051f6e370dc83358037dc85b9ac3e4ce2dd0"
+    },
+    "newestStable": {
+      "browser": "Google Chrome 154.0.8037.92",
+      "iterations": 2,
+      "fullProductPathPasses": 2,
+      "unexplainedFailures": 0,
+      "artifactId": 11091009915,
+      "digest": "sha256:2b367b1bad16619ecf68c2274ecf84cc0ed7951dc3bf0f90ee7917c2ce8b706d"
+    }
+  },
+  "closure": {
+    "id": "P11-13",
+    "state": "EVIDENCE",
+    "promotion": "PASS-BROWSER",
+    "closureMet": true,
+    "evidence": "p11-browser-floor"
+  },
+  "preservedBoundaries": {
+    "p11_12PublishedDistribution": false,
+    "crossBrowserReleaseMatrixClosed": false,
+    "windowsSupport": false,
+    "macosSupport": false,
+    "firefoxMinimum": false,
+    "safariMinimum": false,
+    "mobileSupport": false,
+    "weakDeviceFloor": false,
+    "productionClosed": false
+  },
+  "productionClosed": false
+}

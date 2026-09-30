@@ -90,4 +90,4 @@ The **frozen-floor lane** installs exact Chrome **153.0.8010.52**. The **newest-
 
 Each lane executes the existing repeated **installed-distribution full product path twice**. CI #960 retained **4/4 full product paths** across the two browser versions with zero unexplained failures.
 
-This evidence closes P14-13 only. It is not a cross-browser support matrix and does not define a minimum supported browser version; P11-13 remains open. The current candidate is still canary, so P1-14's requirement to repeat the matrix at each RC remains separate. P14-04, P14-12 and P14-14 also remain open.
+This evidence originally closed P14-13 only. PR #76 subsequently uses the retained dual-version result to freeze Chrome 153.0.8010.52 as the minimum **only** for the declared Ubuntu 24.04 x64 evidence profile, closing P11-13 without claiming cross-browser support. The current candidate is still canary, so P1-14's requirement to repeat the matrix at each RC remains separate. P14-04, P14-12 and P14-14 also remain open.

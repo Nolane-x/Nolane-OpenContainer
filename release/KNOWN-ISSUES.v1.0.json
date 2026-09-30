@@ -4,13 +4,13 @@
   "entries": [
     {
       "id": "KI-001",
-      "status": "OPEN_EVIDENCE_GAP",
+      "status": "RESOLVED_PROFILE_SCOPED",
       "version": "0.1.0-alpha.1",
       "profile": "desktop-chrome153-ubuntu2404-x64-ci",
       "browser": "Chrome 153.0.8010.52 / Ubuntu 24.04 x64",
       "area": "browser-matrix",
-      "summary": "Minimum browser floors and cross-browser matrix are not frozen.",
-      "workaround": null,
+      "summary": "Google Chrome 153.0.8010.52 is the frozen minimum only for the declared Ubuntu 24.04 x64 evidence profile; cross-browser and other-OS profiles remain unverified.",
+      "workaround": "Use only the declared Chrome/Ubuntu evidence profile for support claims; do not infer Windows, macOS, Firefox, Safari, Android or weak-device support.",
       "safeWorkaround": true,
       "relatedGates": [
         "P11-13",
