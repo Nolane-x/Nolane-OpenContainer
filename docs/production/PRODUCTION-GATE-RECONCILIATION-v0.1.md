@@ -285,3 +285,9 @@ Every substantive PR should update the JSON ledger only for gate IDs it directly
 - Dedicated P7 artifact **#11080919293** digest `sha256:43d9619cd8a57450aa35cae62a443459dc5383bbcba3f496f15c07c5a5952730`; same-head P6 artifact **#11081561859** digest `sha256:44287de98406350585c2145acd015e73c7b35838f767f6266f26b6946ecf9c9e`.
 - **P7-01, P7-06, P7-09, P7-10, P7-11 and P7-12 remain OPEN.** This wave does not claim a 4/8 GiB device floor, whole-product shared-governor coexistence, 8-hour plateau, sleep/resume/CPU-contention coverage, storage amplification, weak-device regression budgets, isolated V8 parse time, cross-browser support or a memory plateau.
 - **P7 is now 8/14 closed.** The production ledger candidate is **258/304** with **268** reconciliation rows; `production_closed=false` remains mandatory.
+
+
+- **P7-06 and P7-11** now meet `PASS-INTEGRATION + declared-profile evidence` through PR #71 / CI #950. One `ResourceGovernor` simultaneously accounts product UI, Core process, preview, toolchain and AI-consumer lanes; pressure blocks new AI background work and teardown returns all counters to zero.
+- The same exact-profile Chrome court measures OPFS storage amplification for source snapshots, packages, checkpoint metadata, interrupted temporary transactions and derived caches. Both iterations retained **0.253688× steady** and **0.277769× transient-peak** amplification; the **397,191-byte** interrupted transaction was reclaimed by GC.
+- Dedicated artifact **#11085189245**, digest `sha256:64b2aaf99453b33391a7a153efa75c4befad5ecc9da3854bb55a6138ef09c7dc`, retains the two Chrome 153 iterations. Implementation CI #950 passed **611/611** contract tests and **96 × 5 = 480** critical-file executions with zero unexplained failures.
+- **P7 is now 10/14 closed.** P7-01, P7-09, P7-10 and P7-12 remain open; `production_closed=false` remains mandatory.
