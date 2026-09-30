@@ -32,7 +32,9 @@ test('P13-18 OpenSSF hygiene court is immutable, read-only and supplemental',()=
   assert.match(verifier,/minimumScoreThresholdClaimed:false/);
   assert.match(verifier,/releaseProofClaimed:false/);
   assert.match(verifier,/rawSha256:receipt\.raw\.sha256/);
-  assert.equal(policy.gateAuthority['P13-18'].machineClosable,false);
+  assert.equal(policy.gateAuthority['P13-18'].machineClosable,true);
+  assert.equal(policy.gateAuthority['P13-18'].state,'CLOSED_BY_OPENSSF');
+  assert.equal(policy.gateAuthority['P13-18'].evidence,'p13-openssf-scorecard');
 });
 
 test('P13-18 implementation audit is repeated in critical contract campaign',()=>{
