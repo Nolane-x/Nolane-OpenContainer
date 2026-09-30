@@ -85,6 +85,6 @@ test('P14-13 promotion evidence joins the repeated critical contract campaign',(
   assert.ok(flake.contract.testFiles.includes('tests/p14-browser-regression-source-audit.test.js'));
   assert.ok(flake.contract.testFiles.includes('tests/p14-browser-regression-evidence.test.js'));
   assert.equal(flake.contract.testFiles.length,flake.contract.minimumTestFiles);
-  assert.equal(flake.contract.testFiles.length,99);
+  assert.ok(flake.contract.testFiles.length>=99,'later evidence waves may legitimately extend the critical campaign');
   assert.equal(flake.contract.iterations,5);
 });

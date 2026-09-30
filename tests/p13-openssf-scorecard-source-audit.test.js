@@ -24,6 +24,11 @@ test('P13-18 OpenSSF hygiene court is immutable, read-only and supplemental',()=
   assert.doesNotMatch(workflow,/contents:\s*write/);
 
   assert.match(verifier,/checkCount:checks\.length/);
+  assert.match(verifier,/GITHUB_REPOSITORY/);
+  assert.match(verifier,/GITHUB_SHA/);
+  assert.match(verifier,/pull_request/);
+  assert.match(verifier,/repository==='file:\/\/\.'/);
+  assert.match(verifier,/local-pr-worktree/);
   assert.match(verifier,/minimumScoreThresholdClaimed:false/);
   assert.match(verifier,/releaseProofClaimed:false/);
   assert.match(verifier,/rawSha256:receipt\.raw\.sha256/);

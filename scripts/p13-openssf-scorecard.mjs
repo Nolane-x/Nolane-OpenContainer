@@ -26,8 +26,20 @@ const score=Number(document.score);
 const scorecardVersion=text(document.scorecard?.version);
 const scorecardCommit=text(document.scorecard?.commit);
 
+const workflowRepository=text(process.env.GITHUB_REPOSITORY);
+const workflowCommit=text(process.env.GITHUB_SHA);
+const workflowEvent=text(process.env.GITHUB_EVENT_NAME);
+assert(/^Nolane-x\/Nolane-OpenContainer$/i.test(workflowRepository),'GitHub workflow repository identity drift',{workflowRepository});
+assert(/^[0-9a-f]{40}$/i.test(workflowCommit),'GitHub workflow commit identity missing',{workflowCommit});
 assert(repository.length>0,'OpenSSF Scorecard repository identity missing');
-assert(/nolane-x\/nolane-opencontainer/i.test(repository),'OpenSSF Scorecard repository identity drift',{repository});
+const pullRequestLocal=workflowEvent.startsWith('pull_request');
+if(pullRequestLocal){
+  assert(repository==='file://.','OpenSSF Scorecard PR scan must stay local-worktree bound',{repository,workflowEvent});
+  assert(analyzedCommit===''||analyzedCommit==='unknown','OpenSSF Scorecard PR local commit identity drift',{analyzedCommit});
+}else{
+  const normalizedRawRepository=repository.replace(/^https?:\/\/github\.com\//i,'').replace(/^github\.com\//i,'');
+  assert(normalizedRawRepository.toLowerCase()===workflowRepository.toLowerCase(),'OpenSSF Scorecard repository identity drift',{repository,workflowRepository});
+}
 assert(Number.isFinite(score)&&score>=0&&score<=10,'OpenSSF Scorecard aggregate score is invalid',{score});
 assert(checks.length>=10,'OpenSSF Scorecard returned too few checks',{checkCount:checks.length});
 
@@ -65,7 +77,12 @@ const receipt=Object.freeze({
   },
   repository,
   analyzedCommit:analyzedCommit||null,
-  workflowCommit:process.env.GITHUB_SHA??null,
+  workflowBinding:Object.freeze({
+    repository:workflowRepository,
+    commit:workflowCommit,
+    event:workflowEvent||null,
+    mode:pullRequestLocal?'local-pr-worktree':'remote-repository'
+  }),
   scorecard:{
     version:scorecardVersion||null,
     commit:scorecardCommit||null,
@@ -92,7 +109,9 @@ const receipt=Object.freeze({
 await mkdir(dirname(outPath),{recursive:true});
 await writeFile(outPath,JSON.stringify(receipt,null,2)+'\n');
 console.log('P13 OPENSSF SCORECARD PASS '+JSON.stringify({
-  repository:receipt.repository,
+  repository:receipt.workflowBinding.repository,
+  rawRepository:receipt.repository,
+  bindingMode:receipt.workflowBinding.mode,
   score:receipt.scorecard.aggregateScore,
   checks:receipt.scorecard.checkCount,
   unavailableChecks:receipt.scorecard.unavailableChecks,
