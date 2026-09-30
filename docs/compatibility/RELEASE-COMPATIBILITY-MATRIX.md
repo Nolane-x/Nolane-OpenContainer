@@ -18,6 +18,6 @@ Only one row is evidence-backed today. The other rows are deliberately published
 
 The evidence-backed row is tied to Google Chrome **153.0.8010.52**, Ubuntu **24.04 x64**, GitHub-hosted standard x64 and profile `desktop-chrome153-ubuntu2404-x64-ci`. This matrix does not infer Windows, macOS, Firefox, Safari, mobile or weak-device support from that row.
 
-Browser minimum versions are **not frozen**. P11-13 stays open until a real cross-browser matrix exists with retained receipts sufficient to freeze minimums. P14-13 remains open until regression campaigns exist for the frozen floor and newest stable. Weak-device gates remain open.
+Browser minimum versions are **not frozen**. P11-13 stays open until a real cross-browser matrix exists with retained receipts sufficient to freeze minimums. **P14-13 is separately closed** by CI #960: Chrome 153.0.8010.52 and live Stable Chrome 154.0.8037.92 each passed 2/2 complete installed-distribution product paths. That regression receipt does not turn Chrome 153 into a minimum-version claim and does not claim cross-browser support. Weak-device gates remain open.
 
 `production_closed=false`.
