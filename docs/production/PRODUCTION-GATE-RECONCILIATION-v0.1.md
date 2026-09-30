@@ -266,3 +266,11 @@ Every substantive PR should update the JSON ledger only for gate IDs it directly
 - The Vitest evidence job has an explicit workflow dependency on the existing P6 declared-profile Chrome court, so both must PASS on the same exact head. The older P6 evidence remains historically correct that P6-10 was open in Wave #64.
 - This does **not** claim support for the frozen Vitest root pnpm monorepo, pnpm lockfile parsing, monorepo workspace install, browser-native Vitest execution or cross-browser behavior.
 - **P6 is now 16/16 closed.** The production ledger candidate is **240/304** with **250** reconciliation rows; `production_closed=false` remains mandatory.
+
+
+- **P9-01 / P9-02 / P9-04 / P9-06 / P9-07 / P9-08 / P9-09 / P9-10 / P9-13 / P9-14 / P9-15 / P9-16 / P9-17 / P9-18** now meet PASS-INTEGRATION + declared-profile evidence through PR #69 / CI #931 implementation head `4ff13eded0d073f3cb69e209d36b439ee5949f6e`.
+- The dedicated rendered court ran on **Google Chrome 153.0.8010.52** across **5 real viewports** and retained artifact **#11068103043**, digest `sha256:bf5583dff66bef7a0fe37b0de3bbf5b6bc5d2d7c68fa73251e48e70bbe8eb7d9`.
+- It verifies runtime-bound Preview/Inspect/AI state, keyboard primary flows and modal focus behavior, IME safety, authority-backed save/remove/restore receipts, approval persistence, process recovery and lifecycle separation, back/forward/reload canonical-mutation safety, forced-colors/reduced-motion/RTL/text-expansion/zoom stress, and linked-folder conflict/permission visibility.
+- CI #931 passed **14/14 jobs**, **597/597** contract tests and **91 critical files × 5 = 455** repeated executions with zero unexplained failures before the promotion test itself was added.
+- **P9-03 remains OPEN** until a retained **280+ failure-scenario registry** exists; **P9-05 remains OPEN** for manual screen-reader acceptance; **P9-11 remains OPEN** for human comprehension testing; **P9-12 remains OPEN** for weak-device + long-session UI leak/performance evidence.
+- **P9 is now 14/18 closed.** The production ledger candidate is **254/304** with **264** reconciliation rows; `production_closed=false` remains mandatory.

@@ -570,6 +570,14 @@
       "status": "PASS",
       "ref": "CI #896 / PR #68 implementation head fbeadbdba914230edfbcc1ca0192631084065b07",
       "note": "P6-10 closure: exact frozen vitest@3.0.8 registry URL/SRI concordance, two real CLI executions over an isolated TypeScript fixture with 3/3 tests PASS each, and a same-exact-head dependency on the existing declared-profile P6 Chrome court. CI #896 passed 585/585 contract tests, 90 critical files ×5 = 450 repeated executions, CodeQL and full browser product path. This does not promote the Vitest root pnpm monorepo, pnpm lockfile parsing, monorepo workspace install, browser-native Vitest execution, or cross-browser support."
+    },
+    {
+      "key": "p9-ui-rendered",
+      "kind": "EXECUTABLE",
+      "level": "BROWSER",
+      "status": "PASS",
+      "ref": "CI #931 / PR #69 implementation head 4ff13eded0d073f3cb69e209d36b439ee5949f6e",
+      "note": "P9 machine-closable UI/UX/accessibility evidence: Chrome 153.0.8010.52 rendered court passed 14 gates across five real viewports with keyboard primary flows, modal focus loop/restore, IME composition safety, authority-backed save/remove/restore acknowledgements, approval persistence across modes, process recovery/lifecycle separation, back-forward-reload canonical-mutation safety, forced-colors/reduced-motion/RTL/text-expansion/zoom stress and linked-folder conflict/permission visibility. Artifact #11068103043 digest sha256:bf5583dff66bef7a0fe37b0de3bbf5b6bc5d2d7c68fa73251e48e70bbe8eb7d9. P9-03/05/11/12 remain intentionally open for failure-registry, manual screen-reader, human-comprehension and weak-device/long-session evidence."
     }
   ]
 }
