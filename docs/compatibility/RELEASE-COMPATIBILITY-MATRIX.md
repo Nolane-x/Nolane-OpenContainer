@@ -6,7 +6,7 @@ Only one row is evidence-backed today. The other rows are deliberately published
 
 | Row | Browser | OS / arch | Device/profile | Status | Claim |
 | --- | --- | --- | --- | --- | --- |
-| chrome-linux-declared | Google Chrome 153.0.8010.52 minimum; 154.0.8037.92 validated Stable | Ubuntu 24.04 x64 | desktop-chrome153-ubuntu2404-x64-ci | SUPPORTED-EVIDENCE-BACKED | Minimum support floor is Chrome 153.0.8010.52 only for this named evidence profile; Chrome 154 Stable also passed. |
+| chrome-linux-declared | Google Chrome 153.0.8010.52 minimum; 154.0.8037.92 validated Stable | Ubuntu 24.04 x64 | desktop-chrome153-ubuntu2404-x64-ci | SUPPORTED-EVIDENCE-BACKED | Minimum supported browser for the named Ubuntu 24.04 x64 evidence profile is Google Chrome 153.0.8010.52; Chrome 154.0.8037.92 also passed the full installed-distribution path. No support is inferred for any other browser/OS/device row. |
 | chrome-windows | Google Chrome, version unfrozen | Windows x64 | desktop | UNVERIFIED-NOT-CLAIMED | No Windows support claim yet. |
 | chrome-macos | Google Chrome, version unfrozen | macOS arm64 | desktop | UNVERIFIED-NOT-CLAIMED | No macOS Chrome support claim yet. |
 | firefox-linux | Mozilla Firefox, version unfrozen | Ubuntu x64 | desktop | UNVERIFIED-NOT-CLAIMED | No Firefox support or minimum-version claim yet. |
