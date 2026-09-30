@@ -27,13 +27,13 @@ test('P15 per-release browser OS profile matrix has one evidence-backed row and 
 test('P15 matrix fails closed if an unverified profile is promoted without retained evidence',()=>{
   const broken=clone(matrix);
   broken.rows.find(x=>x.id==='firefox-linux').status='SUPPORTED-EVIDENCE-BACKED';
-  assert.ok(validateReleaseCompatibilityMatrix({matrix:broken,candidate,scope,profile,ledger,humanDoc}).some(x=>/exactly one|unsupported evidence promotion/.test(x)));
+  assert.ok(validateReleaseCompatibilityMatrix({matrix:broken,candidate,scope,profile,ledger,browserRegression,humanDoc}).some(x=>/exactly one|unsupported evidence promotion/.test(x)));
 });
 
 test('P15 matrix fails closed if the declared Chrome evidence profile drifts',()=>{
   const broken=clone(matrix);
   broken.rows[0].browser.version='154.0.0.0';
-  assert.ok(validateReleaseCompatibilityMatrix({matrix:broken,candidate,scope,profile,ledger,humanDoc}).some(x=>x.includes('browser version drift')));
+  assert.ok(validateReleaseCompatibilityMatrix({matrix:broken,candidate,scope,profile,ledger,browserRegression,humanDoc}).some(x=>x.includes('browser version drift')));
 });
 
 test('P15 matrix freezes only the evidence-backed Chrome/Ubuntu floor and preserves broader boundaries',()=>{
