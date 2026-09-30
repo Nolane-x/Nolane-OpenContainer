@@ -6,9 +6,14 @@ import { fileURLToPath } from 'node:url';
 
 const scriptRoot=dirname(fileURLToPath(import.meta.url));
 const repositoryRoot=resolve(scriptRoot,'..');
-const path=resolve(process.argv[2]??'');
 const requireRepository=process.argv.includes('--require-repository');
-if(!process.argv[2])throw new Error('historical archive record path is required');
+let requested=process.argv.find((value,index)=>index>1&&!value.startsWith('--'))??null;
+if(!requested){
+  const packageJson=JSON.parse(await readFile(resolve(repositoryRoot,'package.json'),'utf8'));
+  const head=execFileSync('git',['rev-parse','HEAD'],{cwd:repositoryRoot,encoding:'utf8'}).trim();
+  requested=resolve(repositoryRoot,'.artifacts','p13-history',packageJson.version,head,'record.json');
+}
+const path=resolve(requested);
 
 function sha256(bytes){return createHash('sha256').update(bytes).digest('hex');}
 function decode(entry,name){
