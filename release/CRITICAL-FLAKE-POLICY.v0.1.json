@@ -102,10 +102,11 @@
       "tests/p7-wave4-governor.test.js",
       "tests/p7-wave4-source-audit.test.js",
       "tests/p7-wave4-evidence.test.js",
-      "tests/p14-browser-regression-source-audit.test.js"
+      "tests/p14-browser-regression-source-audit.test.js",
+      "tests/p14-browser-regression-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 98
+    "minimumTestFiles": 99
   },
   "browser": {
     "iterations": 2,
