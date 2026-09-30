@@ -38,7 +38,8 @@
       "opencontainer.spdx.json",
       "provenance.intoto.json",
       "dependency-license-inventory.json",
-      "reproducibility.json"
+      "reproducibility.json",
+      "third-party-notices.json"
     ],
     "sbomSchema": "SPDX-2.3",
     "provenancePredicate": "https://slsa.dev/provenance/v1",
@@ -172,8 +173,8 @@
     },
     "P13-20": {
       "machineClosable": false,
-      "state": "OPEN_EXTERNAL",
-      "reason": "90-day CI artifacts are retained, but long-term historical verification storage policy is not yet closed."
+      "state": "IMPLEMENTED_AWAITING_ARCHIVE_RECORD",
+      "reason": "Long-term Git-history archive machinery and third-party notices exist, but no generated release record is committed under release/history yet."
     }
   },
   "productionClosed": false,
@@ -194,5 +195,25 @@
       "artifactId": 11093017366,
       "rawSha256": "6db20bee3c94f5d377ca49b3265e804c9382c9fffaa4df4a0f426d94997515a7"
     }
+  },
+  "historicalArchive": {
+    "recordSchema": "opencontainer.historical-release-archive.v1.0",
+    "repositoryPath": "release/history/<version>/<sourceCommit>/record.json",
+    "medium": "git-source-history",
+    "automatedExpiry": false,
+    "minimumYears": 10,
+    "keepWhileAnyHistoricalVersionMayNeedVerification": true,
+    "deletionRequiresSupersedingArchive": true,
+    "requiredEmbeddedFiles": [
+      "release-manifest.json",
+      "checksums.txt",
+      "opencontainer.spdx.json",
+      "provenance.intoto.json",
+      "dependency-license-inventory.json",
+      "third-party-notices.json",
+      "reproducibility.json"
+    ],
+    "artifactBytesRequired": false,
+    "reason": "The historical archive preserves verification metadata and artifact digests; binary artifact distribution remains a separate publication concern."
   }
 }
