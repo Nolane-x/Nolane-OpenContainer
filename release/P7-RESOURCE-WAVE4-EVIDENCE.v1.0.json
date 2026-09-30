@@ -1,0 +1,231 @@
+{
+  "schema": "opencontainer.p7-resource-wave4-evidence.v1.0",
+  "source": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 71,
+  "implementationHead": "5f0c7ddbbc3671036804485d9ad1d140200d10ed",
+  "ci": {
+    "runNumber": 950,
+    "runId": 36690585684,
+    "testedCheckoutCommit": "871ed0c1ffd1502f87646fc61e35344b0d141e0d",
+    "contractTests": 611,
+    "contractPassed": 611,
+    "contractFailed": 0,
+    "criticalTestFiles": 96,
+    "criticalIterations": 5,
+    "criticalTestFileExecutions": 480,
+    "criticalUnexplainedFailures": 0,
+    "codeql": "PASS",
+    "fullBrowserProductPath": "PASS",
+    "fullBrowserProductPathPasses": 2,
+    "p7DeclaredProfileRegression": "PASS",
+    "p9RenderedRegression": "PASS",
+    "p6ToolchainRegression": "PASS"
+  },
+  "artifacts": {
+    "wave4": {
+      "id": 11085189245,
+      "digest": "sha256:64b2aaf99453b33391a7a153efa75c4befad5ecc9da3854bb55a6138ef09c7dc"
+    },
+    "p7DeclaredProfile": {
+      "id": 11085652712,
+      "digest": "sha256:cd3e52e8e39d0b8247af07ff0969105ece2772de8342e0d08f3092dab1fa0a52"
+    },
+    "criticalContract": {
+      "id": 11086045430,
+      "digest": "sha256:c0b5461f8bbac88aef847606cc9a514bbb6d80707c498f3bf74ce74dc6f03da2"
+    },
+    "criticalBrowser": {
+      "id": 11085199456,
+      "digest": "sha256:77fa1ab11d2ae516c1dd01323ed310c56273996dd9be38d2e66c104b04eddb76"
+    }
+  },
+  "evidenceProfile": {
+    "id": "desktop-chrome153-ubuntu2404-x64-ci",
+    "browser": "Google Chrome 153.0.8010.52",
+    "iterations": 2,
+    "crossOriginIsolated": true
+  },
+  "closedGates": [
+    "P7-06",
+    "P7-11"
+  ],
+  "p7_06": {
+    "globalGovernor": true,
+    "simultaneousOwners": [
+      "ui",
+      "core:process",
+      "preview",
+      "toolchain",
+      "ai-consumer"
+    ],
+    "activeLeaseCountAtPeak": 5,
+    "ownerUsageAtPeak": {
+      "ui": {
+        "processes": 0,
+        "outputBytes": 0,
+        "memoryBytes": 0,
+        "workers": 0,
+        "tasks": 1,
+        "inFlightBytes": 1024,
+        "sourceMapBytes": 0
+      },
+      "core:process": {
+        "processes": 1,
+        "outputBytes": 1048576,
+        "memoryBytes": 0,
+        "workers": 0,
+        "tasks": 0,
+        "inFlightBytes": 0,
+        "sourceMapBytes": 0
+      },
+      "preview": {
+        "processes": 0,
+        "outputBytes": 0,
+        "memoryBytes": 0,
+        "workers": 0,
+        "tasks": 1,
+        "inFlightBytes": 0,
+        "sourceMapBytes": 0
+      },
+      "toolchain": {
+        "processes": 0,
+        "outputBytes": 0,
+        "memoryBytes": 0,
+        "workers": 1,
+        "tasks": 0,
+        "inFlightBytes": 0,
+        "sourceMapBytes": 0
+      },
+      "ai-consumer": {
+        "processes": 0,
+        "outputBytes": 0,
+        "memoryBytes": 0,
+        "workers": 0,
+        "tasks": 1,
+        "inFlightBytes": 2048,
+        "sourceMapBytes": 0
+      }
+    },
+    "pressureBlockedNewAiBackground": "OC_RESOURCE_EXHAUSTED",
+    "previewResourceBound": true,
+    "toolchainResourceBound": true,
+    "finalGovernorUsageZero": true
+  },
+  "p7_11": {
+    "formula": "physical-persistent-bytes/primary-logical-content-bytes",
+    "physicalScope": "exact File.size payload bytes under dedicated OPFS court directories; filesystem allocation metadata excluded",
+    "source": {
+      "logicalFileBytes": [
+        262144,
+        262144
+      ],
+      "serializedSnapshotBytes": [
+        353438,
+        353438
+      ],
+      "snapshotPhysicalBytes": [
+        353438,
+        353438
+      ],
+      "snapshotAmplification": [
+        1.348259,
+        1.348259
+      ]
+    },
+    "packages": {
+      "packedArtifactBytes": [
+        3826518,
+        3826518
+      ],
+      "uniqueVerifiedLogicalContentBytes": [
+        16232340,
+        16232340
+      ],
+      "physicalPersistentBytes": [
+        3826763,
+        3826763
+      ],
+      "amplification": [
+        0.235749,
+        0.235749
+      ]
+    },
+    "checkpoints": {
+      "metadataPhysicalBytes": [
+        252,
+        252
+      ],
+      "canonicalTotalPhysicalBytes": [
+        353690,
+        353690
+      ]
+    },
+    "tempTransactions": {
+      "interruptedAfterPayload": true,
+      "transientBytes": [
+        397191,
+        397191
+      ],
+      "peakWorkspaceBytes": [
+        750881,
+        750881
+      ],
+      "postGcWorkspaceBytes": [
+        353690,
+        353690
+      ],
+      "reclaimed": true
+    },
+    "derivedCaches": {
+      "logicalBytes": [
+        3895,
+        3895
+      ],
+      "physicalPersistentBytes": [
+        4005,
+        4005
+      ],
+      "amplification": [
+        1.028241,
+        1.028241
+      ],
+      "rebuildable": true
+    },
+    "totals": {
+      "primaryLogicalBytes": [
+        16494484,
+        16494484
+      ],
+      "steadyPhysicalBytes": [
+        4184458,
+        4184458
+      ],
+      "transientPeakPhysicalBytes": [
+        4581649,
+        4581649
+      ],
+      "steadyAmplification": [
+        0.253688,
+        0.253688
+      ],
+      "transientPeakAmplification": [
+        0.277769,
+        0.277769
+      ]
+    },
+    "thresholdClaimed": false
+  },
+  "boundaries": {
+    "fourGiBCampaignClaimed": false,
+    "eightGiBCampaignClaimed": false,
+    "eightHourPlateauClaimed": false,
+    "systemSleepResumeClaimed": false,
+    "weakDeviceRegressionBudgetClaimed": false,
+    "filesystemAllocationMetadataClaimed": false,
+    "crossBrowserClaimed": false,
+    "productionClosed": false
+  },
+  "productionClosed": false
+}
