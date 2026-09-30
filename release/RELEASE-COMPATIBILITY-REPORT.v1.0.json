@@ -13,7 +13,7 @@
     "native .node addons and arbitrary node-gyp/native binary execution are unsupported",
     "generic fs.watch/chokidar parity is not promoted",
     "raw guest TCP/UDP and arbitrary host process creation are unsupported",
-    "minimum cross-browser versions are intentionally not frozen before browser matrix evidence"
+    "browser minimum is frozen only for the declared Chrome/Ubuntu evidence profile; other browser/OS profiles remain unverified"
   ],
   "unsupportedClasses": [
     {
@@ -41,7 +41,7 @@
   ],
   "requiredOpenBoundaries": [
     "P11-12 actual published OpenContainer package/bundle remains open",
-    "P11-13 browser minimum versions remain unfrozen until real matrix evidence exists",
+    "P11-13 floor is frozen only for the declared Chrome 153+/Ubuntu 24.04 x64 evidence profile; cross-browser and other-OS support remain unclaimed",
     "P7/P14 weak-device and long-run resource evidence remains open",
     "P12-17 verified private vulnerability intake remains open"
   ],
