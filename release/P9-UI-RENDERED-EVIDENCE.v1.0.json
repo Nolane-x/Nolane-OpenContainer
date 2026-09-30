@@ -1,0 +1,117 @@
+{
+  "schema": "opencontainer.p9-ui-rendered-evidence.v1.0",
+  "source": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 69,
+  "implementation": {
+    "head": "4ff13eded0d073f3cb69e209d36b439ee5949f6e",
+    "ciRunNumber": 931,
+    "ciRunId": 36645537157,
+    "pullRequestContextSha": "759f9571c70f77cc58f7e509301fbf424d99a6b6",
+    "jobsTotal": 14,
+    "jobsPassed": 14,
+    "contractTests": 597,
+    "contractPassed": 597,
+    "contractFailed": 0,
+    "criticalTestFiles": 91,
+    "criticalIterations": 5,
+    "criticalTestFileExecutions": 455,
+    "criticalUnexplainedFailures": 0,
+    "codeql": "PASS",
+    "fullBrowserProductPath": "PASS"
+  },
+  "dedicatedCourt": {
+    "workflowJob": "p9-ui-rendered",
+    "artifactId": 11068103043,
+    "artifactDigest": "sha256:bf5583dff66bef7a0fe37b0de3bbf5b6bc5d2d7c68fa73251e48e70bbe8eb7d9",
+    "status": "PASS",
+    "declaredProfile": "github-actions-chrome-stable-ubuntu2404-x64",
+    "browser": "Google Chrome 153.0.8010.52",
+    "viewports": 5,
+    "sourceGates": [
+      "P9-01",
+      "P9-02",
+      "P9-04",
+      "P9-06",
+      "P9-07",
+      "P9-08",
+      "P9-09",
+      "P9-10",
+      "P9-13",
+      "P9-14",
+      "P9-15",
+      "P9-16",
+      "P9-17",
+      "P9-18"
+    ],
+    "accessibility": {
+      "keyboardPrimaryFlows": true,
+      "modalFocusTrap": true,
+      "openerFocusRestored": true,
+      "approvalDeletionFocusRule": true
+    },
+    "ime": {
+      "blockedDuringComposition": true,
+      "sentAfterComposition": true
+    },
+    "authorityAcknowledgements": {
+      "save": true,
+      "approvalApply": true,
+      "sourceRemove": true,
+      "sourceRestore": true
+    },
+    "approvals": {
+      "surviveModeSwitch": true,
+      "duplicated": false
+    },
+    "recovery": {
+      "sourceWithoutDevTools": true,
+      "processWithoutDevTools": true,
+      "projectProcessAiLifecyclesSeparated": true
+    },
+    "history": {
+      "canonicalMutationSurvivesBack": true,
+      "canonicalMutationSurvivesForward": true,
+      "canonicalMutationSurvivesReload": true
+    },
+    "stress": {
+      "rtlLocalizationTextExpansion": true,
+      "reducedMotion": true,
+      "forcedColors": true,
+      "zoom": true
+    },
+    "linkedFolder": {
+      "conflictVisible": true,
+      "permissionDenialVisible": true,
+      "recoveryActionsVisible": true,
+      "sameHeadNativeP3CourtRequired": true
+    }
+  },
+  "intentionallyOpenGates": [
+    {
+      "id": "P9-03",
+      "reason": "No retained 280+ registered failure-scenario registry exists; rendered automation cannot substitute for that registry."
+    },
+    {
+      "id": "P9-05",
+      "reason": "Manual screen-reader acceptance is still required."
+    },
+    {
+      "id": "P9-11",
+      "reason": "Human comprehension testing is still required."
+    },
+    {
+      "id": "P9-12",
+      "reason": "Weak-device UI budget and long-session leak/performance evidence are still required."
+    }
+  ],
+  "boundaries": {
+    "failureRegistry280Claimed": false,
+    "manualScreenReaderClaimed": false,
+    "humanComprehensionClaimed": false,
+    "weakDeviceLongSessionClaimed": false,
+    "crossBrowserClaimed": false,
+    "productionClosed": false
+  }
+}

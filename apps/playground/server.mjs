@@ -36,6 +36,8 @@ const publicAliases = new Map([
   ['/', join(publicRoot, 'index.html')],
   ['/index.html', join(publicRoot, 'index.html')],
   ['/index.js', join(publicRoot, 'index.js')],
+  ['/index.css', join(publicRoot, 'index.css')],
+  ['/p9-ui-court.js', join(publicRoot, 'p9-ui-court.js')],
   ['/browser-acceptance.html', join(publicRoot, 'browser-acceptance.html')],
   ['/browser-acceptance.js', join(publicRoot, 'browser-acceptance.js')],
   ['/p4-publication-atomicity.html', join(publicRoot, 'p4-publication-atomicity.html')],
@@ -83,6 +85,7 @@ function contentType(path) {
   const extension = extname(path);
   if (extension === '.html') return 'text/html; charset=utf-8';
   if (extension === '.js' || extension === '.mjs') return 'text/javascript; charset=utf-8';
+  if (extension === '.css') return 'text/css; charset=utf-8';
   if (extension === '.json') return 'application/json; charset=utf-8';
   if (extension === '.wasm') return 'application/wasm';
   return 'application/octet-stream';
@@ -248,7 +251,7 @@ const server = createServer(async (request, response) => {
     if (url.pathname === '/' || url.pathname === '/index.html') {
       response.setHeader(
         'Content-Security-Policy',
-        "default-src 'self'; script-src 'self'; connect-src 'self'; worker-src 'self'; img-src 'self' data:; style-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+        "default-src 'self'; script-src 'self' 'sha256-rkMvapmVZt+MUBo5i8Nx4sVYZ0HtjK3on/kn9IG2F10='; connect-src 'self'; worker-src 'self'; img-src 'self' data:; style-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
       );
       response.setHeader('X-OpenContainer-Document-Profile', 'strict');
     }

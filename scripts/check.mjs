@@ -81,7 +81,8 @@ const required=[
   'tests/native-esm-publication.test.js',
   'tests/browser-esm-edge.test.js',
   'tests/browser-node-compat.test.js',
-  'packages/process/src/browser-guest-worker.js','apps/playground/server.mjs'
+  'packages/process/src/browser-guest-worker.js','apps/playground/server.mjs',
+  'scripts/p9-ui-rendered.mjs','tests/p9-ui-source-audit.test.js','release/P9-UI-RENDERED-EVIDENCE.v1.0.json','tests/p9-ui-evidence.test.js','scripts/install-frozen-ci-chrome.sh'
 ];
 for(const path of required)await access(resolve(path));
 const root=JSON.parse(await readFile('package.json','utf8'));

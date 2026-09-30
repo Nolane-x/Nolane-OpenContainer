@@ -63,7 +63,8 @@
     "p2:runtime:evidence": "node scripts/p2-runtime-evidence.mjs",
     "p1:browser-substrate:evidence": "node scripts/p1-browser-substrate.mjs",
     "p10:ai-consumer:evidence": "node scripts/p10-ai-consumer-evidence.mjs",
-    "p6:vitest:evidence": "node scripts/p6-vitest-real-execution.mjs"
+    "p6:vitest:evidence": "node scripts/p6-vitest-real-execution.mjs",
+    "p9:ui:evidence": "node scripts/p9-ui-rendered.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",
