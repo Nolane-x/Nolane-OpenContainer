@@ -176,6 +176,7 @@ jobs:
           node-version: 24.21.0
           cache: npm
       - run: npm ci
+      - run: bash scripts/install-frozen-ci-chrome.sh
       - run: google-chrome-stable --version || google-chrome --version || chromium --version
       - name: Run rendered P9 UI and accessibility court
         run: npm run p9:ui:evidence
@@ -199,6 +200,7 @@ jobs:
           node-version: 24.21.0
           cache: npm
       - run: npm ci
+      - run: bash scripts/install-frozen-ci-chrome.sh
       - run: google-chrome-stable --version || google-chrome --version || chromium --version
       - name: Run P10 AI consumer browser court
         run: npm run p10:ai-consumer:evidence
@@ -221,6 +223,7 @@ jobs:
           node-version: 24.21.0
           cache: npm
       - run: npm ci
+      - run: bash scripts/install-frozen-ci-chrome.sh
       - run: google-chrome-stable --version || google-chrome --version || chromium --version
       - name: Run P1 browser substrate court
         run: npm run p1:browser-substrate:evidence
@@ -243,6 +246,7 @@ jobs:
           node-version: 24.21.0
           cache: npm
       - run: npm ci
+      - run: bash scripts/install-frozen-ci-chrome.sh
       - run: google-chrome-stable --version || google-chrome --version || chromium --version
       - name: Run P2 runtime process court
         run: npm run p2:runtime:evidence
@@ -265,6 +269,7 @@ jobs:
           node-version: 24.21.0
           cache: npm
       - run: npm ci
+      - run: bash scripts/install-frozen-ci-chrome.sh
       - run: google-chrome-stable --version || google-chrome --version || chromium --version
       - name: Run P6 toolchain and Vite browser court
         run: npm run p6:toolchain-vite:evidence
@@ -287,6 +292,7 @@ jobs:
           node-version: 24.21.0
           cache: npm
       - run: npm ci
+      - run: bash scripts/install-frozen-ci-chrome.sh
       - run: google-chrome-stable --version || google-chrome --version || chromium --version
       - name: Run final P4 package closure court
         run: npm run p4:final-package:evidence
@@ -309,6 +315,7 @@ jobs:
           node-version: 24.21.0
           cache: npm
       - run: npm ci
+      - run: bash scripts/install-frozen-ci-chrome.sh
       - run: google-chrome-stable --version || google-chrome --version || chromium --version
       - name: Run P4 command diagnostics native-boundary court
         run: npm run p4:command-diagnostics:evidence
@@ -331,6 +338,7 @@ jobs:
           node-version: 24.21.0
           cache: npm
       - run: npm ci
+      - run: bash scripts/install-frozen-ci-chrome.sh
       - run: google-chrome-stable --version || google-chrome --version || chromium --version
       - name: Run P4 ecosystem resolver/layout release court
         run: npm run p4:ecosystem-layout:evidence
@@ -353,6 +361,7 @@ jobs:
           node-version: 24.21.0
           cache: npm
       - run: npm ci
+      - run: bash scripts/install-frozen-ci-chrome.sh
       - run: google-chrome-stable --version || google-chrome --version || chromium --version
       - name: Run real Chrome P4 package publication fault court
         run: npm run p4:publication-atomicity:evidence
@@ -379,6 +388,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y xdotool xvfb openbox scrot
+      - run: bash scripts/install-frozen-ci-chrome.sh
       - run: |
           google-chrome-stable --version || google-chrome --version || chromium --version
           dpkg-query -W -f='xdotool ${Version}\n' xdotool
@@ -405,6 +415,7 @@ jobs:
           node-version: 24.21.0
           cache: npm
       - run: npm ci
+      - run: bash scripts/install-frozen-ci-chrome.sh
       - run: |
           google-chrome-stable --version || google-chrome --version || chromium --version
       - run: npm run browser:profile:verify
