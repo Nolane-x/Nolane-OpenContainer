@@ -347,8 +347,11 @@ try{
   const lifecycleFailed=await uiCall(cdp,'lifecycle');
   assert(lifecycleFailed.project.state===lifecycleBefore.project.state,'P9 process failure masqueraded as project loss',{lifecycleBefore,lifecycleFailed});
   assert(lifecycleFailed.ai.state===lifecycleBefore.ai.state,'P9 process failure masqueraded as AI loss',{lifecycleBefore,lifecycleFailed});
-  await evaluate(cdp,"document.querySelector('#recover-process').focus();true");
-  await key(cdp,'Enter',{code:'Enter'});
+  // This assertion is about authority-backed process recovery, not keyboard dispatch.
+  // Use the real DOM activation path so CDP key synthesis jitter cannot turn a
+  // product-lifecycle court into a harness race. Keyboard/focus behavior is
+  // independently exercised above across tabs, approvals, save and dialogs.
+  await evaluate(cdp,"document.querySelector('#recover-process').focus();document.querySelector('#recover-process').click();true");
   await waitUntil(cdp,"globalThis.__openContainerUi.lifecycle().process.state==='idle'&&document.querySelector('#recovery-panel').hidden",{label:'P9 process recovery'});
 
   // External linked-folder conflict and permission state visibility.
