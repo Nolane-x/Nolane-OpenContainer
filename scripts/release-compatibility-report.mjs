@@ -52,7 +52,7 @@ export function validateReleaseCompatibilityReport({report,candidate,baseline,sc
   }
   if(report?.productionClosed!==false)errors.push('report must keep productionClosed=false');
   if(profile?.browser?.crossBrowserReleaseMatrixClosed!==false)errors.push('profile unexpectedly claims cross-browser matrix closure');
-  if(!(baseline?.limitations??[]).some(x=>/cross-browser versions/.test(x)))errors.push('baseline must preserve unfrozen browser-minimum limitation');
+  if(!(baseline?.limitations??[]).some(x=>/browser minimum is frozen only for the declared Chrome\/Ubuntu evidence profile/.test(x)))errors.push('baseline must preserve profile-scoped browser-minimum limitation');
 
   const doc=String(humanDoc??'');
   const lower=doc.toLowerCase();
