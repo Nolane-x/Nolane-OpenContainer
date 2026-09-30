@@ -1,8 +1,11 @@
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
-import { isAbsolute, relative, resolve } from 'node:path';
+import { dirname, isAbsolute, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
+const scriptRoot=dirname(fileURLToPath(import.meta.url));
+const repositoryRoot=resolve(scriptRoot,'..');
 const path=resolve(process.argv[2]??'');
 const requireRepository=process.argv.includes('--require-repository');
 if(!process.argv[2])throw new Error('historical archive record path is required');
@@ -58,7 +61,7 @@ if(requireRepository){
   const repoRoot=resolve(new URL('..',import.meta.url).pathname,'..');
   const rel=relative(repoRoot,path).replaceAll('\\','/');
   if(isAbsolute(rel)||rel.startsWith('..')||!rel.startsWith('release/history/'))throw new Error('historical archive is not stored under release/history');
-  execFileSync('git',['ls-files','--error-unmatch',rel],{cwd:repoRoot,stdio:'ignore'});
+  execFileSync('git',['ls-files','--error-unmatch',rel],{cwd:repositoryRoot,stdio:'ignore'});
 }
 
 console.log(JSON.stringify({
