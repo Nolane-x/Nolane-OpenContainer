@@ -13,6 +13,7 @@ const artifactBytes=await readFile(join(root,manifest.artifact.filename));
 const spdx=JSON.parse(await readFile(join(root,'opencontainer.spdx.json'),'utf8'));
 const provenance=JSON.parse(await readFile(join(root,'provenance.intoto.json'),'utf8'));
 const inventory=JSON.parse(await readFile(join(root,'dependency-license-inventory.json'),'utf8'));
+const notices=JSON.parse(await readFile(join(root,'third-party-notices.json'),'utf8'));
 const reproducibility=JSON.parse(await readFile(join(root,'reproducibility.json'),'utf8'));
 const checksums=await readFile(join(root,'checksums.txt'),'utf8');
 
@@ -41,6 +42,15 @@ for(const category of ['runtimeDirect','runtimeTransitive','optionalAdapters','s
 if(inventory.optionalAdapterPolicy?.shipped!==false||inventory.optionalAdapterPolicy?.bundleCount!==0){
   throw new Error('optional adapter inventory policy drifted');
 }
+if(notices.schema!=='opencontainer.third-party-notices.v0.1'||notices.productionClosed!==false){
+  throw new Error('third-party notices schema or closure boundary drifted');
+}
+const inventoryRows=inventory.categories.runtimeTransitive??[];
+if(notices.components?.length!==inventoryRows.length)throw new Error('third-party notices component count drifted');
+for(const item of inventoryRows){
+  const match=notices.components.find((row)=>row.location===item.location&&row.name===item.name&&row.version===item.version);
+  if(!match||match.license!==item.license)throw new Error('third-party notices inventory drift at '+item.location);
+}
 if(manifest.productionClosed!==false)throw new Error('release evidence incorrectly claims production closure');
 
 console.log(JSON.stringify({
@@ -50,6 +60,7 @@ console.log(JSON.stringify({
   sha256,
   sbomPackages:spdx.packages.length,
   runtimeComponents:inventory.categories.runtimeTransitive.length,
+  thirdPartyNotices:notices.components.length,
   reproducible:true,
   contentPolicyViolations:0,
   productionClosed:false
