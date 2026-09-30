@@ -26,6 +26,8 @@ jobs:
       - run: node --version
       - run: npm --version
       - run: npm run ci
+      - name: Emit P13 historical archive candidate
+        run: node scripts/build-historical-release-archive.mjs .artifacts/release --emit-base64
       - name: Archive product scope contract receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -38,6 +40,13 @@ jobs:
         with:
           name: opencontainer-release-evidence-${{ github.sha }}
           path: .artifacts/release/
+          if-no-files-found: error
+          retention-days: 90
+      - name: Archive P13 historical archive candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-p13-history-candidate-${{ github.sha }}
+          path: .artifacts/p13-history/
           if-no-files-found: error
           retention-days: 90
       - name: Archive P13 supply-chain review

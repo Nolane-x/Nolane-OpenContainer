@@ -258,6 +258,29 @@ export async function buildReleaseEvidence({outputDir=join(repoRoot,'.artifacts'
     note:'UNLICENSED root status is intentional evidence that project-level license closure remains open.'
   };
 
+  const noticeRows=components
+    .map((item)=>({
+      location:item.location,
+      name:item.name,
+      version:item.version,
+      license:item.license,
+      resolved:item.resolved??null,
+      integrity:item.integrity??null
+    }))
+    .sort((a,b)=>a.location.localeCompare(b.location));
+  const thirdPartyNotices={
+    schema:'opencontainer.third-party-notices.v0.1',
+    root:{name:installedManifest.name,version:installedManifest.version,license:normalizedLicense(installedManifest.license)},
+    generatedFrom:'installed production artifact dependency inventory',
+    components:noticeRows,
+    noticePolicy:{
+      preserveNoAssertion:true,
+      packageInstanceIdentity:'location+name+version',
+      projectLicenseDecisionSeparate:true
+    },
+    productionClosed:false
+  };
+
   const provenance=buildProvenance({
     artifact,
     sourceCommit,
@@ -305,6 +328,7 @@ export async function buildReleaseEvidence({outputDir=join(repoRoot,'.artifacts'
       'opencontainer.spdx.json',
       'provenance.intoto.json',
       'dependency-license-inventory.json',
+      'third-party-notices.json',
       'reproducibility.json'
     ],
     productionClosed:false
@@ -315,6 +339,7 @@ export async function buildReleaseEvidence({outputDir=join(repoRoot,'.artifacts'
     writeFile(join(output,'opencontainer.spdx.json'),JSON.stringify(spdx,null,2)+'\n'),
     writeFile(join(output,'provenance.intoto.json'),JSON.stringify(provenance,null,2)+'\n'),
     writeFile(join(output,'dependency-license-inventory.json'),JSON.stringify(inventory,null,2)+'\n'),
+    writeFile(join(output,'third-party-notices.json'),JSON.stringify(thirdPartyNotices,null,2)+'\n'),
     writeFile(join(output,'reproducibility.json'),JSON.stringify(reproducibility,null,2)+'\n'),
     writeFile(join(output,'release-manifest.json'),JSON.stringify(releaseManifest,null,2)+'\n')
   ]);

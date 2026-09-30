@@ -105,10 +105,11 @@
       "tests/p14-browser-regression-source-audit.test.js",
       "tests/p14-browser-regression-evidence.test.js",
       "tests/p13-openssf-scorecard-source-audit.test.js",
-      "tests/p13-openssf-scorecard-evidence.test.js"
+      "tests/p13-openssf-scorecard-evidence.test.js",
+      "tests/p13-historical-archive-source-audit.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 101
+    "minimumTestFiles": 102
   },
   "browser": {
     "iterations": 2,
