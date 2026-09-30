@@ -149,3 +149,10 @@ test('P9 court waits for authority acknowledgements, not intermediate VFS mutati
   assert.match(runner,/declaredProfile:'github-actions-chrome-stable-ubuntu2404-x64'/);
   assert.match(runner,/exactVersionObserved:version\.product/);
 });
+
+
+test('P9 process recovery lifecycle court uses the production click handler instead of timing-sensitive CDP Enter synthesis',()=>{
+  assert.match(runner,/recover-process'\)\.focus\(\);document\.querySelector\('#recover-process'\)\.click\(\)/);
+  assert.match(runner,/label:'P9 process recovery'/);
+  assert.match(runner,/Input\.dispatchKeyEvent/);
+});
