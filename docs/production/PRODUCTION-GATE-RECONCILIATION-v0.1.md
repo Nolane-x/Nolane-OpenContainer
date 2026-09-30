@@ -274,3 +274,14 @@ Every substantive PR should update the JSON ledger only for gate IDs it directly
 - CI #931 passed **14/14 jobs**, **597/597** contract tests and **91 critical files × 5 = 455** repeated executions with zero unexplained failures before the promotion test itself was added.
 - **P9-03 remains OPEN** until a retained **280+ failure-scenario registry** exists; **P9-05 remains OPEN** for manual screen-reader acceptance; **P9-11 remains OPEN** for human comprehension testing; **P9-12 remains OPEN** for weak-device + long-session UI leak/performance evidence.
 - **P9 is now 14/18 closed.** The production ledger candidate is **254/304** with **264** reconciliation rows; `production_closed=false` remains mandatory.
+
+
+## P7 Wave 3 — declared-profile performance closure
+
+- **P7-02 / P7-03 / P7-04 / P7-05** now meet **PASS-INTEGRATION + declared-profile evidence** through PR #70 / CI #937 implementation head `7101bae81a258e6a60c4ebb1642f8085aa11a63b`.
+- The dedicated exact-profile Chrome 153 court passed **2/2** iterations. It retained **576,636 browser-loaded module bytes**, module import/parse/compile/evaluate-path timing, runtime boot, warm open, first command, frozen package-graph load, and common VFS write/read/readdir/rename/remove timings.
+- The contention court ran **4 WorkerRpcAuthority lanes × 16 rounds**, **64 requests / 16 MiB transferred per iteration**, and required final ResourceGovernor usage to return to zero.
+- P7-05 is backed by the same-head P6/Vite court using a materially larger fixture: **128 generated TypeScript modules, 130 TS modules total, 84,372 source bytes, CSS, SVG and nanoid**. Full browser product-path evidence measured Vite build at **1752 / 1620 ms** and dev→HMR at **752 / 786 ms**; the dedicated toolchain receipt retained cold/warm execution and four browser heap samples.
+- Dedicated P7 artifact **#11080919293** digest `sha256:43d9619cd8a57450aa35cae62a443459dc5383bbcba3f496f15c07c5a5952730`; same-head P6 artifact **#11081561859** digest `sha256:44287de98406350585c2145acd015e73c7b35838f767f6266f26b6946ecf9c9e`.
+- **P7-01, P7-06, P7-09, P7-10, P7-11 and P7-12 remain OPEN.** This wave does not claim a 4/8 GiB device floor, whole-product shared-governor coexistence, 8-hour plateau, sleep/resume/CPU-contention coverage, storage amplification, weak-device regression budgets, isolated V8 parse time, cross-browser support or a memory plateau.
+- **P7 is now 8/14 closed.** The production ledger candidate is **258/304** with **268** reconciliation rows; `production_closed=false` remains mandatory.
