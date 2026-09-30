@@ -17,7 +17,7 @@ const required=[
   'docs/compatibility/P2-RUNTIME-PROCESS-BOUNDARY.md',
   'docs/compatibility/P4-FINAL-PACKAGE-CLOSURE.md',
   'scripts/release-compatibility-report.mjs','scripts/release-compatibility-matrix.mjs',
-  'tests/release-compatibility-report.test.js','tests/release-compatibility-matrix.test.js','tests/p11-release-report-evidence.test.js','tests/p15-compatibility-matrix-evidence.test.js','tests/p11-browser-floor-source-audit.test.js',
+  'tests/release-compatibility-report.test.js','tests/release-compatibility-matrix.test.js','tests/p11-release-report-evidence.test.js','tests/p15-compatibility-matrix-evidence.test.js','tests/p11-browser-floor-source-audit.test.js','release/P11-BROWSER-FLOOR-EVIDENCE.v1.0.json','tests/p11-browser-floor-evidence.test.js',
   'packages/operations/src/index.js','scripts/run-operations-drills.mjs','tests/operations-maintenance.test.js','tests/p17-evidence.test.js','docs/production/OPERATIONS-MAINTENANCE.md','.github/workflows/maintenance.yml',
   'scripts/evidence-assurance-policy.mjs','scripts/evidence-assurance-bundle.mjs','scripts/build-evidence-assurance.mjs','scripts/capture-browser-evidence-assurance.mjs','scripts/verify-evidence-assurance.mjs','tests/evidence-assurance.test.js','tests/p18-evidence.test.js','docs/production/EVIDENCE-ASSURANCE.md',
   'scripts/verify-product-scope.mjs','scripts/verify-browser-profile.mjs','tests/product-scope.test.js','docs/production/PRODUCT-SCOPE-AND-CLAIMS.md',
