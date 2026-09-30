@@ -610,6 +610,14 @@
       "status": "PASS",
       "ref": "OpenSSF Scorecard #2 / CI #969 / PR #73 head 9811c0f6423aa3a1a4aff21711b5116e95c75dd7",
       "note": "P13-18 retained supplemental OpenSSF hygiene evidence: official pinned Scorecard Action v2.4.4, raw JSON SHA-256 6db20bee3c94f5d377ca49b3265e804c9382c9fffaa4df4a0f426d94997515a7, score 6.9/10 over 11 checks, artifact #11093017366. Low/unavailable checks are preserved. This is project-hygiene evidence, not signing, publication, branch-protection or legal closure."
+    },
+    {
+      "key": "p13-historical-release-archive",
+      "kind": "EXECUTABLE",
+      "level": "RELEASE-VERIFIED",
+      "status": "PASS",
+      "ref": "main CI #988 / source commit 974fa1032c0d95c98889ca6f9bfaaa696c95fe9e / release/history/0.1.0-alpha.1/974fa1032c0d95c98889ca6f9bfaaa696c95fe9e/record.json",
+      "note": "P13-20 retained historical verification archive. Repository-tracked record SHA-256 b10283f7c456c2a9f2af7713e23e37aaa37139e91d8fd0e91fd8472a76803375 embeds 7 content-addressed verification files and is re-verified by an executable --require-repository court. No external-publication, signing, OIDC, repository-protection or legal closure claimed."
     }
   ]
 }

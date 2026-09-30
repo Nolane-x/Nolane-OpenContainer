@@ -982,8 +982,10 @@ P13-18 is now promoted from an external evidence gap to retained RELEASE-VERIFIE
 This moves the whole-product ledger to **262/304 closed** and P13 to **12/20**. OIDC/trusted publication, public provenance identity, tagged release builds, signing/verification, registry staging, branch/tag/release protections and long-term historical archive evidence remain open.
 
 
-## P13-20 historical archive machinery
+## P13-20 historical archive closure
 
-PR #74 adds non-expiring Git-history archive machinery plus generated third-party notices. CI #983 at implementation head `420fd8aced85f316bdc28dd4fcb844ef30d8cd6f` passed the implementation court and produced a seven-file content-addressed archive candidate. P13-20 deliberately remains open: the candidate was generated from the synthetic PR checkout, so it is evidence that the machinery works, not the historical record to retain.
+PR #74 merged the non-expiring Git-history archive machinery and generated third-party notices. Post-merge **main CI #988** on commit `974fa1032c0d95c98889ca6f9bfaaa696c95fe9e` passed **630/630** tests and **102 critical files × 5 = 510** repeated executions with zero unexplained failures, plus CodeQL and the full browser regression suite.
 
-The closure path is: merge PR #74, generate a new candidate on the real post-merge `main` commit, commit that exact record under `release/history/`, verify it is Git-tracked, then promote P13-20. `production_closed=false` remains unchanged.
+CI #988 generated historical record SHA-256 `b10283f7c456c2a9f2af7713e23e37aaa37139e91d8fd0e91fd8472a76803375`. The exact bytes are retained at `release/history/0.1.0-alpha.1/974fa1032c0d95c98889ca6f9bfaaa696c95fe9e/record.json` and are re-verified with the repository-tracked court.
+
+P13-20 is now RELEASE-VERIFIED. P13 is **13/20 closed**, the whole-product ledger is **263/304**, and `production_closed=false` remains unchanged.

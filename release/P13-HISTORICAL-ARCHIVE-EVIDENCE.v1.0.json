@@ -1,0 +1,75 @@
+{
+  "schema": "opencontainer.p13-historical-release-archive-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P13-20",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "SECURITY-REVIEWED / RELEASE-VERIFIED",
+  "implementation": {
+    "pullRequest": 74,
+    "mergeCommit": "974fa1032c0d95c98889ca6f9bfaaa696c95fe9e",
+    "postMergeCi": {
+      "runNumber": 988,
+      "runId": 36722858933,
+      "status": "PASS"
+    },
+    "postMergeScorecard": {
+      "runNumber": 21,
+      "runId": 36722859004,
+      "status": "PASS"
+    }
+  },
+  "archive": {
+    "recordPath": "release/history/0.1.0-alpha.1/974fa1032c0d95c98889ca6f9bfaaa696c95fe9e/record.json",
+    "recordSha256": "b10283f7c456c2a9f2af7713e23e37aaa37139e91d8fd0e91fd8472a76803375",
+    "sourceCommit": "974fa1032c0d95c98889ca6f9bfaaa696c95fe9e",
+    "version": "0.1.0-alpha.1",
+    "embeddedFiles": 7,
+    "medium": "git-source-history",
+    "automatedExpiry": false,
+    "minimumYears": 10,
+    "deletionRequiresSupersedingArchive": true,
+    "candidateArtifact": {
+      "id": 11101696511,
+      "digest": "sha256:6110ed995dff317369ffaf1c31c1301db1d1296d8b49468cdd192fbd753a11ab"
+    }
+  },
+  "releaseArtifact": {
+    "filename": "nolane-opencontainer-0.1.0-alpha.1.tgz",
+    "sha256": "d9f81528025cd1daea0703ff1e5ac19a670a1277326974b952f9d2210e171bc0",
+    "sha512": "3a61ee75af0de19ceed247058f86a5fbcdd726f9467a5af633a7b197ea2d88a30e27724b8a7bbc913d44e38f248a813ec24cdffd94465a3c12e34d1f138620e5",
+    "bytes": 8007871,
+    "releaseEvidenceArtifact": {
+      "id": 11101926421,
+      "digest": "sha256:5e890e2110f53ca4c303a1ee903116cd884f8463a7e92e18555bf3a73ddcbd17"
+    }
+  },
+  "ci": {
+    "contractTests": 630,
+    "contractPassed": 630,
+    "contractFailed": 0,
+    "criticalTestFiles": 102,
+    "criticalIterations": 5,
+    "criticalTestFileExecutions": 510,
+    "criticalUnexplainedFailures": 0,
+    "codeql": "PASS",
+    "browserProductPath": "PASS",
+    "p14FrozenFloor": "PASS",
+    "p14NewestStable": "PASS",
+    "p9Rendered": "PASS"
+  },
+  "closure": {
+    "gate": "P13-20",
+    "state": "EVIDENCE",
+    "promotion": "RELEASE-VERIFIED",
+    "closureMet": true
+  },
+  "boundaries": {
+    "artifactBytesArchived": false,
+    "externalPublicationClaimed": false,
+    "signingClaimed": false,
+    "oidcPublishingClaimed": false,
+    "repositoryProtectionClaimed": false,
+    "legalClosureClaimed": false,
+    "productionClosed": false
+  },
+  "productionClosed": false
+}
