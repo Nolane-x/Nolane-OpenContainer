@@ -98,10 +98,12 @@
       "tests/p9-ui-source-audit.test.js",
       "tests/p9-ui-evidence.test.js",
       "tests/p7-wave3-source-audit.test.js",
-      "tests/p7-wave3-evidence.test.js"
+      "tests/p7-wave3-evidence.test.js",
+      "tests/p7-wave4-governor.test.js",
+      "tests/p7-wave4-source-audit.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 94
+    "minimumTestFiles": 96
   },
   "browser": {
     "iterations": 2,
