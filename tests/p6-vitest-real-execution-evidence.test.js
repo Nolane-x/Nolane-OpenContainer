@@ -70,8 +70,8 @@ test('P6-10 ledger promotion completes P6 16/16 without closing production globa
     evidence:'p6-vitest-real-execution',
     closure_met:true
   });
-  assert.equal(ledger.overrides.length,250);
-  assert.equal(ledger.overrides.filter(item=>item.closure_met===true).length,240);
+  assert.ok(ledger.overrides.length>=250,'later domain promotions may legitimately add reconciliation rows');
+  assert.ok(ledger.overrides.filter(item=>item.closure_met===true).length>=240,'later domain promotions may legitimately add closed gates');
   const p6=ledger.overrides.filter(item=>item.domain==='P6'&&item.closure_met===true);
   assert.equal(p6.length,16);
   assert.deepEqual(
