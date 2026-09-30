@@ -388,6 +388,10 @@
     "p7-resource-wave3": {
       "ref": "CI #937 / PR #70 implementation head 7101bae81a258e6a60c4ebb1642f8085aa11a63b",
       "note": "P7 declared-profile Wave 3: exact Chrome 153 ran 2/2 dedicated resource iterations for cold module/boot measurement, warm open, first command, package graph, common VFS operations and 4-lane sustained Worker RPC transfer; same-head P6/Vite profile expanded to 130 TypeScript modules / 84,372 source bytes with build/HMR and heap evidence. Artifacts #11080919293, #11081561859, #11081543001 and #11082055401. P7-01/06/09/10/11/12 remain open."
+    },
+    "p7-resource-wave4": {
+      "ref": "CI #950 / PR #71 implementation head 5f0c7ddbbc3671036804485d9ad1d140200d10ed",
+      "note": "P7-06/P7-11 declared-profile closure: one runtime ResourceGovernor simultaneously accounts UI, Core process, preview dispatch, toolchain worker and AI agent lanes; critical pressure blocks new AI background admission and teardown returns every counter to zero. Real Chrome OPFS court measures source snapshot, package persistence, checkpoint metadata, interrupted temporary transaction peak/reclamation and derived-cache payload bytes. 611/611 contract tests, 96 critical files x5 = 480 executions, CodeQL, full installed-distribution browser path and 2/2 dedicated Chrome 153 iterations passed. Device/8h/system-sleep/weak-device claims remain open."
     }
   },
   "overrides": [
@@ -2533,6 +2537,22 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p7-resource-wave3",
+      "closure_met": true
+    },
+    {
+      "id": "P7-06",
+      "domain": "P7",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p7-resource-wave4",
+      "closure_met": true
+    },
+    {
+      "id": "P7-11",
+      "domain": "P7",
+      "state": "EVIDENCE",
+      "promotion": "PASS-BROWSER",
+      "evidence": "p7-resource-wave4",
       "closure_met": true
     }
   ]
