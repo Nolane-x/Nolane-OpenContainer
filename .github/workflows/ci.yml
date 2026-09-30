@@ -522,3 +522,26 @@ jobs:
           path: .artifacts/evidence-assurance/browser/
           if-no-files-found: error
           retention-days: 90
+
+  p7-declared-profile:
+    needs: [contract, codeql, p6-toolchain-vite]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - run: npm ci
+      - run: bash scripts/install-frozen-ci-chrome.sh
+      - run: google-chrome-stable --version || google-chrome --version || chromium --version
+      - name: Run P7 declared-profile resource court
+        run: npm run p7:declared-profile:evidence
+      - name: Archive P7 declared-profile resource receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-p7-declared-profile-${{ github.sha }}
+          path: .artifacts/p7-declared-profile/browser-receipt.json
+          if-no-files-found: error
+          retention-days: 90
