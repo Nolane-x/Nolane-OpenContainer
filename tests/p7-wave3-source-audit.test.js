@@ -10,6 +10,7 @@ const browserAcceptance=readFileSync('apps/playground/public/browser-acceptance.
 const p6=readFileSync('scripts/capture-p6-toolchain-browser-evidence.mjs','utf8');
 const policy=JSON.parse(readFileSync('release/RESOURCE-MEASUREMENT-POLICY.v1.0.json','utf8'));
 const ledger=JSON.parse(readFileSync('docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.json','utf8'));
+const evidence=JSON.parse(readFileSync('release/P7-RESOURCE-WAVE3-EVIDENCE.v1.0.json','utf8'));
 
 test('P7 declared-profile court measures P7-02/03/04 without manufacturing weak-device closure',()=>{
   for(const route of ['/p7-resource-profile.html','/p7-resource-profile.js','/p7-transfer-worker.mjs']){
@@ -40,10 +41,19 @@ test('P7 Vite profile is made materially larger and retained by the P6 browser r
   assert.ok(p6.includes('realisticProject'));
 });
 
-test('P7 wave3 implementation does not pre-close gates before exact-head promotion evidence exists',()=>{
-  for(const id of ['P7-02','P7-03','P7-04','P7-05']){
+test('P7 wave3 source promotion is permitted only by the retained stronger evidence',()=>{
+  assert.equal(evidence.implementationHead,'7101bae81a258e6a60c4ebb1642f8085aa11a63b');
+  assert.equal(evidence.ci.runNumber,937);
+  assert.deepEqual(evidence.closedGates,['P7-02','P7-03','P7-04','P7-05']);
+  for(const id of evidence.closedGates){
     const row=ledger.overrides.find((item)=>item.id===id);
-    assert.ok(!row||row.closure_met!==true,id+' was closed before retained wave3 evidence');
+    assert.ok(row,id+' ledger row missing');
+    assert.equal(row.closure_met,true,id);
+    assert.equal(row.evidence,'p7-resource-wave3',id);
+  }
+  for(const id of ['P7-01','P7-06','P7-09','P7-10','P7-11','P7-12']){
+    const row=ledger.overrides.find((item)=>item.id===id);
+    assert.ok(!row||row.closure_met!==true,id+' must remain open');
   }
   assert.equal(policy.gateAuthority['P7-01'].machineClosable,false);
   assert.equal(policy.gateAuthority['P7-09'].machineClosable,false);
