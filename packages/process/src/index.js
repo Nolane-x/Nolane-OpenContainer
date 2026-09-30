@@ -73,7 +73,7 @@ export class ProcessSupervisor {
     const orphanPolicy=options.orphanPolicy??'terminate';
     if(!['terminate','detach'].includes(orphanPolicy))throw ocError(ErrorCodes.INVALID_ARGUMENT,'Unsupported process orphan policy',{orphanPolicy});
 
-    const lease=this.#resources?.reserve({processes:1,outputBytes:this.#outputLimit})??{release(){}};
+    const lease=this.#resources?.reserve({processes:1,outputBytes:this.#outputLimit,owner:'core:process'})??{release(){}};
     const pid=++this.#nextPid;
     const stdout=new OutputBuffer(this.#outputLimit,(text,bytes)=>{
       this.#diagnostics?.recordTerminal({pid,stream:'stdout',byteLength:bytes});
