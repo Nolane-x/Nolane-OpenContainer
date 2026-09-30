@@ -953,3 +953,12 @@ Dedicated artifact **#11036952101** has digest `sha256:593565a62183990836985b1ad
 This closure is deliberately narrower than the frozen `vitest-dev/vitest` root repository boundary. It does **not** claim pnpm-lock parsing, Vitest root-monorepo workspace installation, browser-native Vitest execution or cross-browser compatibility.
 
 The production ledger candidate is now **240/304** minimum-closure satisfied with **250** reconciliation rows. **P6 is 16/16 closed.** Overall `production_closed=false` remains mandatory because independent external/manual/release-history gates remain open.
+
+
+## P7 Wave 4 global governor + storage amplification
+
+PR #71 promotes P7-06/P7-11 only after declared-profile browser evidence. Product UI, Core process, preview dispatch, toolchain workers and AI shared-concurrency now bind into one owner-attributed `runtime.resources` authority. The browser coexistence court held all five live simultaneously, verified pressure rejection, then observed zero leaked usage.
+
+The storage court uses real Chrome OPFS and production authorities. Across two identical iterations it retained 262,144 logical source bytes, a 353,438-byte source snapshot, 3,826,763 persistent package bytes for a retained 3,826,518-byte tarball / 16,232,340 logical package bytes, 252 checkpoint-metadata bytes, a 397,191-byte interrupted temporary transaction reclaimed by GC, and a 4,005-byte derived cache. Total amplification was 0.253688× steady and 0.277769× at transient peak.
+
+P7 closure is now 10/14 in the promotion candidate. The remaining device/long-run/system-lifecycle/regression-budget gates are intentionally not claimed.
