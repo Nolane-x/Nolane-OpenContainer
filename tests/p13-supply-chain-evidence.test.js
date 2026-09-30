@@ -9,7 +9,7 @@ const policy=JSON.parse(readFileSync('release/SUPPLY-CHAIN-REVIEW-POLICY.v1.0.js
 const flake=JSON.parse(readFileSync('release/CRITICAL-FLAKE-POLICY.v0.1.json','utf8'));
 
 const closed=['P13-01','P13-02','P13-05','P13-06','P13-08','P13-11','P13-12','P13-13','P13-14','P13-15','P13-19'];
-const partial=['P13-04','P13-07','P13-20'];
+const partial=['P13-04','P13-07'];
 const unreconciled=['P13-03','P13-09','P13-10','P13-16','P13-17'];
 
 test('P13 evidence binds the supply-chain review to exact CI #424 release artifact',()=>{
@@ -64,11 +64,13 @@ test('P13 historical supply-chain evidence retains its 11 gates while later hygi
 });
 
 test('P13 closure cannot erase publication tag signing OIDC hygiene or archive boundaries',()=>{
-  for(const id of ['P13-03','P13-04','P13-07','P13-09','P13-10','P13-16','P13-17','P13-20']){
+  for(const id of ['P13-03','P13-04','P13-07','P13-09','P13-10','P13-16','P13-17']){
     assert.equal(policy.gateAuthority[id].machineClosable,false,id);
   }
   assert.equal(policy.gateAuthority['P13-18'].machineClosable,true);
   assert.equal(policy.gateAuthority['P13-18'].evidence,'p13-openssf-scorecard');
+  assert.equal(policy.gateAuthority['P13-20'].machineClosable,true);
+  assert.equal(policy.gateAuthority['P13-20'].evidence,'p13-historical-release-archive');
   assert.ok(evidence.boundaries.some(x=>x.includes('OIDC')));
   assert.ok(evidence.boundaries.some(x=>x.includes('externally published')));
   assert.ok(evidence.boundaries.some(x=>x.includes('release tag')));
