@@ -105,3 +105,38 @@ The dedicated P6 court additionally retains cold/warm Vite module execution and 
 - critical browser flake evidence: artifact **#11082055401**
 
 **P7-01, P7-06, P7-09, P7-10, P7-11 and P7-12 remain open.** Wave 3 does not manufacture 4/8 GiB hardware evidence, an 8-hour plateau, whole-product shared-governor coexistence, visibility/sleep/CPU-contention evidence, storage-amplification measurement or weak-device regression budgets.
+
+
+## Wave 4 — global-governor coexistence + storage amplification
+
+P7 Wave 4 closes **P7-06** and **P7-11** for the declared Chrome 153 / Ubuntu x64 evidence profile. The implementation is retained by PR #71, implementation CI #950 and dedicated artifact **#11085189245** (`sha256:64b2aaf99453b33391a7a153efa75c4befad5ecc9da3854bb55a6138ef09c7dc`).
+
+### P7-06 — one global resource governor
+
+The production resource path now gives active leases explicit lane ownership. Core virtual processes, product UI tasks, preview dispatch, ToolchainAuthority workers and AI shared-concurrency tasks all consume the same `runtime.resources` authority. The dedicated browser court held all five lanes live simultaneously:
+
+- `ui`: 1 task / 1,024 in-flight bytes
+- `core:process`: 1 process / 1,048,576 output-budget bytes
+- `preview`: 1 task
+- `toolchain`: 1 worker
+- `ai-consumer`: 1 task / 2,048 in-flight bytes
+
+Critical pressure rejected a new AI background admission with `OC_RESOURCE_EXHAUSTED`; after teardown every resource counter returned to zero. Both Chrome iterations produced the same authority result.
+
+### P7-11 — retained physical storage accounting
+
+The court uses production OPFS authorities and exact browser `File.size` payload accounting:
+
+- source corpus: **64 × 4,096 = 262,144 logical source bytes**
+- serialized source snapshot: **353,438 bytes**
+- package fixture: Lightning CSS retained tarball **3,826,518 packed bytes**, **16,232,340 unique verified logical bytes**, **3,826,763 persistent bytes**
+- checkpoint metadata: **252 bytes**
+- interrupted after-payload temporary transaction: **397,191 transient bytes**
+- temporary workspace peak: **750,881 bytes**, returning to **353,690 bytes** after GC
+- derived cache: **3,895 logical bytes → 4,005 persistent bytes**
+
+Using the frozen formula `physical-persistent-bytes / primary-logical-content-bytes`, both iterations measured **0.253688× steady** and **0.277769× transient peak**. These are retained measurements, not performance thresholds. Filesystem allocation metadata outside exposed file payload size is explicitly excluded.
+
+Implementation CI #950 passed **611/611 contract tests**, **96 critical files × 5 = 480 executions**, CodeQL, the full installed-distribution browser product path, the older P7 declared-profile court, P9 rendered regression and P6 toolchain regression.
+
+P7 remains intentionally open for **P7-01** (4/8 GiB reference-device campaign), **P7-09** (8-hour plateau), **P7-10** (real system sleep/resume plus CPU-contention coverage) and **P7-12** (weak-device regression budgets). Wave 4 does not substitute Chrome automation for those obligations.
