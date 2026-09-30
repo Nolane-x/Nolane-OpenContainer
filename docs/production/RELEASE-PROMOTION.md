@@ -80,3 +80,14 @@ The current candidate `opencontainer-0.1.0-alpha.1-canary` produced:
 The preflight is not a public release and does not prove beta, RC or stable readiness. Cross-browser floors, release rollback, production CDN/header topology, weak-device release budgets, signed/authenticated publication, legal/FTO and operations handoff remain separate gates.
 
 The stable flakiness rule is implemented and tested fail-closed, but P14-15 remains partial until critical-test flakiness is supplied by an independent release campaign rather than only the reviewed candidate manifest.
+
+
+## P14-13 browser-floor regression evidence
+
+PR #72 adds an independent pre-promotion browser campaign instead of silently following the browser version installed on the GitHub runner.
+
+The **frozen-floor lane** installs exact Chrome **153.0.8010.52**. The **newest-Stable lane** resolves the live Chrome for Testing `channels.Stable` manifest, validates the downloaded Linux x64 binary against the manifest version, and retains both manifest and browser-archive SHA-256 values. On implementation CI #960 the live Stable version was **154.0.8037.92**.
+
+Each lane executes the existing repeated **installed-distribution full product path twice**. CI #960 retained **4/4 full product paths** across the two browser versions with zero unexplained failures.
+
+This evidence closes P14-13 only. It is not a cross-browser support matrix and does not define a minimum supported browser version; P11-13 remains open. The current candidate is still canary, so P1-14's requirement to repeat the matrix at each RC remains separate. P14-04, P14-12 and P14-14 also remain open.
