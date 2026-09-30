@@ -24,3 +24,10 @@ The court mechanically verifies:
 This review does **not** manufacture external trust. P13-03 OIDC/trusted publishing, P13-04 provenance for an actually published OpenContainer identity, P13-07 immutable release-tag build, P13-09/10 signing and verification, P13-16 registry canary/staging publication, P13-17 repository protection settings, P13-18 OpenSSF/OSPS evidence and P13-20 long-term historical archive remain open.
 
 The root project remains `UNLICENSED`; P16 legal/FTO is independent. `production_closed=false`.
+
+
+## OpenSSF hygiene court
+
+P13-18 now has a retained official OpenSSF Scorecard run. The workflow pins Scorecard Action v2.4.4 to `2d1146689b8cda280b9bc96326124645441f03bc`, keeps permissions read-only, disables public result publication, retains raw JSON and verifies a normalized receipt. The promoted run used Scorecard v5.5.0 and scored **6.9/10 across 11 checks**.
+
+This result is intentionally not treated as a release score. Low findings remain visible, including License 0 while P16 remains legally open, Dependency-Update-Tool 0, Packaging unavailable (-1) and Fuzzing 0. P13-18 is supplemental hygiene evidence only; external publication, signing, branch protection and long-term archive gates remain independent.

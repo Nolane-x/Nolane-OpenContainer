@@ -47,6 +47,39 @@
       "finding": "The rendered Chrome 153 court reached the failed-process recovery state, but synthetic CDP key activation did not complete process recovery before the 15 second harness deadline. PR #72 did not modify the product UI recovery handler, and the immediately preceding main CI #958 passed the same rendered recovery path.",
       "resolution": "Use deterministic DOM click activation on the actual production recovery button handler for the lifecycle-specific assertion. Keep keyboard, focus, IME and accessibility-tree coverage in the independent rendered interaction courts.",
       "exclusionReasonCode": "HARNESS_TOOLING_BUG"
+    },
+    {
+      "id": "NEG-005",
+      "date": "2026-09-30",
+      "classification": "HARNESS_INVALID",
+      "hypothesis": "OpenSSF Scorecard pull-request JSON identifies the target repository with an owner/name repository field.",
+      "outcome": "HARNESS-FAIL",
+      "evidence": "OpenSSF Scorecard #1 / PR #73",
+      "finding": "The official Scorecard Action intentionally switches pull_request runs to local worktree mode and reports repo.name=file://. with commit=unknown. The raw scan itself completed with score 6.9 and 11 checks; the OpenContainer verifier incorrectly rejected the upstream PR-local identity.",
+      "resolution": "Bind PR evidence to GITHUB_REPOSITORY and GITHUB_SHA while requiring raw file://. identity only for pull_request-local mode. Preserve raw repository identity separately.",
+      "exclusionReasonCode": "HARNESS_TOOLING_BUG"
+    },
+    {
+      "id": "NEG-006",
+      "date": "2026-09-30",
+      "classification": "HARNESS_INVALID",
+      "hypothesis": "The P14-13 historical evidence test may permanently require exactly 99 critical contract files.",
+      "outcome": "HARNESS-FAIL",
+      "evidence": "CI #968 / PR #73",
+      "finding": "Adding the P13-18 source audit legitimately expanded the critical campaign from 99 to 100 files, while the historical P14 evidence test treated the old global count as immutable.",
+      "resolution": "Keep P14-owned evidence assertions exact, but make later global critical-file growth monotonic and equal to the current policy minimum.",
+      "exclusionReasonCode": "HARNESS_TOOLING_BUG"
+    },
+    {
+      "id": "NEG-007",
+      "date": "2026-09-30",
+      "classification": "HARNESS_INVALID",
+      "hypothesis": "Historical source-audit and P14 promotion tests may treat pre-P13-18 policy and global ledger totals as permanent invariants.",
+      "outcome": "HARNESS-FAIL",
+      "evidence": "CI #978 / PR #73",
+      "finding": "The P13-18 source audit still expected machineClosable=false after its own evidence promotion, while the P14 historical test still required exact global ledger totals 271/261. Gate-specific P14 assertions remained correct; only cross-wave global assumptions were stale.",
+      "resolution": "Assert the promoted P13-18 authority directly and keep historical P14 gate-specific evidence exact while allowing later global reconciliation and closure totals to grow monotonically.",
+      "exclusionReasonCode": "HARNESS_TOOLING_BUG"
     }
   ]
 }

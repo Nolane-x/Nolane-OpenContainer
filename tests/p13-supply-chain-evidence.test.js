@@ -10,7 +10,7 @@ const flake=JSON.parse(readFileSync('release/CRITICAL-FLAKE-POLICY.v0.1.json','u
 
 const closed=['P13-01','P13-02','P13-05','P13-06','P13-08','P13-11','P13-12','P13-13','P13-14','P13-15','P13-19'];
 const partial=['P13-04','P13-07','P13-20'];
-const unreconciled=['P13-03','P13-09','P13-10','P13-16','P13-17','P13-18'];
+const unreconciled=['P13-03','P13-09','P13-10','P13-16','P13-17'];
 
 test('P13 evidence binds the supply-chain review to exact CI #424 release artifact',()=>{
   assert.equal(evidence.schema,'opencontainer.p13-supply-chain-evidence.v1.0');
@@ -36,10 +36,15 @@ test('P13 evidence binds the supply-chain review to exact CI #424 release artifa
   assert.equal(evidence.productionClosed,false);
 });
 
-test('P13 closes exactly 11 release-verified gates and preserves all 9 external blockers',()=>{
+test('P13 historical supply-chain evidence retains its 11 gates while later hygiene promotion is monotonic',()=>{
   const rows=ledger.overrides.filter(x=>x.domain==='P13');
-  assert.equal(rows.length,14);
-  assert.deepEqual(rows.filter(x=>x.closure_met===true).map(x=>x.id),closed);
+  assert.ok(rows.length>=14);
+  for(const id of closed)assert.ok(rows.some(x=>x.id===id&&x.closure_met===true),id);
+  const later=rows.find(x=>x.id==='P13-18');
+  if(later?.closure_met===true)assert.deepEqual(
+    {state:later.state,promotion:later.promotion,evidence:later.evidence},
+    {state:'EVIDENCE',promotion:'RELEASE-VERIFIED',evidence:'p13-openssf-scorecard'}
+  );
   for(const id of closed){
     const row=rows.find(x=>x.id===id);
     assert.deepEqual(
@@ -59,9 +64,11 @@ test('P13 closes exactly 11 release-verified gates and preserves all 9 external 
 });
 
 test('P13 closure cannot erase publication tag signing OIDC hygiene or archive boundaries',()=>{
-  for(const id of ['P13-03','P13-04','P13-07','P13-09','P13-10','P13-16','P13-17','P13-18','P13-20']){
+  for(const id of ['P13-03','P13-04','P13-07','P13-09','P13-10','P13-16','P13-17','P13-20']){
     assert.equal(policy.gateAuthority[id].machineClosable,false,id);
   }
+  assert.equal(policy.gateAuthority['P13-18'].machineClosable,true);
+  assert.equal(policy.gateAuthority['P13-18'].evidence,'p13-openssf-scorecard');
   assert.ok(evidence.boundaries.some(x=>x.includes('OIDC')));
   assert.ok(evidence.boundaries.some(x=>x.includes('externally published')));
   assert.ok(evidence.boundaries.some(x=>x.includes('release tag')));

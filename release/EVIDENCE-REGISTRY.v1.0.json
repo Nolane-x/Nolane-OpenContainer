@@ -602,6 +602,14 @@
       "status": "PASS",
       "ref": "CI #960 / PR #72 head 2f67306726e4d5ded6b60ee7d2483f502638e7b7",
       "note": "P14-13 retained dual-browser campaign: Chrome 153 frozen floor + live CfT Stable 154.0.8037.92, 2/2 full installed-distribution paths each, zero unexplained failures. Artifacts #11090364706 and #11091009915."
+    },
+    {
+      "key": "p13-openssf-scorecard",
+      "kind": "EXECUTABLE",
+      "level": "RELEASE-VERIFIED",
+      "status": "PASS",
+      "ref": "OpenSSF Scorecard #2 / CI #969 / PR #73 head 9811c0f6423aa3a1a4aff21711b5116e95c75dd7",
+      "note": "P13-18 retained supplemental OpenSSF hygiene evidence: official pinned Scorecard Action v2.4.4, raw JSON SHA-256 6db20bee3c94f5d377ca49b3265e804c9382c9fffaa4df4a0f426d94997515a7, score 6.9/10 over 11 checks, artifact #11093017366. Low/unavailable checks are preserved. This is project-hygiene evidence, not signing, publication, branch-protection or legal closure."
     }
   ]
 }

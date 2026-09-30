@@ -1,0 +1,128 @@
+{
+  "schema": "opencontainer.p13-openssf-scorecard-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P13-18",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "SECURITY-REVIEWED / RELEASE-VERIFIED",
+  "pullRequest": 73,
+  "implementationHead": "9811c0f6423aa3a1a4aff21711b5116e95c75dd7",
+  "scorecardRun": {
+    "workflow": "OpenSSF Scorecard",
+    "runNumber": 2,
+    "runId": 36708239438,
+    "testedCheckoutCommit": "1c0dc2737e9c11441cf47b36654b9572e3abf463",
+    "action": {
+      "repository": "ossf/scorecard-action",
+      "release": "v2.4.4",
+      "commit": "2d1146689b8cda280b9bc96326124645441f03bc"
+    },
+    "scorecard": {
+      "version": "v5.5.0",
+      "commit": "c395761df6afe1a69e476bc60a013a94bcbc153f",
+      "aggregateScore": 6.9,
+      "checkCount": 11,
+      "scoredChecks": 10,
+      "unavailableChecks": 1
+    },
+    "workflowBinding": {
+      "repository": "Nolane-x/Nolane-OpenContainer",
+      "mode": "local-pr-worktree",
+      "rawRepository": "file://.",
+      "rawCommit": "unknown"
+    },
+    "rawSha256": "6db20bee3c94f5d377ca49b3265e804c9382c9fffaa4df4a0f426d94997515a7",
+    "artifact": {
+      "id": 11093017366,
+      "digest": "sha256:a09995085ce8d2fcb1dbc8b4a2c959bd23b688f507a5a0e20b2103e54e7e0b57"
+    },
+    "checks": [
+      {
+        "name": "Security-Policy",
+        "score": 4
+      },
+      {
+        "name": "Dangerous-Workflow",
+        "score": 10
+      },
+      {
+        "name": "Dependency-Update-Tool",
+        "score": 0
+      },
+      {
+        "name": "License",
+        "score": 0
+      },
+      {
+        "name": "Packaging",
+        "score": -1
+      },
+      {
+        "name": "Token-Permissions",
+        "score": 10
+      },
+      {
+        "name": "SAST",
+        "score": 10
+      },
+      {
+        "name": "Binary-Artifacts",
+        "score": 8
+      },
+      {
+        "name": "Pinned-Dependencies",
+        "score": 10
+      },
+      {
+        "name": "Vulnerabilities",
+        "score": 10
+      },
+      {
+        "name": "Fuzzing",
+        "score": 0
+      }
+    ]
+  },
+  "regressionCi": {
+    "runNumber": 969,
+    "runId": 36708239615,
+    "testedCheckoutCommit": "1c0dc2737e9c11441cf47b36654b9572e3abf463",
+    "contractTests": 625,
+    "contractPassed": 625,
+    "contractFailed": 0,
+    "criticalTestFiles": 100,
+    "criticalIterations": 5,
+    "criticalTestFileExecutions": 500,
+    "criticalUnexplainedFailures": 0,
+    "codeql": "PASS",
+    "fullInstalledDistributionBrowserPath": "PASS",
+    "p9RenderedRegression": "PASS",
+    "p14FrozenFloorRegression": "PASS",
+    "p14NewestStableRegression": "PASS"
+  },
+  "closure": {
+    "gate": "P13-18",
+    "state": "EVIDENCE",
+    "promotion": "RELEASE-VERIFIED",
+    "closureMet": true
+  },
+  "interpretation": {
+    "minimumScoreThresholdClaimed": false,
+    "lowScoresPreserved": true,
+    "observations": [
+      "License scored 0 because the project intentionally has no final license while P16 legal/FTO remains open.",
+      "Dependency-Update-Tool scored 0 because no dependency-update bot configuration was detected.",
+      "Packaging was unavailable (-1) because no GitHub/GitLab public publishing workflow is claimed.",
+      "Fuzzing scored 0 because Scorecard did not detect an external fuzzing integration."
+    ]
+  },
+  "boundaries": {
+    "releaseProofClaimed": false,
+    "oidcPublishingClaimed": false,
+    "signingClaimed": false,
+    "branchProtectionClaimed": false,
+    "registryStagingClaimed": false,
+    "longTermArchiveClaimed": false,
+    "legalClosureClaimed": false,
+    "productionClosed": false
+  },
+  "productionClosed": false
+}

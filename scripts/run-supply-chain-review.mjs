@@ -92,10 +92,9 @@ export function reviewRevocation({policy,operations,scenarios}){
 }
 
 export async function buildSupplyChainReview(){
-  const [policy,ciText,maintenanceText,manifest,spdx,provenance,inventory,reproducibility,checksums,certification,operations,scenarios]=await Promise.all([
-    readJson('release/SUPPLY-CHAIN-REVIEW-POLICY.v1.0.json'),
-    readFile(resolve(repoRoot,'.github/workflows/ci.yml'),'utf8'),
-    readFile(resolve(repoRoot,'.github/workflows/maintenance.yml'),'utf8'),
+  const policy=await readJson('release/SUPPLY-CHAIN-REVIEW-POLICY.v1.0.json');
+  const [workflowEntries,manifest,spdx,provenance,inventory,reproducibility,checksums,certification,operations,scenarios]=await Promise.all([
+    Promise.all(policy.workflowFiles.map(async path=>[path,await readFile(resolve(repoRoot,path),'utf8')])),
     readJson('.artifacts/release/release-manifest.json'),
     readJson('.artifacts/release/opencontainer.spdx.json'),
     readJson('.artifacts/release/provenance.intoto.json'),
@@ -106,7 +105,8 @@ export async function buildSupplyChainReview(){
     readJson('release/OPERATIONS-POLICY.v1.0.json'),
     readJson('release/OPERATIONS-DISASTER-SCENARIOS.v1.0.json')
   ]);
-  const workflowErrors=reviewWorkflowSecurity({policy,workflows:{'.github/workflows/ci.yml':ciText,'.github/workflows/maintenance.yml':maintenanceText}});
+  const workflows=Object.fromEntries(workflowEntries);
+  const workflowErrors=reviewWorkflowSecurity({policy,workflows});
   const releaseErrors=reviewReleaseEvidence({policy,manifest,spdx,provenance,inventory,reproducibility,checksums,certification});
   const revocationErrors=reviewRevocation({policy,operations,scenarios});
   const errors=[...workflowErrors,...releaseErrors,...revocationErrors];
