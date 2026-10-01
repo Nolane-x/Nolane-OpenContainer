@@ -66,5 +66,18 @@
     "P9-12",
     "P14-14"
   ],
-  "productionClosed": false
+  "productionClosed": false,
+  "aggregation": {
+    "script": "scripts/p7-external-device-aggregate.mjs",
+    "exactSourceCommitRequired": true,
+    "requiredReceipts": [
+      "4-gib-weak-device",
+      "8-gib-weak-device",
+      "soak",
+      "lifecycle"
+    ],
+    "requiresDistinctMemoryDeviceIds": true,
+    "outputIsCandidateOnly": true,
+    "automaticLedgerClosure": false
+  }
 }
