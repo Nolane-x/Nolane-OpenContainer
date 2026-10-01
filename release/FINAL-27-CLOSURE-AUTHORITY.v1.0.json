@@ -1,0 +1,149 @@
+{
+  "schema": "opencontainer.final-closure-authority.v1.0",
+  "status": "ALL_CURRENT_OPEN_GATES_ROUTED",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "rule": "Every currently open production gate must appear in exactly one route. A route may prepare or verify evidence, but no route may auto-promote or mutate the production ledger.",
+  "routes": [
+    {
+      "id": "public-deployment",
+      "gates": [
+        "P1-13",
+        "P14-12"
+      ],
+      "authorityType": "external-public-topology",
+      "entrypoint": ".github/workflows/public-deployment-evidence.yml",
+      "policy": "release/EXTERNAL-RUNTIME-EVIDENCE-POLICY.v1.0.json",
+      "trigger": "real public HTTPS deployment bound to exact release tag and topology id",
+      "automaticLedgerClosure": false
+    },
+    {
+      "id": "real-release",
+      "gates": [
+        "P1-14",
+        "P11-12",
+        "P13-04",
+        "P13-07",
+        "P13-09",
+        "P13-10",
+        "P13-16",
+        "P15-12"
+      ],
+      "authorityType": "external-publication",
+      "entrypoint": ".github/workflows/external-release-evidence.yml",
+      "policy": "release/EXTERNAL-RELEASE-EVIDENCE-POLICY.v1.0.json",
+      "trigger": "real npm + GitHub Release identity; RC matrix for P1-14 and canary publication for P13-16",
+      "automaticLedgerClosure": false
+    },
+    {
+      "id": "field-regression",
+      "gates": [
+        "P1-15"
+      ],
+      "authorityType": "external-field-incident",
+      "entrypoint": ".github/workflows/final-external-decision.yml",
+      "policy": "release/FINAL-EXTERNAL-DECISION-POLICY.v1.0.json",
+      "trigger": "actual field browser regression plus retained SHA-bound regression test",
+      "automaticLedgerClosure": false
+    },
+    {
+      "id": "reference-device",
+      "gates": [
+        "P7-01",
+        "P7-09",
+        "P7-10"
+      ],
+      "authorityType": "external-device",
+      "entrypoint": ".github/workflows/p7-external-device-evidence.yml",
+      "policy": "release/P7-EXTERNAL-DEVICE-HARNESS.v1.0.json",
+      "aggregate": "scripts/p7-external-device-aggregate.mjs",
+      "trigger": "real 4/8 GiB reference devices, >=8h soak, real suspend/resume and CPU contention",
+      "automaticLedgerClosure": false
+    },
+    {
+      "id": "weak-device-budget",
+      "gates": [
+        "P7-12",
+        "P9-12",
+        "P14-14"
+      ],
+      "authorityType": "external-device",
+      "entrypoint": ".github/workflows/weak-device-ui-evidence.yml",
+      "policy": "release/WEAK-DEVICE-BUDGET-PROTOCOL.v1.0.json",
+      "trigger": "calibration on 4/8 GiB devices, frozen budget, disjoint validation devices and >=8h UI soak",
+      "automaticLedgerClosure": false
+    },
+    {
+      "id": "p9-human-acceptance",
+      "gates": [
+        "P9-05",
+        "P9-11"
+      ],
+      "authorityType": "external-human",
+      "entrypoint": ".github/workflows/p9-human-acceptance-evidence.yml",
+      "policy": "release/P9-HUMAN-ACCEPTANCE-POLICY.v1.0.json",
+      "trigger": "manual screen-reader evaluation and >=5-person preregistered comprehension study",
+      "automaticLedgerClosure": false
+    },
+    {
+      "id": "repository-trust",
+      "gates": [
+        "P12-17",
+        "P13-17"
+      ],
+      "authorityType": "local-admin-external-state",
+      "entrypoint": "scripts/repository-trust-state.mjs",
+      "command": "npm run repository:trust:evidence",
+      "policy": "release/EXTERNAL-TRUST-REVIEW-POLICY.v1.0.json",
+      "trigger": "repository administrator captures live private-vulnerability and protection state with read-only admin token",
+      "automaticLedgerClosure": false
+    },
+    {
+      "id": "human-security-review",
+      "gates": [
+        "P12-18",
+        "P12-20"
+      ],
+      "authorityType": "external-human",
+      "entrypoint": ".github/workflows/external-security-review-evidence.yml",
+      "policy": "release/EXTERNAL-TRUST-REVIEW-POLICY.v1.0.json",
+      "trigger": "independent human security review + human product-security review artifacts",
+      "automaticLedgerClosure": false
+    },
+    {
+      "id": "trusted-publisher",
+      "gates": [
+        "P13-03"
+      ],
+      "authorityType": "external-admin",
+      "entrypoint": ".github/workflows/final-external-decision.yml",
+      "policy": "release/FINAL-EXTERNAL-DECISION-POLICY.v1.0.json",
+      "trigger": "real npm OIDC trusted-publisher configuration and exact publishing workflow binding",
+      "automaticLedgerClosure": false
+    },
+    {
+      "id": "adjacent-release",
+      "gates": [
+        "P14-04"
+      ],
+      "authorityType": "external-publication",
+      "entrypoint": ".github/workflows/adjacent-release-evidence.yml",
+      "policy": "release/EXTERNAL-RUNTIME-EVIDENCE-POLICY.v1.0.json",
+      "trigger": "two directly adjacent published npm versions on one persistent browser origin/profile",
+      "automaticLedgerClosure": false
+    },
+    {
+      "id": "legal-decisions",
+      "gates": [
+        "P16-01",
+        "P16-05"
+      ],
+      "authorityType": "external-legal",
+      "entrypoint": ".github/workflows/final-external-decision.yml",
+      "policy": "release/FINAL-EXTERNAL-DECISION-POLICY.v1.0.json",
+      "trigger": "final project-license decision and jurisdiction-specific qualified-counsel FTO review",
+      "automaticLedgerClosure": false
+    }
+  ],
+  "forbiddenAutoPromotion": true,
+  "productionClosed": false
+}
