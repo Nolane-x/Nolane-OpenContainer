@@ -1,0 +1,122 @@
+name: External Release Evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Published package version
+        required: true
+        type: string
+      tag:
+        description: Immutable Git tag, exactly v<version>
+        required: true
+        type: string
+      channel:
+        description: Published npm dist-tag / release channel
+        required: true
+        type: choice
+        options:
+          - canary
+          - beta
+          - rc
+      asset_name:
+        description: GitHub Release .tgz asset name
+        required: true
+        type: string
+      signer_workflow:
+        description: Workflow path that signed the GitHub artifact attestation
+        required: true
+        default: .github/workflows/publish.yml
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: external-release-evidence-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  verify-publication:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - run: npm ci
+      - run: bash scripts/install-frozen-ci-chrome.sh
+      - name: Verify GitHub CLI attestation support
+        run: |
+          gh --version
+          gh help release >/dev/null
+          gh attestation verify --help >/dev/null
+      - name: Verify real external publication
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          npm run external:release:verify --
+          --version=${{ inputs.version }}
+          --tag=${{ inputs.tag }}
+          --channel=${{ inputs.channel }}
+          --asset=${{ inputs.asset_name }}
+          --signer-workflow=${{ inputs.signer_workflow }}
+      - name: Archive external release verification
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-external-release-${{ inputs.tag }}-${{ github.run_id }}
+          path: .artifacts/external-release/receipt.json
+          if-no-files-found: warn
+          retention-days: 90
+
+  rc-frozen-floor:
+    if: inputs.channel == 'rc'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - run: npm ci
+      - run: bash scripts/install-frozen-ci-chrome.sh
+      - run: npm run p14:browser-regression -- --lane=frozen-floor
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-rc-frozen-floor-${{ inputs.tag }}-${{ github.run_id }}
+          path: .artifacts/p14-browser-regression/frozen-floor-receipt.json
+          if-no-files-found: error
+          retention-days: 90
+
+  rc-newest-stable:
+    if: inputs.channel == 'rc'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - run: npm ci
+      - run: bash scripts/install-current-stable-ci-chrome.sh
+      - run: npm run p14:browser-regression -- --lane=newest-stable
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-rc-newest-stable-${{ inputs.tag }}-${{ github.run_id }}
+          path: .artifacts/p14-browser-regression/newest-stable-receipt.json
+          if-no-files-found: error
+          retention-days: 90

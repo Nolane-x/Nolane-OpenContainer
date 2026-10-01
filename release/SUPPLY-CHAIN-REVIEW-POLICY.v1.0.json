@@ -7,7 +7,8 @@
   "workflowFiles": [
     ".github/workflows/ci.yml",
     ".github/workflows/maintenance.yml",
-    ".github/workflows/scorecard.yml"
+    ".github/workflows/scorecard.yml",
+    ".github/workflows/external-release-evidence.yml"
   ],
   "workflowRules": {
     "remoteActionRef": "full-40-hex-commit",
@@ -226,5 +227,14 @@
       "ciRun": 988,
       "candidateArtifactId": 11101696511
     }
+  },
+  "externalReleaseVerification": {
+    "policy": "release/EXTERNAL-RELEASE-EVIDENCE-POLICY.v1.0.json",
+    "workflow": ".github/workflows/external-release-evidence.yml",
+    "permissions": {
+      "contents": "read"
+    },
+    "publicationWritesAllowed": false,
+    "purpose": "Verify independently created public npm/GitHub Release identities without storing publishing credentials or granting publication permissions to PR/main CI."
   }
 }
