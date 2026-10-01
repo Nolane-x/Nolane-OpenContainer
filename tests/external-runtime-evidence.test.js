@@ -93,6 +93,7 @@ test('adjacent release court runs actual published packages across one origin an
   assert.ok(adjacentProbe.includes("directoryName='opencontainer-adjacent-release-'"));
   assert.ok(adjacentProbe.includes("authority.migrate"));
   assert.ok(adjacentProbe.includes("rollbackPolicy"));
+  assert.ok(adjacentProbe.includes("rollback-compatible-read-write"));
   assert.ok(adjacentProbe.includes("rollback-read-only"));
   assert.ok(adjacentProbe.includes("rollback-refuse-open"));
   assert.ok(adjacentProbe.includes("verified-current-after-rollback"));
