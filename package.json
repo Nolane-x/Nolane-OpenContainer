@@ -74,7 +74,12 @@
     "p9:failure-scenarios": "node scripts/p9-failure-scenario-court.mjs",
     "legal:readiness": "node scripts/p16-legal-governance-readiness.mjs",
     "p7:external-device:evidence": "node scripts/p7-external-device-court.mjs",
-    "p7:external-device:aggregate": "node scripts/p7-external-device-aggregate.mjs"
+    "p7:external-device:aggregate": "node scripts/p7-external-device-aggregate.mjs",
+    "weak-device:ui:evidence": "node scripts/weak-device-ui-court.mjs",
+    "weak-device:budget:freeze": "node scripts/weak-device-budget.mjs freeze",
+    "weak-device:budget:validate": "node scripts/weak-device-budget.mjs validate",
+    "product:fingerprint": "node scripts/product-source-fingerprint.mjs",
+    "weak-device:protocol:fingerprint": "node scripts/weak-device-protocol-fingerprint.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",

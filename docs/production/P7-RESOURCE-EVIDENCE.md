@@ -166,3 +166,18 @@ Therefore **P7 remains 10/14 closed** and P7-01/P7-09/P7-10/P7-12 remain open un
 `scripts/p7-external-device-aggregate.mjs` combines exactly four retained receipts: 4 GiB weak-device, 8 GiB weak-device, >=8-hour soak and lifecycle. All four must be PASS and carry the same non-empty source commit. The 4 GiB and 8 GiB calibration receipts must use distinct device identities.
 
 A valid aggregate can mark P7-01/P7-09/P7-10 as `READY_FOR_REVIEW`, but it still sets `closureEligible=false`. P7-12, P9-12 and P14-14 remain explicitly blocked until weak-device budgets are frozen before, then passed by, a separate validation campaign.
+
+
+## Wave 6 — weak-device UI budget preregistration
+
+Wave 6 adds a second external-device court that samples the **actual product shell** at `/`, rather than a synthetic benchmark page. The sampler drives the exported production `__openContainerUi` authority across Preview/Inspect/AI switching, canonical save, and a real healthy process run while retaining UI latency and browser heap samples.
+
+Budget selection is preregistered before validation:
+
+- calibration requires at least **2 independent workflow runs for each 4 GiB and 8 GiB class**, each at least 30 minutes;
+- the budget formula is fixed in `release/WEAK-DEVICE-BUDGET-PROTOCOL.v1.0.json`: latency thresholds are derived with a 1.35× multiplier plus metric-specific fixed margins; heap slope and peak use frozen formulas/floors;
+- validation requires separate device IDs from every calibration device;
+- calibration and validation must share the same **product-source fingerprint**, which hashes production packages, root shell assets and the frozen package graph while ignoring docs/evidence-only changes;
+- P9-12 additionally requires a persistent **UI soak of at least 480 minutes** under the frozen budget.
+
+The freeze/validation scripts always emit `closureEligible=false`. A successful validation may only move P7-12/P9-12/P14-14 to `READY_FOR_REVIEW`; a reviewed reconciliation is still required. The production ledger remains **277/304** and `production_closed=false`.

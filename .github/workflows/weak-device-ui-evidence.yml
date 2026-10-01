@@ -1,0 +1,81 @@
+name: Weak Device UI Evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: UI evidence phase
+        required: true
+        type: choice
+        options:
+          - calibration
+          - validation
+          - soak-ui
+      memory_gib:
+        description: Reference memory class
+        required: true
+        type: choice
+        options:
+          - "4"
+          - "8"
+      duration_minutes:
+        description: Calibration/validation >=30, soak-ui >=480
+        required: true
+        default: "30"
+        type: string
+      sample_interval_seconds:
+        description: UI sample interval
+        required: true
+        default: "30"
+        type: string
+      device_id:
+        description: Stable non-secret reference-device identifier
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weak-device-ui-${{ inputs.device_id }}-${{ inputs.phase }}
+  cancel-in-progress: false
+
+jobs:
+  ui-evidence:
+    if: github.repository == 'Nolane-x/Nolane-OpenContainer' && github.ref == 'refs/heads/main'
+    runs-on:
+      - self-hosted
+      - linux
+      - x64
+      - opencontainer-reference-device
+      - ${{ format('p7-{0}gib', inputs.memory_gib) }}
+    timeout-minutes: 720
+    environment: external-device-evidence
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - run: npm ci
+      - name: Verify frozen browser
+        run: |
+          test "$(node --version)" = "v24.21.0"
+          test "$(npm --version)" = "11.19.0"
+          test "$(google-chrome-stable --version)" = "Google Chrome 153.0.8010.52"
+      - name: Run weak-device UI court
+        env:
+          OPENCONTAINER_REFERENCE_DEVICE_ID: ${{ inputs.device_id }}
+          OPENCONTAINER_REFERENCE_MEMORY_GIB: ${{ inputs.memory_gib }}
+          OPENCONTAINER_UI_PHASE: ${{ inputs.phase }}
+          OPENCONTAINER_UI_DURATION_MINUTES: ${{ inputs.duration_minutes }}
+          OPENCONTAINER_UI_SAMPLE_INTERVAL_SECONDS: ${{ inputs.sample_interval_seconds }}
+        run: npm run weak-device:ui:evidence -- --phase=${{ inputs.phase }} --memory-gib=${{ inputs.memory_gib }} --duration-minutes=${{ inputs.duration_minutes }} --sample-interval-seconds=${{ inputs.sample_interval_seconds }} --device-id="${{ inputs.device_id }}"
+      - name: Archive weak-device UI receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-weak-device-ui-${{ inputs.phase }}-${{ inputs.memory_gib }}gib-${{ github.run_id }}
+          path: .artifacts/weak-device-ui/receipt.json
+          if-no-files-found: warn
+          retention-days: 90

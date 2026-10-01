@@ -1026,3 +1026,12 @@ The same receipts are designed to become input evidence for P9-12 and P14-14, bu
 
 
 The Wave 5 aggregator refuses mixed-commit evidence and requires four retained receipt classes (4 GiB, 8 GiB, >=8-hour soak, lifecycle). Its output is candidate-only; it cannot mutate the production ledger. Even a fully valid aggregate leaves the weak-device budget gates blocked for a separately preregistered validation campaign.
+
+
+## Weak-device UI budget preregistration
+
+The real product shell now has a self-hosted weak-device UI sampler plus a deterministic budget freeze/validation protocol. Calibration requires 2 runs per 4/8 GiB class. Validation devices must be disjoint from calibration, product-source fingerprint must match, and P9-12 requires an >=8-hour UI soak.
+
+No gate is promoted by this infrastructure. P7-12, P9-12 and P14-14 remain open; overall closure stays **277/304** with `production_closed=false`.
+
+The calibration/validation receipts are additionally bound to a separate **measurement-protocol fingerprint** covering the UI sampler, UI court, budget implementation and frozen protocol. This prevents reusing old calibration after changing how measurements or thresholds are computed.
