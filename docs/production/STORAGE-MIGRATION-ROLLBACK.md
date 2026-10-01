@@ -88,7 +88,7 @@ The sequence is:
 
 1. previous published release seeds canonical storage;
 2. current published release reopens it and either reuses the same storage schema or performs exactly one declared adjacent migration;
-3. previous published release is restored on the same origin and must use read-only compatibility or refuse open, never destructive downgrade;
+3. previous published release is restored on the same origin; identical storage schema may remain read-write, while newer schema must become read-only or refuse open, never destructive downgrade;
 4. current published release reopens the canonical state after that rollback attempt and verifies the marker/state is intact.
 
 Each release ships `docs/production/RELEASE-STORAGE-PROFILE.v1.0.json`; future schema changes must update that profile before publication. The court output is reviewable evidence only and does not automatically close P14-04.
