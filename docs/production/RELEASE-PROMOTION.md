@@ -91,3 +91,14 @@ The **frozen-floor lane** installs exact Chrome **153.0.8010.52**. The **newest-
 Each lane executes the existing repeated **installed-distribution full product path twice**. CI #960 retained **4/4 full product paths** across the two browser versions with zero unexplained failures.
 
 This evidence originally closed P14-13 only. PR #76 subsequently uses the retained dual-version result to freeze Chrome 153.0.8010.52 as the minimum **only** for the declared Ubuntu 24.04 x64 evidence profile, closing P11-13 without claiming cross-browser support. The current candidate is still canary, so P1-14's requirement to repeat the matrix at each RC remains separate. P14-04, P14-12 and P14-14 also remain open.
+
+
+## Real public topology evidence
+
+`.github/workflows/public-deployment-evidence.yml` is a manual read-only court for P1-13/P14-12. It checks out the exact deployed tag and requires the public deployment to expose the same runtime version. HTTPS/TLS/HSTS, public DNS, edge-marker identity, deployment headers, cross-origin isolation and a live Chrome product-shell boot are all checked from outside the deployment.
+
+The court never deploys or promotes. A PASS is candidate evidence only and requires reviewed reconciliation.
+
+## RC and adjacent-release evidence
+
+The external release court already reruns frozen-floor/newest-Stable lanes on exact RC tags. Separately, `.github/workflows/adjacent-release-evidence.yml` validates P14-04 against two actual adjacent npm artifacts using one persistent browser origin/profile across old→new→old→new storage phases. Synthetic v1/v2 migration evidence remains supporting evidence, not a substitute for this real-artifact campaign.
