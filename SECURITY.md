@@ -42,4 +42,4 @@ Automated tests, dependency audit, CodeQL, and AI-assisted review are supporting
 
 ## Verification court for private intake
 
-A manual, read-only verification workflow now exists to capture GitHub private-vulnerability-reporting state when a repository administrator supplies a separate admin-read token. The token is not stored in evidence. This workflow does **not** mean the private channel is currently verified or enabled; P12-17 remains open until a passing retained receipt is reviewed.
+A local, read-only verification command now exists to capture GitHub private-vulnerability-reporting state when a repository administrator supplies a separate admin-read token to the process environment. The token is not stored in evidence and is not referenced by GitHub Actions. This court does **not** mean the private channel is currently verified or enabled; P12-17 remains open until a passing retained receipt is reviewed.
