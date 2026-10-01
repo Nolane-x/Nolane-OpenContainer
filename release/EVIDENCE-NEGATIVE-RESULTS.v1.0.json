@@ -188,8 +188,8 @@
       "outcome": "HARNESS-FAIL",
       "evidence": "CI #1061 / PR #85",
       "finding": "The supply-chain court correctly rejected the workflow because the frozen policy forbids every `${{ secrets.* }}` signal in audited workflows, independent of whether the secret is read-only. Product/runtime tests were not implicated.",
-      "resolution": "Remove the repository trust-state workflow entirely, keep the global no-secret workflow invariant unchanged, and retain repository-administration state capture as an explicitly invoked local/admin CLI using a process-local read-only token.",
-      "exclusionReasonCode": "HARNESS_POLICY_CONFLICT"
+      "resolution": "Remove the repository trust-state workflow entirely, keep the global no-secret workflow invariant unchanged, retain repository-administration state capture as an explicitly invoked local/admin CLI using a process-local read-only token, and classify this design conflict under the already-preregistered HARNESS_TOOLING_BUG reason rather than inventing a post-hoc exclusion code.",
+      "exclusionReasonCode": "HARNESS_TOOLING_BUG"
     }
   ]
 }
