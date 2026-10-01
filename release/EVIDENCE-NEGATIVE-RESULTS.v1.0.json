@@ -168,6 +168,17 @@
       "finding": "P16 legitimately promoted twelve machine-auditable governance/provenance gates, extending the global ledger from 274/265 to 286/277. All P16 promotion assertions and all P9-owned failure-registry assertions passed; only P9-03's historical cross-domain global totals were stale.",
       "resolution": "Keep P9-owned 15/18 closure, corpus, evidence and external-blocker assertions exact while making only whole-product reconciliation row/closure totals monotonic so later independent domain promotions cannot invalidate historical evidence.",
       "exclusionReasonCode": "HARNESS_TOOLING_BUG"
+    },
+    {
+      "id": "NEG-016",
+      "date": "2026-10-01",
+      "classification": "HARNESS_INVALID",
+      "hypothesis": "A read-only external release verification workflow and its source audit can be added without refining the historical supply-chain forbidden-signal matcher or source-format assumptions.",
+      "outcome": "HARNESS-FAIL",
+      "evidence": "CI #1054 / PR #82",
+      "finding": "The new workflow had contents: read only and no publication credentials or write permissions, but the historical supply-chain matcher rejected the literal help probe 'gh release verify-asset --help' because it treated any 'gh release' substring as a write-capable release signal. A separate source-audit assertion also matched one exact formatting shape for the npm pack call rather than the verifier semantics. No application/runtime/product court failed.",
+      "resolution": "Keep the external workflow read-only; replace the workflow help probe with non-write 'gh help release', retain the actual release verification command inside the audited verifier script, and assert stable semantic markers instead of formatting-specific source text.",
+      "exclusionReasonCode": "HARNESS_TOOLING_BUG"
     }
   ]
 }
