@@ -39,7 +39,8 @@
     "devicesMustBeDisjointFromCalibration": true,
     "productSourceFingerprintMustMatch": true,
     "uiSoakMinimumMinutes": 480,
-    "uiSoakPhase": "soak-ui"
+    "uiSoakPhase": "soak-ui",
+    "measurementProtocolFingerprintMustMatch": true
   },
   "promotion": {
     "automaticLedgerClosure": false,
@@ -50,5 +51,16 @@
     "P7-12",
     "P9-12",
     "P14-14"
-  ]
+  ],
+  "measurementProtocolFingerprint": {
+    "script": "scripts/weak-device-protocol-fingerprint.mjs",
+    "covers": [
+      "apps/playground/public/weak-device-ui-sampler.html",
+      "apps/playground/public/weak-device-ui-sampler.js",
+      "scripts/weak-device-ui-court.mjs",
+      "scripts/weak-device-budget.mjs",
+      "release/WEAK-DEVICE-BUDGET-PROTOCOL.v1.0.json"
+    ],
+    "calibrationAndValidationMustMatch": true
+  }
 }
