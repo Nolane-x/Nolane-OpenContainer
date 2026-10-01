@@ -1096,3 +1096,16 @@ A last-mile fail-closed receipt authority is staged for the four remaining exter
 The verifier binds every receipt to the exact checked-out commit. P1-15 must point to an actual retained regression test whose SHA-256 matches the receipt. P13-03 remains blocked while the supply-chain policy is still OPEN_EXTERNAL and the configured publishing workflow bytes do not match. P16-01 additionally builds the actual distribution and requires its package license, root LICENSE digest and legal policy to agree with one SPDX decision. P16-05 requires legal-policy alignment and preserves a counsel outcome of BLOCKED as BLOCKED_BY_COUNSEL.
 
 The workflow is manual, contents-read-only and contains no secrets or publication authority. It emits candidate review evidence only: `closureEligible=false`, no automatic ledger promotion, **277/304 CLOSED**, `production_closed=false`.
+
+
+## Final 27 closure authority
+
+The repository now has one machine-verified routing map for every currently open production gate: `release/FINAL-27-CLOSURE-AUTHORITY.v1.0.json`.
+
+The verifier reconstructs all **304** gate IDs from the 19-domain ledger, subtracts only overrides with `closure_met=true`, and requires the authority map to be set-equal to the resulting open-gate set. At the current ledger state that is exactly **27 open gates / 277 closed gates**.
+
+Those 27 gates are routed across 11 explicit authorities: public deployment, real release publication, field regression, physical reference-device campaigns, weak-device budget validation, P9 human acceptance, local repository-admin trust capture, external human security review, npm trusted-publisher certification, adjacent published-release migration, and final legal decisions.
+
+Every workflow-backed route must remain manual, `contents: read`, secret-free and without publication/write authority. The repository-admin path remains local-only. Every referenced policy must keep automatic ledger closure disabled.
+
+This is deliberately a **control plane, not gate closure**. If a real external gate closes later, CI will fail until the authority map and ledger are reconciled together. Current production state remains **277/304 CLOSED**, `production_closed=false`.
