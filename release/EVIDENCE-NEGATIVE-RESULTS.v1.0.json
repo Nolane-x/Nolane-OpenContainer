@@ -135,6 +135,28 @@
       "finding": "P9-03 legitimately added one reconciliation row and one closure, changing whole-product totals from 273/264 to 274/265. Every P11-owned assertion and every P9-03 promotion assertion passed; only the historical cross-domain global totals were stale.",
       "resolution": "Preserve exact P11 gate and P11-12 boundary assertions while making only whole-product reconciliation row/closure totals monotonic.",
       "exclusionReasonCode": "HARNESS_TOOLING_BUG"
+    },
+    {
+      "id": "NEG-013",
+      "date": "2026-10-01",
+      "classification": "HARNESS_INVALID",
+      "hypothesis": "Historical P9-03 evidence may permanently require the global critical campaign size that existed when P9-03 closed.",
+      "outcome": "HARNESS-FAIL",
+      "evidence": "CI #1025 / PR #78",
+      "finding": "P16 legitimately added one critical test file, expanding the campaign from 107 to 108. P9-03 corpus, projection, ledger and registry evidence all remained correct; only the historical global count was stale.",
+      "resolution": "Keep P9-owned assertions exact while allowing later global critical-file growth monotonically.",
+      "exclusionReasonCode": "HARNESS_TOOLING_BUG"
+    },
+    {
+      "id": "NEG-014",
+      "date": "2026-10-01",
+      "classification": "HYPOTHESIS_FALSIFIED",
+      "hypothesis": "The retained lightningcss-wasm@1.33.0 tarball carries package/LICENSE internally, so redistributing the tarball automatically carries the MPL-2.0 license text.",
+      "outcome": "FAIL",
+      "evidence": "CI #1025 / PR #78",
+      "finding": "The exact retained tarball passed its artifact digest identity but does not contain package/LICENSE. Package metadata and the frozen dependency graph identify the package as MPL-2.0.",
+      "resolution": "Retain canonical MPL-2.0 text separately under third_party/licenses and require every OpenContainer distribution that includes the Lightning CSS tarball to include that notice. Preserve P16-01/P16-05 legal decisions as external.",
+      "exclusionReasonCode": null
     }
   ]
 }
