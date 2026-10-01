@@ -11,7 +11,7 @@ const EXPECTED=Object.freeze({
   rawIdUnique:234,
   duplicatedRawIds:46,
   courtClasses:55,
-  rounds:Object.freeze({base:100,round23:40,round24State:50,round24Completeness:40,round25:50})
+  rounds:Object.freeze({base:100,round23:40,round24State:52,round24Completeness:38,round25:50})
 });
 
 function sha256(value){return createHash('sha256').update(value).digest('hex');}
