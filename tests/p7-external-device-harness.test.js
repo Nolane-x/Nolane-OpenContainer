@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { classifyMemory, validateRequest, SOAK_MIN_MINUTES, evaluateEnvironment } from '../scripts/p7-external-device-court.mjs';
 import { aggregateCandidate, SOAK_MIN_MS } from '../scripts/p7-external-device-aggregate.mjs';
+import { deriveBudgetProposal } from '../scripts/p7-freeze-weak-device-budget.mjs';
+import { validateAgainstFrozenBudgets } from '../scripts/p7-validate-weak-device-budgets.mjs';
 
 const harness=JSON.parse(readFileSync('release/P7-EXTERNAL-DEVICE-HARNESS.v1.0.json','utf8'));
 const policy=JSON.parse(readFileSync('release/RESOURCE-MEASUREMENT-POLICY.v1.0.json','utf8'));
@@ -103,4 +105,78 @@ test('external-device aggregation requires exact-source 4/8 GiB, 8h soak and rea
   const rejected=aggregateCandidate({four,eight:stale,soak,lifecycle});
   assert.equal(rejected.status,'FAIL');
   assert.ok(rejected.errors.some(x=>x.includes('one exact source commit')));
+});
+
+
+test('weak-device budget derivation is preregistered and deterministic',()=>{
+  const method=JSON.parse(readFileSync('release/P7-WEAK-DEVICE-BUDGET-METHOD.v1.0.json','utf8'));
+  assert.equal(method.status,'PREREGISTERED_METHOD_NO_BUDGET_VALUES');
+  assert.equal(method.derivation.formulaId,'P7-WEAK-BUDGET-v1');
+  assert.equal(method.derivation.latencyMultiplier,1.5);
+  assert.equal(method.derivation.heapSlopeMinimumBytesPerHour,8388608);
+  assert.deepEqual(method.gateBoundary.mayPrepareForReview,['P7-12','P14-14']);
+  assert.deepEqual(method.gateBoundary.explicitlyNotCovered,['P9-12']);
+
+  const common={
+    schema:'opencontainer.p7-external-device-run.v1.0',status:'PASS',mode:'weak-device',
+    durationMinutes:30,sourceCommit:'calibration-commit',closureEligible:false,workflowRunId:'run-a',
+    browserSession:{sampleCount:30,aggregates:{
+      cycleP95Ms:100,warmBootP95Ms:20,commandP95Ms:10,vfsWrite64KiBP95Ms:5,vfsRead64KiBP95Ms:4,packageGraphP95Ms:30,heapSlopeBytesPerHour:2_000_000
+    }}
+  };
+  const four={...structuredClone(common),targetMemoryGiB:4,deviceId:'device-4'};
+  const eight={...structuredClone(common),targetMemoryGiB:8,deviceId:'device-8',workflowRunId:'run-b'};
+  eight.browserSession.aggregates.cycleP95Ms=120;
+  eight.browserSession.aggregates.heapSlopeBytesPerHour=6_000_000;
+  const proposal=deriveBudgetProposal({four,eight,method});
+  assert.deepEqual(proposal.errors,[]);
+  assert.equal(proposal.state,'PROPOSED_NOT_VALIDATABLE');
+  assert.equal(proposal.budgets.latencyMs.cycleP95Ms,180);
+  assert.equal(proposal.budgets.heapSlopeBytesPerHour,9_000_000);
+  assert.equal(proposal.validationAllowed,false);
+  assert.equal(proposal.closureEligible,false);
+});
+
+test('frozen weak-device budgets require fresh post-freeze validation and leave P9-12 separate',()=>{
+  const method=JSON.parse(readFileSync('release/P7-WEAK-DEVICE-BUDGET-METHOD.v1.0.json','utf8'));
+  const frozenAt='2026-10-01T10:30:00.000Z';
+  const budget={
+    schema:'opencontainer.p7-weak-device-budgets.v1.0',state:'FROZEN',formulaId:'P7-WEAK-BUDGET-v1',
+    frozenAt,frozenAtSourceCommit:'freeze-commit',
+    calibration:{
+      fourGiB:{sha256:'cal-four',workflowRunId:'cal-run-4'},
+      eightGiB:{sha256:'cal-eight',workflowRunId:'cal-run-8'}
+    },
+    budgets:{
+      latencyMs:{
+        cycleP95Ms:200,warmBootP95Ms:50,commandP95Ms:40,vfsWrite64KiBP95Ms:30,
+        vfsRead64KiBP95Ms:30,packageGraphP95Ms:80
+      },
+      heapSlopeBytesPerHour:12_000_000
+    }
+  };
+  const base={
+    schema:'opencontainer.p7-external-device-run.v1.0',status:'PASS',mode:'weak-device',
+    durationMinutes:30,startedAt:'2026-10-01T11:00:00.000Z',closureEligible:false,
+    browserSession:{sampleCount:30,aggregates:{
+      cycleP95Ms:150,warmBootP95Ms:30,commandP95Ms:20,vfsWrite64KiBP95Ms:10,
+      vfsRead64KiBP95Ms:10,packageGraphP95Ms:50,heapSlopeBytesPerHour:5_000_000
+    }}
+  };
+  const four={...structuredClone(base),targetMemoryGiB:4,deviceId:'validation-4',workflowRunId:'val-run-4',sourceCommit:'validation-commit'};
+  const eight={...structuredClone(base),targetMemoryGiB:8,deviceId:'validation-8',workflowRunId:'val-run-8',sourceCommit:'validation-commit'};
+  const result=validateAgainstFrozenBudgets({budget,four,eight,method,budgetSha256:'budget',fourSha256:'val-four',eightSha256:'val-eight'});
+  assert.equal(result.status,'PASS');
+  assert.equal(result.candidateGateState['P7-12'],'READY_FOR_REVIEW');
+  assert.equal(result.candidateGateState['P14-14'],'READY_FOR_REVIEW');
+  assert.equal(result.candidateGateState['P9-12'],'BLOCKED_SEPARATE_RENDERED_UI_EVIDENCE');
+  assert.equal(result.closureEligible,false);
+
+  const reused=structuredClone(four);
+  reused.workflowRunId='cal-run-4';
+  reused.startedAt='2026-10-01T10:00:00.000Z';
+  const rejected=validateAgainstFrozenBudgets({budget,four:reused,eight,method,budgetSha256:'budget',fourSha256:'cal-four',eightSha256:'val-eight'});
+  assert.equal(rejected.status,'FAIL');
+  assert.ok(rejected.errors.some(x=>x.includes('did not start after budget freeze')));
+  assert.ok(rejected.errors.some(x=>x.includes('reuses calibration')));
 });
