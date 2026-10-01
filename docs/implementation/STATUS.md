@@ -1057,3 +1057,14 @@ The public deployment court is bound to an exact release tag/version, requires a
 The adjacent published-release court requires two directly adjacent npm versions, verifies npm package signatures for both, and runs the actual installed artifacts on one browser origin with one persistent Chrome profile/OPFS. The previous release seeds canonical storage, the current release reuses or migrates it, the previous release then reopens safely (read-write only for identical schema, otherwise read-only or refuse-open), and the current release finally proves canonical state survived the rollback attempt. Passing evidence can only mark P14-04 READY_FOR_REVIEW.
 
 Neither workflow publishes, deploys or writes repository state. Overall closure remains **277/304** and `production_closed=false`.
+
+
+## Final external blocker receipt authority
+
+The remaining human/admin/legal blockers now have one fail-closed retained-receipt authority without making any of them machine-closable.
+
+`release/FINAL-EXTERNAL-BLOCKER-POLICY.v1.0.json` defines exact evidence classes for P1-15, P9-05, P9-11, P12-17, P12-18, P12-20, P13-03, P13-17, P16-01 and P16-05. Future receipts must live under `release/external-evidence/*.json`, name the external human/admin/counsel actor, bind an evidence-artifact SHA-256 and include an explicit actor attestation. AI/automation actors are rejected.
+
+`scripts/verify-external-blocker-receipt.mjs` validates both the receipt and the matching repository state. A P12 review receipt is blocked unless the security policy records that review; P13 admin receipts are blocked while supply-chain policy remains OPEN_EXTERNAL; a P16-01 license receipt is blocked while the distribution still emits UNLICENSED; P16-05 is blocked until the counsel decision is recorded in legal policy. A counsel outcome of BLOCKED remains BLOCKED_BY_COUNSEL.
+
+The manual workflow has only `contents: read` and can produce at most READY_FOR_REVIEW. It never changes the ledger. Current official closure therefore remains **277/304** with `production_closed=false`.
