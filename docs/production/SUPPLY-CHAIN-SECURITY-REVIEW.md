@@ -46,6 +46,6 @@ PR #74 completed the first stage and merged at `974fa1032c0d95c98889ca6f9bfaaa69
 
 ## Repository-protection state capture
 
-P13-17 requires external repository-administration evidence rather than repository-file inference. The manual `repository-trust-state` court therefore reads main branch protection and repository rulesets using a dedicated admin-read token. The token is never archived.
+P13-17 requires external repository-administration evidence rather than repository-file inference. The local `npm run repository:trust:evidence` court therefore reads main branch protection and repository rulesets using a dedicated admin-read token supplied only to the invoking process. The token is never archived and is deliberately absent from GitHub Actions because the frozen workflow policy forbids repository secrets.
 
 The court records raw protection state and may report that protection exists, but it deliberately does not declare the settings sufficient for P13-17. A separate human/policy review remains mandatory before any ledger promotion. Public ruleset discovery returning an empty list and an integration being unable to read branch protection are not treated as closure evidence.
