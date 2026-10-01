@@ -66,9 +66,24 @@ test('P16 BCR review matches exact P6 identities and retained tarballs carry req
     const bytes=readFileSync(item.retainedTarball);
     assert.equal(sha256(bytes),item.artifactDigest);
     const archive=await inspectTarArchive(new Uint8Array(bytes),{requiredPrefix:'package/',maxFiles:20_000,maxUnpackedBytes:256*1024*1024});
-    const files=new Set(archive.entries.filter(x=>x.type==='file').map(x=>x.path));
-    for(const required of item.requiredArchiveNotices)assert.ok(files.has(required),item.packageName+' missing '+required);
+    const entries=archive.entries.filter(x=>x.type==='file');
+    const files=new Set(entries.map(x=>x.path));
+    const packageJsonEntry=entries.find(x=>x.path==='package/package.json');
+    assert.ok(packageJsonEntry,item.packageName+' missing package/package.json');
+    const packageJson=JSON.parse(new TextDecoder().decode(packageJsonEntry.data));
+    assert.equal(packageJson.license,item.license,item.packageName+' package metadata license drift');
+    for(const required of item.requiredArchiveNotices??[])assert.ok(files.has(required),item.packageName+' missing '+required);
+    for(const retained of item.retainedDistributionNotices??[]){
+      assert.ok(existsSync(retained),item.packageName+' missing retained distribution notice '+retained);
+      const notice=readFileSync(retained,'utf8');
+      assert.match(notice,/Mozilla Public License Version 2\.0/);
+      assert.match(notice,/Exhibit B/);
+    }
   }
+  const lightning=bcr.bcrEntries.find(x=>x.packageName==='lightningcss-wasm');
+  assert.equal(lightning.archiveLicenseOmissionObserved,true);
+  assert.deepEqual(lightning.requiredArchiveNotices,[]);
+  assert.deepEqual(lightning.retainedDistributionNotices,['third_party/licenses/lightningcss-wasm-1.33.0.MPL-2.0.txt']);
   assert.deepEqual(
     readdirSync('toolchain/vendor').filter(x=>!x.startsWith('.')).map(x=>'toolchain/vendor/'+x).sort(),
     bcr.bcrEntries.map(x=>x.retainedTarball).sort()
