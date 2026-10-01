@@ -82,7 +82,8 @@
     "weak-device:protocol:fingerprint": "node scripts/weak-device-protocol-fingerprint.mjs",
     "external:release:verify": "node scripts/external-release-verifier.mjs",
     "public:deployment:evidence": "node scripts/public-deployment-court.mjs",
-    "adjacent:release:evidence": "node scripts/adjacent-release-court.mjs"
+    "adjacent:release:evidence": "node scripts/adjacent-release-court.mjs",
+    "external:blocker:verify": "node scripts/verify-external-blocker-receipt.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",
