@@ -1,0 +1,43 @@
+name: Repository Trust State
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repository-trust-state
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    if: github.repository == 'Nolane-x/Nolane-OpenContainer' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: external-trust-state
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - run: npm ci
+      - name: Verify admin-read authority is configured
+        env:
+          OPENCONTAINER_REPO_ADMIN_READ_TOKEN: ${{ secrets.OPENCONTAINER_REPO_ADMIN_READ_TOKEN }}
+        run: test -n "$OPENCONTAINER_REPO_ADMIN_READ_TOKEN"
+      - name: Capture private-disclosure and repository-protection state
+        env:
+          OPENCONTAINER_REPO_ADMIN_READ_TOKEN: ${{ secrets.OPENCONTAINER_REPO_ADMIN_READ_TOKEN }}
+        run: npm run repository:trust:evidence
+      - name: Archive repository trust state
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-repository-trust-${{ github.sha }}-${{ github.run_id }}
+          path: .artifacts/repository-trust/receipt.json
+          if-no-files-found: warn
+          retention-days: 90
