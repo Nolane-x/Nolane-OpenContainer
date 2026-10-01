@@ -6,7 +6,7 @@ OpenContainer is pre-1.0 and **not production-closed**. The final project licens
 
 Broad external contribution acceptance is currently **disabled** until P16-01 records the final project-license decision. Issues and design discussion may be accepted, but a code contribution must not be merged merely because it is technically correct.
 
-When external code contribution acceptance is enabled, every commit must carry a Developer Certificate of Origin 1.1 sign-off:
+When external code contribution acceptance is enabled, every commit must carry a Developer Certificate of Origin 1.1 (**DCO-1.1**) sign-off:
 
 `Signed-off-by: Name <email>`
 
