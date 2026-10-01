@@ -1026,3 +1026,10 @@ The same receipts are designed to become input evidence for P9-12 and P14-14, bu
 
 
 The Wave 5 aggregator refuses mixed-commit evidence and requires four retained receipt classes (4 GiB, 8 GiB, >=8-hour soak, lifecycle). Its output is candidate-only; it cannot mutate the production ledger. Even a fully valid aggregate leaves the weak-device budget gates blocked for a separately preregistered validation campaign.
+
+
+## P7 Wave 6 budget-method preregistration
+
+The weak-device budget method is now frozen before calibration data exists. It defines the exact metrics, sample/duration minima, deterministic 1.50× latency margin, heap-slope rule, concrete-budget freeze contract and fresh post-freeze validation rules.
+
+This infrastructure can eventually provide reviewed evidence for P7-12 and P14-14. It deliberately excludes P9-12, whose rendered-UI/long-session acceptance needs its own court. No concrete budget values or gate promotions are introduced; closure remains **277/304**.
