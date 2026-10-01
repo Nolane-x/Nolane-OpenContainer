@@ -5,6 +5,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { evaluateEnvironment } from './p7-external-device-court.mjs';
 import { computeProductSourceFingerprint } from './product-source-fingerprint.mjs';
+import { computeWeakDeviceProtocolFingerprint } from './weak-device-protocol-fingerprint.mjs';
 
 const PHASES=Object.freeze(['calibration','validation','soak-ui']);
 const CALIBRATION_MIN_MINUTES=30;
@@ -49,6 +50,7 @@ async function main(){
   });
   errors.push(...envCheck.errors);
   const fingerprint=computeProductSourceFingerprint();
+  const protocolFingerprint=computeWeakDeviceProtocolFingerprint();
 
   let browserSession=null,courtError=null;
   if(!errors.length){
@@ -72,7 +74,7 @@ async function main(){
     schema:'opencontainer.weak-device-ui-run.v1.0',status:errors.length?'FAIL':'PASS',
     sourceGateSha256:'b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146',
     sourceCommit:process.env.GITHUB_SHA??null,workflowRunId:process.env.GITHUB_RUN_ID??null,
-    productSourceFingerprint:fingerprint.sha256,productSourceFileCount:fingerprint.fileCount,
+    productSourceFingerprint:fingerprint.sha256,productSourceFileCount:fingerprint.fileCount,measurementProtocolFingerprint:protocolFingerprint.sha256,
     phase,deviceId,targetMemoryGiB,durationMinutes,sampleIntervalSeconds,
     environment:{hostname:hostname(),platform:platform(),arch:arch(),osRelease:release(),logicalCpuCount:cpus().length,physicalMemoryBytes,node:process.version,npm,browser:browser?.version??null},
     browserSession,
@@ -83,7 +85,7 @@ async function main(){
   };
   await mkdir(dirname(output),{recursive:true});
   await writeFile(output,JSON.stringify(receipt,null,2)+'\n');
-  console.log('WEAK DEVICE UI COURT '+receipt.status+' '+JSON.stringify({phase,deviceId,targetMemoryGiB,fingerprint:fingerprint.sha256,samples:browserSession?.sampleCount??0,closureEligible:false}));
+  console.log('WEAK DEVICE UI COURT '+receipt.status+' '+JSON.stringify({phase,deviceId,targetMemoryGiB,fingerprint:fingerprint.sha256,measurementProtocolFingerprint:protocolFingerprint.sha256,samples:browserSession?.sampleCount??0,closureEligible:false}));
   if(errors.length){for(const error of errors)console.error('weak-device-ui:',error);process.exitCode=1;}
 }
 
