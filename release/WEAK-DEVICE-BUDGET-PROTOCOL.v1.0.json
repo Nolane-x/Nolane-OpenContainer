@@ -1,0 +1,54 @@
+{
+  "schema": "opencontainer.weak-device-budget-protocol.v1.0",
+  "status": "PREREGISTERED_NOT_VALIDATED",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "candidateGates": [
+    "P7-12",
+    "P9-12",
+    "P14-14"
+  ],
+  "calibration": {
+    "memoryClassesGiB": [
+      4,
+      8
+    ],
+    "minimumReceiptsPerClass": 2,
+    "minimumDurationMinutes": 30,
+    "distinctWorkflowRunsRequired": true,
+    "phase": "calibration"
+  },
+  "budgetFormula": {
+    "latency": "ceil(max_calibration_p95 * 1.35 + fixed_margin_ms)",
+    "fixedMarginMs": {
+      "viewSwitchP95Ms": 2,
+      "aiModeSwitchP95Ms": 2,
+      "saveCanonicalP95Ms": 20,
+      "processRunP95Ms": 20,
+      "cycleP95Ms": 25
+    },
+    "heapSlope": "ceil(max(8 MiB/hour, max(0,max_calibration_slope)*1.5 + 2 MiB/hour))",
+    "heapPeak": "ceil(max_calibration_peak*1.25 + 16 MiB)"
+  },
+  "validation": {
+    "memoryClassesGiB": [
+      4,
+      8
+    ],
+    "minimumReceiptsPerClass": 1,
+    "phase": "validation",
+    "devicesMustBeDisjointFromCalibration": true,
+    "productSourceFingerprintMustMatch": true,
+    "uiSoakMinimumMinutes": 480,
+    "uiSoakPhase": "soak-ui"
+  },
+  "promotion": {
+    "automaticLedgerClosure": false,
+    "reviewedReconciliationRequired": true,
+    "productionClosed": false
+  },
+  "preservedOpenGates": [
+    "P7-12",
+    "P9-12",
+    "P14-14"
+  ]
+}
