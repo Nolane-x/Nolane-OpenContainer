@@ -1,0 +1,98 @@
+{
+  "schema": "opencontainer.p9-failure-scenario-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P9-03",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "requirement": "Run the complete retained 280+ UI/UX failure-scenario registry through component/integration courts.",
+  "minimumClosure": "PASS-INTEGRATION + declared-profile evidence",
+  "pullRequest": 77,
+  "implementation": {
+    "head": "17b7135eb405dbab7da94c2ca7491e57bac88c8a",
+    "pullRequestContextSha": "0462458631837973def9e822cab17fff5ecf6408",
+    "ciRunNumber": 1011,
+    "ciRunId": 36820377156,
+    "jobsPassed": 19,
+    "contractTests": 648,
+    "contractPassed": 648,
+    "contractFailed": 0,
+    "criticalTestFiles": 106,
+    "criticalIterations": 5,
+    "criticalTestFileExecutions": 530,
+    "criticalUnexplainedFailures": 0,
+    "codeql": "PASS",
+    "fullBrowserProductPath": "PASS",
+    "p9RenderedSameHead": "PASS",
+    "scorecard": {
+      "runNumber": 44,
+      "runId": 36820377188,
+      "status": "PASS"
+    }
+  },
+  "source": {
+    "bundle": "OPENCONTAINER-RUNTIME-W5-RESEARCH-BUNDLE-v1.24-UIUX-FULL-20260923.zip",
+    "bundleSha256": "9a13d917111372ca538c30d5f565fda6901581a500e2a244812416fd88a009f1",
+    "matrixPath": "docs/research/OPENCONTAINER-UX-STATE-FAILURE-MATRIX-v0.4-20260923.md",
+    "matrixSha256": "7f329e45b704465947488532658abdde90d699fc4ed33fc96e86bb603769ede5",
+    "matrixBytes": 41083,
+    "scenarios": 280,
+    "uniqueQualifiedKeys": 280,
+    "rawIdUnique": 234,
+    "duplicatedRawIds": 46,
+    "courtClasses": 55,
+    "rounds": {
+      "base": 100,
+      "round23": 40,
+      "round24State": 52,
+      "round24Completeness": 38,
+      "round25": 50
+    }
+  },
+  "dedicatedCourt": {
+    "job": "p9-failure-scenarios",
+    "status": "PASS",
+    "artifactId": 11142839511,
+    "artifactDigest": "sha256:9f541d0257347987de6a1ed45586e660800fcb0e2ee43984c9cb50fa1ef6e5d6",
+    "scenarios": 280,
+    "courtClasses": 55,
+    "projectionDigestSha256": "269ee15268274b609b7e224a21a9e181f7cb447ee06d418ddda8820d61ff2bb4",
+    "externalAcceptanceCounts": {
+      "P9-12": 9,
+      "P9-05": 2
+    },
+    "allEvidenceRefsExist": true
+  },
+  "sameHeadRenderedCourt": {
+    "job": "p9-ui-rendered",
+    "status": "PASS",
+    "artifactId": 11143465722,
+    "artifactDigest": "sha256:3a37a6c7ca7424bc4058c2bf5c41e9d240318ab1eb98d361bf126a0cbc229e95"
+  },
+  "closure": {
+    "id": "P9-03",
+    "state": "EVIDENCE",
+    "promotion": "PASS-INTEGRATION",
+    "evidence": "p9-failure-scenarios",
+    "closureMet": true
+  },
+  "preservedExternalObligations": [
+    {
+      "id": "P9-05",
+      "reason": "Manual screen-reader acceptance remains a separate human obligation. Component rows tagged manual/screen-reader do not close it."
+    },
+    {
+      "id": "P9-11",
+      "reason": "Human comprehension testing remains a separate human-study obligation and is not inferred from component execution."
+    },
+    {
+      "id": "P9-12",
+      "reason": "Weak-device UI budget plus long-session leak/performance evidence remains separate; weak-device/soak rows only test semantics here."
+    }
+  ],
+  "boundaries": {
+    "manualScreenReaderClaimed": false,
+    "humanComprehensionClaimed": false,
+    "weakDeviceLongSessionClaimed": false,
+    "crossBrowserClaimed": false,
+    "productionClosed": false
+  },
+  "productionClosed": false
+}
