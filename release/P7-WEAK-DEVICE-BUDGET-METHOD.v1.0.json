@@ -1,0 +1,82 @@
+{
+  "schema": "opencontainer.p7-weak-device-budget-method.v1.0",
+  "status": "PREREGISTERED_METHOD_NO_BUDGET_VALUES",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P7-12,P14-14",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "purpose": "Freeze the budget derivation and validation procedure before external 4/8 GiB calibration receipts are inspected.",
+  "calibration": {
+    "requiredMemoryClassesGiB": [
+      4,
+      8
+    ],
+    "mode": "weak-device",
+    "minimumDurationMinutes": 30,
+    "minimumSamplesPerReceipt": 24,
+    "distinctDeviceIds": true,
+    "exactSourceCommitAcrossCalibration": true,
+    "receiptSchema": "opencontainer.p7-external-device-run.v1.0",
+    "status": "PASS"
+  },
+  "metrics": {
+    "latencyMs": [
+      "cycleP95Ms",
+      "warmBootP95Ms",
+      "commandP95Ms",
+      "vfsWrite64KiBP95Ms",
+      "vfsRead64KiBP95Ms",
+      "packageGraphP95Ms"
+    ],
+    "memory": [
+      "heapSlopeBytesPerHour"
+    ]
+  },
+  "derivation": {
+    "formulaId": "P7-WEAK-BUDGET-v1",
+    "latencyFormula": "ceil(max(calibration4, calibration8) * 1.50)",
+    "latencyMultiplier": 1.5,
+    "heapSlopeFormula": "ceil(max(8388608, max(0, calibration4, calibration8) * 1.50))",
+    "heapSlopeMultiplier": 1.5,
+    "heapSlopeMinimumBytesPerHour": 8388608,
+    "noPostHocMetricRemoval": true,
+    "noPostHocMultiplierChange": true,
+    "proposalState": "PROPOSED_NOT_VALIDATABLE"
+  },
+  "freeze": {
+    "reviewedConcreteBudgetFile": "release/P7-WEAK-DEVICE-BUDGETS.v1.0.json",
+    "requiredSchema": "opencontainer.p7-weak-device-budgets.v1.0",
+    "requiredState": "FROZEN",
+    "mustBindCalibrationDigests": true,
+    "mustBindCalibrationSourceCommit": true,
+    "mustRecordFrozenAt": true,
+    "mustRecordFrozenAtSourceCommit": true,
+    "valuesMayNotChangeDuringValidation": true
+  },
+  "validation": {
+    "mode": "weak-device",
+    "requiredMemoryClassesGiB": [
+      4,
+      8
+    ],
+    "minimumDurationMinutes": 30,
+    "minimumSamplesPerReceipt": 24,
+    "receiptSchema": "opencontainer.p7-external-device-run.v1.0",
+    "status": "PASS",
+    "validationMustStartAfterBudgetFrozenAt": true,
+    "validationWorkflowRunsMustDifferFromCalibration": true,
+    "validationReceiptDigestsMustDifferFromCalibration": true,
+    "passRule": "Every frozen latency metric must be <= its budget on both 4 GiB and 8 GiB validation receipts; heapSlopeBytesPerHour must be finite and <= the frozen heap-slope budget on both receipts.",
+    "zeroMissingMetrics": true
+  },
+  "gateBoundary": {
+    "mayPrepareForReview": [
+      "P7-12",
+      "P14-14"
+    ],
+    "explicitlyNotCovered": [
+      "P9-12"
+    ],
+    "reasonP9": "P9-12 requires weak-device rendered-UI budgets and long-session UI leak/performance evidence; runtime/VFS/package metrics are insufficient.",
+    "automaticLedgerClosure": false,
+    "productionClosed": false
+  }
+}
