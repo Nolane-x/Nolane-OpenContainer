@@ -11,6 +11,7 @@ function assertReceipt(receipt,label,errors){
   else{
     if(receipt.status!=='PASS')errors.push(label+' receipt did not PASS');
     if(!receipt.productSourceFingerprint)errors.push(label+' productSourceFingerprint missing');
+    if(!receipt.measurementProtocolFingerprint)errors.push(label+' measurementProtocolFingerprint missing');
     if(!receipt.deviceId)errors.push(label+' deviceId missing');
     if(!receipt.workflowRunId)errors.push(label+' workflowRunId missing');
     if(receipt.closureEligible!==false)errors.push(label+' illegally self-promoted closure');
@@ -41,6 +42,8 @@ export function freezeBudget(receipts){
   for(const [i,r] of receipts.entries())assertReceipt(r,'calibration['+i+']',errors);
   const fingerprints=[...new Set(receipts.map(x=>x?.productSourceFingerprint).filter(Boolean))];
   if(fingerprints.length!==1)errors.push('calibration receipts must share one product-source fingerprint');
+  const protocolFingerprints=[...new Set(receipts.map(x=>x?.measurementProtocolFingerprint).filter(Boolean))];
+  if(protocolFingerprints.length!==1)errors.push('calibration receipts must share one measurement-protocol fingerprint');
   const runIds=receipts.map(x=>String(x?.workflowRunId??'')).filter(Boolean);
   if(new Set(runIds).size!==runIds.length)errors.push('calibration workflow runs must be unique');
 
@@ -64,7 +67,7 @@ export function freezeBudget(receipts){
   }
   return {
     schema:'opencontainer.weak-device-budget.v1.0',status:'FROZEN',
-    productSourceFingerprint:fingerprints[0],
+    productSourceFingerprint:fingerprints[0],measurementProtocolFingerprint:protocolFingerprints[0],
     formula:{latencyMultiplier:1.35,fixedMarginsMs:MARGINS,heapSlopeMultiplier:1.5,heapSlopeFixedMarginBytesPerHour:2*MIB,heapSlopeFloorBytesPerHour:8*MIB,heapPeakMultiplier:1.25,heapPeakFixedMarginBytes:16*MIB},
     budgets,
     calibrationDeviceIds:[...new Set(receipts.map(x=>x.deviceId))].sort(),
@@ -96,6 +99,7 @@ export function validateBudgetEvidence({budget,validationReceipts,uiSoakReceipt}
   for(const [i,r] of receipts.entries()){
     if(r.phase!=='validation')errors.push('validation['+i+'] phase must be validation');
     if(r.productSourceFingerprint!==budget.productSourceFingerprint)errors.push('validation['+i+'] product-source fingerprint drift');
+    if(r.measurementProtocolFingerprint!==budget.measurementProtocolFingerprint)errors.push('validation['+i+'] measurement-protocol fingerprint drift');
     if(calibrationDevices.has(r.deviceId))errors.push('validation['+i+'] reuses calibration device '+r.deviceId);
   }
   for(const cls of [4,8]){
@@ -106,6 +110,7 @@ export function validateBudgetEvidence({budget,validationReceipts,uiSoakReceipt}
   if(uiSoakReceipt){
     if(uiSoakReceipt.phase!=='soak-ui')errors.push('UI soak phase must be soak-ui');
     if(uiSoakReceipt.productSourceFingerprint!==budget.productSourceFingerprint)errors.push('UI soak product-source fingerprint drift');
+    if(uiSoakReceipt.measurementProtocolFingerprint!==budget.measurementProtocolFingerprint)errors.push('UI soak measurement-protocol fingerprint drift');
     if(calibrationDevices.has(uiSoakReceipt.deviceId))errors.push('UI soak reuses calibration device '+uiSoakReceipt.deviceId);
     if(Number(uiSoakReceipt.durationMinutes)<480||Number(uiSoakReceipt.browserSession?.durationObservedMs)<480*60*1000*0.99)errors.push('UI soak shorter than 8 hours');
     const cls=uiSoakReceipt.targetMemoryGiB;
