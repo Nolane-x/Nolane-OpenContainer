@@ -1,0 +1,12 @@
+{
+  "schema": "opencontainer.release-storage-profile.v1.0",
+  "runtimeVersion": "0.1.0-alpha.1",
+  "storageVersion": 1,
+  "readableStorageVersions": [
+    1
+  ],
+  "adjacentUpgradeFrom": [],
+  "downgradePolicy": "read-only-or-refuse-open",
+  "destructiveStorageDowngrade": false,
+  "note": "Future releases must update this profile only when their actual release-storage compatibility changes. P14-04 requires testing real adjacent published artifacts; this file alone is not closure evidence."
+}
