@@ -74,7 +74,8 @@
       "machineClosable": false,
       "state": "OPEN_DEVICE",
       "reason": "Weak-device regression budgets are not frozen.",
-      "evidenceHarness": "p7-external-device"
+      "evidenceHarness": "p7-external-device",
+      "budgetProtocol": "release/WEAK-DEVICE-BUDGET-PROTOCOL.v1.0.json"
     },
     "P7-13": {
       "machineClosable": true,
@@ -152,7 +153,9 @@
       "P7-11"
     ],
     "wave5HarnessRule": "Wave 5 only stages and validates external reference-device evidence collection. It must not promote P7-01/P7-09/P7-10/P7-12 from GitHub-hosted CI, synthetic memory caps, short soak runs, browser lifecycle emulation or a single calibration campaign.",
-    "promotedByWave5": []
+    "promotedByWave5": [],
+    "wave6BudgetRule": "Wave 6 preregisters weak-device UI budgets before validation. It requires two calibration runs per 4/8 GiB class, deterministic formulae, disjoint validation devices, matching production-source fingerprints and an >=8-hour UI soak. Infrastructure alone does not close P7-12/P9-12/P14-14.",
+    "promotedByWave6": []
   },
   "externalDeviceEvidenceHarness": {
     "schema": "opencontainer.p7-external-device-harness.v1.0",
@@ -201,5 +204,30 @@
     "promotionRule": "A single external-device receipt never closes a gate. Promotion requires retained 4 GiB and 8 GiB reference-device receipts, an >=8-hour persistent-browser session receipt, real suspend/resume plus CPU-contention evidence where required, frozen weak-device budgets followed by an independent validation campaign, and reviewed reconciliation on the exact source commit.",
     "automaticLedgerClosure": false,
     "productionClosed": false
+  },
+  "weakDeviceBudgetProtocol": {
+    "schema": "opencontainer.weak-device-budget-protocol.v1.0",
+    "path": "release/WEAK-DEVICE-BUDGET-PROTOCOL.v1.0.json",
+    "uiWorkflow": ".github/workflows/weak-device-ui-evidence.yml",
+    "productFingerprintScript": "scripts/product-source-fingerprint.mjs",
+    "calibration": {
+      "minimumReceiptsPerClass": 2,
+      "memoryClassesGiB": [
+        4,
+        8
+      ],
+      "minimumDurationMinutes": 30
+    },
+    "validation": {
+      "independentDevicesRequired": true,
+      "productSourceFingerprintMustMatch": true,
+      "uiSoakMinimumMinutes": 480
+    },
+    "candidateGates": [
+      "P7-12",
+      "P9-12",
+      "P14-14"
+    ],
+    "automaticLedgerClosure": false
   }
 }
