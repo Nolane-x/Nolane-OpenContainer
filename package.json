@@ -79,7 +79,8 @@
     "weak-device:budget:freeze": "node scripts/weak-device-budget.mjs freeze",
     "weak-device:budget:validate": "node scripts/weak-device-budget.mjs validate",
     "product:fingerprint": "node scripts/product-source-fingerprint.mjs",
-    "weak-device:protocol:fingerprint": "node scripts/weak-device-protocol-fingerprint.mjs"
+    "weak-device:protocol:fingerprint": "node scripts/weak-device-protocol-fingerprint.mjs",
+    "external:release:verify": "node scripts/external-release-verifier.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",
