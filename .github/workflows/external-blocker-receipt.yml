@@ -1,0 +1,48 @@
+name: External Blocker Receipt
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Commit/tag/branch containing the reviewed receipt and matching policy state
+        required: true
+        type: string
+      receipt_path:
+        description: Retained receipt under release/external-evidence/
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: external-blocker-receipt-${{ inputs.source_ref }}-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.repository == 'Nolane-x/Nolane-OpenContainer'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - run: npm ci
+      - name: Verify retained external blocker receipt
+        env:
+          OC_RECEIPT_PATH: ${{ inputs.receipt_path }}
+        run: npm run external:blocker:verify -- --receipt="$OC_RECEIPT_PATH"
+      - name: Archive structural verification
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-external-blocker-${{ github.run_id }}
+          path: .artifacts/external-blocker/verification.json
+          if-no-files-found: warn
+          retention-days: 90
