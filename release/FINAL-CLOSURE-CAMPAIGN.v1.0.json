@@ -1,0 +1,316 @@
+{
+  "schema": "opencontainer.final-closure-campaign.v1.0",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "ledgerBaseline": {
+    "closed": 277,
+    "total": 304,
+    "open": 27,
+    "productionClosed": false
+  },
+  "principle": "Every currently open production gate must have at least one explicit evidence-acquisition route. A route may collect/verify evidence but may never mutate the production ledger or substitute automation for required human/admin/device/legal authority.",
+  "routes": [
+    {
+      "id": "public-deployment-topology",
+      "gates": [
+        "P1-13",
+        "P14-12"
+      ],
+      "class": "external-deployment",
+      "authority": "deployment operator + release reviewer",
+      "entrypoints": [
+        ".github/workflows/public-deployment-evidence.yml",
+        "scripts/public-deployment-court.mjs"
+      ],
+      "prerequisites": [
+        "real public HTTPS deployment",
+        "edge marker/topology identity",
+        "exact deployed release tag/version"
+      ],
+      "output": ".artifacts/public-deployment/receipt.json",
+      "closureEligible": false,
+      "autoPromotion": false
+    },
+    {
+      "id": "rc-browser-matrix",
+      "gates": [
+        "P1-14"
+      ],
+      "class": "external-release",
+      "authority": "release operator + release reviewer",
+      "entrypoints": [
+        ".github/workflows/external-release-evidence.yml",
+        "scripts/p14-browser-regression.mjs"
+      ],
+      "prerequisites": [
+        "real published RC",
+        "immutable exact tag",
+        "frozen-floor lane",
+        "newest-Stable lane"
+      ],
+      "output": "retained RC frozen-floor + newest-Stable receipts",
+      "closureEligible": false,
+      "autoPromotion": false
+    },
+    {
+      "id": "field-browser-incident",
+      "gates": [
+        "P1-15"
+      ],
+      "class": "field-human",
+      "authority": "field incident owner + release reviewer",
+      "entrypoints": [
+        ".github/workflows/final-external-decision.yml",
+        "scripts/final-external-decision.mjs",
+        "release/FINAL-EXTERNAL-DECISION-POLICY.v1.0.json"
+      ],
+      "prerequisites": [
+        "actual field browser-regression incident",
+        "root cause/disposition",
+        "retained regression test + SHA-256"
+      ],
+      "output": ".artifacts/final-external-decision/verification.json",
+      "closureEligible": false,
+      "autoPromotion": false
+    },
+    {
+      "id": "reference-device-core",
+      "gates": [
+        "P7-01",
+        "P7-09",
+        "P7-10"
+      ],
+      "class": "external-device",
+      "authority": "reference-device operator",
+      "entrypoints": [
+        ".github/workflows/p7-external-device-evidence.yml",
+        "scripts/p7-external-device-court.mjs",
+        "scripts/p7-external-device-aggregate.mjs",
+        "release/P7-EXTERNAL-DEVICE-HARNESS.v1.0.json"
+      ],
+      "prerequisites": [
+        "real 4 GiB device",
+        "real 8 GiB device",
+        ">=8-hour persistent browser soak",
+        "real suspend/resume + CPU contention"
+      ],
+      "output": "retained exact-commit external-device receipts + aggregate",
+      "closureEligible": false,
+      "autoPromotion": false
+    },
+    {
+      "id": "weak-device-ui-budget",
+      "gates": [
+        "P7-12",
+        "P9-12",
+        "P14-14"
+      ],
+      "class": "external-device-validation",
+      "authority": "reference-device operator + release reviewer",
+      "entrypoints": [
+        ".github/workflows/weak-device-ui-evidence.yml",
+        "scripts/weak-device-ui-court.mjs",
+        "scripts/weak-device-budget.mjs",
+        "release/WEAK-DEVICE-BUDGET-PROTOCOL.v1.0.json"
+      ],
+      "prerequisites": [
+        "2 calibration runs per 4/8 GiB class",
+        "frozen deterministic budgets",
+        "disjoint validation devices",
+        "matching product/protocol fingerprints",
+        ">=8-hour UI soak"
+      ],
+      "output": "frozen weak-device budget + independent validation receipt",
+      "closureEligible": false,
+      "autoPromotion": false
+    },
+    {
+      "id": "p9-human-acceptance",
+      "gates": [
+        "P9-05",
+        "P9-11"
+      ],
+      "class": "human-acceptance",
+      "authority": "human accessibility/study reviewers",
+      "entrypoints": [
+        ".github/workflows/p9-human-acceptance-evidence.yml",
+        "scripts/p9-human-acceptance.mjs",
+        "release/P9-HUMAN-ACCEPTANCE-POLICY.v1.0.json"
+      ],
+      "prerequisites": [
+        "manual screen-reader acceptance across frozen task classes",
+        ">=5 human comprehension participants",
+        ">=80% correctness",
+        "zero critical misinterpretations"
+      ],
+      "output": "retained public HTTPS human evidence verification",
+      "closureEligible": false,
+      "autoPromotion": false
+    },
+    {
+      "id": "published-release-verification",
+      "gates": [
+        "P11-12",
+        "P13-04",
+        "P13-07",
+        "P13-09",
+        "P13-10",
+        "P13-16",
+        "P15-12"
+      ],
+      "class": "external-release",
+      "authority": "release operator + independent release verifier",
+      "entrypoints": [
+        ".github/workflows/external-release-evidence.yml",
+        "scripts/external-release-verifier.mjs",
+        "release/EXTERNAL-RELEASE-EVIDENCE-POLICY.v1.0.json"
+      ],
+      "prerequisites": [
+        "real npm publication",
+        "matching GitHub Release asset",
+        "immutable tag",
+        "artifact attestation/signature verification",
+        "clean registry install",
+        "canary channel for P13-16"
+      ],
+      "output": ".artifacts/external-release/receipt.json",
+      "closureEligible": false,
+      "autoPromotion": false
+    },
+    {
+      "id": "repository-trust-state",
+      "gates": [
+        "P12-17",
+        "P13-17"
+      ],
+      "class": "admin-external-state",
+      "authority": "repository administrator / independent verifier",
+      "entrypoints": [
+        "scripts/repository-trust-state.mjs",
+        "release/EXTERNAL-TRUST-REVIEW-POLICY.v1.0.json"
+      ],
+      "prerequisites": [
+        "process-local read-only admin token outside GitHub Actions",
+        "live private vulnerability channel verification",
+        "branch/tag/release protection state capture"
+      ],
+      "output": "local/admin trust-state receipt",
+      "closureEligible": false,
+      "autoPromotion": false
+    },
+    {
+      "id": "external-security-review",
+      "gates": [
+        "P12-18",
+        "P12-20"
+      ],
+      "class": "human-security-review",
+      "authority": "independent/second-party human security reviewer",
+      "entrypoints": [
+        ".github/workflows/external-security-review-evidence.yml",
+        "scripts/external-security-review.mjs",
+        "release/EXTERNAL-TRUST-REVIEW-POLICY.v1.0.json"
+      ],
+      "prerequisites": [
+        "human reviewer",
+        "independence where required",
+        "isolation/storage/network scope",
+        "zero unresolved release-blocking findings"
+      ],
+      "output": "retained external security-review verification",
+      "closureEligible": false,
+      "autoPromotion": false
+    },
+    {
+      "id": "trusted-publisher-admin-decision",
+      "gates": [
+        "P13-03"
+      ],
+      "class": "admin-external-state",
+      "authority": "npm package/repository administrator",
+      "entrypoints": [
+        ".github/workflows/final-external-decision.yml",
+        "scripts/final-external-decision.mjs",
+        "release/FINAL-EXTERNAL-DECISION-POLICY.v1.0.json"
+      ],
+      "prerequisites": [
+        "real npm trusted publisher/OIDC configuration",
+        "no long-lived publish token",
+        "exact publishing workflow digest",
+        "supply policy updated from real admin event"
+      ],
+      "output": ".artifacts/final-external-decision/verification.json",
+      "closureEligible": false,
+      "autoPromotion": false
+    },
+    {
+      "id": "adjacent-published-release",
+      "gates": [
+        "P14-04"
+      ],
+      "class": "external-release-compatibility",
+      "authority": "release operator + release reviewer",
+      "entrypoints": [
+        ".github/workflows/adjacent-release-evidence.yml",
+        "scripts/adjacent-release-court.mjs",
+        "release/EXTERNAL-RUNTIME-EVIDENCE-POLICY.v1.0.json"
+      ],
+      "prerequisites": [
+        "two directly adjacent npm versions",
+        "same browser origin/profile",
+        "old->new->old->new OPFS sequence",
+        "safe same-schema or read-only/refuse rollback"
+      ],
+      "output": ".artifacts/adjacent-release/receipt.json",
+      "closureEligible": false,
+      "autoPromotion": false
+    },
+    {
+      "id": "final-license-decision",
+      "gates": [
+        "P16-01"
+      ],
+      "class": "human-legal-decision",
+      "authority": "project owner / qualified legal authority",
+      "entrypoints": [
+        ".github/workflows/final-external-decision.yml",
+        "scripts/final-external-decision.mjs",
+        "release/P16-LEGAL-GOVERNANCE-POLICY.v1.0.json",
+        "release/FINAL-EXTERNAL-DECISION-POLICY.v1.0.json"
+      ],
+      "prerequisites": [
+        "recorded final SPDX decision",
+        "root LICENSE bytes/digest",
+        "legal policy frozen to same SPDX",
+        "actual built distribution package license matches"
+      ],
+      "output": ".artifacts/final-external-decision/verification.json",
+      "closureEligible": false,
+      "autoPromotion": false
+    },
+    {
+      "id": "fto-counsel-review",
+      "gates": [
+        "P16-05"
+      ],
+      "class": "human-legal-review",
+      "authority": "qualified legal counsel",
+      "entrypoints": [
+        ".github/workflows/final-external-decision.yml",
+        "scripts/final-external-decision.mjs",
+        "release/P16-LEGAL-GOVERNANCE-POLICY.v1.0.json",
+        "release/FINAL-EXTERNAL-DECISION-POLICY.v1.0.json"
+      ],
+      "prerequisites": [
+        "jurisdiction-specific counsel review",
+        "preview/network/storage/runtime topology scope",
+        "non-privileged outcome metadata",
+        "review artifact SHA-256",
+        "legal policy updated from counsel outcome"
+      ],
+      "output": ".artifacts/final-external-decision/verification.json",
+      "closureEligible": false,
+      "autoPromotion": false
+    }
+  ],
+  "productionClosed": false
+}
