@@ -7,7 +7,6 @@ import { validateExternalReviewArtifact } from '../scripts/external-security-rev
 const policy=JSON.parse(readFileSync('release/EXTERNAL-TRUST-REVIEW-POLICY.v1.0.json','utf8'));
 const ledger=JSON.parse(readFileSync('docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.json','utf8'));
 const flake=JSON.parse(readFileSync('release/CRITICAL-FLAKE-POLICY.v0.1.json','utf8'));
-const trustWorkflow=readFileSync('.github/workflows/repository-trust-state.yml','utf8');
 const reviewWorkflow=readFileSync('.github/workflows/external-security-review-evidence.yml','utf8');
 const trustScript=readFileSync('scripts/repository-trust-state.mjs','utf8');
 const reviewScript=readFileSync('scripts/external-security-review.mjs','utf8');
@@ -88,19 +87,16 @@ test('external review rejects commit drift and unresolved critical/high findings
   assert.ok(errors.some(x=>x.includes('unresolved critical/high')));
 });
 
-test('repository trust workflow is main-only read-only and requires a separate admin-read secret',()=>{
-  assert.ok(trustWorkflow.includes('workflow_dispatch:'));
-  assert.ok(!trustWorkflow.includes('pull_request:'));
-  assert.ok(!trustWorkflow.includes('push:'));
-  assert.match(trustWorkflow,/permissions:\n\s+contents:\s+read/);
-  assert.doesNotMatch(trustWorkflow,/contents:\s*write|packages:\s*write|id-token:\s*write|npm publish/);
-  assert.ok(trustWorkflow.includes("github.ref == 'refs/heads/main'"));
-  assert.ok(trustWorkflow.includes('secrets.OPENCONTAINER_REPO_ADMIN_READ_TOKEN'));
-  assert.ok(trustWorkflow.includes('test -n "$OPENCONTAINER_REPO_ADMIN_READ_TOKEN"'));
-  assert.ok(!trustWorkflow.includes('echo "$OPENCONTAINER_REPO_ADMIN_READ_TOKEN"'));
+test('repository trust state is an explicit local admin-read CLI and never a workflow secret path',()=>{
+  assert.equal(policy.repositoryTrust.mode,'local-admin-cli');
+  assert.equal(policy.repositoryTrust.workflowPresent,false);
+  assert.equal(policy.repositoryTrust.command,'npm run repository:trust:evidence');
+  assert.equal(policy.repositoryTrust.tokenEnvironmentVariable,'OPENCONTAINER_REPO_ADMIN_READ_TOKEN');
+  assert.ok(trustScript.includes("process.env.OPENCONTAINER_REPO_ADMIN_READ_TOKEN"));
   assert.ok(trustScript.includes("'/private-vulnerability-reporting'"));
   assert.ok(trustScript.includes("'/branches/main/protection'"));
   assert.ok(trustScript.includes("'/rulesets?includes_parents=true&per_page=100'"));
+  assert.ok(trustScript.includes('tokenValueRetained:false'));
 });
 
 test('external review workflow is public-artifact only, shell-safe and read-only',()=>{
