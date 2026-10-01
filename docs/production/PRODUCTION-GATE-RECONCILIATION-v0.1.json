@@ -408,6 +408,10 @@
     "p11-browser-floor": {
       "ref": "PR #76 / implementation CI #995 / P14-13 CI #960",
       "note": "P11-13 declared-profile browser-floor closure. Google Chrome 153.0.8010.52 is frozen as the minimum only for Ubuntu 24.04 x64 profile desktop-chrome153-ubuntu2404-x64-ci. P14-13 CI #960 independently ran frozen Chrome 153 and newest Stable Chrome 154.0.8037.92 twice each through the full installed-distribution product path (4/4 PASS, zero unexplained failures). PR #76 implementation CI #995 passed 639/639 tests and 104 critical files x5=520 executions. No cross-browser, other-OS, mobile or weak-device support is claimed."
+    },
+    "p9-failure-scenarios": {
+      "ref": "PR #77 / CI #1011 implementation head 17b7135eb405dbab7da94c2ca7491e57bac88c8a",
+      "note": "P9-03 retained 280-scenario UI/UX failure corpus. SHA-locked W5 v0.4 matrix has 280 provenance-qualified rows and 55 court classes. Every row executes through FailureStateProjection with retained component/integration refs; dedicated job is chained behind same-head p9-ui-rendered. Artifact #11142839511 digest sha256:9f541d0257347987de6a1ed45586e660800fcb0e2ee43984c9cb50fa1ef6e5d6; projection digest 269ee15268274b609b7e224a21a9e181f7cb447ee06d418ddda8820d61ff2bb4. Manual screen-reader, human-comprehension and weak-device/long-session gates remain open."
     }
   },
   "overrides": [
@@ -2593,6 +2597,14 @@
       "state": "EVIDENCE",
       "promotion": "PASS-BROWSER",
       "evidence": "p11-browser-floor",
+      "closure_met": true
+    },
+    {
+      "id": "P9-03",
+      "domain": "P9",
+      "state": "EVIDENCE",
+      "promotion": "PASS-INTEGRATION",
+      "evidence": "p9-failure-scenarios",
       "closure_met": true
     }
   ]
