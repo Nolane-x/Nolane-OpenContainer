@@ -79,5 +79,19 @@
     "requiresDistinctMemoryDeviceIds": true,
     "outputIsCandidateOnly": true,
     "automaticLedgerClosure": false
+  },
+  "weakDeviceBudgetProtocol": {
+    "method": "release/P7-WEAK-DEVICE-BUDGET-METHOD.v1.0.json",
+    "proposalScript": "scripts/p7-freeze-weak-device-budget.mjs",
+    "validationScript": "scripts/p7-validate-weak-device-budgets.mjs",
+    "formulaId": "P7-WEAK-BUDGET-v1",
+    "noConcreteValuesBeforeCalibration": true,
+    "independentValidationRequired": true,
+    "coveredGates": [
+      "P7-12",
+      "P14-14"
+    ],
+    "excludedGate": "P9-12",
+    "automaticLedgerClosure": false
   }
 }
