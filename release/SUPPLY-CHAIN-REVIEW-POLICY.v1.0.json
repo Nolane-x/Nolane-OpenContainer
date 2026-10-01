@@ -8,7 +8,9 @@
     ".github/workflows/ci.yml",
     ".github/workflows/maintenance.yml",
     ".github/workflows/scorecard.yml",
-    ".github/workflows/external-release-evidence.yml"
+    ".github/workflows/external-release-evidence.yml",
+    ".github/workflows/public-deployment-evidence.yml",
+    ".github/workflows/adjacent-release-evidence.yml"
   ],
   "workflowRules": {
     "remoteActionRef": "full-40-hex-commit",
@@ -236,5 +238,14 @@
     },
     "publicationWritesAllowed": false,
     "purpose": "Verify independently created public npm/GitHub Release identities without storing publishing credentials or granting publication permissions to PR/main CI."
+  },
+  "externalRuntimeEvidence": {
+    "policy": "release/EXTERNAL-RUNTIME-EVIDENCE-POLICY.v1.0.json",
+    "workflows": [
+      ".github/workflows/public-deployment-evidence.yml",
+      ".github/workflows/adjacent-release-evidence.yml"
+    ],
+    "publicationWritesAllowed": false,
+    "purpose": "Read-only verification of real public deployment topology and actual adjacent npm release compatibility."
   }
 }

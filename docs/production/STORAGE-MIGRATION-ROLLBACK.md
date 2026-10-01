@@ -78,3 +78,17 @@ Every previous persistence/package/Vite/browser court remained green.
 ## Adjacent-release boundary
 
 The migration mechanism is ready for adjacent-release certification, but P14-04 is not closed by a synthetic v1→v2 profile alone. It remains partial until real supported adjacent OpenContainer release artifacts are executed backward and forward through this court.
+
+
+## Actual adjacent published-release court
+
+Synthetic storage v1→v2 migration remains useful for crash and rollback mechanics, but P14-04 requires real supported release artifacts. The new adjacent-release court therefore installs two directly adjacent npm versions and preserves one Chrome profile/OPFS origin while changing the served runtime artifact.
+
+The sequence is:
+
+1. previous published release seeds canonical storage;
+2. current published release reopens it and either reuses the same storage schema or performs exactly one declared adjacent migration;
+3. previous published release is restored on the same origin; identical storage schema may remain read-write, while newer schema must become read-only or refuse open, never destructive downgrade;
+4. current published release reopens the canonical state after that rollback attempt and verifies the marker/state is intact.
+
+Each release ships `docs/production/RELEASE-STORAGE-PROFILE.v1.0.json`; future schema changes must update that profile before publication. The court output is reviewable evidence only and does not automatically close P14-04.

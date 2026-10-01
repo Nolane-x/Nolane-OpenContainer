@@ -1,0 +1,78 @@
+name: Public Deployment Evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact deployed OpenContainer version
+        required: true
+        type: string
+      tag:
+        description: Exact immutable tag, v<version>
+        required: true
+        type: string
+      url:
+        description: Public HTTPS deployment root
+        required: true
+        type: string
+      topology_id:
+        description: Stable deployment topology identifier
+        required: true
+        type: string
+      edge_provider:
+        description: CDN/reverse-proxy provider or edge class
+        required: true
+        type: string
+      edge_marker_header:
+        description: Edge-injected marker header
+        required: true
+        default: x-opencontainer-edge-id
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-deployment-evidence-${{ inputs.tag }}-${{ inputs.topology_id }}
+  cancel-in-progress: false
+
+jobs:
+  public-topology:
+    if: github.repository == 'Nolane-x/Nolane-OpenContainer'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - run: npm ci
+      - run: bash scripts/install-frozen-ci-chrome.sh
+      - name: Run real public topology court
+        env:
+          OC_PUBLIC_VERSION: ${{ inputs.version }}
+          OC_PUBLIC_TAG: ${{ inputs.tag }}
+          OC_PUBLIC_URL: ${{ inputs.url }}
+          OC_TOPOLOGY_ID: ${{ inputs.topology_id }}
+          OC_EDGE_PROVIDER: ${{ inputs.edge_provider }}
+          OC_EDGE_MARKER_HEADER: ${{ inputs.edge_marker_header }}
+        run: |
+          npm run public:deployment:evidence -- \
+            --version="$OC_PUBLIC_VERSION" \
+            --tag="$OC_PUBLIC_TAG" \
+            --url="$OC_PUBLIC_URL" \
+            --topology-id="$OC_TOPOLOGY_ID" \
+            --edge-provider="$OC_EDGE_PROVIDER" \
+            --edge-marker-header="$OC_EDGE_MARKER_HEADER"
+      - name: Archive public topology receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-public-topology-${{ inputs.tag }}-${{ github.run_id }}
+          path: .artifacts/public-deployment/receipt.json
+          if-no-files-found: warn
+          retention-days: 90

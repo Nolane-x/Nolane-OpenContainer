@@ -14,7 +14,9 @@ const ci=readFileSync('.github/workflows/ci.yml','utf8');
 const maintenance=readFileSync('.github/workflows/maintenance.yml','utf8');
 const scorecard=readFileSync('.github/workflows/scorecard.yml','utf8');
 const externalRelease=readFileSync('.github/workflows/external-release-evidence.yml','utf8');
-const workflows={'.github/workflows/ci.yml':ci,'.github/workflows/maintenance.yml':maintenance,'.github/workflows/scorecard.yml':scorecard,'.github/workflows/external-release-evidence.yml':externalRelease};
+const publicDeployment=readFileSync('.github/workflows/public-deployment-evidence.yml','utf8');
+const adjacentRelease=readFileSync('.github/workflows/adjacent-release-evidence.yml','utf8');
+const workflows={'.github/workflows/ci.yml':ci,'.github/workflows/maintenance.yml':maintenance,'.github/workflows/scorecard.yml':scorecard,'.github/workflows/external-release-evidence.yml':externalRelease,'.github/workflows/public-deployment-evidence.yml':publicDeployment,'.github/workflows/adjacent-release-evidence.yml':adjacentRelease};
 
 test('P13 workflow court requires immutable actions least privilege and no untrusted release credentials',()=>{
   assert.deepEqual(reviewWorkflowSecurity({policy,workflows}),[]);
