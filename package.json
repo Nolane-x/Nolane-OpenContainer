@@ -15,7 +15,7 @@
   "scripts": {
     "check": "node scripts/check.mjs",
     "test": "node --test tests/*.test.js",
-    "ci": "npm run check && npm run product:scope:verify && npm run docs:verify && npm test && npm run security:dependencies && npm run security:regressions && npm run security:review && npm run operations:drill && npm run compat:corpus:verify && npm run compat:promotion && npm run compat:matrix && npm run compat:release-report && npm run distribution:certify && npm run release:evidence && npm run release:verify && npm run legal:readiness && npm run release:archive:candidate && npm run release:archive:verify && npm run security:supply-chain && npm run resource:retention:audit && npm run critical:contract-flake && npm run release:preflight && npm run release:governance && npm run evidence:assure:contract",
+    "ci": "npm run check && npm run product:scope:verify && npm run docs:verify && npm test && npm run security:dependencies && npm run security:regressions && npm run security:review && npm run operations:drill && npm run compat:corpus:verify && npm run compat:promotion && npm run compat:matrix && npm run compat:release-report && npm run distribution:certify && npm run release:evidence && npm run release:verify && npm run legal:readiness && npm run release:archive:candidate && npm run release:archive:verify && npm run security:supply-chain && npm run resource:retention:audit && npm run critical:contract-flake && npm run release:preflight && npm run release:governance && npm run final:closure:verify && npm run evidence:assure:contract",
     "playground": "node apps/playground/server.mjs",
     "browser:acceptance": "node scripts/browser-acceptance.mjs",
     "hosting:self-check": "node scripts/hosting-self-check.mjs",
@@ -86,7 +86,8 @@
     "repository:trust:evidence": "node scripts/repository-trust-state.mjs",
     "external:security-review": "node scripts/external-security-review.mjs",
     "p9:human:evidence": "node scripts/p9-human-acceptance.mjs",
-    "final:external:verify": "node scripts/final-external-decision.mjs"
+    "final:external:verify": "node scripts/final-external-decision.mjs",
+    "final:closure:verify": "node scripts/final-27-closure-authority.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",
