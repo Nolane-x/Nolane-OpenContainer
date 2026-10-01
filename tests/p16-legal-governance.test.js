@@ -155,7 +155,8 @@ test('P16 promotion evidence is retained, registered and cannot claim legal/FTO 
   const entry=registry.entries.find(x=>x.key==='p16-legal-governance');
   assert.deepEqual({kind:entry.kind,level:entry.level,status:entry.status},{kind:'EXECUTABLE',level:'INTEGRATION',status:'PASS'});
   assert.ok(flake.contract.testFiles.includes('tests/p16-legal-governance.test.js'));
-  assert.equal(flake.contract.testFiles.length,108);
+  assert.equal(flake.contract.testFiles.length,flake.contract.minimumTestFiles);
+  assert.ok(flake.contract.testFiles.length>=108,'later critical courts may extend the P16-era 108-file campaign');
   assert.equal(flake.contract.iterations,5);
   for(const value of Object.values(evidence.boundaries))assert.equal(value,false);
   assert.equal(evidence.productionClosed,false);
