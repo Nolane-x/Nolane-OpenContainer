@@ -179,6 +179,17 @@
       "finding": "The new workflow had contents: read only and no publication credentials or write permissions, but the historical supply-chain matcher rejected the literal help probe 'gh release verify-asset --help' because it treated any 'gh release' substring as a write-capable release signal. A separate source-audit assertion also matched one exact formatting shape for the npm pack call rather than the verifier semantics. No application/runtime/product court failed.",
       "resolution": "Keep the external workflow read-only; replace the workflow help probe with non-write 'gh help release', retain the actual release verification command inside the audited verifier script, and assert stable semantic markers instead of formatting-specific source text.",
       "exclusionReasonCode": "HARNESS_TOOLING_BUG"
+    },
+    {
+      "id": "NEG-017",
+      "date": "2026-10-01",
+      "classification": "HARNESS_INVALID",
+      "hypothesis": "A repository trust-state workflow may reference a dedicated read-only admin token without violating the frozen supply-chain workflow policy.",
+      "outcome": "HARNESS-FAIL",
+      "evidence": "CI #1061 / PR #85",
+      "finding": "The supply-chain court correctly rejected the workflow because the frozen policy forbids every `${{ secrets.* }}` signal in audited workflows, independent of whether the secret is read-only. Product/runtime tests were not implicated.",
+      "resolution": "Remove the repository trust-state workflow entirely, keep the global no-secret workflow invariant unchanged, and retain repository-administration state capture as an explicitly invoked local/admin CLI using a process-local read-only token.",
+      "exclusionReasonCode": "HARNESS_POLICY_CONFLICT"
     }
   ]
 }
