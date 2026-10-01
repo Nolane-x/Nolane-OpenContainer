@@ -1,0 +1,42 @@
+{
+  "schema": "opencontainer.final-external-decision-policy.v1.0",
+  "status": "STAGED_AWAITING_REAL_EXTERNAL_DECISIONS",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "receiptSchema": "opencontainer.final-external-decision-receipt.v1.0",
+  "receiptDirectory": "release/external-evidence",
+  "gates": {
+    "P1-15": {
+      "kind": "field-browser-regression",
+      "authority": "field incident owner + release reviewer",
+      "requirement": "At least one actual field browser-regression incident with browser/OS, root cause, disposition/fix and a retained regression test bound by SHA-256."
+    },
+    "P13-03": {
+      "kind": "trusted-publisher-configuration",
+      "authority": "npm package/repository administrator",
+      "requirement": "Actual npm trusted-publisher/OIDC configuration for @nolane/opencontainer, bound to Nolane-x/Nolane-OpenContainer and an exact publishing workflow, with no long-lived publish token."
+    },
+    "P16-01": {
+      "kind": "final-license-decision",
+      "authority": "project owner or qualified legal authority",
+      "requirement": "Recorded final SPDX project-license decision whose repository legal policy and actual built distribution package license match the same decision."
+    },
+    "P16-05": {
+      "kind": "fto-counsel-review",
+      "authority": "qualified legal counsel",
+      "requirement": "Jurisdiction-specific FTO review covering preview, network, storage and runtime topology. Sensitive advice remains outside the repository; only non-privileged outcome metadata and artifact digest are retained."
+    }
+  },
+  "privacy": {
+    "directPersonalIdentityRequired": false,
+    "actorIdMayBePseudonymousOrOrganizational": true,
+    "privilegedLegalAdviceMustNotBeCommitted": true,
+    "vulnerabilityDetailsMustNotBeCommitted": true
+  },
+  "forbiddenActorTypes": [
+    "automation",
+    "ai"
+  ],
+  "forbiddenAutoPromotion": true,
+  "automaticLedgerClosure": false,
+  "productionClosed": false
+}
