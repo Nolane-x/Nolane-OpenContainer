@@ -1,0 +1,151 @@
+{
+  "schema": "opencontainer.p16-legal-governance-evidence.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P16",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "minimumClosure": "LEGAL/FTO decision recorded where applicable",
+  "pullRequest": 78,
+  "implementation": {
+    "head": "aef779d7b3ba1cc1346bbdbb89dd5ec43c472720",
+    "pullRequestContextSha": "3fdd296ac0d735a65c14272410c7ca10d87389fe",
+    "ciRunNumber": 1034,
+    "ciRunId": 36824340549,
+    "jobsPassed": 19,
+    "contractTests": 659,
+    "contractPassed": 659,
+    "contractFailed": 0,
+    "criticalTestFiles": 108,
+    "criticalIterations": 5,
+    "criticalTestFileExecutions": 540,
+    "criticalUnexplainedFailures": 0,
+    "codeql": "PASS",
+    "fullBrowserProductPath": "PASS",
+    "scorecard": {
+      "runNumber": 67,
+      "runId": 36824340524,
+      "status": "PASS"
+    }
+  },
+  "executableCourt": {
+    "status": "PASS",
+    "closureCandidates": 12,
+    "runtimeNotices": 37,
+    "corpusCases": 13,
+    "bcrArtifacts": 2,
+    "artifactId": 11145241386,
+    "artifactDigest": "sha256:a68bf140bf1ff56026312f4829f3520fa89e1817de09ca408eb4c1010e4617c5"
+  },
+  "closure": {
+    "gates": [
+      {
+        "id": "P16-02",
+        "state": "EVIDENCE",
+        "promotion": "PASS-INTEGRATION",
+        "evidence": "p16-legal-governance",
+        "closureMet": true
+      },
+      {
+        "id": "P16-03",
+        "state": "EVIDENCE",
+        "promotion": "PASS-INTEGRATION",
+        "evidence": "p16-legal-governance",
+        "closureMet": true
+      },
+      {
+        "id": "P16-04",
+        "state": "EVIDENCE",
+        "promotion": "PASS-INTEGRATION",
+        "evidence": "p16-legal-governance",
+        "closureMet": true
+      },
+      {
+        "id": "P16-06",
+        "state": "EVIDENCE",
+        "promotion": "PASS-INTEGRATION",
+        "evidence": "p16-legal-governance",
+        "closureMet": true
+      },
+      {
+        "id": "P16-07",
+        "state": "EVIDENCE",
+        "promotion": "PASS-INTEGRATION",
+        "evidence": "p16-legal-governance",
+        "closureMet": true
+      },
+      {
+        "id": "P16-08",
+        "state": "EVIDENCE",
+        "promotion": "PASS-INTEGRATION",
+        "evidence": "p16-legal-governance",
+        "closureMet": true
+      },
+      {
+        "id": "P16-09",
+        "state": "EVIDENCE",
+        "promotion": "PASS-INTEGRATION",
+        "evidence": "p16-legal-governance",
+        "closureMet": true
+      },
+      {
+        "id": "P16-10",
+        "state": "EVIDENCE",
+        "promotion": "PASS-INTEGRATION",
+        "evidence": "p16-legal-governance",
+        "closureMet": true
+      },
+      {
+        "id": "P16-11",
+        "state": "EVIDENCE",
+        "promotion": "PASS-INTEGRATION",
+        "evidence": "p16-legal-governance",
+        "closureMet": true
+      },
+      {
+        "id": "P16-12",
+        "state": "EVIDENCE",
+        "promotion": "PASS-INTEGRATION",
+        "evidence": "p16-legal-governance",
+        "closureMet": true
+      },
+      {
+        "id": "P16-13",
+        "state": "EVIDENCE",
+        "promotion": "PASS-INTEGRATION",
+        "evidence": "p16-legal-governance",
+        "closureMet": true
+      },
+      {
+        "id": "P16-14",
+        "state": "EVIDENCE",
+        "promotion": "PASS-INTEGRATION",
+        "evidence": "p16-legal-governance",
+        "closureMet": true
+      }
+    ],
+    "p16Closed": 12,
+    "p16Total": 14,
+    "wholeProductClosed": 277,
+    "wholeProductTotal": 304,
+    "reconciliationRows": 286
+  },
+  "preservedExternalObligations": [
+    {
+      "id": "P16-01",
+      "state": "OPEN_EXTERNAL",
+      "reason": "Final project license remains a recorded human/legal decision; the repository remains UNLICENSED and Apache-2.0 is only a candidate."
+    },
+    {
+      "id": "P16-05",
+      "state": "OPEN_EXTERNAL",
+      "reason": "Jurisdiction-specific FTO review remains counsel-required and cannot be replaced by CI, automation, or AI."
+    }
+  ],
+  "boundaries": {
+    "finalProjectLicenseClaimed": false,
+    "ftoClaimed": false,
+    "legalAdviceClaimed": false,
+    "publicBetaLegalClearanceClaimed": false,
+    "commercialLegalClearanceClaimed": false,
+    "productionClosed": false
+  },
+  "productionClosed": false
+}
