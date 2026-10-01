@@ -1057,3 +1057,17 @@ The public deployment court is bound to an exact release tag/version, requires a
 The adjacent published-release court requires two directly adjacent npm versions, verifies npm package signatures for both, and runs the actual installed artifacts on one browser origin with one persistent Chrome profile/OPFS. The previous release seeds canonical storage, the current release reuses or migrates it, the previous release then reopens safely (read-write only for identical schema, otherwise read-only or refuse-open), and the current release finally proves canonical state survived the rollback attempt. Passing evidence can only mark P14-04 READY_FOR_REVIEW.
 
 Neither workflow publishes, deploys or writes repository state. Overall closure remains **277/304** and `production_closed=false`.
+
+
+## External trust-state and human-review intake
+
+A new read-only evidence wave stages the remaining P12/P13 external review inputs without changing the production ledger.
+
+`npm run repository:trust:evidence` is an explicitly invoked local/admin CLI. It requires `OPENCONTAINER_REPO_ADMIN_READ_TOKEN` only in the caller's environment and reads GitHub private-vulnerability-reporting, main-branch protection and repository ruleset state. No workflow stores or references that token. A verified enabled private-vulnerability channel may mark P12-17 `READY_FOR_REVIEW`; repository protection state is captured for P13-17 but still requires policy/human review and cannot self-close the gate.
+
+`.github/workflows/external-security-review-evidence.yml` verifies an external public HTTPS JSON review artifact by exact SHA-256 and source commit. P12-18 evidence must come from a human independent reviewer and cover isolation, storage and network. P12-20 evidence must explicitly be a human product-security review. Critical/high findings must be resolved or accepted in the artifact.
+
+Both P12 review gates remain non-machine-closable. Overall closure remains **277/304** and `production_closed=false`.
+
+
+CI #1061 negative evidence: the first trust-state workflow design referenced a read-only repository secret, but the frozen supply-chain policy correctly rejects **all** `${{ secrets.* }}` workflow use. That design was removed rather than weakening policy. Repository trust capture remains local/admin-only; the external human-review workflow remains no-secret/read-only.

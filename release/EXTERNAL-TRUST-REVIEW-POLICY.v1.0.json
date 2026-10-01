@@ -1,0 +1,49 @@
+{
+  "schema": "opencontainer.external-trust-review-policy.v1.0",
+  "status": "STAGED_AWAITING_EXTERNAL_HUMAN_AND_ADMIN_EVIDENCE",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "repositoryTrust": {
+    "mode": "local-admin-cli",
+    "command": "npm run repository:trust:evidence",
+    "tokenEnvironmentVariable": "OPENCONTAINER_REPO_ADMIN_READ_TOKEN",
+    "tokenRequirement": "read-only access sufficient to read private-vulnerability-reporting, branch protection and repository rulesets",
+    "candidateGates": [
+      "P12-17",
+      "P13-17"
+    ],
+    "workflowPresent": false,
+    "reason": "Global supply-chain policy forbids repository secrets in workflows. Repository-administration state is therefore captured only by an explicitly invoked local/admin CLI and never by PR/main CI.",
+    "automaticLedgerClosure": false
+  },
+  "externalHumanReview": {
+    "workflow": ".github/workflows/external-security-review-evidence.yml",
+    "artifactSchema": "opencontainer.external-security-review.v1.0",
+    "candidateGates": [
+      "P12-18",
+      "P12-20"
+    ],
+    "independentReview": {
+      "reviewType": "independent-security-review",
+      "requiredScope": [
+        "isolation",
+        "storage",
+        "network"
+      ],
+      "reviewerHuman": true,
+      "reviewerIndependent": true
+    },
+    "humanProductSecurityReview": {
+      "reviewType": "human-product-security-review",
+      "reviewerHuman": true,
+      "reviewedProductSecurity": true
+    },
+    "automaticLedgerClosure": false
+  },
+  "preservedOpenGates": [
+    "P12-17",
+    "P12-18",
+    "P12-20",
+    "P13-17"
+  ],
+  "productionClosed": false
+}

@@ -80,3 +80,14 @@ The critical/high regression registry is also executable rather than documentary
 PR #42 implementation head `4e05b3cf1ca27d6bb5f3e33fda69ebc6411d67af` passed CI #409 across contract, pinned CodeQL and installed-distribution Chrome. The retained receipts report zero npm vulnerabilities; zero CodeQL findings, waivers and unwaived blockers; 12 critical/high regression entries executed through 11 test files; and 2/2 complete browser product paths with zero unexplained failures.
 
 This evidence closes the technical review duties for P12-01 through P12-16 and P12-19. It deliberately does not close P12-17, P12-18 or P12-20.
+
+
+## External review intake
+
+The repository now contains a fail-closed intake court for future independent/second-party and human product-security review artifacts.
+
+An accepted review artifact must be public HTTPS JSON, match an explicitly supplied SHA-256, bind a full 40-hex OpenContainer source commit and identify a human reviewer. Independent P12-18 evidence must additionally state that the reviewer is independent from the project and cover at least the critical **isolation**, **storage** and **network** scopes named by the frozen security policy. P12-20 requires an explicit human product-security review flag.
+
+The court rejects unresolved CRITICAL/HIGH findings. A PASS only produces `READY_FOR_REVIEW`; neither P12-18 nor P12-20 becomes machine-closable.
+
+P12-17 has a separate local repository-administration CLI court. It can certify whether GitHub private vulnerability reporting is enabled only when an administrator supplies a read-only token with sufficient permission in the local process environment. The token is never referenced by a GitHub Actions workflow. Until such a receipt exists and is reconciled, P12-17 remains open.

@@ -38,3 +38,8 @@ Accounts, identity, billing, cloud synchronization, Git hosting integrations, an
 ## Review status
 
 Automated tests, dependency audit, CodeQL, and AI-assisted review are supporting evidence only. They are **not** a substitute for independent/second-party review or human product-security review. The repository must not claim P12-18 or P12-20 closed from machine evidence alone.
+
+
+## Verification court for private intake
+
+A local, read-only verification command now exists to capture GitHub private-vulnerability-reporting state when a repository administrator supplies a separate admin-read token to the process environment. The token is not stored in evidence and is not referenced by GitHub Actions. This court does **not** mean the private channel is currently verified or enabled; P12-17 remains open until a passing retained receipt is reviewed.

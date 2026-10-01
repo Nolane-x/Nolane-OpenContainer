@@ -10,7 +10,8 @@
     ".github/workflows/scorecard.yml",
     ".github/workflows/external-release-evidence.yml",
     ".github/workflows/public-deployment-evidence.yml",
-    ".github/workflows/adjacent-release-evidence.yml"
+    ".github/workflows/adjacent-release-evidence.yml",
+    ".github/workflows/external-security-review-evidence.yml"
   ],
   "workflowRules": {
     "remoteActionRef": "full-40-hex-commit",
@@ -247,5 +248,14 @@
     ],
     "publicationWritesAllowed": false,
     "purpose": "Read-only verification of real public deployment topology and actual adjacent npm release compatibility."
+  },
+  "externalTrustReview": {
+    "policy": "release/EXTERNAL-TRUST-REVIEW-POLICY.v1.0.json",
+    "workflows": [
+      ".github/workflows/external-security-review-evidence.yml"
+    ],
+    "localAdminCli": "npm run repository:trust:evidence",
+    "publicationWritesAllowed": false,
+    "purpose": "Read-only validation of external human security-review artifacts; repository administration state remains an explicit local/admin CLI because workflow secrets are globally forbidden."
   }
 }
