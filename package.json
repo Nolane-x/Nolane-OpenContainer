@@ -85,7 +85,8 @@
     "adjacent:release:evidence": "node scripts/adjacent-release-court.mjs",
     "repository:trust:evidence": "node scripts/repository-trust-state.mjs",
     "external:security-review": "node scripts/external-security-review.mjs",
-    "p9:human:evidence": "node scripts/p9-human-acceptance.mjs"
+    "p9:human:evidence": "node scripts/p9-human-acceptance.mjs",
+    "final:external:verify": "node scripts/final-external-decision.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",

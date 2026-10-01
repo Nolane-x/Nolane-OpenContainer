@@ -1082,3 +1082,17 @@ For **P9-05 manual screen-reader acceptance**, the retained JSON artifact must i
 For **P9-11 human comprehension**, at least **5 human participants** with unique pseudonymous IDs must each cover five preregistered scenario classes. Overall correctness must be at least **80%**, and **zero critical misinterpretations** are allowed. Direct participant identity fields such as name/email/phone/address are rejected by the verifier.
 
 The workflow accepts only a public HTTPS JSON artifact bound to an exact source commit and SHA-256. It contains no secret/write/publish authority. A PASS produces `READY_FOR_REVIEW` only; P9-05 and P9-11 remain non-machine-closable, P9-12 remains a separate weak-device/long-session obligation, and overall closure remains **277/304** with `production_closed=false`.
+
+
+## Final external decision authority
+
+A last-mile fail-closed receipt authority is staged for the four remaining external decisions that cannot be created by CI:
+
+- **P1-15** actual field browser-regression evidence;
+- **P13-03** real npm trusted-publisher/OIDC configuration;
+- **P16-01** final project-license decision;
+- **P16-05** jurisdiction-specific FTO counsel review.
+
+The verifier binds every receipt to the exact checked-out commit. P1-15 must point to an actual retained regression test whose SHA-256 matches the receipt. P13-03 remains blocked while the supply-chain policy is still OPEN_EXTERNAL and the configured publishing workflow bytes do not match. P16-01 additionally builds the actual distribution and requires its package license, root LICENSE digest and legal policy to agree with one SPDX decision. P16-05 requires legal-policy alignment and preserves a counsel outcome of BLOCKED as BLOCKED_BY_COUNSEL.
+
+The workflow is manual, contents-read-only and contains no secrets or publication authority. It emits candidate review evidence only: `closureEligible=false`, no automatic ledger promotion, **277/304 CLOSED**, `production_closed=false`.

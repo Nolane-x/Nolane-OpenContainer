@@ -118,10 +118,11 @@
       "tests/external-release-evidence.test.js",
       "tests/external-runtime-evidence.test.js",
       "tests/external-trust-review.test.js",
-      "tests/p9-human-acceptance.test.js"
+      "tests/p9-human-acceptance.test.js",
+      "tests/final-external-decision.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 114
+    "minimumTestFiles": 115
   },
   "browser": {
     "iterations": 2,

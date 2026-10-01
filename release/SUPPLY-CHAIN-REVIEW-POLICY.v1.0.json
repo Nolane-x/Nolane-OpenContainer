@@ -12,7 +12,8 @@
     ".github/workflows/public-deployment-evidence.yml",
     ".github/workflows/adjacent-release-evidence.yml",
     ".github/workflows/external-security-review-evidence.yml",
-    ".github/workflows/p9-human-acceptance-evidence.yml"
+    ".github/workflows/p9-human-acceptance-evidence.yml",
+    ".github/workflows/final-external-decision.yml"
   ],
   "workflowRules": {
     "remoteActionRef": "full-40-hex-commit",
@@ -265,5 +266,19 @@
     "publicationWritesAllowed": false,
     "secretsAllowed": false,
     "purpose": "Validate retained public HTTPS manual screen-reader and human-comprehension evidence without machine-closing P9-05/P9-11."
+  },
+  "finalExternalDecisionAuthority": {
+    "policy": "release/FINAL-EXTERNAL-DECISION-POLICY.v1.0.json",
+    "workflow": ".github/workflows/final-external-decision.yml",
+    "coveredGates": [
+      "P1-15",
+      "P13-03",
+      "P16-01",
+      "P16-05"
+    ],
+    "publicationWritesAllowed": false,
+    "secretsAllowed": false,
+    "automaticLedgerClosure": false,
+    "purpose": "Verify non-sensitive retained metadata for real field/admin/legal decisions without granting automation external authority."
   }
 }

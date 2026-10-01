@@ -177,5 +177,15 @@
       "P16-05"
     ],
     "productionClosed": false
+  },
+  "externalDecisionAuthority": {
+    "policy": "release/FINAL-EXTERNAL-DECISION-POLICY.v1.0.json",
+    "workflow": ".github/workflows/final-external-decision.yml",
+    "p16Gates": [
+      "P16-01",
+      "P16-05"
+    ],
+    "automaticLedgerClosure": false,
+    "note": "This authority validates retained non-sensitive decision metadata only. It never chooses a license, provides legal advice, substitutes for counsel, or changes OPEN_EXTERNAL state by itself."
   }
 }
