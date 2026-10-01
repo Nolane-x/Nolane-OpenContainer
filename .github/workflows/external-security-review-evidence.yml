@@ -1,0 +1,70 @@
+name: External Security Review Evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      review_type:
+        description: Review evidence type
+        required: true
+        type: choice
+        options:
+          - independent-security-review
+          - human-product-security-review
+      source_commit:
+        description: Exact reviewed OpenContainer source commit
+        required: true
+        type: string
+      artifact_url:
+        description: Public HTTPS JSON review artifact URL
+        required: true
+        type: string
+      artifact_sha256:
+        description: Exact SHA-256 of the review artifact
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: external-security-review-${{ inputs.review_type }}-${{ inputs.source_commit }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.repository == 'Nolane-x/Nolane-OpenContainer' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - run: npm ci
+      - name: Verify reviewed commit exists
+        env:
+          OC_REVIEW_SOURCE_COMMIT: ${{ inputs.source_commit }}
+        run: git cat-file -e "$OC_REVIEW_SOURCE_COMMIT^{commit}"
+      - name: Verify external human review artifact
+        env:
+          OC_REVIEW_TYPE: ${{ inputs.review_type }}
+          OC_REVIEW_SOURCE_COMMIT: ${{ inputs.source_commit }}
+          OC_REVIEW_URL: ${{ inputs.artifact_url }}
+          OC_REVIEW_SHA256: ${{ inputs.artifact_sha256 }}
+        run: |
+          npm run external:security-review -- \
+            --type="$OC_REVIEW_TYPE" \
+            --source-commit="$OC_REVIEW_SOURCE_COMMIT" \
+            --url="$OC_REVIEW_URL" \
+            --sha256="$OC_REVIEW_SHA256"
+      - name: Archive external review receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-external-security-review-${{ inputs.review_type }}-${{ github.run_id }}
+          path: .artifacts/external-security-review/receipt.json
+          if-no-files-found: warn
+          retention-days: 90
