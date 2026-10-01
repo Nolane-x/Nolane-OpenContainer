@@ -1063,8 +1063,11 @@ Neither workflow publishes, deploys or writes repository state. Overall closure 
 
 A new read-only evidence wave stages the remaining P12/P13 external review inputs without changing the production ledger.
 
-`.github/workflows/repository-trust-state.yml` requires a separately configured `OPENCONTAINER_REPO_ADMIN_READ_TOKEN` inside the `external-trust-state` environment. The token is used only to read GitHub private-vulnerability-reporting, main-branch protection and repository ruleset state. The receipt never retains the token. A verified enabled private-vulnerability channel may mark P12-17 `READY_FOR_REVIEW`; repository protection state is captured for P13-17 but still requires policy/human review and cannot self-close the gate.
+`npm run repository:trust:evidence` is an explicitly invoked local/admin CLI. It requires `OPENCONTAINER_REPO_ADMIN_READ_TOKEN` only in the caller's environment and reads GitHub private-vulnerability-reporting, main-branch protection and repository ruleset state. No workflow stores or references that token. A verified enabled private-vulnerability channel may mark P12-17 `READY_FOR_REVIEW`; repository protection state is captured for P13-17 but still requires policy/human review and cannot self-close the gate.
 
 `.github/workflows/external-security-review-evidence.yml` verifies an external public HTTPS JSON review artifact by exact SHA-256 and source commit. P12-18 evidence must come from a human independent reviewer and cover isolation, storage and network. P12-20 evidence must explicitly be a human product-security review. Critical/high findings must be resolved or accepted in the artifact.
 
 Both P12 review gates remain non-machine-closable. Overall closure remains **277/304** and `production_closed=false`.
+
+
+CI #1061 negative evidence: the first trust-state workflow design referenced a read-only repository secret, but the frozen supply-chain policy correctly rejects **all** `${{ secrets.* }}` workflow use. That design was removed rather than weakening policy. Repository trust capture remains local/admin-only; the external human-review workflow remains no-secret/read-only.
