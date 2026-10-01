@@ -1096,3 +1096,14 @@ A last-mile fail-closed receipt authority is staged for the four remaining exter
 The verifier binds every receipt to the exact checked-out commit. P1-15 must point to an actual retained regression test whose SHA-256 matches the receipt. P13-03 remains blocked while the supply-chain policy is still OPEN_EXTERNAL and the configured publishing workflow bytes do not match. P16-01 additionally builds the actual distribution and requires its package license, root LICENSE digest and legal policy to agree with one SPDX decision. P16-05 requires legal-policy alignment and preserves a counsel outcome of BLOCKED as BLOCKED_BY_COUNSEL.
 
 The workflow is manual, contents-read-only and contains no secrets or publication authority. It emits candidate review evidence only: `closureEligible=false`, no automatic ledger promotion, **277/304 CLOSED**, `production_closed=false`.
+
+
+## Final closure campaign manifest
+
+All **27 currently open production gates** are now mapped to **13 explicit evidence-acquisition routes** in `release/FINAL-CLOSURE-CAMPAIGN.v1.0.json`.
+
+`npm run closure:campaign:verify` mechanically derives the open-gate set from the production ledger and requires an exact 1:1 match with the campaign manifest. Every route must name a real repository workflow/script/policy entrypoint, an external authority where applicable, prerequisites and an output artifact. Manual external workflows are also re-audited here as workflow_dispatch-only, `contents: read`, no secrets and no write-capable permissions.
+
+The campaign verifier explicitly rejects missing gates, duplicate routing, stale ledger totals, missing entrypoints, automatic promotion and any `closureEligible=true` route. It is part of the main `npm run ci` chain and the repeated critical campaign.
+
+This closes an engineering-process gap only. It does **not** close any external gate: ledger remains **277/304**, 27 gates open, `production_closed=false`.
