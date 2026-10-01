@@ -44,7 +44,7 @@ assert(policy.fto.counselRequired===true&&policy.fto.decisionRecorded===false&&p
 const machineGates=['P16-02','P16-03','P16-04','P16-06','P16-07','P16-08','P16-09','P16-10','P16-11','P16-12','P16-13','P16-14'];
 for(const id of machineGates){
   assert(policy.gateAuthority[id]?.machineClosable===true,id+' must be machine-auditable');
-  assert(policy.gateAuthority[id]?.state==='IMPLEMENTED_AWAITING_CI',id+' implementation state drift');
+  assert(policy.gateAuthority[id]?.state==='PROMOTED_CI_EVIDENCE',id+' promotion state drift');
 }
 for(const id of ['P16-01','P16-05']){
   assert(policy.gateAuthority[id]?.machineClosable===false,id+' cannot be closed by CI');

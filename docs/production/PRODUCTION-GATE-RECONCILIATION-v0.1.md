@@ -325,3 +325,12 @@ Every substantive PR should update the JSON ledger only for gate IDs it directly
 - Every scenario executes through the failure-state component contract and maps to retained component/integration/browser evidence; the dedicated job is chained behind the same-head P9 rendered court. Dedicated artifact **#11142839511**, digest `sha256:9f541d0257347987de6a1ed45586e660800fcb0e2ee43984c9cb50fa1ef6e5d6`, retained projection digest `269ee15268274b609b7e224a21a9e181f7cb447ee06d418ddda8820d61ff2bb4`.
 - CI #1011 passed **648/648** contract tests and **106 critical files × 5 = 530/530** repeated executions with zero unexplained failures, plus CodeQL, full browser product path and P9 rendered.
 - **P9 is now 15/18 closed.** P9-05 manual screen-reader acceptance, P9-11 human comprehension, and P9-12 weak-device/long-session evidence remain open. Whole-product ledger is **265/304 CLOSED** and `production_closed=false`.
+
+
+## P16 machine-auditable legal/governance closure
+
+- PR #78 implementation head `aef779d7b3ba1cc1346bbdbb89dd5ec43c472720` passed **CI #1034 (19/19 jobs)** and **OpenSSF Scorecard #67**. Contract suite: **659/659 PASS**. Critical campaign: **108 files × 5 = 540/540** with **0 unexplained failures**, plus CodeQL and the full installed-distribution browser regression fan-out.
+- The executable P16 court consumed the actual installed-release dependency/license inventory and third-party notices (**37 runtime notices**), audited all **13** frozen real-repository corpus cases with commit + license-blob provenance, and verified both retained BCR tarballs against exact P6 identities and required distribution notices. Retained artifact **#11145241386**, digest `sha256:a68bf140bf1ff56026312f4829f3520fa89e1817de09ca408eb4c1010e4617c5`.
+- **P16-02/03/04/06/07/08/09/10/11/12/13/14** are promoted to `PASS-INTEGRATION` through evidence key `p16-legal-governance`.
+- **P16-01 remains OPEN_EXTERNAL**: the final project license is not frozen; the repository remains **UNLICENSED** and Apache-2.0 is only a candidate. **P16-05 remains OPEN_EXTERNAL**: jurisdiction-specific FTO review is counsel-required. CI/AI evidence is explicitly forbidden from substituting for either decision.
+- P16 is now **12/14 closed**. Whole-product ledger becomes **277/304 CLOSED** with **286 reconciliation rows**. `production_closed=false` remains mandatory.

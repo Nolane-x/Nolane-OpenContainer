@@ -634,6 +634,14 @@
       "status": "PASS",
       "ref": "CI #1011 / PR #77 head 17b7135eb405dbab7da94c2ca7491e57bac88c8a",
       "note": "P9-03 complete retained 280-scenario failure registry: SHA-locked source, 280 qualified rows, 55 court classes, 280 component projections, same-head rendered P9 dependency and zero missing retained evidence refs. Artifact #11142839511. P9-05/P9-11/P9-12 remain independent external obligations."
+    },
+    {
+      "key": "p16-legal-governance",
+      "kind": "EXECUTABLE",
+      "level": "INTEGRATION",
+      "status": "PASS",
+      "ref": "CI #1034 / PR #78 head aef779d7b3ba1cc1346bbdbb89dd5ec43c472720",
+      "note": "P16 machine-auditable legal/governance readiness court consumed the actual installed-release third-party notices and dependency-license inventory, audited all 13 frozen real-repository corpus licenses, verified both retained BCR tarball identities/notices, clean-room provenance, contribution/governance/trademark policy, AI-provider egress language and jurisdiction assumptions. 659/659 tests and 108 critical files ×5 = 540/540 passed with zero unexplained failures; artifact #11145241386. P16-01 final project license and P16-05 jurisdiction-specific FTO counsel review remain OPEN_EXTERNAL; no legal/FTO/production closure is claimed."
     }
   ]
 }

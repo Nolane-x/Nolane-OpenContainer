@@ -11,6 +11,10 @@ const bcr=JSON.parse(readFileSync('release/P16-BCR-LICENSE-REVIEW.v1.0.json','ut
 const p6=JSON.parse(readFileSync('release/P6-TOOLCHAIN-VITE-EVIDENCE.v1.0.json','utf8'));
 const clean=JSON.parse(readFileSync('release/P16-CLEAN-ROOM-SOURCE-REGISTER.v1.0.json','utf8'));
 const runner=readFileSync('scripts/p16-legal-governance-readiness.mjs','utf8');
+const evidence=JSON.parse(readFileSync('release/P16-LEGAL-GOVERNANCE-EVIDENCE.v1.0.json','utf8'));
+const ledger=JSON.parse(readFileSync('docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.json','utf8'));
+const registry=JSON.parse(readFileSync('release/EVIDENCE-REGISTRY.v1.0.json','utf8'));
+const flake=JSON.parse(readFileSync('release/CRITICAL-FLAKE-POLICY.v0.1.json','utf8'));
 
 const sha256=bytes=>createHash('sha256').update(bytes).digest('hex');
 
@@ -27,13 +31,23 @@ test('P16 keeps final project license and FTO counsel gates externally open',()=
   assert.equal(policy.productionClosed,false);
 });
 
-test('P16 machine-auditable governance gates are implemented but not self-promoted',()=>{
+test('P16 machine-auditable governance gates are promoted only from retained CI evidence',()=>{
   const target=['P16-02','P16-03','P16-04','P16-06','P16-07','P16-08','P16-09','P16-10','P16-11','P16-12','P16-13','P16-14'];
   for(const id of target){
     assert.equal(policy.gateAuthority[id].machineClosable,true,id);
-    assert.equal(policy.gateAuthority[id].state,'IMPLEMENTED_AWAITING_CI',id);
+    assert.equal(policy.gateAuthority[id].state,'PROMOTED_CI_EVIDENCE',id);
     assert.equal(policy.gateAuthority[id].evidenceTarget,'p16-legal-governance',id);
+    const row=ledger.overrides.find(x=>x.id===id);
+    assert.deepEqual({domain:row.domain,state:row.state,promotion:row.promotion,evidence:row.evidence,closure_met:row.closure_met},{domain:'P16',state:'EVIDENCE',promotion:'PASS-INTEGRATION',evidence:'p16-legal-governance',closure_met:true},id);
   }
+  for(const id of ['P16-01','P16-05']){
+    const row=ledger.overrides.find(x=>x.id===id);
+    assert.ok(!row||row.closure_met!==true,id+' must remain external-open');
+  }
+  assert.equal(ledger.overrides.filter(x=>x.domain==='P16'&&x.closure_met===true).length,12);
+  assert.equal(ledger.overrides.length,286);
+  assert.equal(ledger.overrides.filter(x=>x.closure_met===true).length,277);
+  assert.equal(ledger.production_closed,false);
 });
 
 test('P16 corpus audit covers all frozen real repositories and resolves NOASSERTION entries explicitly',()=>{
@@ -122,4 +136,27 @@ test('P16 executable readiness court consumes actual release notices and retaine
     'OPEN_EXTERNAL',
     'P16 LEGAL GOVERNANCE READINESS PASS'
   ])assert.ok(runner.includes(token),token);
+});
+
+
+test('P16 promotion evidence is retained, registered and cannot claim legal/FTO closure',()=>{
+  assert.equal(evidence.schema,'opencontainer.p16-legal-governance-evidence.v1.0');
+  assert.equal(evidence.pullRequest,78);
+  assert.equal(evidence.implementation.head,'aef779d7b3ba1cc1346bbdbb89dd5ec43c472720');
+  assert.equal(evidence.implementation.pullRequestContextSha,'3fdd296ac0d735a65c14272410c7ca10d87389fe');
+  assert.equal(evidence.implementation.ciRunNumber,1034);
+  assert.equal(evidence.implementation.contractPassed,659);
+  assert.equal(evidence.implementation.criticalTestFileExecutions,540);
+  assert.equal(evidence.implementation.criticalUnexplainedFailures,0);
+  assert.equal(evidence.executableCourt.artifactId,11145241386);
+  assert.equal(evidence.executableCourt.artifactDigest,'sha256:a68bf140bf1ff56026312f4829f3520fa89e1817de09ca408eb4c1010e4617c5');
+  assert.equal(evidence.closure.p16Closed,12);
+  assert.equal(evidence.closure.wholeProductClosed,277);
+  const entry=registry.entries.find(x=>x.key==='p16-legal-governance');
+  assert.deepEqual({kind:entry.kind,level:entry.level,status:entry.status},{kind:'EXECUTABLE',level:'INTEGRATION',status:'PASS'});
+  assert.ok(flake.contract.testFiles.includes('tests/p16-legal-governance.test.js'));
+  assert.equal(flake.contract.testFiles.length,108);
+  assert.equal(flake.contract.iterations,5);
+  for(const value of Object.values(evidence.boundaries))assert.equal(value,false);
+  assert.equal(evidence.productionClosed,false);
 });

@@ -34,17 +34,17 @@
     },
     "P16-02": {
       "machineClosable": true,
-      "state": "IMPLEMENTED_AWAITING_CI",
+      "state": "PROMOTED_CI_EVIDENCE",
       "evidenceTarget": "p16-legal-governance"
     },
     "P16-03": {
       "machineClosable": true,
-      "state": "IMPLEMENTED_AWAITING_CI",
+      "state": "PROMOTED_CI_EVIDENCE",
       "evidenceTarget": "p16-legal-governance"
     },
     "P16-04": {
       "machineClosable": true,
-      "state": "IMPLEMENTED_AWAITING_CI",
+      "state": "PROMOTED_CI_EVIDENCE",
       "evidenceTarget": "p16-legal-governance"
     },
     "P16-05": {
@@ -53,47 +53,47 @@
     },
     "P16-06": {
       "machineClosable": true,
-      "state": "IMPLEMENTED_AWAITING_CI",
+      "state": "PROMOTED_CI_EVIDENCE",
       "evidenceTarget": "p16-legal-governance"
     },
     "P16-07": {
       "machineClosable": true,
-      "state": "IMPLEMENTED_AWAITING_CI",
+      "state": "PROMOTED_CI_EVIDENCE",
       "evidenceTarget": "p16-legal-governance"
     },
     "P16-08": {
       "machineClosable": true,
-      "state": "IMPLEMENTED_AWAITING_CI",
+      "state": "PROMOTED_CI_EVIDENCE",
       "evidenceTarget": "p16-legal-governance"
     },
     "P16-09": {
       "machineClosable": true,
-      "state": "IMPLEMENTED_AWAITING_CI",
+      "state": "PROMOTED_CI_EVIDENCE",
       "evidenceTarget": "p16-legal-governance"
     },
     "P16-10": {
       "machineClosable": true,
-      "state": "IMPLEMENTED_AWAITING_CI",
+      "state": "PROMOTED_CI_EVIDENCE",
       "evidenceTarget": "p16-legal-governance"
     },
     "P16-11": {
       "machineClosable": true,
-      "state": "IMPLEMENTED_AWAITING_CI",
+      "state": "PROMOTED_CI_EVIDENCE",
       "evidenceTarget": "p16-legal-governance"
     },
     "P16-12": {
       "machineClosable": true,
-      "state": "IMPLEMENTED_AWAITING_CI",
+      "state": "PROMOTED_CI_EVIDENCE",
       "evidenceTarget": "p16-legal-governance"
     },
     "P16-13": {
       "machineClosable": true,
-      "state": "IMPLEMENTED_AWAITING_CI",
+      "state": "PROMOTED_CI_EVIDENCE",
       "evidenceTarget": "p16-legal-governance"
     },
     "P16-14": {
       "machineClosable": true,
-      "state": "IMPLEMENTED_AWAITING_CI",
+      "state": "PROMOTED_CI_EVIDENCE",
       "evidenceTarget": "p16-legal-governance"
     }
   },
@@ -148,5 +148,34 @@
     "generatedFromActualInstalledReleaseGraph": true,
     "path": ".artifacts/release/third-party-notices.json"
   },
-  "productionClosed": false
+  "productionClosed": false,
+  "promotion": {
+    "evidenceKey": "p16-legal-governance",
+    "level": "PASS-INTEGRATION",
+    "implementationHead": "aef779d7b3ba1cc1346bbdbb89dd5ec43c472720",
+    "pullRequestContextSha": "3fdd296ac0d735a65c14272410c7ca10d87389fe",
+    "ciRunNumber": 1034,
+    "ciRunId": 36824340549,
+    "artifactId": 11145241386,
+    "artifactDigest": "sha256:a68bf140bf1ff56026312f4829f3520fa89e1817de09ca408eb4c1010e4617c5",
+    "promotedGates": [
+      "P16-02",
+      "P16-03",
+      "P16-04",
+      "P16-06",
+      "P16-07",
+      "P16-08",
+      "P16-09",
+      "P16-10",
+      "P16-11",
+      "P16-12",
+      "P16-13",
+      "P16-14"
+    ],
+    "preservedExternalGates": [
+      "P16-01",
+      "P16-05"
+    ],
+    "productionClosed": false
+  }
 }

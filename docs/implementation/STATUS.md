@@ -1005,3 +1005,12 @@ PR #77 retains the original W5 v0.4 UI/UX failure matrix byte-for-byte and uses 
 Implementation CI #1011 passed **648/648** tests and **530/530** repeated critical-file executions. The dedicated failure-scenario court and same-head P9 rendered court both passed. P9-03 is promoted to PASS-INTEGRATION.
 
 This moves P9 to **15/18** and the whole-product ledger to **265/304**. P9-05, P9-11 and P9-12 remain external/manual/device blockers; `production_closed=false`.
+
+
+## P16 legal/governance machine closure
+
+PR #78 implementation head `aef779d7b3ba1cc1346bbdbb89dd5ec43c472720` passed CI #1034 with **659/659** tests and **540/540** repeated critical-file executions, zero unexplained failures, CodeQL, the complete browser regression fan-out and Scorecard #67.
+
+The P16 court validates the installed release's dependency/license inventory and notices, all 13 frozen corpus license-provenance records, both retained BCR artifacts and redistribution notices, clean-room provenance, contribution/governance/trademark policy, AI-provider data-egress wording and jurisdiction boundaries. Artifact #11145241386 is retained with digest `sha256:a68bf140bf1ff56026312f4829f3520fa89e1817de09ca408eb4c1010e4617c5`.
+
+Exactly **12/14 P16 gates** are promoted at PASS-INTEGRATION. **P16-01 final project license** and **P16-05 FTO/counsel** remain OPEN_EXTERNAL and cannot be self-closed by CI or AI. Overall ledger is **277/304**, with **27 gates still open** and `production_closed=false`.
