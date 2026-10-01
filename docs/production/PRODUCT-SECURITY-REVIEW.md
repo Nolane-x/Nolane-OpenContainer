@@ -90,4 +90,4 @@ An accepted review artifact must be public HTTPS JSON, match an explicitly suppl
 
 The court rejects unresolved CRITICAL/HIGH findings. A PASS only produces `READY_FOR_REVIEW`; neither P12-18 nor P12-20 becomes machine-closable.
 
-P12-17 has a separate repository-administration court. It can certify whether GitHub private vulnerability reporting is enabled only when an administrator supplies a read-only token with sufficient permission. Until such a receipt exists and is reconciled, P12-17 remains open.
+P12-17 has a separate local repository-administration CLI court. It can certify whether GitHub private vulnerability reporting is enabled only when an administrator supplies a read-only token with sufficient permission in the local process environment. The token is never referenced by a GitHub Actions workflow. Until such a receipt exists and is reconciled, P12-17 remains open.
