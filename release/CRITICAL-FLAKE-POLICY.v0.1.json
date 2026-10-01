@@ -116,10 +116,11 @@
       "tests/p7-external-device-harness.test.js",
       "tests/weak-device-budget-protocol.test.js",
       "tests/external-release-evidence.test.js",
-      "tests/external-runtime-evidence.test.js"
+      "tests/external-runtime-evidence.test.js",
+      "tests/final-external-blocker-authority.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 112
+    "minimumTestFiles": 113
   },
   "browser": {
     "iterations": 2,
