@@ -159,3 +159,10 @@ Memory-class qualification is fail-closed. A cgroup/container cap that materiall
 Per-device receipts are **candidate evidence only**. A single receipt cannot modify the production ledger. P7-12/P9-12/P14-14 additionally require weak-device budgets to be frozen from a calibration campaign and then passed by an independent validation campaign; this prevents post-hoc budget selection.
 
 Therefore **P7 remains 10/14 closed** and P7-01/P7-09/P7-10/P7-12 remain open until retained external receipts satisfy the frozen requirements. `production_closed=false`.
+
+
+### Exact-commit aggregation
+
+`scripts/p7-external-device-aggregate.mjs` combines exactly four retained receipts: 4 GiB weak-device, 8 GiB weak-device, >=8-hour soak and lifecycle. All four must be PASS and carry the same non-empty source commit. The 4 GiB and 8 GiB calibration receipts must use distinct device identities.
+
+A valid aggregate can mark P7-01/P7-09/P7-10 as `READY_FOR_REVIEW`, but it still sets `closureEligible=false`. P7-12, P9-12 and P14-14 remain explicitly blocked until weak-device budgets are frozen before, then passed by, a separate validation campaign.
