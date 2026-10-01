@@ -74,7 +74,9 @@
     "p9:failure-scenarios": "node scripts/p9-failure-scenario-court.mjs",
     "legal:readiness": "node scripts/p16-legal-governance-readiness.mjs",
     "p7:external-device:evidence": "node scripts/p7-external-device-court.mjs",
-    "p7:external-device:aggregate": "node scripts/p7-external-device-aggregate.mjs"
+    "p7:external-device:aggregate": "node scripts/p7-external-device-aggregate.mjs",
+    "p7:weak-budget:propose": "node scripts/p7-freeze-weak-device-budget.mjs",
+    "p7:weak-budget:validate": "node scripts/p7-validate-weak-device-budgets.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",
