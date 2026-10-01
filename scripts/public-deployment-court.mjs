@@ -95,7 +95,8 @@ async function main(){
   const marker=root.headers.get(edgeMarkerHeader);
   if(marker!==topologyId)throw new Error('edge marker '+edgeMarkerHeader+' drift: expected '+topologyId+' observed '+marker);
   const hsts=root.headers.get('strict-transport-security')??'';
-  if(!/max-age\s*=\s*(?:[3-9]\d{6}|[1-9]\d{7,})/i.test(hsts))throw new Error('HSTS max-age is missing or below 30 days');
+  const hstsMaxAge=Number(hsts.match(/max-age\s*=\s*(\d+)/i)?.[1]??NaN);
+  if(!Number.isFinite(hstsMaxAge)||hstsMaxAge<2592000)throw new Error('HSTS max-age is missing or below 30 days');
 
   const hosting=await checkHostingHeaders(base.href);
   if(!hosting.ok)throw new Error('public deployment hosting self-check failed: '+JSON.stringify(hosting.failures));
@@ -131,7 +132,8 @@ async function main(){
       edgeMarkerValue:marker,
       dns:dnsRows,
       tls,
-      hsts
+      hsts,
+      hstsMaxAge
     },
     hosting,
     browser,
