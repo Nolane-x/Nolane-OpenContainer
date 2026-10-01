@@ -82,7 +82,7 @@ const required=[
   'tests/browser-esm-edge.test.js',
   'tests/browser-node-compat.test.js',
   'packages/process/src/browser-guest-worker.js','apps/playground/server.mjs',
-  'scripts/p9-ui-rendered.mjs','tests/p9-ui-source-audit.test.js','release/P9-UI-RENDERED-EVIDENCE.v1.0.json','tests/p9-ui-evidence.test.js','scripts/install-frozen-ci-chrome.sh'
+  'scripts/p9-ui-rendered.mjs','tests/p9-ui-source-audit.test.js','release/P9-UI-RENDERED-EVIDENCE.v1.0.json','tests/p9-ui-evidence.test.js','scripts/install-frozen-ci-chrome.sh','docs/research/OPENCONTAINER-UX-STATE-FAILURE-MATRIX-v0.4-20260923.md','release/P9-FAILURE-SCENARIO-SOURCE.v1.0.json','scripts/p9-failure-matrix.mjs','packages/ui-contract/package.json','packages/ui-contract/src/index.js','release/P9-FAILURE-COURT-MAP.v1.0.json','scripts/p9-failure-scenario-court.mjs','tests/p9-failure-scenario-corpus.test.js'
 ];
 for(const path of required)await access(resolve(path));
 const root=JSON.parse(await readFile('package.json','utf8'));
