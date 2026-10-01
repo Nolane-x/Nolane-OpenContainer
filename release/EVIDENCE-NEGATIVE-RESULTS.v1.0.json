@@ -157,6 +157,17 @@
       "finding": "The exact retained tarball passed its artifact digest identity but does not contain package/LICENSE. Package metadata and the frozen dependency graph identify the package as MPL-2.0.",
       "resolution": "Retain canonical MPL-2.0 text separately under third_party/licenses and require every OpenContainer distribution that includes the Lightning CSS tarball to include that notice. Preserve P16-01/P16-05 legal decisions as external.",
       "exclusionReasonCode": null
+    },
+    {
+      "id": "NEG-015",
+      "date": "2026-10-01",
+      "classification": "HARNESS_INVALID",
+      "hypothesis": "Historical P9-03 evidence may permanently require the whole-product reconciliation row and closure totals that existed when P9-03 closed.",
+      "outcome": "HARNESS-FAIL",
+      "evidence": "CI #1035 / PR #78",
+      "finding": "P16 legitimately promoted twelve machine-auditable governance/provenance gates, extending the global ledger from 274/265 to 286/277. All P16 promotion assertions and all P9-owned failure-registry assertions passed; only P9-03's historical cross-domain global totals were stale.",
+      "resolution": "Keep P9-owned 15/18 closure, corpus, evidence and external-blocker assertions exact while making only whole-product reconciliation row/closure totals monotonic so later independent domain promotions cannot invalidate historical evidence.",
+      "exclusionReasonCode": "HARNESS_TOOLING_BUG"
     }
   ]
 }
