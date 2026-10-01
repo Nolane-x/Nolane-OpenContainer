@@ -996,3 +996,12 @@ P13-20 is now RELEASE-VERIFIED. P13 is **13/20 closed**, the whole-product ledge
 PR #76 freezes a browser minimum only after real retained matrix evidence existed. The supported evidence profile is **Google Chrome 153.0.8010.52 minimum on Ubuntu 24.04 x64**, profile `desktop-chrome153-ubuntu2404-x64-ci`. P14-13 CI #960 independently ran Chrome 153 and live Stable Chrome 154.0.8037.92 twice each through the full installed-distribution product path, with 4/4 passes and zero unexplained failures.
 
 Implementation CI #995 passed **639/639** tests and **520/520** repeated critical-file executions. P11-13 is promoted without claiming Firefox, Safari, Windows, macOS, Android/mobile or weak-device support. P11 is **13/14 closed**, the whole-product ledger is **264/304**, P11-12 remains publication-blocked, and `production_closed=false`.
+
+
+## P9-03 280-scenario failure registry
+
+PR #77 retains the original W5 v0.4 UI/UX failure matrix byte-for-byte and uses its SHA-locked rows as executable test input. The corpus contains **280 scenarios**, **55 evidence-court classes**, and deliberately uses round-qualified keys because 46 raw IDs are reused across research sections.
+
+Implementation CI #1011 passed **648/648** tests and **530/530** repeated critical-file executions. The dedicated failure-scenario court and same-head P9 rendered court both passed. P9-03 is promoted to PASS-INTEGRATION.
+
+This moves P9 to **15/18** and the whole-product ledger to **265/304**. P9-05, P9-11 and P9-12 remain external/manual/device blockers; `production_closed=false`.

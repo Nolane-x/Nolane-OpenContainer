@@ -1,3 +1,4 @@
+import { projectFailureScenario } from '/packages/ui-contract/src/index.js';
 function rect(selector){
   const node=document.querySelector(selector);
   return node?node.getBoundingClientRect().toJSON():null;
@@ -198,6 +199,7 @@ globalThis.__p9RenderedCourt=Object.freeze({
   resetLocalization,
   linkedConflictCourt,
   diagnosticsCopy,
-  surfaceHistory
+  surfaceHistory,
+  projectFailureScenario
 });
 export default globalThis.__p9RenderedCourt;

@@ -113,6 +113,28 @@
       "finding": "P11-13 added one legitimate reconciliation row and one closure, moving the global ledger from 272/263 to 273/264. P13-20 and P13-18 gate-specific evidence remained correct, but two historical P13 tests still treated the prior global row total as immutable.",
       "resolution": "Keep every P13-owned gate, evidence, authority and open-blocker assertion exact while making only cross-domain global ledger row/closure totals monotonic.",
       "exclusionReasonCode": "HARNESS_TOOLING_BUG"
+    },
+    {
+      "id": "NEG-011",
+      "date": "2026-10-01",
+      "classification": "HARNESS_INVALID",
+      "hypothesis": "The imported W5 v0.4 failure matrix is byte-identical to the raw ZIP artifact and its Round-24 partitions can be inferred from stale narrative totals.",
+      "outcome": "HARNESS-FAIL",
+      "evidence": "CI #1007 / PR #77",
+      "finding": "The text materialization path had stripped the source file's final newline, changing SHA-256 from the raw artifact. Separately, the first parser assumed Round-24 partitions of 50/40 from narrative counts, while mechanical table parsing shows 52/38. The same run also exposed a historical P11 critical-file count fixed at 105 after the P9 corpus legitimately expanded it to 106.",
+      "resolution": "Restore the exact raw trailing newline so the repository file matches SHA-256 7f329e45..., use mechanical SHA-locked table counts (52/38), and keep the historical P11 global campaign count monotonic while preserving its gate-specific assertions.",
+      "exclusionReasonCode": "HARNESS_TOOLING_BUG"
+    },
+    {
+      "id": "NEG-012",
+      "date": "2026-10-01",
+      "classification": "HARNESS_INVALID",
+      "hypothesis": "Historical P11-13 evidence may permanently require the global reconciliation totals that existed when the browser-floor gate closed.",
+      "outcome": "HARNESS-FAIL",
+      "evidence": "CI #1021 / PR #77",
+      "finding": "P9-03 legitimately added one reconciliation row and one closure, changing whole-product totals from 273/264 to 274/265. Every P11-owned assertion and every P9-03 promotion assertion passed; only the historical cross-domain global totals were stale.",
+      "resolution": "Preserve exact P11 gate and P11-12 boundary assertions while making only whole-product reconciliation row/closure totals monotonic.",
+      "exclusionReasonCode": "HARNESS_TOOLING_BUG"
     }
   ]
 }

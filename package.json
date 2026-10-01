@@ -70,7 +70,8 @@
     "p14:browser-regression": "node scripts/p14-browser-regression.mjs",
     "p13:openssf:verify": "node scripts/p13-openssf-scorecard.mjs",
     "release:archive:candidate": "node scripts/build-historical-release-archive.mjs .artifacts/release",
-    "release:archive:verify": "node scripts/verify-historical-release-archive.mjs"
+    "release:archive:verify": "node scripts/verify-historical-release-archive.mjs",
+    "p9:failure-scenarios": "node scripts/p9-failure-scenario-court.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",
