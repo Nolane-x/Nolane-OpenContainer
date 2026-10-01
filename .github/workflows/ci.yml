@@ -42,6 +42,13 @@ jobs:
           path: .artifacts/release/
           if-no-files-found: error
           retention-days: 90
+      - name: Archive P16 legal-governance readiness
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-p16-legal-governance-${{ github.sha }}
+          path: .artifacts/p16/legal-governance-receipt.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Archive P13 historical archive candidate
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
