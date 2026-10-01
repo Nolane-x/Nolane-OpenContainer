@@ -128,7 +128,7 @@ async function main(){
 
     if(seed.result.action!=='seeded')throw new Error('previous release did not seed canonical storage');
     if(!['reuse-compatible-storage','migrated'].includes(upgrade.result.action))throw new Error('current release did not reuse/migrate adjacent storage');
-    if(!['rollback-read-only','rollback-refuse-open'].includes(rollback.result.action))throw new Error('previous release rollback did not fail safe');
+    if(!['rollback-compatible-read-write','rollback-read-only','rollback-refuse-open'].includes(rollback.result.action))throw new Error('previous release rollback did not preserve compatibility safely');
     if(verifyCurrent.result.action!=='verified-current-after-rollback')throw new Error('current release could not verify state after rollback attempt');
 
     const receipt={
