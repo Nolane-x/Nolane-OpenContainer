@@ -1,0 +1,41 @@
+{
+  "schema": "opencontainer.p9-failure-scenario-source.v1.0",
+  "source": {
+    "bundle": "OPENCONTAINER-RUNTIME-W5-RESEARCH-BUNDLE-v1.24-UIUX-FULL-20260923.zip",
+    "bundleSha256": "9a13d917111372ca538c30d5f565fda6901581a500e2a244812416fd88a009f1",
+    "matrixFile": "OPENCONTAINER-UX-STATE-FAILURE-MATRIX-v0.4-20260923.md",
+    "matrixRepositoryPath": "docs/research/OPENCONTAINER-UX-STATE-FAILURE-MATRIX-v0.4-20260923.md",
+    "matrixSha256": "7f329e45b704465947488532658abdde90d699fc4ed33fc96e86bb603769ede5",
+    "matrixBytes": 41083,
+    "matrixUtf8Characters": 41043,
+    "matrixLines": 326,
+    "githubBlob": "9c8551c8c2e44da75703735316b6f69f92aea2a2"
+  },
+  "expected": {
+    "scenarios": 280,
+    "rawIdUnique": 234,
+    "duplicatedRawIds": 46,
+    "courtClasses": 55,
+    "rounds": {
+      "base": 100,
+      "round23": 40,
+      "round24State": 50,
+      "round24Completeness": 40,
+      "round25": 50
+    }
+  },
+  "sourceWarnings": [
+    {
+      "code": "STALE_INTERMEDIATE_NARRATIVE_COUNT",
+      "detail": "The source says 'Verified row target after Round-24 additions: 190' after 40 additional rows. Mechanical table parsing yields 230 before the 50 Round-25 rows; the final 280-row target matches the actual table rows.",
+      "authority": "SHA-locked table rows and mechanical count take precedence over stale intermediate narrative text."
+    }
+  ],
+  "closureBoundaries": {
+    "componentScenarioCourtRequired": true,
+    "externalManualScreenReaderStillRequired": true,
+    "externalHumanComprehensionStillRequired": true,
+    "externalWeakDeviceLongSessionStillRequired": true,
+    "productionClosed": false
+  }
+}

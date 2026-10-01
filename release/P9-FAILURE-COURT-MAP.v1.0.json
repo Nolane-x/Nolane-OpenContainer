@@ -1,0 +1,517 @@
+{
+  "schema": "opencontainer.p9-failure-court-map.v1.0",
+  "rule": "Every source evidence-court label must resolve to retained component/integration evidence. External human/device acceptance remains independent and is never inferred from this map.",
+  "courts": {
+    "integration": {
+      "court": "integration",
+      "level": "component+integration",
+      "refs": [
+        "tests/runtime.test.js",
+        "scripts/p9-ui-rendered.mjs"
+      ],
+      "externalAcceptance": []
+    },
+    "fault injection": {
+      "court": "fault injection",
+      "level": "component+integration",
+      "refs": [
+        "tests/worker-authority.test.js",
+        "tests/p2-runtime-contracts.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "browser": {
+      "court": "browser",
+      "level": "browser+component",
+      "refs": [
+        "scripts/p1-browser-substrate.mjs",
+        "scripts/p9-ui-rendered.mjs"
+      ],
+      "externalAcceptance": []
+    },
+    "multi-tab": {
+      "court": "multi-tab",
+      "level": "component+integration",
+      "refs": [
+        "scripts/p1-browser-substrate.mjs",
+        "tests/workspace-lifecycle.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "security": {
+      "court": "security",
+      "level": "component+integration",
+      "refs": [
+        "tests/security-hardening.test.js",
+        "tests/p10-ai-consumer.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "quota": {
+      "court": "quota",
+      "level": "component+integration",
+      "refs": [
+        "tests/p3-low-storage-evidence.test.js",
+        "tests/p3-safe-restore-evidence.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "cancel": {
+      "court": "cancel",
+      "level": "component+integration",
+      "refs": [
+        "tests/p10-ai-consumer.test.js",
+        "tests/p2-runtime-contracts.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "parser": {
+      "court": "parser",
+      "level": "component+integration",
+      "refs": [
+        "tests/p4-parser-fuzz.test.js",
+        "tests/p10-ai-consumer.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "crash": {
+      "court": "crash",
+      "level": "component+integration",
+      "refs": [
+        "tests/sdk-workspace-persistence.test.js",
+        "tests/release-storage-migration.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "lifecycle": {
+      "court": "lifecycle",
+      "level": "component+integration",
+      "refs": [
+        "tests/workspace-lifecycle.test.js",
+        "scripts/p1-browser-substrate.mjs"
+      ],
+      "externalAcceptance": []
+    },
+    "corruption": {
+      "court": "corruption",
+      "level": "component+integration",
+      "refs": [
+        "tests/persistence-corruption.test.js",
+        "tests/p3-corruption-evidence.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "state": {
+      "court": "state",
+      "level": "component+integration",
+      "refs": [
+        "tests/p10-ai-consumer.test.js",
+        "tests/p9-ui-source-audit.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "recovery": {
+      "court": "recovery",
+      "level": "component+integration",
+      "refs": [
+        "tests/p3-safe-restore-evidence.test.js",
+        "scripts/p9-ui-rendered.mjs"
+      ],
+      "externalAcceptance": []
+    },
+    "permission": {
+      "court": "permission",
+      "level": "component+integration",
+      "refs": [
+        "tests/external-source.test.js",
+        "tests/security-hardening.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "race": {
+      "court": "race",
+      "level": "component+integration",
+      "refs": [
+        "tests/p2-runtime-contracts.test.js",
+        "tests/p10-ai-consumer.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "resource": {
+      "court": "resource",
+      "level": "component+integration",
+      "refs": [
+        "tests/resource-governance.test.js",
+        "tests/p7-wave4-governor.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "privacy": {
+      "court": "privacy",
+      "level": "component+integration",
+      "refs": [
+        "tests/p10-ai-consumer.test.js",
+        "tests/product-security.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "provider": {
+      "court": "provider",
+      "level": "component+integration",
+      "refs": [
+        "tests/p10-ai-consumer.test.js",
+        "tests/p10-ai-consumer-evidence.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "ambiguous": {
+      "court": "ambiguous",
+      "level": "component+integration",
+      "refs": [
+        "tests/p10-ai-consumer.test.js",
+        "tests/p3-destructive-lifecycle-evidence.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "context": {
+      "court": "context",
+      "level": "component+integration",
+      "refs": [
+        "tests/p10-ai-consumer.test.js",
+        "tests/p10-ai-consumer-evidence.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "validation": {
+      "court": "validation",
+      "level": "component+integration",
+      "refs": [
+        "tests/p10-ai-consumer.test.js",
+        "tests/release-preflight.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "multi-agent": {
+      "court": "multi-agent",
+      "level": "component+integration",
+      "refs": [
+        "tests/p10-ai-consumer.test.js",
+        "tests/p10-ai-consumer-evidence.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "ui-state": {
+      "court": "ui-state",
+      "level": "component+integration",
+      "refs": [
+        "tests/p9-ui-source-audit.test.js",
+        "scripts/p9-ui-rendered.mjs"
+      ],
+      "externalAcceptance": []
+    },
+    "network": {
+      "court": "network",
+      "level": "component+integration",
+      "refs": [
+        "tests/runtime.test.js",
+        "tests/security-hardening.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "a11y": {
+      "court": "a11y",
+      "level": "browser+component",
+      "refs": [
+        "tests/p9-ui-source-audit.test.js",
+        "scripts/p9-ui-rendered.mjs"
+      ],
+      "externalAcceptance": []
+    },
+    "update": {
+      "court": "update",
+      "level": "component+integration",
+      "refs": [
+        "tests/release-storage-migration.test.js",
+        "tests/release-compatibility-matrix.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "migration": {
+      "court": "migration",
+      "level": "component+integration",
+      "refs": [
+        "tests/release-storage-migration.test.js",
+        "tests/p3-safe-restore-evidence.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "conflict": {
+      "court": "conflict",
+      "level": "component+integration",
+      "refs": [
+        "tests/external-source.test.js",
+        "tests/p10-ai-consumer.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "adversarial": {
+      "court": "adversarial",
+      "level": "component+integration",
+      "refs": [
+        "tests/security-hardening.test.js",
+        "tests/p10-ai-consumer.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "agent-security": {
+      "court": "agent-security",
+      "level": "component+integration",
+      "refs": [
+        "tests/security-hardening.test.js",
+        "tests/p10-ai-consumer.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "input": {
+      "court": "input",
+      "level": "component+integration",
+      "refs": [
+        "tests/p9-ui-source-audit.test.js",
+        "scripts/p9-ui-rendered.mjs"
+      ],
+      "externalAcceptance": []
+    },
+    "mobile": {
+      "court": "mobile",
+      "level": "browser+component",
+      "refs": [
+        "tests/p9-ui-source-audit.test.js",
+        "scripts/p9-ui-rendered.mjs"
+      ],
+      "externalAcceptance": []
+    },
+    "concurrency": {
+      "court": "concurrency",
+      "level": "component+integration",
+      "refs": [
+        "tests/p2-runtime-contracts.test.js",
+        "tests/p7-wave4-governor.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "weak-device": {
+      "court": "weak-device",
+      "level": "component+integration",
+      "refs": [
+        "tests/p7-resource-wave2-evidence.test.js",
+        "tests/p9-ui-source-audit.test.js"
+      ],
+      "externalAcceptance": [
+        "P9-12"
+      ]
+    },
+    "version-skew": {
+      "court": "version-skew",
+      "level": "component+integration",
+      "refs": [
+        "tests/release-compatibility-matrix.test.js",
+        "tests/release-storage-migration.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "a11y/input": {
+      "court": "a11y/input",
+      "level": "component+integration",
+      "refs": [
+        "tests/p9-ui-source-audit.test.js",
+        "scripts/p9-ui-rendered.mjs"
+      ],
+      "externalAcceptance": []
+    },
+    "responsive": {
+      "court": "responsive",
+      "level": "browser+component",
+      "refs": [
+        "tests/p9-ui-source-audit.test.js",
+        "scripts/p9-ui-rendered.mjs"
+      ],
+      "externalAcceptance": []
+    },
+    "performance": {
+      "court": "performance",
+      "level": "component+integration",
+      "refs": [
+        "tests/p7-wave3-source-audit.test.js",
+        "tests/p9-ui-source-audit.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "timeout": {
+      "court": "timeout",
+      "level": "component+integration",
+      "refs": [
+        "tests/p2-runtime-contracts.test.js",
+        "tests/p10-ai-consumer.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "screen-reader": {
+      "court": "screen-reader",
+      "level": "component+integration",
+      "refs": [
+        "tests/p9-ui-source-audit.test.js",
+        "scripts/p9-ui-rendered.mjs"
+      ],
+      "externalAcceptance": [
+        "P9-05"
+      ]
+    },
+    "RTL": {
+      "court": "RTL",
+      "level": "browser+component",
+      "refs": [
+        "tests/p9-ui-source-audit.test.js",
+        "scripts/p9-ui-rendered.mjs"
+      ],
+      "externalAcceptance": []
+    },
+    "manual": {
+      "court": "manual",
+      "level": "component+integration",
+      "refs": [
+        "tests/p9-ui-source-audit.test.js",
+        "scripts/p9-ui-rendered.mjs"
+      ],
+      "externalAcceptance": [
+        "P9-05"
+      ]
+    },
+    "leak-soak": {
+      "court": "leak-soak",
+      "level": "component+integration",
+      "refs": [
+        "tests/p7-resource-wave2-evidence.test.js",
+        "tests/resource-retention-audit.test.js"
+      ],
+      "externalAcceptance": [
+        "P9-12"
+      ]
+    },
+    "model/integration": {
+      "court": "model/integration",
+      "level": "component+integration",
+      "refs": [
+        "tests/p10-ai-consumer.test.js",
+        "tests/p10-ai-consumer-evidence.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "cancel-race": {
+      "court": "cancel-race",
+      "level": "component+integration",
+      "refs": [
+        "tests/p10-ai-consumer.test.js",
+        "tests/p2-runtime-contracts.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "ime": {
+      "court": "ime",
+      "level": "browser+component",
+      "refs": [
+        "tests/p9-ui-source-audit.test.js",
+        "scripts/p9-ui-rendered.mjs"
+      ],
+      "externalAcceptance": []
+    },
+    "ack-loss": {
+      "court": "ack-loss",
+      "level": "component+integration",
+      "refs": [
+        "tests/p4-publication-atomicity.test.js",
+        "tests/p3-destructive-lifecycle-evidence.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "rendered": {
+      "court": "rendered",
+      "level": "browser+component",
+      "refs": [
+        "tests/p9-ui-source-audit.test.js",
+        "scripts/p9-ui-rendered.mjs"
+      ],
+      "externalAcceptance": []
+    },
+    "soak": {
+      "court": "soak",
+      "level": "component+integration",
+      "refs": [
+        "tests/resource-retention-audit.test.js",
+        "tests/p7-resource-wave2-evidence.test.js"
+      ],
+      "externalAcceptance": [
+        "P9-12"
+      ]
+    },
+    "idempotency": {
+      "court": "idempotency",
+      "level": "component+integration",
+      "refs": [
+        "tests/p4-publication-atomicity.test.js",
+        "tests/p10-ai-consumer.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "filesystem": {
+      "court": "filesystem",
+      "level": "component+integration",
+      "refs": [
+        "tests/external-source.test.js",
+        "tests/p3-native-external-permission-evidence.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "i18n": {
+      "court": "i18n",
+      "level": "component+integration",
+      "refs": [
+        "tests/p9-ui-source-audit.test.js",
+        "scripts/p9-ui-rendered.mjs"
+      ],
+      "externalAcceptance": []
+    },
+    "localization": {
+      "court": "localization",
+      "level": "component+integration",
+      "refs": [
+        "tests/p9-ui-source-audit.test.js",
+        "scripts/p9-ui-rendered.mjs"
+      ],
+      "externalAcceptance": []
+    },
+    "destructive": {
+      "court": "destructive",
+      "level": "component+integration",
+      "refs": [
+        "tests/p3-destructive-lifecycle-evidence.test.js",
+        "tests/p9-ui-source-audit.test.js"
+      ],
+      "externalAcceptance": []
+    },
+    "safety": {
+      "court": "safety",
+      "level": "component+integration",
+      "refs": [
+        "tests/p9-ui-source-audit.test.js",
+        "tests/p10-ai-consumer.test.js"
+      ],
+      "externalAcceptance": []
+    }
+  },
+  "boundaries": {
+    "p9_05ManualScreenReaderClaimed": false,
+    "p9_11HumanComprehensionClaimed": false,
+    "p9_12WeakDeviceLongSessionClaimed": false,
+    "productionClosed": false
+  }
+}
