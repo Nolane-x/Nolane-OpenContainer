@@ -29,16 +29,20 @@
       "adapterSemanticProfile": "lightningcss-browser-default-v1",
       "retainedTarball": "toolchain/vendor/lightningcss-wasm-1.33.0.tgz",
       "license": "MPL-2.0",
-      "licenseSource": "package-lock.json:node_modules/lightningcss",
-      "requiredArchiveNotices": [
-        "package/LICENSE"
-      ],
+      "licenseSource": "package-lock.json:node_modules/lightningcss + parcel-bundler/lightningcss public LICENSE",
+      "requiredArchiveNotices": [],
       "redistributionReview": [
-        "retain MPL-2.0 license/notices with redistributed covered package contents",
+        "the retained upstream tarball identifies the package as MPL-2.0 but does not itself contain package/LICENSE; OpenContainer therefore retains and ships the canonical MPL-2.0 license text alongside the vendored artifact",
         "modifications to MPL-covered files require corresponding-source obligations to be reviewed before distribution",
         "unmodified retained tarball is redistributed as a distinct third-party artifact; final legal approval remains separate"
       ],
-      "legalOpinion": false
+      "legalOpinion": false,
+      "packageMetadataLicense": "MPL-2.0",
+      "archiveLicenseOmissionObserved": true,
+      "retainedDistributionNotices": [
+        "third_party/licenses/lightningcss-wasm-1.33.0.MPL-2.0.txt"
+      ],
+      "licenseTextSource": "https://github.com/parcel-bundler/lightningcss/blob/master/LICENSE"
     }
   ],
   "companionRuntime": [
@@ -63,5 +67,15 @@
   ],
   "finalLicenseDecision": false,
   "ftoDecision": false,
-  "productionClosed": false
+  "productionClosed": false,
+  "findings": [
+    {
+      "id": "BCR-LICENSE-001",
+      "artifact": "lightningcss-wasm@1.33.0",
+      "finding": "Retained tarball does not contain package/LICENSE even though package metadata declares MPL-2.0.",
+      "remediation": "Retain canonical MPL-2.0 text at third_party/licenses/lightningcss-wasm-1.33.0.MPL-2.0.txt and require that file in every OpenContainer distribution containing the tarball.",
+      "status": "REMEDIATED_BY_DISTRIBUTION_NOTICE",
+      "legalOpinion": false
+    }
+  ]
 }
