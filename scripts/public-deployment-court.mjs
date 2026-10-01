@@ -27,7 +27,7 @@ export function isPublicAddress(address){
   if(family===6)return !privateIpv6(address);
   return false;
 }
-export function validatePublicDeploymentRequest({url,topologyId,edgeProvider,edgeMarkerHeader}){
+export function validatePublicDeploymentRequest({url,version,tag,topologyId,edgeProvider,edgeMarkerHeader}){
   const errors=[];
   let parsed=null;
   try{parsed=new URL(url);}catch{errors.push('url must be absolute');}
@@ -37,6 +37,8 @@ export function validatePublicDeploymentRequest({url,topologyId,edgeProvider,edg
     if(parsed.port&&parsed.port!=='443')errors.push('public deployment URL must use standard HTTPS port 443');
     if(parsed.hostname==='localhost'||isIP(parsed.hostname))errors.push('public deployment URL must use a public DNS hostname');
   }
+  if(!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(String(version??'')))errors.push('version invalid');
+  if(tag!=='v'+version)errors.push('tag must equal v<version>');
   if(!/^[A-Za-z0-9._-]{3,128}$/.test(String(topologyId??'')))errors.push('topology-id invalid');
   if(!/^[A-Za-z0-9._ -]{2,128}$/.test(String(edgeProvider??'')))errors.push('edge-provider invalid');
   if(!/^x-[a-z0-9-]{2,64}$/.test(String(edgeMarkerHeader??'').toLowerCase()))errors.push('edge-marker-header must be an x-* header');
@@ -67,11 +69,13 @@ async function tlsReceipt(hostname){
 async function main(){
   const args=parseArgs(process.argv.slice(2));
   const url=args.url;
+  const version=args.version;
+  const tag=args.tag;
   const topologyId=args['topology-id'];
   const edgeProvider=args['edge-provider'];
   const edgeMarkerHeader=String(args['edge-marker-header']??'x-opencontainer-edge-id').toLowerCase();
   const output=resolve(args.output??'.artifacts/public-deployment/receipt.json');
-  const requestErrors=validatePublicDeploymentRequest({url,topologyId,edgeProvider,edgeMarkerHeader});
+  const requestErrors=validatePublicDeploymentRequest({url,version,tag,topologyId,edgeProvider,edgeMarkerHeader});
   if(requestErrors.length)throw new Error('invalid public deployment request: '+requestErrors.join('; '));
 
   const base=new URL(url);
@@ -95,6 +99,10 @@ async function main(){
 
   const hosting=await checkHostingHeaders(base.href);
   if(!hosting.ok)throw new Error('public deployment hosting self-check failed: '+JSON.stringify(hosting.failures));
+  const profileResponse=await fetch(new URL('/docs/production/PRODUCTION-PROFILE.json',base),{cache:'no-store'});
+  if(!profileResponse.ok)throw new Error('public deployment production profile unavailable');
+  const deploymentProfile=await profileResponse.json();
+  if(deploymentProfile?.runtime?.version!==version)throw new Error('public deployment runtime version '+deploymentProfile?.runtime?.version+' != expected '+version);
 
   const browser=await probeBrowserPage(base.href,{
     timeoutMs:90000,
@@ -113,6 +121,9 @@ async function main(){
     workflowRunId:process.env.GITHUB_RUN_ID??null,
     deployment:{
       url:base.href,
+      version,
+      tag,
+      runtimeVersion:deploymentProfile.runtime.version,
       hostname:base.hostname,
       topologyId,
       edgeProvider,
