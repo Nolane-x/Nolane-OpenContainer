@@ -11,7 +11,8 @@
     ".github/workflows/external-release-evidence.yml",
     ".github/workflows/public-deployment-evidence.yml",
     ".github/workflows/adjacent-release-evidence.yml",
-    ".github/workflows/external-security-review-evidence.yml"
+    ".github/workflows/external-security-review-evidence.yml",
+    ".github/workflows/p9-human-acceptance-evidence.yml"
   ],
   "workflowRules": {
     "remoteActionRef": "full-40-hex-commit",
@@ -257,5 +258,12 @@
     "localAdminCli": "npm run repository:trust:evidence",
     "publicationWritesAllowed": false,
     "purpose": "Read-only validation of external human security-review artifacts; repository administration state remains an explicit local/admin CLI because workflow secrets are globally forbidden."
+  },
+  "p9HumanAcceptance": {
+    "policy": "release/P9-HUMAN-ACCEPTANCE-POLICY.v1.0.json",
+    "workflow": ".github/workflows/p9-human-acceptance-evidence.yml",
+    "publicationWritesAllowed": false,
+    "secretsAllowed": false,
+    "purpose": "Validate retained public HTTPS manual screen-reader and human-comprehension evidence without machine-closing P9-05/P9-11."
   }
 }
