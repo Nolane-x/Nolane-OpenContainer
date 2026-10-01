@@ -166,3 +166,18 @@ Therefore **P7 remains 10/14 closed** and P7-01/P7-09/P7-10/P7-12 remain open un
 `scripts/p7-external-device-aggregate.mjs` combines exactly four retained receipts: 4 GiB weak-device, 8 GiB weak-device, >=8-hour soak and lifecycle. All four must be PASS and carry the same non-empty source commit. The 4 GiB and 8 GiB calibration receipts must use distinct device identities.
 
 A valid aggregate can mark P7-01/P7-09/P7-10 as `READY_FOR_REVIEW`, but it still sets `closureEligible=false`. P7-12, P9-12 and P14-14 remain explicitly blocked until weak-device budgets are frozen before, then passed by, a separate validation campaign.
+
+
+## Wave 6 — preregistered weak-device budget protocol
+
+Before reading external 4/8 GiB calibration results, Wave 6 freezes the derivation method in `release/P7-WEAK-DEVICE-BUDGET-METHOD.v1.0.json`.
+
+For six latency metrics (cycle p95, warm boot p95, command p95, 64 KiB VFS write/read p95 and package-graph p95), the future proposed threshold is mechanically `ceil(max(4 GiB calibration, 8 GiB calibration) × 1.50)`. Heap-growth allowance is `ceil(max(8 MiB/hour, max(0, 4 GiB slope, 8 GiB slope) × 1.50))`.
+
+Calibration requires two distinct 4 GiB / 8 GiB device identities, PASS weak-device receipts, at least 30 minutes and 24 samples each, and one exact calibration source commit. The proposal script binds receipt SHA-256 values but emits `PROPOSED_NOT_VALIDATABLE`; it cannot be used directly as a passing budget.
+
+A later reviewed change must freeze concrete values in `release/P7-WEAK-DEVICE-BUDGETS.v1.0.json` with state `FROZEN`, timestamp, source commit and calibration digests. Only **fresh post-freeze** 4/8 GiB receipts may then be validated. Reusing calibration bytes or workflow-run IDs is rejected.
+
+Passing that future validation may prepare **P7-12** and **P14-14** for review, but still emits `closureEligible=false`. **P9-12 remains separate** because it requires rendered-UI weak-device budgets and long-session UI leak/performance evidence, not only runtime/VFS/package metrics.
+
+No gate is promoted by Wave 6; ledger remains **277/304** and `production_closed=false`.
