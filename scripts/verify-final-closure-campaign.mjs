@@ -18,13 +18,21 @@ function gateIdsFromLedger(ledger){
     open:all.filter(id=>!closed.has(id)).sort()
   };
 }
+
 function safeRepoPath(path){
   const value=String(path??'').replaceAll('\\','/');
   return value.length>0&&!value.startsWith('/')&&!value.includes('..')&&!value.includes('\0');
 }
+
 async function pathExists(path){
-  try{await access(resolve(repoRoot,path));return true;}catch{return false;}
+  try{
+    await access(resolve(repoRoot,path));
+    return true;
+  }catch{
+    return false;
+  }
 }
+
 function workflowSecurityErrors(path,text){
   const errors=[];
   if(!/\bworkflow_dispatch\s*:/.test(text))errors.push(path+' missing workflow_dispatch');
@@ -34,6 +42,32 @@ function workflowSecurityErrors(path,text){
   if(/\bid-token:\s*write\b|\bcontents:\s*write\b|\bpackages:\s*write\b|\bwrite-all\b/.test(text))errors.push(path+' carries write-capable permission');
   return errors;
 }
+
+export function policySemanticErrors(path,document,expectedSourceGateSha256){
+  const errors=[];
+  if(document?.sourceGateSha256&&document.sourceGateSha256!==expectedSourceGateSha256){
+    errors.push(path+' sourceGateSha256 drift');
+  }
+  const visit=(value,location='$')=>{
+    if(Array.isArray(value)){
+      value.forEach((item,index)=>visit(item,location+'['+index+']'));
+      return;
+    }
+    if(!value||typeof value!=='object')return;
+    for(const [key,item] of Object.entries(value)){
+      const next=location+'.'+key;
+      if(key==='automaticLedgerClosure'&&item===true)errors.push(path+' '+next+' enables automatic ledger closure');
+      if(key==='closureEligible'&&item===true)errors.push(path+' '+next+' claims closure eligibility');
+      if(key==='autoPromotion'&&item===true)errors.push(path+' '+next+' enables automatic promotion');
+      if((key==='productionClosed'||key==='production_closed')&&item===true)errors.push(path+' '+next+' claims production closure');
+      if(key==='forbiddenAutoPromotion'&&item===false)errors.push(path+' '+next+' disables the auto-promotion guard');
+      visit(item,next);
+    }
+  };
+  visit(document);
+  return errors;
+}
+
 export async function verifyFinalClosureCampaign({manifest,ledger}){
   const errors=[];
   if(manifest?.schema!=='opencontainer.final-closure-campaign.v1.0')errors.push('campaign schema drift');
@@ -42,11 +76,13 @@ export async function verifyFinalClosureCampaign({manifest,ledger}){
   const ids=new Set();
   const routedGates=[];
   const routeReports=[];
+
   for(const [index,route] of routes.entries()){
     const label='route['+index+']';
     if(typeof route?.id!=='string'||!route.id)errors.push(label+' id missing');
     else if(ids.has(route.id))errors.push('duplicate route id '+route.id);
     else ids.add(route.id);
+
     if(!Array.isArray(route?.gates)||route.gates.length<1)errors.push(label+' gates missing');
     else routedGates.push(...route.gates);
     if(typeof route?.class!=='string'||!route.class)errors.push(label+' class missing');
@@ -55,21 +91,64 @@ export async function verifyFinalClosureCampaign({manifest,ledger}){
     if(typeof route?.output!=='string'||!route.output)errors.push(label+' output missing');
     if(route?.closureEligible!==false)errors.push(label+' closureEligible must remain false');
     if(route?.autoPromotion!==false)errors.push(label+' autoPromotion must remain false');
+
     const entrypoints=Array.isArray(route?.entrypoints)?route.entrypoints:[];
     if(!entrypoints.length)errors.push(label+' entrypoints missing');
     const checked=[];
+
     for(const path of entrypoints){
-      if(!safeRepoPath(path)){errors.push(route.id+' unsafe entrypoint '+path);continue;}
+      if(!safeRepoPath(path)){
+        errors.push(route.id+' unsafe entrypoint '+path);
+        continue;
+      }
       const exists=await pathExists(path);
-      if(!exists){errors.push(route.id+' entrypoint missing: '+path);continue;}
+      if(!exists){
+        errors.push(route.id+' entrypoint missing: '+path);
+        continue;
+      }
+
       let workflowSecurity=[];
+      let policySemantics=[];
+
       if(String(path).startsWith('.github/workflows/')){
         const text=await readFile(resolve(repoRoot,path),'utf8');
         workflowSecurity=workflowSecurityErrors(path,text);
         errors.push(...workflowSecurity);
       }
-      checked.push({path,exists,workflowSecurity});
+
+      if(String(path).startsWith('release/')&&String(path).endsWith('.json')){
+        try{
+          const document=JSON.parse(await readFile(resolve(repoRoot,path),'utf8'));
+          policySemantics=policySemanticErrors(path,document,ledger?.source?.sha256);
+          errors.push(...policySemantics);
+        }catch(error){
+          errors.push(route.id+' invalid JSON policy/harness '+path+': '+error.message);
+        }
+      }
+
+      checked.push({path,exists,workflowSecurity,policySemantics});
     }
+
+    if(route?.id==='repository-trust-state'){
+      const packageJson=JSON.parse(await readFile(resolve(repoRoot,'package.json'),'utf8'));
+      if(packageJson?.scripts?.['repository:trust:evidence']!=='node scripts/repository-trust-state.mjs'){
+        errors.push('repository-trust-state package command drift');
+      }
+      const trustPath='release/EXTERNAL-TRUST-REVIEW-POLICY.v1.0.json';
+      if(!entrypoints.includes(trustPath)){
+        errors.push('repository-trust-state must bind EXTERNAL-TRUST-REVIEW-POLICY.v1.0.json');
+      }else{
+        try{
+          const trust=JSON.parse(await readFile(resolve(repoRoot,trustPath),'utf8'));
+          if(trust?.repositoryTrust?.mode!=='local-admin-cli')errors.push('repository-trust-state policy mode must remain local-admin-cli');
+          if(trust?.repositoryTrust?.workflowPresent!==false)errors.push('repository-trust-state policy must keep workflowPresent=false');
+          if(trust?.repositoryTrust?.command!=='npm run repository:trust:evidence')errors.push('repository-trust-state policy command drift');
+        }catch(error){
+          errors.push('repository-trust-state policy unreadable: '+error.message);
+        }
+      }
+    }
+
     routeReports.push({
       id:route?.id??null,
       class:route?.class??null,
@@ -83,6 +162,7 @@ export async function verifyFinalClosureCampaign({manifest,ledger}){
 
   const duplicateGates=[...new Set(routedGates.filter((id,i)=>routedGates.indexOf(id)!==i))].sort();
   if(duplicateGates.length)errors.push('open gates routed more than once: '+duplicateGates.join(', '));
+
   const manifestGates=[...new Set(routedGates)].sort();
   const missing=gateState.open.filter(id=>!manifestGates.includes(id));
   const extra=manifestGates.filter(id=>!gateState.open.includes(id));
@@ -100,10 +180,16 @@ export async function verifyFinalClosureCampaign({manifest,ledger}){
   for(const route of routes){
     byClass[route.class]=(byClass[route.class]??0)+(route.gates?.length??0);
   }
+
   return {
     schema:'opencontainer.final-closure-campaign-report.v1.0',
     status:errors.length?'FAIL':'PASS',
-    ledger:{closed:gateState.closed.length,open:gateState.open.length,total:gateState.all.length,productionClosed:ledger.production_closed},
+    ledger:{
+      closed:gateState.closed.length,
+      open:gateState.open.length,
+      total:gateState.all.length,
+      productionClosed:ledger.production_closed
+    },
     routedGateCount:manifestGates.length,
     routeCount:routes.length,
     openGates:gateState.open,
@@ -119,16 +205,24 @@ async function main(){
   const manifest=JSON.parse(await readFile(resolve(repoRoot,'release/FINAL-CLOSURE-CAMPAIGN.v1.0.json'),'utf8'));
   const ledger=JSON.parse(await readFile(resolve(repoRoot,'docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.json'),'utf8'));
   const result=await verifyFinalClosureCampaign({manifest,ledger});
-  const output=resolve(repoRoot,process.argv.find(x=>x.startsWith('--output='))?.slice('--output='.length)??'.artifacts/final-closure-campaign/report.json');
+  const output=resolve(
+    repoRoot,
+    process.argv.find(x=>x.startsWith('--output='))?.slice('--output='.length)??'.artifacts/final-closure-campaign/report.json'
+  );
   await mkdir(dirname(output),{recursive:true});
   await writeFile(output,JSON.stringify(result,null,2)+'\n');
   console.log('FINAL CLOSURE CAMPAIGN '+result.status+' '+JSON.stringify({
-    closed:result.ledger.closed,open:result.ledger.open,routes:result.routeCount,routedGates:result.routedGateCount,closureEligible:false
+    closed:result.ledger.closed,
+    open:result.ledger.open,
+    routes:result.routeCount,
+    routedGates:result.routedGateCount,
+    closureEligible:false
   }));
   if(result.errors.length){
     for(const error of result.errors)console.error('final-closure-campaign:',error);
     process.exitCode=1;
   }
 }
+
 const invoked=process.argv[1]&&resolve(process.argv[1])===resolve(fileURLToPath(import.meta.url));
 if(invoked)await main();

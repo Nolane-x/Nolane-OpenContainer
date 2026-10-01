@@ -19,7 +19,8 @@
       "authority": "deployment operator + release reviewer",
       "entrypoints": [
         ".github/workflows/public-deployment-evidence.yml",
-        "scripts/public-deployment-court.mjs"
+        "scripts/public-deployment-court.mjs",
+        "release/EXTERNAL-RUNTIME-EVIDENCE-POLICY.v1.0.json"
       ],
       "prerequisites": [
         "real public HTTPS deployment",
@@ -39,7 +40,8 @@
       "authority": "release operator + release reviewer",
       "entrypoints": [
         ".github/workflows/external-release-evidence.yml",
-        "scripts/p14-browser-regression.mjs"
+        "scripts/p14-browser-regression.mjs",
+        "release/EXTERNAL-RELEASE-EVIDENCE-POLICY.v1.0.json"
       ],
       "prerequisites": [
         "real published RC",
