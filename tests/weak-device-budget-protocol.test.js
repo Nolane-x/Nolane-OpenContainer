@@ -25,6 +25,7 @@ function receipt({cls,run,device,phase='calibration',fingerprint='fp',scale=1,du
     schema:'opencontainer.weak-device-ui-run.v1.0',
     status:'PASS',
     productSourceFingerprint:fingerprint,
+    measurementProtocolFingerprint:'protocol-v1',
     sourceCommit:'source-'+fingerprint,
     workflowRunId:String(run),
     deviceId:device,
@@ -82,6 +83,7 @@ test('budget freeze requires two calibration runs per 4/8 GiB class and freezes 
   const budget=freezeBudget(rows);
   assert.equal(budget.status,'FROZEN');
   assert.equal(budget.productSourceFingerprint,'fp');
+  assert.equal(budget.measurementProtocolFingerprint,'protocol-v1');
   assert.equal(budget.closureEligible,false);
   assert.equal(budget.formula.latencyMultiplier,1.35);
   assert.equal(budget.budgets['4GiB'].calibrationRuns.length,2);
@@ -117,6 +119,11 @@ test('independent validation rejects calibration-device reuse, fingerprint drift
   const failDrift=validateBudgetEvidence({budget,validationReceipts:[val4,drift],uiSoakReceipt:soak});
   assert.equal(failDrift.status,'FAIL');
   assert.ok(failDrift.errors.some(x=>x.includes('fingerprint drift')));
+
+  const protocolDrift=structuredClone(val8);protocolDrift.measurementProtocolFingerprint='protocol-v2';
+  const failProtocol=validateBudgetEvidence({budget,validationReceipts:[val4,protocolDrift],uiSoakReceipt:soak});
+  assert.equal(failProtocol.status,'FAIL');
+  assert.ok(failProtocol.errors.some(x=>x.includes('measurement-protocol fingerprint drift')));
 
   const regression=structuredClone(val4);
   regression.browserSession.aggregates.viewSwitchP95Ms=budget.budgets['4GiB'].latency.viewSwitchP95Ms+1;
