@@ -1023,3 +1023,6 @@ A fail-closed self-hosted evidence harness is now staged for the four remaining 
 The workflow is manual-only, main-only, and requires labeled Linux x64 self-hosted reference-device runners. It records actual 4/8 GiB memory identity, persistent-browser weak-device samples, an >=8-hour soak path, and a real suspend/resume + CPU-contention lifecycle path. Synthetic cgroup down-capping, shortened soak runs, visibility-only lifecycle simulation and a single calibration campaign are explicitly non-qualifying.
 
 The same receipts are designed to become input evidence for P9-12 and P14-14, but neither gate is promoted by this infrastructure commit. Overall closure remains **277/304** and `production_closed=false`.
+
+
+The Wave 5 aggregator refuses mixed-commit evidence and requires four retained receipt classes (4 GiB, 8 GiB, >=8-hour soak, lifecycle). Its output is candidate-only; it cannot mutate the production ledger. Even a fully valid aggregate leaves the weak-device budget gates blocked for a separately preregistered validation campaign.
