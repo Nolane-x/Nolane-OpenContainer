@@ -1071,3 +1071,14 @@ Both P12 review gates remain non-machine-closable. Overall closure remains **277
 
 
 CI #1061 negative evidence: the first trust-state workflow design referenced a read-only repository secret, but the frozen supply-chain policy correctly rejects **all** `${{ secrets.* }}` workflow use. That design was removed rather than weakening policy. Repository trust capture remains local/admin-only; the external human-review workflow remains no-secret/read-only.
+
+
+## P9 human acceptance evidence intake
+
+The remaining human-only P9 acceptance obligations now have a preregistered, fail-closed evidence path without changing the ledger.
+
+For **P9-05 manual screen-reader acceptance**, the retained JSON artifact must identify a human evaluator plus exact screen-reader/browser/OS name and version, and all six preregistered task classes must PASS: startup landmarks/status, Preview/Inspect/AI navigation, modal focus/dismissal, canonical save acknowledgement, process output/recovery, and linked-folder permission/conflict state.
+
+For **P9-11 human comprehension**, at least **5 human participants** with unique pseudonymous IDs must each cover five preregistered scenario classes. Overall correctness must be at least **80%**, and **zero critical misinterpretations** are allowed. Direct participant identity fields such as name/email/phone/address are rejected by the verifier.
+
+The workflow accepts only a public HTTPS JSON artifact bound to an exact source commit and SHA-256. It contains no secret/write/publish authority. A PASS produces `READY_FOR_REVIEW` only; P9-05 and P9-11 remain non-machine-closable, P9-12 remains a separate weak-device/long-session obligation, and overall closure remains **277/304** with `production_closed=false`.

@@ -1,0 +1,70 @@
+name: P9 Human Acceptance Evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      evidence_type:
+        description: Human acceptance evidence type
+        required: true
+        type: choice
+        options:
+          - manual-screen-reader
+          - human-comprehension
+      source_commit:
+        description: Exact OpenContainer source commit tested by humans
+        required: true
+        type: string
+      artifact_url:
+        description: Public HTTPS JSON evidence artifact URL
+        required: true
+        type: string
+      artifact_sha256:
+        description: Exact SHA-256 of the JSON evidence artifact
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p9-human-acceptance-${{ inputs.evidence_type }}-${{ inputs.source_commit }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.repository == 'Nolane-x/Nolane-OpenContainer' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - run: npm ci
+      - name: Verify reviewed source commit exists
+        env:
+          OC_HUMAN_SOURCE_COMMIT: ${{ inputs.source_commit }}
+        run: git cat-file -e "$OC_HUMAN_SOURCE_COMMIT^{commit}"
+      - name: Verify retained human acceptance artifact
+        env:
+          OC_HUMAN_EVIDENCE_TYPE: ${{ inputs.evidence_type }}
+          OC_HUMAN_SOURCE_COMMIT: ${{ inputs.source_commit }}
+          OC_HUMAN_ARTIFACT_URL: ${{ inputs.artifact_url }}
+          OC_HUMAN_ARTIFACT_SHA256: ${{ inputs.artifact_sha256 }}
+        run: |
+          npm run p9:human:evidence -- \
+            --type="$OC_HUMAN_EVIDENCE_TYPE" \
+            --source-commit="$OC_HUMAN_SOURCE_COMMIT" \
+            --url="$OC_HUMAN_ARTIFACT_URL" \
+            --sha256="$OC_HUMAN_ARTIFACT_SHA256"
+      - name: Archive P9 human acceptance receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-p9-human-acceptance-${{ inputs.evidence_type }}-${{ github.run_id }}
+          path: .artifacts/p9-human-acceptance/receipt.json
+          if-no-files-found: warn
+          retention-days: 90

@@ -17,7 +17,8 @@ const externalRelease=readFileSync('.github/workflows/external-release-evidence.
 const publicDeployment=readFileSync('.github/workflows/public-deployment-evidence.yml','utf8');
 const adjacentRelease=readFileSync('.github/workflows/adjacent-release-evidence.yml','utf8');
 const externalSecurityReview=readFileSync('.github/workflows/external-security-review-evidence.yml','utf8');
-const workflows={'.github/workflows/ci.yml':ci,'.github/workflows/maintenance.yml':maintenance,'.github/workflows/scorecard.yml':scorecard,'.github/workflows/external-release-evidence.yml':externalRelease,'.github/workflows/public-deployment-evidence.yml':publicDeployment,'.github/workflows/adjacent-release-evidence.yml':adjacentRelease,'.github/workflows/external-security-review-evidence.yml':externalSecurityReview};
+const p9HumanAcceptance=readFileSync('.github/workflows/p9-human-acceptance-evidence.yml','utf8');
+const workflows={'.github/workflows/ci.yml':ci,'.github/workflows/maintenance.yml':maintenance,'.github/workflows/scorecard.yml':scorecard,'.github/workflows/external-release-evidence.yml':externalRelease,'.github/workflows/public-deployment-evidence.yml':publicDeployment,'.github/workflows/adjacent-release-evidence.yml':adjacentRelease,'.github/workflows/external-security-review-evidence.yml':externalSecurityReview,'.github/workflows/p9-human-acceptance-evidence.yml':p9HumanAcceptance};
 
 test('P13 workflow court requires immutable actions least privilege and no untrusted release credentials',()=>{
   assert.deepEqual(reviewWorkflowSecurity({policy,workflows}),[]);
