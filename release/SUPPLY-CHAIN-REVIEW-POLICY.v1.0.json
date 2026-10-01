@@ -11,7 +11,6 @@
     ".github/workflows/external-release-evidence.yml",
     ".github/workflows/public-deployment-evidence.yml",
     ".github/workflows/adjacent-release-evidence.yml",
-    ".github/workflows/repository-trust-state.yml",
     ".github/workflows/external-security-review-evidence.yml"
   ],
   "workflowRules": {
@@ -253,10 +252,10 @@
   "externalTrustReview": {
     "policy": "release/EXTERNAL-TRUST-REVIEW-POLICY.v1.0.json",
     "workflows": [
-      ".github/workflows/repository-trust-state.yml",
       ".github/workflows/external-security-review-evidence.yml"
     ],
+    "localAdminCli": "npm run repository:trust:evidence",
     "publicationWritesAllowed": false,
-    "purpose": "Read-only capture of repository administration state and validation of external human security-review artifacts."
+    "purpose": "Read-only validation of external human security-review artifacts; repository administration state remains an explicit local/admin CLI because workflow secrets are globally forbidden."
   }
 }
