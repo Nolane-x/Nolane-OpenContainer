@@ -17,7 +17,7 @@ test('P9-03 SHA-locked source parses to exactly 280 provenance-qualified scenari
   assert.equal(result.counts.rawIdUnique,234);
   assert.equal(result.counts.duplicatedRawIds,46);
   assert.equal(result.counts.courtClasses,55);
-  assert.deepEqual(result.counts.rounds,{base:100,round23:40,round24State:50,round24Completeness:40,round25:50});
+  assert.deepEqual(result.counts.rounds,{base:100,round23:40,round24State:52,round24Completeness:38,round25:50});
   assert.equal(new Set(result.scenarios.map(row=>row.key)).size,280);
   assert.ok(result.duplicatedRawIds.length>0);
 });
@@ -29,7 +29,9 @@ test('P9-03 does not trust stale intermediate narrative counts over actual table
   assert.equal(rows.filter(row=>row.round!=='round25').length,230);
   assert.equal(rows.filter(row=>row.round==='round25').length,50);
   assert.match(matrix,/Verified row target after Round 25: 280 executable failure scenarios/);
-  assert.equal(source.sourceWarnings[0].code,'STALE_INTERMEDIATE_NARRATIVE_COUNT');
+  assert.equal(source.sourceWarnings.length,2);
+  assert.equal(source.sourceWarnings[0].code,'STALE_ROUND24_STATE_NARRATIVE_COUNT');
+  assert.equal(source.sourceWarnings[1].code,'STALE_ROUND24_COMPLETENESS_NARRATIVE_COUNT');
 });
 
 test('P9-03 executes every row through the failure-state component and retained court map',()=>{
