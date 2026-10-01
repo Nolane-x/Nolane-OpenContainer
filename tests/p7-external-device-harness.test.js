@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { classifyMemory, validateRequest, SOAK_MIN_MINUTES, evaluateEnvironment } from '../scripts/p7-external-device-court.mjs';
+import { aggregateCandidate, SOAK_MIN_MS } from '../scripts/p7-external-device-aggregate.mjs';
 
 const harness=JSON.parse(readFileSync('release/P7-EXTERNAL-DEVICE-HARNESS.v1.0.json','utf8'));
 const policy=JSON.parse(readFileSync('release/RESOURCE-MEASUREMENT-POLICY.v1.0.json','utf8'));
@@ -72,4 +73,34 @@ test('external-device harness is retained by the critical contract campaign',()=
   assert.equal(flake.contract.testFiles.length,flake.contract.minimumTestFiles);
   assert.ok(flake.contract.testFiles.length>=109);
   assert.equal(flake.contract.iterations,5);
+});
+
+
+test('external-device aggregation requires exact-source 4/8 GiB, 8h soak and real lifecycle evidence',()=>{
+  const base={
+    schema:'opencontainer.p7-external-device-run.v1.0',
+    status:'PASS',
+    sourceGateSha256:'b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146',
+    sourceCommit:'abc123',
+    closureEligible:false,
+    boundaries:{productionClosed:false},
+    browserSession:{status:'PASS',sampleCount:60,suspendEvents:[],durationObservedMs:30*60*1000}
+  };
+  const four={...structuredClone(base),mode:'weak-device',targetMemoryGiB:4,deviceId:'device-4'};
+  const eight={...structuredClone(base),mode:'weak-device',targetMemoryGiB:8,deviceId:'device-8'};
+  const soak={...structuredClone(base),mode:'soak',targetMemoryGiB:8,deviceId:'device-8',durationMinutes:480,browserSession:{...structuredClone(base.browserSession),durationObservedMs:SOAK_MIN_MS}};
+  const lifecycle={...structuredClone(base),mode:'lifecycle',targetMemoryGiB:4,deviceId:'device-4',cpuContention:true,expectSuspend:true,browserSession:{...structuredClone(base.browserSession),suspendEvents:[{suspendGapMs:30000}]}};
+  const result=aggregateCandidate({four,eight,soak,lifecycle});
+  assert.equal(result.status,'PASS');
+  assert.equal(result.sourceCommit,'abc123');
+  assert.equal(result.readyForBudgetFreeze,true);
+  assert.equal(result.closureEligible,false);
+  assert.equal(result.candidateGateState['P7-01'],'READY_FOR_REVIEW');
+  assert.equal(result.candidateGateState['P7-12'],'BLOCKED_BUDGET_FREEZE_AND_INDEPENDENT_VALIDATION');
+
+  const stale=structuredClone(eight);
+  stale.sourceCommit='different';
+  const rejected=aggregateCandidate({four,eight:stale,soak,lifecycle});
+  assert.equal(rejected.status,'FAIL');
+  assert.ok(rejected.errors.some(x=>x.includes('one exact source commit')));
 });
