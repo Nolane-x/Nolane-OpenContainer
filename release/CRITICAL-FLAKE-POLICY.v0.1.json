@@ -110,10 +110,11 @@
       "tests/p13-historical-archive-evidence.test.js",
       "tests/p11-browser-floor-source-audit.test.js",
       "tests/p11-browser-floor-evidence.test.js",
-      "tests/p9-failure-scenario-corpus.test.js"
+      "tests/p9-failure-scenario-corpus.test.js",
+      "tests/p9-failure-scenario-evidence.test.js"
     ],
     "minimumIterations": 5,
-    "minimumTestFiles": 106
+    "minimumTestFiles": 107
   },
   "browser": {
     "iterations": 2,
