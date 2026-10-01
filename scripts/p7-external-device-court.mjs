@@ -173,7 +173,7 @@ async function main(){
   const receipt={
     schema:'opencontainer.p7-external-device-run.v1.0',status:errors.length?'FAIL':'PASS',
     sourceGate:'OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P7',sourceGateSha256:'b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146',
-    startedAt,finishedAt:new Date().toISOString(),mode,deviceId,targetMemoryGiB,durationMinutes,sampleIntervalSeconds,cpuContention,expectSuspend,
+    startedAt,finishedAt:new Date().toISOString(),sourceCommit:process.env.GITHUB_SHA??null,workflowRunId:process.env.GITHUB_RUN_ID??null,mode,deviceId,targetMemoryGiB,durationMinutes,sampleIntervalSeconds,cpuContention,expectSuspend,
     environment:{
       hostname:hostname(),platform:platform(),arch:arch(),osRelease:release(),logicalCpuCount:cpus().length,
       cpuModels:[...new Set(cpus().map(cpu=>cpu.model))],physicalMemoryBytes,cgroupMemoryBytes,effectiveMemoryBytes,
