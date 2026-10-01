@@ -201,5 +201,18 @@
     "promotionRule": "A single external-device receipt never closes a gate. Promotion requires retained 4 GiB and 8 GiB reference-device receipts, an >=8-hour persistent-browser session receipt, real suspend/resume plus CPU-contention evidence where required, frozen weak-device budgets followed by an independent validation campaign, and reviewed reconciliation on the exact source commit.",
     "automaticLedgerClosure": false,
     "productionClosed": false
+  },
+  "weakDeviceBudgetPreregistration": {
+    "method": "release/P7-WEAK-DEVICE-BUDGET-METHOD.v1.0.json",
+    "formulaId": "P7-WEAK-BUDGET-v1",
+    "valuesFrozenBeforeValidation": true,
+    "calibrationAndValidationReceiptsMustBeIndependent": true,
+    "gates": [
+      "P7-12",
+      "P14-14"
+    ],
+    "excludedGate": "P9-12",
+    "reasonP9": "P9-12 requires rendered-UI weak-device and long-session evidence.",
+    "automaticLedgerClosure": false
   }
 }
