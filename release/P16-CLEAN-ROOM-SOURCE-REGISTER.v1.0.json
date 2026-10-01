@@ -1,0 +1,74 @@
+{
+  "schema": "opencontainer.p16-clean-room-source-register.v1.0",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P16-04/P16-12",
+  "policy": {
+    "allowedInputs": [
+      "public standards",
+      "public documentation",
+      "public source distributed under reviewed license",
+      "observable behavior of lawfully accessed public software"
+    ],
+    "forbiddenInputs": [
+      "non-public proprietary source",
+      "decompiled proprietary implementation internals used as implementation blueprint",
+      "leaked/confidential material",
+      "credential-gated internal vendor material not authorized for reuse"
+    ],
+    "competitorObservationLevel": "documented/public behavior only",
+    "provenanceRequired": true,
+    "proprietaryImplementationAllowed": false
+  },
+  "entries": [
+    {
+      "area": "browser substrate",
+      "sourceType": "public standards/documentation",
+      "sources": [
+        "WHATWG HTML/Fetch/URL standards",
+        "MDN documentation for Worker, Service Worker, OPFS, Web Locks and permissions"
+      ],
+      "learnedBehavior": "browser capability/lifecycle semantics and web-platform failure boundaries"
+    },
+    {
+      "area": "Node compatibility",
+      "sourceType": "public documentation/standards",
+      "sources": [
+        "Node.js public API documentation",
+        "npm package.json/package-lock public formats"
+      ],
+      "learnedBehavior": "observable API contracts and package graph semantics"
+    },
+    {
+      "area": "Vite/Rolldown toolchain",
+      "sourceType": "public licensed source + public release artifacts",
+      "sources": [
+        "Vite public documentation/package metadata",
+        "Rolldown public v1.2.9 release/package metadata",
+        "Lightning CSS public package metadata"
+      ],
+      "learnedBehavior": "public package/export/artifact behavior and versioned compatibility boundaries"
+    },
+    {
+      "area": "accessibility/UI",
+      "sourceType": "public standards/documentation",
+      "sources": [
+        "WAI-ARIA Authoring Practices",
+        "WCAG guidance",
+        "browser accessibility APIs"
+      ],
+      "learnedBehavior": "focus, modal, keyboard, announcement and reflow behavior"
+    },
+    {
+      "area": "release/supply chain",
+      "sourceType": "public specifications",
+      "sources": [
+        "SPDX 2.3",
+        "in-toto Statement v1",
+        "SLSA provenance v1",
+        "OpenSSF Scorecard documentation"
+      ],
+      "learnedBehavior": "evidence formats and release-hygiene controls"
+    }
+  ],
+  "diary": "docs/legal/CLEAN-ROOM-DESIGN-DIARY.md",
+  "productionClosed": false
+}
