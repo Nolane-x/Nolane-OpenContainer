@@ -61,17 +61,20 @@
     "P7-01": {
       "machineClosable": false,
       "state": "OPEN_DEVICE",
-      "reason": "4/8 GiB reference-device campaigns do not exist."
+      "reason": "4/8 GiB reference-device campaigns do not exist.",
+      "evidenceHarness": "p7-external-device"
     },
     "P7-09": {
       "machineClosable": false,
       "state": "OPEN_LONG_RUN",
-      "reason": "8-hour plateau evidence does not exist."
+      "reason": "8-hour plateau evidence does not exist.",
+      "evidenceHarness": "p7-external-device"
     },
     "P7-12": {
       "machineClosable": false,
       "state": "OPEN_DEVICE",
-      "reason": "Weak-device regression budgets are not frozen."
+      "reason": "Weak-device regression budgets are not frozen.",
+      "evidenceHarness": "p7-external-device"
     },
     "P7-13": {
       "machineClosable": true,
@@ -118,7 +121,8 @@
     "P7-10": {
       "machineClosable": false,
       "state": "OPEN_SYSTEM_LIFECYCLE",
-      "reason": "Background/visibility automation exists in parts of the suite, but real system sleep/resume plus CPU-contention evidence is not complete."
+      "reason": "Background/visibility automation exists in parts of the suite, but real system sleep/resume plus CPU-contention evidence is not complete.",
+      "evidenceHarness": "p7-external-device"
     }
   },
   "productionClosed": false,
@@ -146,6 +150,56 @@
     "promotedByWave4": [
       "P7-06",
       "P7-11"
-    ]
+    ],
+    "wave5HarnessRule": "Wave 5 only stages and validates external reference-device evidence collection. It must not promote P7-01/P7-09/P7-10/P7-12 from GitHub-hosted CI, synthetic memory caps, short soak runs, browser lifecycle emulation or a single calibration campaign.",
+    "promotedByWave5": []
+  },
+  "externalDeviceEvidenceHarness": {
+    "schema": "opencontainer.p7-external-device-harness.v1.0",
+    "workflow": ".github/workflows/p7-external-device-evidence.yml",
+    "workflowDispatchOnly": true,
+    "selfHostedOnly": true,
+    "requiredRunnerLabels": [
+      "self-hosted",
+      "linux",
+      "x64",
+      "opencontainer-reference-device"
+    ],
+    "frozenBrowser": "Google Chrome 153.0.8010.52",
+    "requiredNode": "24.21.0",
+    "requiredNpm": "11.19.0",
+    "memoryClassesGiB": {
+      "4": {
+        "minimumBytes": 3221225472,
+        "maximumBytes": 5368709120
+      },
+      "8": {
+        "minimumBytes": 6442450944,
+        "maximumBytes": 10737418240
+      }
+    },
+    "minimumPhysicalToEffectiveMemoryRatio": 0.9,
+    "soakMinimumMinutes": 480,
+    "lifecycle": {
+      "realSuspendResumeRequired": true,
+      "cpuContentionRequired": true,
+      "minimumSuspendGapMs": 15000
+    },
+    "evidencePhases": [
+      "weak-device",
+      "soak",
+      "lifecycle"
+    ],
+    "candidateGates": [
+      "P7-01",
+      "P7-09",
+      "P7-10",
+      "P7-12",
+      "P9-12",
+      "P14-14"
+    ],
+    "promotionRule": "A single external-device receipt never closes a gate. Promotion requires retained 4 GiB and 8 GiB reference-device receipts, an >=8-hour persistent-browser session receipt, real suspend/resume plus CPU-contention evidence where required, frozen weak-device budgets followed by an independent validation campaign, and reviewed reconciliation on the exact source commit.",
+    "automaticLedgerClosure": false,
+    "productionClosed": false
   }
 }

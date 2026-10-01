@@ -1014,3 +1014,15 @@ PR #78 implementation head `aef779d7b3ba1cc1346bbdbb89dd5ec43c472720` passed CI 
 The P16 court validates the installed release's dependency/license inventory and notices, all 13 frozen corpus license-provenance records, both retained BCR artifacts and redistribution notices, clean-room provenance, contribution/governance/trademark policy, AI-provider data-egress wording and jurisdiction boundaries. Artifact #11145241386 is retained with digest `sha256:a68bf140bf1ff56026312f4829f3520fa89e1817de09ca408eb4c1010e4617c5`.
 
 Exactly **12/14 P16 gates** are promoted at PASS-INTEGRATION. **P16-01 final project license** and **P16-05 FTO/counsel** remain OPEN_EXTERNAL and cannot be self-closed by CI or AI. Overall ledger is **277/304**, with **27 gates still open** and `production_closed=false`.
+
+
+## P7 Wave 5 external-device evidence staging
+
+A fail-closed self-hosted evidence harness is now staged for the four remaining P7 resource gates. It does not change the ledger.
+
+The workflow is manual-only, main-only, and requires labeled Linux x64 self-hosted reference-device runners. It records actual 4/8 GiB memory identity, persistent-browser weak-device samples, an >=8-hour soak path, and a real suspend/resume + CPU-contention lifecycle path. Synthetic cgroup down-capping, shortened soak runs, visibility-only lifecycle simulation and a single calibration campaign are explicitly non-qualifying.
+
+The same receipts are designed to become input evidence for P9-12 and P14-14, but neither gate is promoted by this infrastructure commit. Overall closure remains **277/304** and `production_closed=false`.
+
+
+The Wave 5 aggregator refuses mixed-commit evidence and requires four retained receipt classes (4 GiB, 8 GiB, >=8-hour soak, lifecycle). Its output is candidate-only; it cannot mutate the production ledger. Even a fully valid aggregate leaves the weak-device budget gates blocked for a separately preregistered validation campaign.

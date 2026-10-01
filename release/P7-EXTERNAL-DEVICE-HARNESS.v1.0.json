@@ -1,0 +1,83 @@
+{
+  "schema": "opencontainer.p7-external-device-harness.v1.0",
+  "status": "STAGED_NOT_PROMOTED",
+  "sourceGate": "OPENCONTAINER-PRODUCTION-GATES-v0.9.json:P7",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "runner": {
+    "type": "self-hosted",
+    "requiredLabels": [
+      "self-hosted",
+      "linux",
+      "x64",
+      "opencontainer-reference-device"
+    ],
+    "mainBranchOnly": true,
+    "workflowDispatchOnly": true,
+    "syntheticMemoryDownCapQualifies": false
+  },
+  "profiles": {
+    "browser": "Google Chrome 153.0.8010.52",
+    "node": "24.21.0",
+    "npm": "11.19.0",
+    "memoryGiB": [
+      4,
+      8
+    ]
+  },
+  "phases": {
+    "weakDevice": {
+      "defaultMinutes": 30,
+      "candidateGates": [
+        "P7-01",
+        "P7-12",
+        "P9-12",
+        "P14-14"
+      ],
+      "budgetCalibrationOnly": true
+    },
+    "soak": {
+      "minimumMinutes": 480,
+      "candidateGates": [
+        "P7-09",
+        "P9-12"
+      ],
+      "persistentBrowserSessionRequired": true
+    },
+    "lifecycle": {
+      "defaultMinutes": 20,
+      "candidateGates": [
+        "P7-10"
+      ],
+      "realSuspendResumeRequired": true,
+      "cpuContentionRequired": true
+    }
+  },
+  "promotion": {
+    "automaticLedgerClosure": false,
+    "requiresBothMemoryClasses": true,
+    "weakDeviceBudgetMustBeFrozenBeforeIndependentValidation": true,
+    "reviewedReconciliationRequired": true
+  },
+  "preservedOpenGates": [
+    "P7-01",
+    "P7-09",
+    "P7-10",
+    "P7-12",
+    "P9-12",
+    "P14-14"
+  ],
+  "productionClosed": false,
+  "aggregation": {
+    "script": "scripts/p7-external-device-aggregate.mjs",
+    "exactSourceCommitRequired": true,
+    "requiredReceipts": [
+      "4-gib-weak-device",
+      "8-gib-weak-device",
+      "soak",
+      "lifecycle"
+    ],
+    "requiresDistinctMemoryDeviceIds": true,
+    "outputIsCandidateOnly": true,
+    "automaticLedgerClosure": false
+  }
+}

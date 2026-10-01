@@ -1,0 +1,93 @@
+name: P7 External Device Evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Evidence phase
+        required: true
+        type: choice
+        options:
+          - weak-device
+          - soak
+          - lifecycle
+      memory_gib:
+        description: Reference memory class
+        required: true
+        type: choice
+        options:
+          - "4"
+          - "8"
+      duration_minutes:
+        description: Session duration. Soak must be >=480.
+        required: true
+        default: "30"
+        type: string
+      sample_interval_seconds:
+        description: Persistent-browser sample interval
+        required: true
+        default: "60"
+        type: string
+      device_id:
+        description: Stable non-secret reference-device identifier
+        required: true
+        type: string
+      cpu_contention:
+        description: Apply host CPU contention. Required for lifecycle.
+        required: true
+        default: false
+        type: boolean
+      expect_real_suspend:
+        description: Require a real system suspend/resume discontinuity. Required for lifecycle.
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p7-external-device-${{ inputs.device_id }}-${{ inputs.mode }}
+  cancel-in-progress: false
+
+jobs:
+  reference-device:
+    if: github.repository == 'Nolane-x/Nolane-OpenContainer' && github.ref == 'refs/heads/main'
+    runs-on:
+      - self-hosted
+      - linux
+      - x64
+      - opencontainer-reference-device
+      - ${{ format('p7-{0}gib', inputs.memory_gib) }}
+    timeout-minutes: 720
+    environment: external-device-evidence
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - run: npm ci
+      - name: Verify frozen runtime/browser
+        run: |
+          test "$(node --version)" = "v24.21.0"
+          test "$(npm --version)" = "11.19.0"
+          test "$(google-chrome-stable --version)" = "Google Chrome 153.0.8010.52"
+      - name: Run external reference-device court
+        env:
+          OPENCONTAINER_REFERENCE_DEVICE_ID: ${{ inputs.device_id }}
+          OPENCONTAINER_REFERENCE_MEMORY_GIB: ${{ inputs.memory_gib }}
+          OPENCONTAINER_DEVICE_MODE: ${{ inputs.mode }}
+          OPENCONTAINER_DEVICE_DURATION_MINUTES: ${{ inputs.duration_minutes }}
+          OPENCONTAINER_DEVICE_SAMPLE_INTERVAL_SECONDS: ${{ inputs.sample_interval_seconds }}
+          OPENCONTAINER_CPU_CONTENTION: ${{ inputs.cpu_contention }}
+          OPENCONTAINER_EXPECT_REAL_SUSPEND: ${{ inputs.expect_real_suspend }}
+        run: npm run p7:external-device:evidence -- --mode=${{ inputs.mode }} --memory-gib=${{ inputs.memory_gib }} --duration-minutes=${{ inputs.duration_minutes }} --sample-interval-seconds=${{ inputs.sample_interval_seconds }} --device-id="${{ inputs.device_id }}" --cpu-contention=${{ inputs.cpu_contention }} --expect-suspend=${{ inputs.expect_real_suspend }}
+      - name: Archive external-device receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencontainer-p7-external-device-${{ inputs.mode }}-${{ inputs.memory_gib }}gib-${{ github.run_id }}
+          path: .artifacts/p7-external-device/receipt.json
+          if-no-files-found: warn
+          retention-days: 90

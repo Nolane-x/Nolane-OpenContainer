@@ -140,3 +140,29 @@ Using the frozen formula `physical-persistent-bytes / primary-logical-content-by
 Implementation CI #950 passed **611/611 contract tests**, **96 critical files × 5 = 480 executions**, CodeQL, the full installed-distribution browser product path, the older P7 declared-profile court, P9 rendered regression and P6 toolchain regression.
 
 P7 remains intentionally open for **P7-01** (4/8 GiB reference-device campaign), **P7-09** (8-hour plateau), **P7-10** (real system sleep/resume plus CPU-contention coverage) and **P7-12** (weak-device regression budgets). Wave 4 does not substitute Chrome automation for those obligations.
+
+
+## Wave 5 — external reference-device evidence harness
+
+Wave 5 adds the collection machinery for the remaining device/long-run gates without promoting any of them.
+
+The manual workflow `.github/workflows/p7-external-device-evidence.yml` is `workflow_dispatch`-only and targets labeled self-hosted Linux x64 reference devices. Normal GitHub-hosted PR/push CI cannot produce a qualifying device receipt.
+
+The harness has three phases:
+
+- **weak-device** — records a persistent Chrome 153 session on an actual 4 GiB or 8 GiB reference environment, including device memory/CPU identity, repeated runtime/VFS/command activity, browser heap samples and latency distributions;
+- **soak** — requires at least **480 minutes** in one persistent browser session and rejects shortened runs as non-qualifying;
+- **lifecycle** — requires a real host suspend/resume discontinuity and simultaneous host CPU contention. Visibility-only browser automation is not accepted as system-sleep evidence.
+
+Memory-class qualification is fail-closed. A cgroup/container cap that materially reduces a larger host below its physical memory does not count as a 4/8 GiB reference-device campaign. The harness also requires exact Node 24.21.0, npm 11.19.0 and the frozen Chrome 153.0.8010.52 browser profile.
+
+Per-device receipts are **candidate evidence only**. A single receipt cannot modify the production ledger. P7-12/P9-12/P14-14 additionally require weak-device budgets to be frozen from a calibration campaign and then passed by an independent validation campaign; this prevents post-hoc budget selection.
+
+Therefore **P7 remains 10/14 closed** and P7-01/P7-09/P7-10/P7-12 remain open until retained external receipts satisfy the frozen requirements. `production_closed=false`.
+
+
+### Exact-commit aggregation
+
+`scripts/p7-external-device-aggregate.mjs` combines exactly four retained receipts: 4 GiB weak-device, 8 GiB weak-device, >=8-hour soak and lifecycle. All four must be PASS and carry the same non-empty source commit. The 4 GiB and 8 GiB calibration receipts must use distinct device identities.
+
+A valid aggregate can mark P7-01/P7-09/P7-10 as `READY_FOR_REVIEW`, but it still sets `closureEligible=false`. P7-12, P9-12 and P14-14 remain explicitly blocked until weak-device budgets are frozen before, then passed by, a separate validation campaign.
