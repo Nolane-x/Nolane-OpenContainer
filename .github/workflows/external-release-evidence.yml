@@ -54,7 +54,7 @@ jobs:
       - name: Verify GitHub CLI attestation support
         run: |
           gh --version
-          gh release verify-asset --help >/dev/null
+          gh help release >/dev/null
           gh attestation verify --help >/dev/null
       - name: Verify real external publication
         env:
