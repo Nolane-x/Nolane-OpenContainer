@@ -103,7 +103,7 @@ export function candidateGateState({channel,allPublicationChecksPass}){
     'P13-10':ready,
     'P13-16':channel==='canary'?ready:'BLOCKED_REQUIRES_CANARY_REGISTRY_PUBLICATION',
     'P15-12':ready,
-    'P1-14':channel==='rc'?ready:'BLOCKED_REQUIRES_RC_MATRIX',
+    'P1-14':'BLOCKED_REQUIRES_RC_MATRIX',
     'P13-17':'BLOCKED_REPOSITORY_PROTECTION_CERTIFICATION',
     'P14-04':'BLOCKED_ADJACENT_REAL_RELEASE_COURT',
     'P14-12':'BLOCKED_PUBLIC_CDN_TOPOLOGY'
