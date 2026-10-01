@@ -1,0 +1,75 @@
+{
+  "schema": "opencontainer.external-runtime-evidence-policy.v1.0",
+  "status": "STAGED_AWAITING_EXTERNAL_CAMPAIGNS",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "publicDeployment": {
+    "workflow": ".github/workflows/public-deployment-evidence.yml",
+    "candidateGates": [
+      "P1-13",
+      "P14-12"
+    ],
+    "requirements": [
+      "real public HTTPS DNS hostname",
+      "all resolved IPs public",
+      "authorized TLS certificate",
+      "HSTS max-age >= 30 days",
+      "edge marker header equals topology id",
+      "hosting self-check passes through public edge",
+      "deployment production profile runtime.version equals exact tag version",
+      "real Chrome product shell ready and crossOriginIsolated",
+      "browser storage and Web Locks primitives available"
+    ],
+    "automaticLedgerClosure": false
+  },
+  "adjacentPublishedRelease": {
+    "workflow": ".github/workflows/adjacent-release-evidence.yml",
+    "candidateGates": [
+      "P14-04"
+    ],
+    "requirements": [
+      "both versions exist in npm registry",
+      "versions are adjacent in npm publication history",
+      "npm audit signatures passes for both exact versions",
+      "both artifacts ship evidence-eligible release-storage profiles",
+      "same origin and persistent Chrome profile across all four phases",
+      "previous release seeds canonical OPFS",
+      "current release reuses compatible schema or migrates exactly +1",
+      "previous release rollback is read-only or refuse-open",
+      "current release reopens canonical state after rollback attempt",
+      "destructive storage downgrade remains false"
+    ],
+    "automaticLedgerClosure": false
+  },
+  "preservedOpenUntilRealEvidence": [
+    "P1-13",
+    "P14-04",
+    "P14-12"
+  ],
+  "unrelatedExternalBlockersRemainOpen": [
+    "P1-14",
+    "P1-15",
+    "P7-01",
+    "P7-09",
+    "P7-10",
+    "P7-12",
+    "P9-05",
+    "P9-11",
+    "P9-12",
+    "P11-12",
+    "P12-17",
+    "P12-18",
+    "P12-20",
+    "P13-03",
+    "P13-04",
+    "P13-07",
+    "P13-09",
+    "P13-10",
+    "P13-16",
+    "P13-17",
+    "P14-14",
+    "P15-12",
+    "P16-01",
+    "P16-05"
+  ],
+  "productionClosed": false
+}
