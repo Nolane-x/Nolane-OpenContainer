@@ -72,7 +72,8 @@
     "release:archive:candidate": "node scripts/build-historical-release-archive.mjs .artifacts/release",
     "release:archive:verify": "node scripts/verify-historical-release-archive.mjs",
     "p9:failure-scenarios": "node scripts/p9-failure-scenario-court.mjs",
-    "legal:readiness": "node scripts/p16-legal-governance-readiness.mjs"
+    "legal:readiness": "node scripts/p16-legal-governance-readiness.mjs",
+    "p7:external-device:evidence": "node scripts/p7-external-device-court.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "2.0.0-alpha.5",
