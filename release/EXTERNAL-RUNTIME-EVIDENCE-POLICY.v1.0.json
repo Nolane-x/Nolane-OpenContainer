@@ -34,7 +34,7 @@
       "same origin and persistent Chrome profile across all four phases",
       "previous release seeds canonical OPFS",
       "current release reuses compatible schema or migrates exactly +1",
-      "previous release rollback is read-only or refuse-open",
+      "previous release rollback is read-write only for identical schema; otherwise read-only or refuse-open",
       "current release reopens canonical state after rollback attempt",
       "destructive storage downgrade remains false"
     ],
