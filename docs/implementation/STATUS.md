@@ -1046,3 +1046,14 @@ When a real canary/beta/RC exists, the court checks out its immutable tag, downl
 An RC dispatch additionally reruns the frozen-floor and newest-Stable browser lanes on that exact tag. The core verifier intentionally leaves P1-14 blocked until those RC matrix receipts are reviewed together.
 
 This infrastructure does not publish anything and does not alter the ledger. P13-03 trusted-publisher configuration, P13-17 repository protection, P14-04 adjacent real-release compatibility and P14-12 production CDN topology remain separate external obligations. Overall closure remains **277/304** and `production_closed=false`.
+
+
+## External runtime evidence staging
+
+A new read-only evidence wave stages two real-world courts without changing the production ledger.
+
+The public deployment court is bound to an exact release tag/version, requires a public HTTPS DNS hostname, rejects private/loopback resolution, verifies an authorized TLS certificate and HSTS, requires an edge-injected marker that equals the declared topology ID, reruns the full hosting self-check through the public edge, checks the deployed production profile version and then opens the real product shell in Chrome to prove readiness plus cross-origin isolation/storage/Web Locks. Passing evidence can only mark P1-13 and P14-12 as READY_FOR_REVIEW.
+
+The adjacent published-release court requires two directly adjacent npm versions, verifies npm package signatures for both, and runs the actual installed artifacts on one browser origin with one persistent Chrome profile/OPFS. The previous release seeds canonical storage, the current release reuses or migrates it, the previous release then rolls back read-only or refuses open, and the current release finally proves canonical state survived the rollback attempt. Passing evidence can only mark P14-04 READY_FOR_REVIEW.
+
+Neither workflow publishes, deploys or writes repository state. Overall closure remains **277/304** and `production_closed=false`.
