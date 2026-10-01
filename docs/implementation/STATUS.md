@@ -1035,3 +1035,14 @@ The real product shell now has a self-hosted weak-device UI sampler plus a deter
 No gate is promoted by this infrastructure. P7-12, P9-12 and P14-14 remain open; overall closure stays **277/304** with `production_closed=false`.
 
 The calibration/validation receipts are additionally bound to a separate **measurement-protocol fingerprint** covering the UI sampler, UI court, budget implementation and frozen protocol. This prevents reusing old calibration after changing how measurements or thresholds are computed.
+
+
+## External release evidence verifier
+
+A read-only external-release court is now staged for future real npm/GitHub Release identities. It accepts no publishing token and has only `contents: read`.
+
+When a real canary/beta/RC exists, the court checks out its immutable tag, downloads the npm registry tarball, rebuilds the tagged source deterministically, and requires byte identity between the deterministic build, npm tarball and GitHub Release asset. It then verifies npm registry signatures/provenance, GitHub Release asset attestation, repository-scoped GitHub artifact attestation, clean registry installation, published lifecycle/failure documentation examples and the complete installed browser product path.
+
+An RC dispatch additionally reruns the frozen-floor and newest-Stable browser lanes on that exact tag. The core verifier intentionally leaves P1-14 blocked until those RC matrix receipts are reviewed together.
+
+This infrastructure does not publish anything and does not alter the ledger. P13-03 trusted-publisher configuration, P13-17 repository protection, P14-04 adjacent real-release compatibility and P14-12 production CDN topology remain separate external obligations. Overall closure remains **277/304** and `production_closed=false`.
