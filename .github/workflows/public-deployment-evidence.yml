@@ -53,14 +53,21 @@ jobs:
       - run: npm ci
       - run: bash scripts/install-frozen-ci-chrome.sh
       - name: Run real public topology court
-        run: >-
-          npm run public:deployment:evidence --
-          --version=${{ inputs.version }}
-          --tag=${{ inputs.tag }}
-          --url="${{ inputs.url }}"
-          --topology-id="${{ inputs.topology_id }}"
-          --edge-provider="${{ inputs.edge_provider }}"
-          --edge-marker-header="${{ inputs.edge_marker_header }}"
+        env:
+          OC_PUBLIC_VERSION: ${{ inputs.version }}
+          OC_PUBLIC_TAG: ${{ inputs.tag }}
+          OC_PUBLIC_URL: ${{ inputs.url }}
+          OC_TOPOLOGY_ID: ${{ inputs.topology_id }}
+          OC_EDGE_PROVIDER: ${{ inputs.edge_provider }}
+          OC_EDGE_MARKER_HEADER: ${{ inputs.edge_marker_header }}
+        run: |
+          npm run public:deployment:evidence -- \
+            --version="$OC_PUBLIC_VERSION" \
+            --tag="$OC_PUBLIC_TAG" \
+            --url="$OC_PUBLIC_URL" \
+            --topology-id="$OC_TOPOLOGY_ID" \
+            --edge-provider="$OC_EDGE_PROVIDER" \
+            --edge-marker-header="$OC_EDGE_MARKER_HEADER"
       - name: Archive public topology receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
