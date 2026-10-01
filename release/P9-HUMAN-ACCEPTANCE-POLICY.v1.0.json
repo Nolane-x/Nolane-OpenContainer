@@ -1,0 +1,45 @@
+{
+  "schema": "opencontainer.p9-human-acceptance-policy.v1.0",
+  "status": "PREREGISTERED_AWAITING_HUMAN_EVIDENCE",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "workflow": ".github/workflows/p9-human-acceptance-evidence.yml",
+  "artifactSchema": "opencontainer.p9-human-acceptance.v1.0",
+  "gates": {
+    "P9-05": {
+      "evidenceType": "manual-screen-reader",
+      "humanEvaluatorRequired": true,
+      "requiredTasks": [
+        "startup-status-and-main-landmarks",
+        "view-navigation-preview-inspect-ai",
+        "modal-dialog-focus-and-dismissal",
+        "editor-save-acknowledgement",
+        "process-output-and-recovery",
+        "linked-folder-permission-or-conflict-state"
+      ],
+      "exactAssistiveTechnologyIdentityRequired": true,
+      "automaticLedgerClosure": false
+    },
+    "P9-11": {
+      "evidenceType": "human-comprehension",
+      "humanParticipantsRequired": true,
+      "minimumParticipants": 5,
+      "requiredScenarioClasses": [
+        "primary-action",
+        "failure-state",
+        "recovery-guidance",
+        "permission-or-conflict",
+        "destructive-or-high-impact-action"
+      ],
+      "minimumOverallAccuracy": 0.8,
+      "criticalMisinterpretationsAllowed": 0,
+      "pseudonymousParticipantIdsOnly": true,
+      "automaticLedgerClosure": false
+    }
+  },
+  "preservedOpenGates": [
+    "P9-05",
+    "P9-11",
+    "P9-12"
+  ],
+  "productionClosed": false
+}
