@@ -43,15 +43,15 @@ test('external release evidence workflow is read-only and manually triggered',()
   assert.doesNotMatch(workflow,/contents:\s*write/);
   assert.doesNotMatch(workflow,/packages:\s*write/);
   assert.doesNotMatch(workflow,/npm publish/);
-  assert.match(workflow,/gh release verify-asset --help/);
+  assert.match(workflow,/gh help release/);
   assert.match(workflow,/gh attestation verify --help/);
   assert.match(workflow,/ref: \$\{\{ inputs\.tag \}\}/);
 });
 
 test('external release verifier binds registry GitHub release immutable tag attestation and installed product path',()=>{
   for(const needle of [
-    "npm',['pack',PACKAGE+'@'+version",
-    "npm',['view',PACKAGE+'@'+version",
+    "PACKAGE+'@'+version,'--json','--pack-destination'",
+    "PACKAGE+'@'+version,'--json'",
     "distTags[channel]!==version",
     "tagCommit!==localCommit",
     "localBuild.sha256!==npmSha256",
