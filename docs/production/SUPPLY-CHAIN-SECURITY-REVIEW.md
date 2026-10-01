@@ -42,3 +42,10 @@ Every release-evidence build now emits `third-party-notices.json` from the insta
 The archive policy uses `git-source-history`, has no automated expiry, specifies at least ten years of retention, requires retention while any historical version may need verification, and forbids deletion without a superseding archive. Artifact binary bytes are deliberately not claimed as archived; the record preserves the cryptographic identity and verification evidence needed to authenticate a historical artifact obtained through its distribution channel.
 
 PR #74 completed the first stage and merged at `974fa1032c0d95c98889ca6f9bfaaa696c95fe9e`. Post-merge main CI #988 generated record SHA-256 `b10283f7c456c2a9f2af7713e23e37aaa37139e91d8fd0e91fd8472a76803375`; those exact bytes are now committed under the canonical `release/history/0.1.0-alpha.1/974fa1032c0d95c98889ca6f9bfaaa696c95fe9e/record.json` path and must pass `--require-repository` verification. This closes P13-20 only; external publication, signing, OIDC, repository protections and legal/FTO remain independent.
+
+
+## Repository-protection state capture
+
+P13-17 requires external repository-administration evidence rather than repository-file inference. The manual `repository-trust-state` court therefore reads main branch protection and repository rulesets using a dedicated admin-read token. The token is never archived.
+
+The court records raw protection state and may report that protection exists, but it deliberately does not declare the settings sufficient for P13-17. A separate human/policy review remains mandatory before any ledger promotion. Public ruleset discovery returning an empty list and an integration being unable to read branch protection are not treated as closure evidence.
