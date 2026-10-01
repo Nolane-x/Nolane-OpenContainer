@@ -118,10 +118,26 @@ for(const expected of p6Entries){
   const bytes=await readFile(resolve(root,review.retainedTarball));
   assert(sha256(bytes)===review.artifactDigest,'BCR retained tarball digest drift '+expected.packageName);
   const archive=await inspectTarArchive(new Uint8Array(bytes),{requiredPrefix:'package/',maxFiles:20_000,maxUnpackedBytes:256*1024*1024});
-  const paths=new Set(archive.entries.filter(x=>x.type==='file').map(x=>x.path));
-  for(const notice of review.requiredArchiveNotices)assert(paths.has(notice),'BCR archive missing notice '+notice+' for '+expected.packageName);
+  const fileEntries=archive.entries.filter(x=>x.type==='file');
+  const paths=new Set(fileEntries.map(x=>x.path));
+  const packageJsonEntry=fileEntries.find(x=>x.path==='package/package.json');
+  assert(packageJsonEntry,'BCR archive missing package/package.json '+expected.packageName);
+  const packageJson=JSON.parse(new TextDecoder().decode(packageJsonEntry.data));
+  assert(packageJson.license===review.license,'BCR package metadata license drift '+expected.packageName,{expected:review.license,actual:packageJson.license});
+  for(const notice of review.requiredArchiveNotices??[])assert(paths.has(notice),'BCR archive missing notice '+notice+' for '+expected.packageName);
+  const retainedNotices=[];
+  for(const notice of review.retainedDistributionNotices??[]){
+    assert(existsSync(resolve(root,notice)),'BCR retained distribution notice missing '+notice+' for '+expected.packageName);
+    const noticeText=await readFile(resolve(root,notice),'utf8');
+    assert(noticeText.includes('Mozilla Public License Version 2.0'),'retained MPL notice content drift '+notice);
+    retainedNotices.push({path:notice,sha256:sha256(Buffer.from(noticeText,'utf8'))});
+  }
   reviewedTarballs.add(review.retainedTarball);
-  bcrReceipts.push({packageName:review.packageName,version:review.toolVersion,license:review.license,tarball:review.retainedTarball,sha256:review.artifactDigest,notices:review.requiredArchiveNotices});
+  bcrReceipts.push({
+    packageName:review.packageName,version:review.toolVersion,license:review.license,
+    tarball:review.retainedTarball,sha256:review.artifactDigest,
+    archiveNotices:review.requiredArchiveNotices??[],retainedDistributionNotices:retainedNotices
+  });
 }
 const vendorFiles=(await readdir(resolve(root,'toolchain/vendor'))).filter(name=>!name.startsWith('.')).map(name=>'toolchain/vendor/'+name).sort();
 assert(vendorFiles.length===reviewedTarballs.size,'unreviewed vendored toolchain artifact exists',{vendorFiles,reviewed:[...reviewedTarballs]});
