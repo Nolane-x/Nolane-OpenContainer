@@ -8,5 +8,6 @@
   "adjacentUpgradeFrom": [],
   "downgradePolicy": "read-only-or-refuse-open",
   "destructiveStorageDowngrade": false,
-  "note": "Future releases must update this profile only when their actual release-storage compatibility changes. P14-04 requires testing real adjacent published artifacts; this file alone is not closure evidence."
+  "note": "Future releases must update this profile only when their actual release-storage compatibility changes. P14-04 requires testing real adjacent published artifacts; this file alone is not closure evidence.",
+  "adjacentEvidenceEligible": true
 }
