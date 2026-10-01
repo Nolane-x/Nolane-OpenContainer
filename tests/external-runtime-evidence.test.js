@@ -64,8 +64,9 @@ test('public topology workflow is manual read-only and checks out exact release 
   assert.match(publicWorkflow,/permissions:\n\s+contents:\s+read/);
   assert.doesNotMatch(publicWorkflow,/id-token:\s*write|contents:\s*write|packages:\s*write|npm publish/);
   assert.match(publicWorkflow,/ref: \$\{\{ inputs\.tag \}\}/);
-  assert.ok(publicWorkflow.includes('--topology-id='));
-  assert.ok(publicWorkflow.includes('--edge-marker-header='));
+  assert.ok(publicWorkflow.includes('OC_PUBLIC_URL: ${{ inputs.url }}'));
+  assert.ok(publicWorkflow.includes('--topology-id="$OC_TOPOLOGY_ID"'));
+  assert.ok(publicWorkflow.includes('--edge-marker-header="$OC_EDGE_MARKER_HEADER"'));
 });
 
 test('adjacent publication selection must use directly adjacent npm versions',()=>{
@@ -123,6 +124,8 @@ test('adjacent release workflow is manual main-only and read-only',()=>{
   assert.match(adjacentWorkflow,/permissions:\n\s+contents:\s+read/);
   assert.doesNotMatch(adjacentWorkflow,/id-token:\s*write|contents:\s*write|packages:\s*write|npm publish/);
   assert.ok(adjacentWorkflow.includes("github.ref == 'refs/heads/main'"));
+  assert.ok(adjacentWorkflow.includes('OC_PREVIOUS_VERSION: ${{ inputs.previous_version }}'));
+  assert.ok(adjacentWorkflow.includes('--previous="$OC_PREVIOUS_VERSION"'));
 });
 
 test('staging external runtime courts cannot self-close current gates',()=>{
