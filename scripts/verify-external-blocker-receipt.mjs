@@ -142,11 +142,18 @@ export function validateExternalBlockerReceipt(receipt,{policy,repoState}){
     productionClosed:false
   };
 }
+export function validateReceiptPath(path){
+  const value=String(path??'').replaceAll('\\','/');
+  if(!/^release\/external-evidence\/[A-Za-z0-9._-]+\.json$/.test(value))return false;
+  return !value.includes('..');
+}
 async function readJson(path){return JSON.parse(await readFile(resolve(path),'utf8'));}
 async function main(){
   const arg=process.argv.find(x=>x.startsWith('--receipt='));
   if(!arg)throw new Error('--receipt=<path> required');
-  const receipt=await readJson(arg.slice('--receipt='.length));
+  const receiptPath=arg.slice('--receipt='.length);
+  if(!validateReceiptPath(receiptPath))throw new Error('receipt path must be release/external-evidence/<name>.json');
+  const receipt=await readJson(receiptPath);
   const [policy,security,supply,legal,distributionSource]=await Promise.all([
     readJson('release/FINAL-EXTERNAL-BLOCKER-POLICY.v1.0.json'),
     readJson('release/SECURITY-REVIEW-POLICY.v1.0.json'),
