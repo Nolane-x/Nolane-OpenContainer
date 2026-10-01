@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 export const P9_FAILURE_MATRIX_PATH='docs/research/OPENCONTAINER-UX-STATE-FAILURE-MATRIX-v0.4-20260923.md';
 export const P9_FAILURE_MATRIX_SHA256='7f329e45b704465947488532658abdde90d699fc4ed33fc96e86bb603769ede5';
@@ -104,7 +105,7 @@ export async function loadP9FailureMatrix(path=P9_FAILURE_MATRIX_PATH){
   return validateP9FailureMatrix({text});
 }
 
-if(import.meta.url===new URL('file://'+process.argv[1]).href){
+if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
   const result=await loadP9FailureMatrix(process.argv[2]??P9_FAILURE_MATRIX_PATH);
   if(!result.ok){
     console.error(JSON.stringify({ok:false,errors:result.errors},null,2));
