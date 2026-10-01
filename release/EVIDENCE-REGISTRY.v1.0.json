@@ -626,6 +626,14 @@
       "status": "PASS",
       "ref": "PR #76 implementation CI #995 + P14-13 CI #960",
       "note": "P11-13 browser minimum freeze for exactly one declared evidence profile: Google Chrome 153.0.8010.52+ on Ubuntu 24.04 x64. Chrome 153 floor and Chrome 154.0.8037.92 Stable each passed 2/2 full installed-distribution paths. Unverified browser/OS/mobile/weak-device rows remain non-claims."
+    },
+    {
+      "key": "p9-failure-scenarios",
+      "kind": "EXECUTABLE",
+      "level": "INTEGRATION",
+      "status": "PASS",
+      "ref": "CI #1011 / PR #77 head 17b7135eb405dbab7da94c2ca7491e57bac88c8a",
+      "note": "P9-03 complete retained 280-scenario failure registry: SHA-locked source, 280 qualified rows, 55 court classes, 280 component projections, same-head rendered P9 dependency and zero missing retained evidence refs. Artifact #11142839511. P9-05/P9-11/P9-12 remain independent external obligations."
     }
   ]
 }
