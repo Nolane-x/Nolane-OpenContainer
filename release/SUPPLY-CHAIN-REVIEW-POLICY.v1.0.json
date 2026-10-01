@@ -10,7 +10,8 @@
     ".github/workflows/scorecard.yml",
     ".github/workflows/external-release-evidence.yml",
     ".github/workflows/public-deployment-evidence.yml",
-    ".github/workflows/adjacent-release-evidence.yml"
+    ".github/workflows/adjacent-release-evidence.yml",
+    ".github/workflows/external-blocker-receipt.yml"
   ],
   "workflowRules": {
     "remoteActionRef": "full-40-hex-commit",
@@ -247,5 +248,13 @@
     ],
     "publicationWritesAllowed": false,
     "purpose": "Read-only verification of real public deployment topology and actual adjacent npm release compatibility."
+  },
+  "finalExternalBlockerAuthority": {
+    "policy": "release/FINAL-EXTERNAL-BLOCKER-POLICY.v1.0.json",
+    "verifier": "scripts/verify-external-blocker-receipt.mjs",
+    "workflow": ".github/workflows/external-blocker-receipt.yml",
+    "publicationWritesAllowed": false,
+    "autoPromotionAllowed": false,
+    "purpose": "Structurally verify retained human/admin/legal/external receipts while preserving the required external authority and reviewed ledger reconciliation."
   }
 }
