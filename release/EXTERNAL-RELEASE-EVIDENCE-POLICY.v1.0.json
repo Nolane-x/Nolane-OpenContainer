@@ -1,0 +1,71 @@
+{
+  "schema": "opencontainer.external-release-evidence-policy.v1.0",
+  "status": "STAGED_AWAITING_REAL_EXTERNAL_RELEASE",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "package": "@nolane/opencontainer",
+  "repository": "Nolane-x/Nolane-OpenContainer",
+  "workflow": ".github/workflows/external-release-evidence.yml",
+  "runner": "github-hosted",
+  "permissions": {
+    "contents": "read"
+  },
+  "releaseRequirements": {
+    "npmRegistry": "https://registry.npmjs.org",
+    "githubReleaseRequired": true,
+    "githubReleaseAssetMustByteMatchNpmTarball": true,
+    "immutableTagMustResolveToCheckedOutCommit": true,
+    "npmRegistrySignatureAuditRequired": true,
+    "githubReleaseAssetAttestationRequired": true,
+    "githubArtifactAttestationRequired": true,
+    "cleanRegistryInstallRequired": true,
+    "installedDocsExamplesRequired": true,
+    "installedBrowserProductPathRequired": true
+  },
+  "channelRules": {
+    "canary": {
+      "registryDistTag": "canary",
+      "supports": [
+        "P11-12",
+        "P13-04",
+        "P13-07",
+        "P13-09",
+        "P13-10",
+        "P13-16",
+        "P15-12"
+      ]
+    },
+    "beta": {
+      "registryDistTag": "beta",
+      "supports": [
+        "P11-12",
+        "P13-04",
+        "P13-07",
+        "P13-09",
+        "P13-10",
+        "P15-12"
+      ]
+    },
+    "rc": {
+      "registryDistTag": "rc",
+      "supports": [
+        "P11-12",
+        "P13-04",
+        "P13-07",
+        "P13-09",
+        "P13-10",
+        "P15-12",
+        "P1-14"
+      ]
+    }
+  },
+  "deliberatelyNotInferable": {
+    "P13-03": "npm package provenance does not by itself prove that the npm trusted-publisher configuration is enabled; that external configuration must be independently certified.",
+    "P13-17": "repository branch/tag/release protection settings require external repository-administration evidence.",
+    "P14-04": "adjacent real-release compatibility requires at least two real published releases and a separate cross-version court.",
+    "P14-12": "production CDN/reverse-proxy topology requires a real public deployment campaign.",
+    "P16-01": "final project license remains a human/legal decision.",
+    "P16-05": "FTO/counsel remains a legal review obligation."
+  },
+  "automaticLedgerClosure": false,
+  "productionClosed": false
+}
