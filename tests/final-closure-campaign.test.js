@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { verifyFinalClosureCampaign } from '../scripts/verify-final-closure-campaign.mjs';
+import { policySemanticErrors, verifyFinalClosureCampaign } from '../scripts/verify-final-closure-campaign.mjs';
 
 const manifest=JSON.parse(readFileSync('release/FINAL-CLOSURE-CAMPAIGN.v1.0.json','utf8'));
 const ledger=JSON.parse(readFileSync('docs/production/PRODUCTION-GATE-RECONCILIATION-v0.1.json','utf8'));
@@ -27,6 +27,7 @@ test('every final campaign route stays candidate-only and has real repository en
     for(const entry of route.entrypoints){
       assert.equal(entry.exists,true,route.id+' '+entry.path);
       assert.deepEqual(entry.workflowSecurity,[],route.id+' '+entry.path);
+      assert.deepEqual(entry.policySemantics,[],route.id+' '+entry.path);
     }
   }
 });
@@ -47,6 +48,45 @@ test('high-risk remaining gates use their preregistered human/device/admin/legal
   assert.equal(gateRoute('P14-04').id,'adjacent-published-release');
   assert.equal(gateRoute('P16-01').id,'final-license-decision');
   assert.equal(gateRoute('P16-05').id,'fto-counsel-review');
+});
+
+test('public deployment and RC routes are bound to their external evidence policies',()=>{
+  const publicRoute=manifest.routes.find(x=>x.id==='public-deployment-topology');
+  const rcRoute=manifest.routes.find(x=>x.id==='rc-browser-matrix');
+  assert.ok(publicRoute.entrypoints.includes('release/EXTERNAL-RUNTIME-EVIDENCE-POLICY.v1.0.json'));
+  assert.ok(rcRoute.entrypoints.includes('release/EXTERNAL-RELEASE-EVIDENCE-POLICY.v1.0.json'));
+});
+
+test('policy semantic guard rejects source drift and any automatic closure/promotion claim',()=>{
+  const broken={
+    sourceGateSha256:'0'.repeat(64),
+    automaticLedgerClosure:true,
+    nested:{
+      closureEligible:true,
+      autoPromotion:true,
+      productionClosed:true,
+      forbiddenAutoPromotion:false
+    }
+  };
+  const errors=policySemanticErrors('release/broken-policy.json',broken,ledger.source.sha256);
+  assert.ok(errors.some(x=>x.includes('sourceGateSha256 drift')));
+  assert.ok(errors.some(x=>x.includes('automatic ledger closure')));
+  assert.ok(errors.some(x=>x.includes('closure eligibility')));
+  assert.ok(errors.some(x=>x.includes('automatic promotion')));
+  assert.ok(errors.some(x=>x.includes('production closure')));
+  assert.ok(errors.some(x=>x.includes('auto-promotion guard')));
+});
+
+test('repository trust route remains local-admin only and cannot drift into workflow authority',()=>{
+  const route=manifest.routes.find(x=>x.id==='repository-trust-state');
+  assert.ok(route.entrypoints.includes('scripts/repository-trust-state.mjs'));
+  assert.ok(route.entrypoints.includes('release/EXTERNAL-TRUST-REVIEW-POLICY.v1.0.json'));
+  const trust=JSON.parse(readFileSync('release/EXTERNAL-TRUST-REVIEW-POLICY.v1.0.json','utf8'));
+  const packageJson=JSON.parse(readFileSync('package.json','utf8'));
+  assert.equal(trust.repositoryTrust.mode,'local-admin-cli');
+  assert.equal(trust.repositoryTrust.workflowPresent,false);
+  assert.equal(trust.repositoryTrust.command,'npm run repository:trust:evidence');
+  assert.equal(packageJson.scripts['repository:trust:evidence'],'node scripts/repository-trust-state.mjs');
 });
 
 test('campaign verifier fails closed when one open gate loses its route',async()=>{
