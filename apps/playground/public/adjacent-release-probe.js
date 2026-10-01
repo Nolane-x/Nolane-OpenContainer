@@ -71,7 +71,9 @@ async function run(){
       readableStorageVersions:profile.readableStorageVersions
     });
     assert(rollback.destructiveStorageDowngrade===false,'rollback attempted destructive downgrade');
-    if(rollback.mode==='read-only'){
+    if(rollback.mode==='read-write'){
+      action='rollback-compatible-read-write';
+    }else if(rollback.mode==='read-only'){
       const fs=new MemoryVFS();
       fs.mount({'marker.txt':marker});
       await authority.applyCompatibility(fs,{runtimeStorageVersion:profile.storageVersion,readableStorageVersions:profile.readableStorageVersions});
