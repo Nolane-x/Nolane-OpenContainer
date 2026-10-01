@@ -1,0 +1,123 @@
+{
+  "schema": "opencontainer.final-external-blocker-policy.v1.0",
+  "sourceGateSha256": "b667e6628e22b1a48a4fba937fcd5d8bc432b233d4ea56a10db384b5e1192146",
+  "rule": "External/human/admin/legal evidence remains non-machine-closable. Structural verification may mark a receipt READY_FOR_REVIEW but never mutates the production ledger or substitutes for the required human/external authority.",
+  "receiptSchema": "opencontainer.external-blocker-receipt.v1.0",
+  "receiptDirectory": "release/external-evidence",
+  "gates": {
+    "P1-15": {
+      "kind": "field-browser-regression",
+      "requirement": "Actual field browser-regression incident evidence; internal emergency modeling is not field evidence.",
+      "authority": "field incident owner + release reviewer",
+      "minimum": {
+        "realFieldIncidents": 1,
+        "rootCauseRequired": true,
+        "fixOrDispositionRequired": true,
+        "retainedRegressionRequired": true
+      }
+    },
+    "P9-05": {
+      "kind": "manual-screen-reader",
+      "requirement": "Manual screen-reader acceptance remains required.",
+      "authority": "human accessibility reviewer",
+      "minimum": {
+        "sourceScenarioCount": 2,
+        "screenReaderIdentity": true,
+        "osBrowserIdentity": true,
+        "blockingIssues": 0
+      }
+    },
+    "P9-11": {
+      "kind": "human-comprehension",
+      "requirement": "Human comprehension testing remains a separate human-study obligation.",
+      "authority": "human study reviewer",
+      "minimum": {
+        "participants": 1,
+        "tasks": 1,
+        "blockingIssues": 0
+      }
+    },
+    "P12-17": {
+      "kind": "private-vulnerability-channel",
+      "requirement": "A verified responsible-disclosure/private vulnerability channel must exist; documentation alone does not create the channel.",
+      "authority": "independent verifier",
+      "minimum": {
+        "privateChannel": true,
+        "liveVerificationRequired": true
+      }
+    },
+    "P12-18": {
+      "kind": "second-party-security-review",
+      "requirement": "Independent or second-party review evidence must name the reviewer/review artifact and scope critical isolation/storage/network changes.",
+      "authority": "independent or second-party security reviewer",
+      "minimum": {
+        "scope": [
+          "isolation",
+          "storage",
+          "network"
+        ],
+        "releaseBlockingFindings": 0
+      }
+    },
+    "P12-20": {
+      "kind": "human-product-security-review",
+      "requirement": "A human security review is required; scanner, CodeQL, dependency audit, AI review and CI scores are supporting evidence only.",
+      "authority": "human product-security reviewer",
+      "minimum": {
+        "humanReviewer": true,
+        "releaseBlockingFindings": 0
+      }
+    },
+    "P13-03": {
+      "kind": "trusted-publisher-configuration",
+      "requirement": "OIDC/trusted npm publishing identity must be actually configured.",
+      "authority": "package/repository administrator",
+      "minimum": {
+        "provider": "npm",
+        "package": "@nolane/opencontainer",
+        "oidc": true,
+        "longLivedPublishToken": false
+      }
+    },
+    "P13-17": {
+      "kind": "repository-protection-certification",
+      "requirement": "Repository branch/tag/release protection settings are external GitHub state and must be certified.",
+      "authority": "repository administrator or independent reviewer",
+      "minimum": {
+        "branchProtectionReviewed": true,
+        "tagProtectionReviewed": true,
+        "releaseProtectionReviewed": true
+      }
+    },
+    "P16-01": {
+      "kind": "final-license-decision",
+      "requirement": "Final project license must be recorded by the accountable human/legal authority.",
+      "authority": "project owner/legal authority",
+      "minimum": {
+        "spdxLicenseId": true,
+        "decisionArtifact": true
+      }
+    },
+    "P16-05": {
+      "kind": "fto-counsel-review",
+      "requirement": "Jurisdiction-specific FTO counsel review is required before public beta/commercial use.",
+      "authority": "qualified legal counsel",
+      "minimum": {
+        "areas": [
+          "preview",
+          "network",
+          "storage",
+          "runtime topology"
+        ],
+        "jurisdictions": 1,
+        "outcome": [
+          "CLEARED",
+          "CLEARED_WITH_CONDITIONS",
+          "BLOCKED"
+        ]
+      }
+    }
+  },
+  "forbiddenAutoPromotion": true,
+  "productionClosed": false
+}
