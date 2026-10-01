@@ -1107,3 +1107,12 @@ All **27 currently open production gates** are now mapped to **13 explicit evide
 The campaign verifier explicitly rejects missing gates, duplicate routing, stale ledger totals, missing entrypoints, automatic promotion and any `closureEligible=true` route. It is part of the main `npm run ci` chain and the repeated critical campaign.
 
 This closes an engineering-process gap only. It does **not** close any external gate: ledger remains **277/304**, 27 gates open, `production_closed=false`.
+
+
+## Final closure policy semantic guards
+
+The final closure campaign now validates not only that each external authority entrypoint exists, but also that every referenced release policy/harness remains semantically fail-closed. Referenced JSON is rejected if its source-gate digest drifts, if any nested `automaticLedgerClosure`, `closureEligible` or `autoPromotion` flag becomes true, if it claims production closure, or if an explicit auto-promotion guard is disabled.
+
+The public-deployment and RC-browser routes now explicitly bind their external runtime/release policies. The repository-trust route additionally proves that its package command still invokes the local admin CLI and that the trust policy remains `local-admin-cli` with `workflowPresent=false`.
+
+This strengthens the 27-gate closure control plane only; it does not promote any production gate. The ledger remains **277/304 CLOSED** and `production_closed=false`.
